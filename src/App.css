@@ -1,0 +1,251 @@
+/* Premium Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #fcfcfc;
+  color: #1a1a1a;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Minimalist Editorial Header */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40px 6%;
+  background: #fcfcfc;
+}
+
+.brand-block .logo {
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+}
+
+.brand-block .tagline {
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #8a8a8a;
+  margin-top: 6px;
+}
+
+.cart-indicator-btn {
+  background: none;
+  border: none;
+  border-bottom: 1px solid #1a1a1a;
+  color: #1a1a1a;
+  padding: 4px 0;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.cart-indicator-btn:hover {
+  opacity: 0.6;
+}
+
+/* Layout Container */
+.store-container {
+  max-width: 1100px;
+  margin: 20px auto 80px auto;
+  padding: 0 6%;
+}
+
+/* Sleek Category Navigation */
+.menu-tabs {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 50px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 12px;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  color: #b5b5b5;
+  padding: 0 0 12px 0;
+  position: relative;
+  transition: color 0.3s;
+}
+
+.tab-btn.active {
+  color: #1a1a1a;
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: #1a1a1a;
+}
+
+/* Elegant Menu Grid */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 40px;
+}
+
+.menu-card {
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.menu-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.menu-title-row h4 {
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.menu-price {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #555;
+}
+
+.menu-desc {
+  font-size: 0.8rem;
+  color: #757575;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  font-weight: 300;
+}
+
+.add-to-order-btn {
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  padding: 12px;
+  width: 100%;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-to-order-btn:hover {
+  background: #444;
+}
+
+/* Sidebar Checkout Slideout */
+.checkout-sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 1000;
+}
+
+.checkout-sidebar {
+  width: 100%;
+  max-width: 380px;
+  background: #fcfcfc;
+  height: 100%;
+  padding: 40px 30px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #eee;
+}
+
+.checkout-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.checkout-header h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.close-sidebar-btn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #999;
+}
+
+.checkout-items-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.checkout-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  font-size: 0.85rem;
+  border-bottom: 1px solid #f9f9f9;
+  padding-bottom: 12px;
+}
+
+.item-qty-tag {
+  color: #888;
+  margin-left: 6px;
+}
+
+.checkout-footer {
+  border-top: 1px solid #eee;
+  padding-top: 30px;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 25px;
+}
+
+.pay-gateway-btn {
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  width: 100%;
+  padding: 16px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
