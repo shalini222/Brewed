@@ -3,7 +3,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useCart } from "../context/CartContext";
 
-const stripePromise = loadStripe("pk_test_51TnL3hRpIrYBOe6qbiPfhKOrKD3zIldTV3813Hf30XmVMg9fugneL4EZDiYzueKWvf9ZhASgeoXXycmzduTf4dCH00GtZDAHve");
+const stripePromise = loadStripe("pk_test_51TnL3hRpIrYBOe6qbiPfhKOrKD3zIldTV3813Hf3OXmVMg9fugneL4EZDiYzueKWvf9ZhASgeoXXycmzduTf4dCH0OGtZDAHve");
 
 const CARD_ELEMENT_OPTIONS = {
   style: {
@@ -50,23 +50,24 @@ function CheckoutForm({ setPage }) {
     setSavedTotal(total);
     setStatus("processing");
     setErrorMsg("");
-    try {
-      // Uncomment for real Stripe:
-      // const res = await fetch("/api/create-payment-intent", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ amount: Math.round(grandTotal * 100) }),
-      // });
-      // const { clientSecret } = await res.json();
-      // const result = await stripe.confirmCardPayment(clientSecret, {
-      //   payment_method: {
-      //     card: elements.getElement(CardElement),
-      //     billing_details: { name: form.name, email: form.email }
-      //   }
-      // });
-      // if (result.error) throw new Error(result.error.message);
 
-      await new Promise((r) => setTimeout(r, 2000));
+    try {
+      const res = await fetch("https://brewed-self.vercel.app/api/create-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: Math.round(total * 1.08 * 100) }),
+      });
+      const { clientSecret } = await res.json();
+
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: elements.getElement(CardElement),
+          billing_details: { name: form.name, email: form.email }
+        }
+      });
+
+      if (result.error) throw new Error(result.error.message);
+
       setStatus("success");
       clearCart();
     } catch (err) {
@@ -162,17 +163,19 @@ function CheckoutForm({ setPage }) {
             <label style={styles.label}>Delivery Address</label>
             <input style={styles.input} name="address" value={form.address} onChange={handleChange} placeholder="123 Coffee Lane, Kolkata" required />
           </div>
+
           <h2 style={{ ...styles.sectionTitle, marginTop: "1.5rem" }}>Payment</h2>
           <div style={styles.stripeBox}>
             <CardElement options={CARD_ELEMENT_OPTIONS} />
           </div>
           <div style={styles.stripeBadge}>🔒 Secured by <strong>Stripe</strong> · SSL encrypted</div>
+
           <button
             type="submit"
             style={{ ...styles.payBtn, opacity: status === "processing" ? 0.7 : 1 }}
             disabled={status === "processing" || !stripe}
           >
-            {status === "processing" ? "Processing…" : `Pay $${grandTotal}`}
+            {status === "processing" ? "Processing…" : `Pay $${(total * 1.08).toFixed(2)}`}
           </button>
         </div>
 
@@ -188,7 +191,7 @@ function CheckoutForm({ setPage }) {
           <div style={styles.summaryRow}><span>Subtotal</span><span>${(savedTotal || total).toFixed(2)}</span></div>
           <div style={styles.summaryRow}><span>Tax (8%)</span><span>${((savedTotal || total) * 0.08).toFixed(2)}</span></div>
           <div style={{ ...styles.summaryRow, ...styles.summaryTotal }}>
-            <span>Total</span><span>${grandTotal}</span>
+            <span>Total</span><span>${(total * 1.08).toFixed(2)}</span>
           </div>
         </div>
       </div>
