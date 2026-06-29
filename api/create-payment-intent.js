@@ -1,7 +1,6 @@
 const Stripe = require("stripe");
 
 module.exports = async (req, res) => {
-  // Handle CORS
   res.setHeader("Access-Control-Allow-Credentials", true);
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,POST");
@@ -30,7 +29,6 @@ module.exports = async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount),
       currency: "usd",
-      automatic_payment_methods: { enabled: true },
     });
 
     res.status(200).json({ clientSecret: paymentIntent.client_secret });
