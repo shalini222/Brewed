@@ -57,9 +57,14 @@ function CheckoutForm({ setPage }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: Math.round(total * 1.08 * 100) }),
       });
-      const { clientSecret } = await res.json();
 
-      const result = await stripe.confirmCardPayment(clientSecret, {
+      const data = await res.json();
+
+      if (!data.clientSecret) {
+        throw new Error("Backend returned: " + JSON.stringify(data));
+      }
+
+      const result = await stripe.confirmCardPayment(data.clientSecret, {
         payment_method: {
           card: elements.getElement(CardElement),
           billing_details: { name: form.name, email: form.email }
@@ -71,12 +76,11 @@ function CheckoutForm({ setPage }) {
       setStatus("success");
       clearCart();
     } catch (err) {
-      setErrorMsg(err.message || "Payment failed. Please try again.");
+      setErrorMsg(err.message);
       setStatus("error");
     }
   };
 
-  // ✅ Success
   if (status === "success") {
     return (
       <div style={styles.confirmPage}>
@@ -104,14 +108,13 @@ function CheckoutForm({ setPage }) {
     );
   }
 
-  // ❌ Failed
   if (status === "error") {
     return (
       <div style={styles.confirmPage}>
         <div style={styles.confirmCard}>
           <div style={{ ...styles.confirmIcon, background: "#7A1A1A" }}>✕</div>
           <h2 style={{ ...styles.confirmTitle, color: "#7A1A1A" }}>Payment Failed</h2>
-          <p style={styles.confirmSub}>Something went wrong. Please check your card details and try again.</p>
+          <p style={styles.confirmSub}>Something went wrong. Please try again.</p>
           {errorMsg && <p style={styles.errorDetail}>{errorMsg}</p>}
           <button style={styles.retryBtn} onClick={() => setStatus("idle")}>Try Again</button>
           <button style={styles.confirmBtn} onClick={() => setPage("cart")}>Back to Cart</button>
@@ -120,7 +123,6 @@ function CheckoutForm({ setPage }) {
     );
   }
 
-  // 💳 Form
   return (
     <form onSubmit={handleSubmit}>
       <style>{`
@@ -137,14 +139,8 @@ function CheckoutForm({ setPage }) {
           top: 80px;
         }
         @media (max-width: 768px) {
-          .checkout-layout {
-            flex-direction: column;
-          }
-          .checkout-summary {
-            width: 100%;
-            position: static;
-            order: -1;
-          }
+          .checkout-layout { flex-direction: column; }
+          .checkout-summary { width: 100%; position: static; order: -1; }
         }
       `}</style>
 
@@ -243,5 +239,5 @@ const styles = {
   confirmEmail: { fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", color: "#9A8880", marginBottom: "1.25rem" },
   confirmBtn: { display: "block", width: "100%", padding: "0.85rem", background: "#1A0A00", color: "#C4956A", border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: "0.95rem", cursor: "pointer", marginTop: "0.75rem" },
   retryBtn: { display: "block", width: "100%", padding: "0.85rem", background: "#C4956A", color: "#1A0A00", border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: "0.95rem", cursor: "pointer", marginBottom: "0.75rem" },
-  errorDetail: { fontFamily: "'Inter', sans-serif", fontSize: "0.82rem", color: "#e53e3e", marginBottom: "1.25rem" },
+  errorDetail: { fontFamily: "'Inter', sans-serif", fontSize: "0.82rem", color: "#e53e3e", marginBottom: "1.25rem", wordBreak: "break-all" },
 };
