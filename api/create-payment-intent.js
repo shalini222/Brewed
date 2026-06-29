@@ -31,8 +31,12 @@ module.exports = async (req, res) => {
       currency: "usd",
     });
 
-    res.status(200).json({ clientSecret: paymentIntent.client_secret });
+    return res.status(200).json({ 
+      clientSecret: paymentIntent.client_secret,
+      id: paymentIntent.id,
+      status: paymentIntent.status
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
