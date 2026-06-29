@@ -44,50 +44,46 @@ function CheckoutForm({ setPage }) {
   }
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!stripe || !elements) return;
-  setSavedCart([...cart]);
-  setSavedTotal(total);
-  setStatus("processing");
-  setErrorMsg("");
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setSavedCart([...cart]);
+    setSavedTotal(total);
+    setStatus("processing");
+    setErrorMsg("");
 
-  try {
-    const res = await fetch("https://brewed-self.vercel.app/api/create-payment-intent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: Math.round(total * 1.08 * 100) }),
-    });
+    try {
+      const res = await fetch("https://brewed-self.vercel.app/api/create-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: Math.round(total * 1.08 * 100) }),
+      });
 
-    const data = await res.json();
+      const text = await res.text();
+      const data = JSON.parse(text);
 
-    if (data.error) throw new Error(data.error);
-    if (!data.clientSecret) throw new Error("No client secret: " + JSON.stringify(data));
+      if (!data.clientSecret) {
+        throw new Error("No clientSecret. Server said: " + text);
+      }
 
-    const cardElement = elements.getElement(CardElement);
+      const cardElement = elements.getElement(CardElement);
 
-    const { error, paymentIntent } = await stripe.confirmCardPayment(
-      data.clientSecret,
-      {
+      const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
         payment_method: {
           card: cardElement,
-          billing_details: {
-            name: form.name,
-            email: form.email,
-          },
+          billing_details: { name: form.name, email: form.email },
         },
-      }
-    );
+      });
 
-    if (error) throw new Error(error.message);
-    if (paymentIntent.status === "succeeded") {
-      setStatus("success");
-      clearCart();
+      if (error) throw new Error(error.message);
+      if (paymentIntent.status === "succeeded") {
+        setStatus("success");
+        clearCart();
+      }
+    } catch (err) {
+      setErrorMsg(err.message);
+      setStatus("error");
     }
-  } catch (err) {
-    setErrorMsg(err.message);
-    setStatus("error");
-  }
-};
+  };
 
   if (status === "success") {
     return (
@@ -134,18 +130,8 @@ function CheckoutForm({ setPage }) {
   return (
     <form onSubmit={handleSubmit}>
       <style>{`
-        .checkout-layout {
-          display: flex;
-          flex-direction: row;
-          gap: 2rem;
-          align-items: start;
-        }
-        .checkout-summary {
-          width: 300px;
-          flex-shrink: 0;
-          position: sticky;
-          top: 80px;
-        }
+        .checkout-layout { display: flex; flex-direction: row; gap: 2rem; align-items: start; }
+        .checkout-summary { width: 300px; flex-shrink: 0; position: sticky; top: 80px; }
         @media (max-width: 768px) {
           .checkout-layout { flex-direction: column; }
           .checkout-summary { width: 100%; position: static; order: -1; }
@@ -247,5 +233,5 @@ const styles = {
   confirmEmail: { fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", color: "#9A8880", marginBottom: "1.25rem" },
   confirmBtn: { display: "block", width: "100%", padding: "0.85rem", background: "#1A0A00", color: "#C4956A", border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: "0.95rem", cursor: "pointer", marginTop: "0.75rem" },
   retryBtn: { display: "block", width: "100%", padding: "0.85rem", background: "#C4956A", color: "#1A0A00", border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: "0.95rem", cursor: "pointer", marginBottom: "0.75rem" },
-  errorDetail: { fontFamily: "'Inter', sans-serif", fontSize: "0.82rem", color: "#e53e3e", marginBottom: "1.25rem", wordBreak: "break-all" },
+  errorDetail: { fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "#e53e3e", marginBottom: "1.25rem", wordBreak: "break-all", textAlign: "left" },
 };
