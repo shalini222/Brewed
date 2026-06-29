@@ -44,42 +44,50 @@ function CheckoutForm({ setPage }) {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    setSavedCart([...cart]);
-    setSavedTotal(total);
-    setStatus("processing");
-    setErrorMsg("");
+  e.preventDefault();
+  if (!stripe || !elements) return;
+  setSavedCart([...cart]);
+  setSavedTotal(total);
+  setStatus("processing");
+  setErrorMsg("");
 
-    try {
-      const res = await fetch("https://brewed-self.vercel.app/api/create-payment-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: Math.round(total * 1.08 * 100) }),
-      });
+  try {
+    const res = await fetch("https://brewed-self.vercel.app/api/create-payment-intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: Math.round(total * 1.08 * 100) }),
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (!data.clientSecret) {
-        throw new Error("Backend returned: " + JSON.stringify(data));
-      }
+    if (data.error) throw new Error(data.error);
+    if (!data.clientSecret) throw new Error("No client secret: " + JSON.stringify(data));
 
-      const result = await stripe.confirmCardPayment(data.clientSecret, {
+    const cardElement = elements.getElement(CardElement);
+
+    const { error, paymentIntent } = await stripe.confirmCardPayment(
+      data.clientSecret,
+      {
         payment_method: {
-          card: elements.getElement(CardElement),
-          billing_details: { name: form.name, email: form.email }
-        }
-      });
+          card: cardElement,
+          billing_details: {
+            name: form.name,
+            email: form.email,
+          },
+        },
+      }
+    );
 
-      if (result.error) throw new Error(result.error.message);
-
+    if (error) throw new Error(error.message);
+    if (paymentIntent.status === "succeeded") {
       setStatus("success");
       clearCart();
-    } catch (err) {
-      setErrorMsg(err.message);
-      setStatus("error");
     }
-  };
+  } catch (err) {
+    setErrorMsg(err.message);
+    setStatus("error");
+  }
+};
 
   if (status === "success") {
     return (
