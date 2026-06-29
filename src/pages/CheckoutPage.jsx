@@ -1,36 +1,21 @@
 import { useState } from "react";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useCart } from "../context/CartContext";
 
-const stripePromise = loadStripe("pk_test_51TnL3hRpIrYBOe6qbiPfhKOrKD3zIldTV3813Hf3OXmVMg9fugneL4EZDiYzueKWvf9ZhASgeoXXycmzduTf4dCH0OGtZDAHve");
-
-const CARD_ELEMENT_OPTIONS = {
-  style: {
-    base: {
-      fontFamily: "'Inter', sans-serif", fontSize: "15px", color: "#1A0A00",
-      "::placeholder": { color: "#B0A090" },
-    },
-    invalid: { color: "#e53e3e" },
-  },
-};
-
 function CheckoutForm({ setPage }) {
-  const stripe = useStripe();
-  const elements = useElements();
   const { cart, total, clearCart } = useCart();
   const [status, setStatus] = useState("idle");
-  const [errorMsg, setErrorMsg] = useState("");
   const [form, setForm] = useState({ name: "", email: "", address: "" });
   const [savedCart, setSavedCart] = useState([]);
   const [savedTotal, setSavedTotal] = useState(0);
 
   const grandTotal = ((savedTotal || total) * 1.08).toFixed(2);
   const displayCart = savedCart.length > 0 ? savedCart : cart;
+  const upiId = "yourname@upi"; // 👈 Replace with your UPI ID
+  const upiLink = `upi://pay?pa=${upiId}&pn=Brewed%20Cafe&am=${grandTotal}&cu=INR&tn=Brewed%20Order`;
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  if (cart.length === 0 && status !== "success" && status !== "processing" && status !== "error") {
+  if (cart.length === 0 && status !== "success") {
     return (
       <div style={styles.confirmPage}>
         <div style={styles.confirmCard}>
@@ -43,48 +28,19 @@ function CheckoutForm({ setPage }) {
     );
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
     setSavedCart([...cart]);
     setSavedTotal(total);
-    setStatus("processing");
-    setErrorMsg("");
-
-    try {
-      const res = await fetch("https://brewed-self.vercel.app/api/create-payment-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: Math.round(total * 1.08 * 100) }),
-      });
-
-      const text = await res.text();
-      const data = JSON.parse(text);
-
-      if (!data.clientSecret) {
-        throw new Error("No clientSecret. Server said: " + text);
-      }
-
-      const cardElement = elements.getElement(CardElement);
-
-      const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: { name: form.name, email: form.email },
-        },
-      });
-
-      if (error) throw new Error(error.message);
-      if (paymentIntent.status === "succeeded") {
-        setStatus("success");
-        clearCart();
-      }
-    } catch (err) {
-      setErrorMsg(err.message);
-      setStatus("error");
-    }
+    setStatus("pay");
   };
 
+  const handlePaid = () => {
+    clearCart();
+    setStatus("success");
+  };
+
+  // ✅ Success
   if (status === "success") {
     return (
       <div style={styles.confirmPage}>
@@ -97,12 +53,13 @@ function CheckoutForm({ setPage }) {
             {displayCart.map((item) => (
               <div key={item.id} style={styles.confirmRow}>
                 <span>{item.emoji} {item.name} ×{item.qty}</span>
-                <span>${(item.price * item.qty).toFixed(2)}</span>
+                <span>₹{(item.price * item.qty * 83).toFixed(0)}</span>
               </div>
             ))}
             <div style={styles.confirmDivider} />
             <div style={{ ...styles.confirmRow, ...styles.confirmTotal }}>
-              <span>Total Paid</span><span>${grandTotal}</span>
+              <span>Total Paid</span>
+              <span>₹{(grandTotal * 83).toFixed(0)}</span>
             </div>
           </div>
           <p style={styles.confirmEmail}>Confirmation sent to <strong>{form.email}</strong></p>
@@ -112,21 +69,44 @@ function CheckoutForm({ setPage }) {
     );
   }
 
-  if (status === "error") {
+  // 💳 UPI Payment Screen
+  if (status === "pay") {
     return (
       <div style={styles.confirmPage}>
         <div style={styles.confirmCard}>
-          <div style={{ ...styles.confirmIcon, background: "#7A1A1A" }}>✕</div>
-          <h2 style={{ ...styles.confirmTitle, color: "#7A1A1A" }}>Payment Failed</h2>
-          <p style={styles.confirmSub}>Something went wrong. Please try again.</p>
-          {errorMsg && <p style={styles.errorDetail}>{errorMsg}</p>}
-          <button style={styles.retryBtn} onClick={() => setStatus("idle")}>Try Again</button>
-          <button style={styles.confirmBtn} onClick={() => setPage("cart")}>Back to Cart</button>
+          <div style={styles.upiIcon}>📱</div>
+          <h2 style={styles.confirmTitle}>Pay via UPI</h2>
+          <p style={styles.confirmSub}>Scan the QR or tap the button to pay</p>
+
+          <div style={styles.qrBox}>
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiLink)}`}
+              alt="UPI QR Code"
+              style={{ width: "180px", height: "180px", borderRadius: "8px" }}
+            />
+          </div>
+
+          <p style={styles.upiAmount}>₹{(grandTotal * 83).toFixed(0)}</p>
+          <p style={styles.upiId}>UPI ID: <strong>{upiId}</strong></p>
+
+          <a href={upiLink} style={styles.upiBtn}>
+            Open UPI App →
+          </a>
+
+          <p style={styles.upiNote}>After paying, tap the button below</p>
+
+          <button style={styles.confirmBtn} onClick={handlePaid}>
+            ✓ I have paid
+          </button>
+          <button style={{ ...styles.confirmBtn, background: "transparent", color: "#7A6658", border: "1px solid #E8E0D5", marginTop: "0.5rem" }} onClick={() => setStatus("idle")}>
+            Cancel
+          </button>
         </div>
       </div>
     );
   }
 
+  // 📝 Details Form
   return (
     <form onSubmit={handleSubmit}>
       <style>{`
@@ -154,34 +134,32 @@ function CheckoutForm({ setPage }) {
             <input style={styles.input} name="address" value={form.address} onChange={handleChange} placeholder="123 Coffee Lane, Kolkata" required />
           </div>
 
-          <h2 style={{ ...styles.sectionTitle, marginTop: "1.5rem" }}>Payment</h2>
-          <div style={styles.stripeBox}>
-            <CardElement options={CARD_ELEMENT_OPTIONS} />
+          <div style={styles.upiInfoBox}>
+            <span style={{ fontSize: "1.5rem" }}>📱</span>
+            <div>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, color: "#1A0A00", fontSize: "0.9rem" }}>Pay via UPI</p>
+              <p style={{ fontFamily: "'Inter', sans-serif", color: "#7A6658", fontSize: "0.8rem" }}>GPay, PhonePe, Paytm & all UPI apps accepted</p>
+            </div>
           </div>
-          <div style={styles.stripeBadge}>🔒 Secured by <strong>Stripe</strong> · SSL encrypted</div>
 
-          <button
-            type="submit"
-            style={{ ...styles.payBtn, opacity: status === "processing" ? 0.7 : 1 }}
-            disabled={status === "processing" || !stripe}
-          >
-            {status === "processing" ? "Processing…" : `Pay $${(total * 1.08).toFixed(2)}`}
+          <button type="submit" style={styles.payBtn}>
+            Proceed to Pay ₹{(total * 1.08 * 83).toFixed(0)}
           </button>
         </div>
 
         <div className="checkout-summary" style={styles.orderSummary}>
           <h2 style={styles.summaryTitle}>Order Summary</h2>
-          {displayCart.map((item) => (
+          {cart.map((item) => (
             <div key={item.id} style={styles.summaryRow}>
               <span>{item.emoji} {item.name} ×{item.qty}</span>
-              <span>${(item.price * item.qty).toFixed(2)}</span>
+              <span>₹{(item.price * item.qty * 83).toFixed(0)}</span>
             </div>
           ))}
           <div style={styles.divider} />
-          <div style={styles.summaryRow}><span>Subtotal</span><span>${(savedTotal || total).toFixed(2)}</span></div>
-          <div style={styles.summaryRow}><span>Tax (8%)</span><span>${((savedTotal || total) * 0.08).toFixed(2)}</span></div>
+          <div style={styles.summaryRow}><span>Subtotal</span><span>₹{(total * 83).toFixed(0)}</span></div>
+          <div style={styles.summaryRow}><span>Tax (8%)</span><span>₹{(total * 0.08 * 83).toFixed(0)}</span></div>
           <div style={{ ...styles.summaryRow, ...styles.summaryTotal }}>
-            <span>Total</span><span>${(total * 1.08).toFixed(2)}</span>
+            <span>Total</span><span>₹{(total * 1.08 * 83).toFixed(0)}</span>
           </div>
         </div>
       </div>
@@ -195,9 +173,7 @@ export default function CheckoutPage({ setPage }) {
       <div style={styles.container}>
         <button style={styles.backLink} onClick={() => setPage("cart")}>← Back to Cart</button>
         <h1 style={styles.heading}>Checkout</h1>
-        <Elements stripe={stripePromise}>
-          <CheckoutForm setPage={setPage} />
-        </Elements>
+        <CheckoutForm setPage={setPage} />
       </div>
     </div>
   );
@@ -212,8 +188,7 @@ const styles = {
   field: { marginBottom: "1rem" },
   label: { display: "block", fontFamily: "'Inter', sans-serif", fontSize: "0.82rem", color: "#7A6658", marginBottom: "0.35rem", fontWeight: 500 },
   input: { width: "100%", padding: "0.7rem 0.9rem", border: "1.5px solid #D8CDBF", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontSize: "0.95rem", color: "#1A0A00", background: "#fff", boxSizing: "border-box", outline: "none" },
-  stripeBox: { border: "1.5px solid #D8CDBF", borderRadius: "10px", padding: "0.85rem 1rem", background: "#fff" },
-  stripeBadge: { fontFamily: "'Inter', sans-serif", fontSize: "0.78rem", color: "#9A8880", margin: "0.75rem 0 1.25rem" },
+  upiInfoBox: { display: "flex", alignItems: "center", gap: "1rem", background: "#FDF6EE", border: "1.5px solid #E8D5B0", borderRadius: "12px", padding: "1rem", marginBottom: "1.25rem" },
   payBtn: { width: "100%", padding: "0.9rem", background: "#1A0A00", color: "#C4956A", border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: "1rem", cursor: "pointer" },
   orderSummary: { background: "#1A0A00", borderRadius: "16px", padding: "1.5rem", color: "#F5F0E8" },
   summaryTitle: { fontFamily: "'Playfair Display', serif", fontSize: "1.2rem", color: "#C4956A", marginBottom: "1rem" },
@@ -221,10 +196,16 @@ const styles = {
   summaryTotal: { color: "#FDFAF5", fontWeight: 700, fontSize: "1rem", marginTop: "0.5rem" },
   divider: { borderTop: "1px solid #3B1A08", margin: "0.75rem 0" },
   confirmPage: { minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem" },
-  confirmCard: { background: "#fff", borderRadius: "20px", border: "1px solid #E8E0D5", padding: "2.5rem", maxWidth: "480px", width: "100%", textAlign: "center", boxShadow: "0 4px 24px rgba(26,10,0,0.08)" },
-  confirmIcon: { width: "75px", height: "75px", borderRadius: "50%", background: "#C4956A", color: "#1A0A00", fontSize: "2.2rem", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.25rem" },
+  confirmCard: { background: "#fff", borderRadius: "20px", border: "1px solid #E8E0D5", padding: "2.5rem", maxWidth: "420px", width: "100%", textAlign: "center", boxShadow: "0 4px 24px rgba(26,10,0,0.08)" },
+  confirmIcon: { fontSize: "3rem", marginBottom: "1rem" },
+  upiIcon: { fontSize: "3rem", marginBottom: "1rem" },
   confirmTitle: { fontFamily: "'Playfair Display', serif", fontSize: "1.8rem", color: "#1A0A00", marginBottom: "0.5rem" },
   confirmSub: { fontFamily: "'Inter', sans-serif", color: "#7A6658", marginBottom: "1.5rem", lineHeight: 1.6, fontSize: "0.92rem" },
+  qrBox: { background: "#FDFAF5", borderRadius: "12px", padding: "1rem", display: "inline-block", marginBottom: "1rem" },
+  upiAmount: { fontFamily: "'Playfair Display', serif", fontSize: "2rem", color: "#1A0A00", fontWeight: 700, marginBottom: "0.25rem" },
+  upiId: { fontFamily: "'Inter', sans-serif", fontSize: "0.85rem", color: "#7A6658", marginBottom: "1.25rem" },
+  upiBtn: { display: "block", width: "100%", padding: "0.85rem", background: "#C4956A", color: "#1A0A00", border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: "0.95rem", cursor: "pointer", marginBottom: "0.75rem", textDecoration: "none" },
+  upiNote: { fontFamily: "'Inter', sans-serif", fontSize: "0.78rem", color: "#9A8880", margin: "0.75rem 0 0.5rem" },
   orderDetails: { background: "#FDFAF5", borderRadius: "12px", padding: "1.1rem", marginBottom: "1.1rem", textAlign: "left" },
   orderDetailsTitle: { fontFamily: "'Playfair Display', serif", fontSize: "0.95rem", color: "#1A0A00", marginBottom: "0.65rem" },
   confirmRow: { display: "flex", justifyContent: "space-between", fontFamily: "'Inter', sans-serif", fontSize: "0.85rem", color: "#7A6658", marginBottom: "0.45rem" },
@@ -232,6 +213,4 @@ const styles = {
   confirmDivider: { borderTop: "1px solid #E8E0D5", margin: "0.65rem 0" },
   confirmEmail: { fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", color: "#9A8880", marginBottom: "1.25rem" },
   confirmBtn: { display: "block", width: "100%", padding: "0.85rem", background: "#1A0A00", color: "#C4956A", border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: "0.95rem", cursor: "pointer", marginTop: "0.75rem" },
-  retryBtn: { display: "block", width: "100%", padding: "0.85rem", background: "#C4956A", color: "#1A0A00", border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: "0.95rem", cursor: "pointer", marginBottom: "0.75rem" },
-  errorDetail: { fontFamily: "'Inter', sans-serif", fontSize: "0.75rem", color: "#e53e3e", marginBottom: "1.25rem", wordBreak: "break-all", textAlign: "left" },
 };
