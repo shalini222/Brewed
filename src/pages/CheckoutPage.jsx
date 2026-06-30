@@ -1,30 +1,21 @@
 import { useState, useEffect, useMemo } from "react";
 import { useCart } from "../context/CartContext";
 
-// --- Premium Coffee Theme Configurations ---
+// --- Color Scheme Matched directly to 1000013780.jpg ---
 const THEME = {
   colors: {
-    bgGrad: "linear-gradient(135deg, #150A06 0%, #1F110B 50%, #2D1A10 100%)",
-    cardBg: "rgba(43, 27, 19, 0.45)",
-    cardBorder: "rgba(196, 149, 106, 0.2)",
-    primary: "#C4956A",      // Warm Latte Gold
-    primaryHover: "#E5B88F", // Light Cappuccino
-    textMain: "#FDF9F5",     // Pure Foam White
-    textMuted: "#B59F8F",    // Roasted Bean Cream
-    textDark: "#150A06",     // Dark Espresso
-    success: "#5CA374",      // Mint Matcha Green
-    accentRed: "#D96B66"
+    bgPage: "#FAF6F0",       // Cream background from the menu body
+    headerBg: "#1A0B05",     // Deep espresso brown from the top banner
+    cardBg: "#FFFFFF",       // Clean crisp white for form cards
+    cardBorder: "#E6DFD5",   // Subtle tan outline matching the category pills
+    primary: "#C4956A",      // Warm artisanal gold accent
+    textDark: "#1A0B05",     // Deep brown for highly readable text
+    textMuted: "#70645C",    // Soft charcoal brown for labels
+    success: "#4A7A5B"       // Matcha green for confirmed items
   },
   fonts: {
     serif: "'Playfair Display', serif",
     sans: "'Inter', sans-serif"
-  },
-  glass: {
-    background: "rgba(43, 27, 19, 0.45)",
-    backdropFilter: "blur(20px) saturate(140%)",
-    WebkitBackdropFilter: "blur(20px) saturate(140%)",
-    border: "1px solid rgba(196, 149, 106, 0.2)",
-    boxShadow: "0 12px 40px 0 rgba(0, 0, 0, 0.5)"
   }
 };
 
@@ -38,120 +29,9 @@ const loadRazorpayScript = () =>
     document.body.appendChild(script);
   });
 
-// --- UI Sub-Component: Processing Loader Animation ---
-function ProcessingOverlay({ message }) {
-  return (
-    <div style={styles.loaderOverlay}>
-      <style>{`
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-        .spinner { border: 4px solid rgba(196,149,106,0.1); border-left-color: #C4956A; border-radius: 50%; width: 50px; height: 50px; animation: spin 0.8s linear infinite; }
-        .pulse-text { color: #C4956A; font-family: ${THEME.fonts.sans}; font-weight: 500; margin-top: 1.25rem; animation: pulse 1.5s ease-in-out infinite; }
-      `}</style>
-      <div className="spinner" />
-      <p className="pulse-text">{message}</p>
-    </div>
-  );
-}
-
-// --- UI Sub-Component: Empty State ---
-function EmptyCartView({ onNavigate }) {
-  return (
-    <div style={styles.confirmPage}>
-      <div style={{ ...styles.confirmCard, ...THEME.glass }}>
-        <div style={styles.confirmIcon}>🛒</div>
-        <h2 style={styles.confirmTitle}>Your Cart is Empty</h2>
-        <p style={styles.confirmSub}>Add some premium fresh roasts before opening checkout.</p>
-        <button className="hover-btn" style={styles.confirmBtn} onClick={onNavigate}>Browse Menu</button>
-      </div>
-    </div>
-  );
-}
-
-// --- UI Sub-Component: Beautiful Order Confirmation Page ---
-function SuccessView({ form, snapshot, onNavigate }) {
-  return (
-    <div style={styles.confirmPage}>
-      <div style={{ ...styles.confirmCard, ...THEME.glass, maxWidth: "550px" }}>
-        <div style={{ animation: "spin 2s ease-out 1", display: "inline-block" }}>
-          <span style={{ fontSize: "4rem" }}>🎉</span>
-        </div>
-        <h2 style={styles.confirmTitle}>Order Placed!</h2>
-        <p style={styles.confirmSub}>
-          Thank you, <strong style={{ color: THEME.colors.primary }}>{form.name}</strong>! {snapshot.method === "cod" ? "Please have cash/UPI ready upon arrival." : "Your artisanal brew order has been paid and dispatched to the baristas."}
-        </p>
-
-        <div style={styles.orderDetails}>
-          <h3 style={{ ...styles.sectionTitle, fontSize: "1rem", borderBottom: `1px solid ${THEME.colors.cardBorder}`, paddingBottom: "0.5rem" }}>
-            📦 Premium Delivery Receipt
-          </h3>
-          <div style={{ padding: "0.25rem 0 0.75rem 0", fontSize: "0.82rem", color: THEME.colors.textMuted, display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-            <div><strong>Contact:</strong> {form.phone} | {form.email}</div>
-            <div><strong>Address:</strong> {form.address}</div>
-            {form.instructions && <div><strong>Rider Note:</strong> <span style={{ fontStyle: "italic", color: THEME.colors.primary }}>"{form.instructions}"</span></div>}
-          </div>
-
-          <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.5rem 0" }} />
-
-          {snapshot.cart.map((item) => (
-            <div key={item.id} style={styles.summaryRow}>
-              <span style={{ color: THEME.colors.textMain }}>{item.emoji} {item.name} <small style={{ color: THEME.colors.textMuted }}>×{item.qty}</small></span>
-              <span style={{ color: THEME.colors.textMain }}>₹{Math.round(item.price * item.qty)}</span>
-            </div>
-          ))}
-
-          <div style={{ borderTop: `1px dashed ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
-          
-          <div style={styles.summaryRow}><span>Items Subtotal</span><span>₹{snapshot.calculations.subtotal}</span></div>
-          <div style={styles.summaryRow}><span>Tax & Barista Fees (8%)</span><span>₹{snapshot.calculations.tax}</span></div>
-          <div style={styles.summaryRow}><span>Delivery Charge</span><span>{snapshot.calculations.delivery === 0 ? "FREE" : `₹${snapshot.calculations.delivery}`}</span></div>
-          {snapshot.method === "cod" && <div style={styles.summaryRow}><span>COD Handling Fee</span><span>₹{snapshot.calculations.cod}</span></div>}
-          {snapshot.calculations.discount > 0 && <div style={{ ...styles.summaryRow, color: THEME.colors.success }}><span>Coupon Saved</span><span>-₹{snapshot.calculations.discount}</span></div>}
-          
-          <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
-          <div style={{ ...styles.summaryRow, fontWeight: 700, fontSize: "1.1rem", color: THEME.colors.primary }}>
-            <span>{snapshot.method === "cod" ? "Total Due on Delivery" : "Total Paid Securely"}</span>
-            <span>₹{snapshot.calculations.grandTotal}</span>
-          </div>
-        </div>
-
-        <p style={styles.confirmEmail}>A digital invoice track link was sent to <strong>{form.email}</strong></p>
-        <button className="hover-btn" style={styles.confirmBtn} onClick={onNavigate}>Return to Cafe Menu</button>
-      </div>
-    </div>
-  );
-}
-
-// --- UI Sub-Component: Enhanced Interactive Payment Card ---
-function PaymentCard({ id, currentMethod, onSelect, icon, title, subtitle }) {
-  const isActive = currentMethod === id;
-  return (
-    <div
-      className="clickable-card"
-      style={{ 
-        ...styles.paymentOption, 
-        ...THEME.glass,
-        ...(isActive ? { borderColor: THEME.colors.primary, backgroundColor: "rgba(196,149,106,0.07)", transform: "scale(1.01)" } : {}) 
-      }}
-      onClick={() => onSelect(id)}
-    >
-      <div style={{ ...styles.paymentIconWrapper, background: isActive ? THEME.colors.primary : "rgba(255,255,255,0.05)" }}>
-        <span style={{ fontSize: "1.35rem", color: isActive ? THEME.colors.textDark : THEME.colors.primary }}>{icon}</span>
-      </div>
-      <div style={{ flex: 1 }}>
-        <p style={{ ...styles.paymentTitle, color: isActive ? THEME.colors.primary : THEME.colors.textMain }}>{title}</p>
-        <p style={styles.paymentSub}>{subtitle}</p>
-      </div>
-      <div style={{ ...styles.radio, ...(isActive ? styles.radioActive : {}) }} />
-    </div>
-  );
-}
-
-// --- Core Checkout Module Component ---
 export default function CheckoutPage({ setPage }) {
   const { cart = [], total = 0, clearCart } = useCart();
   
-  // Component States
   const [status, setStatus] = useState("idle"); 
   const [paymentMethod, setPaymentMethod] = useState("online");
   const [form, setForm] = useState({ name: "", email: "", phone: "", address: "", instructions: "" });
@@ -160,22 +40,18 @@ export default function CheckoutPage({ setPage }) {
   const [couponError, setCouponError] = useState("");
   const [orderSnapshot, setOrderSnapshot] = useState(null);
 
-  // App Configurations
-  const CONFIG = { taxRate: 0.08, codFee: 30, deliveryFee: 40, freeDeliveryThreshold: 499 };
+  const CONFIG = { taxRate: 0.08, codFee: 30, deliveryFee: 40 };
 
-  // Centralized Calculation Core Pipeline (No Duplications)
+  // Simplified calculations pipeline (No threshold checks)
   const calculations = useMemo(() => {
     const subtotal = Number.isFinite(total) ? total : 0;
     const tax = Math.round(subtotal * CONFIG.taxRate);
-    const delivery = subtotal >= CONFIG.freeDeliveryThreshold || subtotal === 0 ? 0 : CONFIG.deliveryFee;
+    const delivery = subtotal > 0 ? CONFIG.deliveryFee : 0;
     const cod = paymentMethod === "cod" ? CONFIG.codFee : 0;
     const discount = appliedCoupon ? appliedCoupon.discount : 0;
     const grandTotal = Math.max(0, Math.round(subtotal + tax + delivery + cod - discount));
 
-    const progressToFreeDelivery = Math.min(100, (subtotal / CONFIG.freeDeliveryThreshold) * 100);
-    const amountNeededForFreeDelivery = Math.max(0, CONFIG.freeDeliveryThreshold - subtotal);
-
-    return { subtotal, tax, delivery, cod, discount, grandTotal, progressToFreeDelivery, amountNeededForFreeDelivery };
+    return { subtotal, tax, delivery, cod, discount, grandTotal };
   }, [total, paymentMethod, appliedCoupon]);
 
   useEffect(() => {
@@ -184,7 +60,6 @@ export default function CheckoutPage({ setPage }) {
 
   const handleInputChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  // Promo Validation Engine
   const applyCouponCode = (e) => {
     e.preventDefault();
     setCouponError("");
@@ -197,26 +72,10 @@ export default function CheckoutPage({ setPage }) {
       }
       setAppliedCoupon({ code: "BREW100", discount: 100 });
     } else if (sanitized === "COFFEE20") {
-      const computedDiscount = Math.round(calculations.subtotal * 0.20);
-      setAppliedCoupon({ code: "COFFEE20", discount: computedDiscount });
+      setAppliedCoupon({ code: "COFFEE20", discount: Math.round(calculations.subtotal * 0.20) });
     } else {
-      setCouponError("Try valid codes: 'COFFEE20' or 'BREW100'");
+      setCouponError("Invalid coupon code.");
     }
-  };
-
-  const removeCouponCode = () => {
-    setAppliedCoupon(null);
-    setCoupon("");
-  };
-
-  const checkoutPipelineFinished = () => {
-    setOrderSnapshot({
-      cart: [...cart],
-      calculations: { ...calculations },
-      method: paymentMethod
-    });
-    clearCart();
-    setStatus("success");
   };
 
   const handleFormSubmission = async (e) => {
@@ -225,220 +84,166 @@ export default function CheckoutPage({ setPage }) {
 
     if (paymentMethod === "cod") {
       setTimeout(() => {
-        checkoutPipelineFinished();
-      }, 1500);
+        setOrderSnapshot({ cart: [...cart], calculations, method: "cod" });
+        clearCart();
+        setStatus("success");
+      }, 1200);
       return;
     }
 
     const scriptInitialized = await loadRazorpayScript();
     if (!scriptInitialized) {
       setStatus("idle");
-      alert("Razorpay gateway failed to load. Check your internet connection.");
+      alert("Payment gateway failed to load.");
       return;
     }
 
     const options = {
-      key: "YOUR_RAZORPAY_KEY_ID", // Raw string hardcoded hook drop-in point
+      key: "YOUR_RAZORPAY_KEY_ID",
       amount: calculations.grandTotal * 100, 
       currency: "INR",
       name: "Brewed Cafe",
-      description: "Artisanal Premium Coffee Order",
+      description: "Artisanal Coffee Order",
       handler: function () {
-        checkoutPipelineFinished();
+        setOrderSnapshot({ cart: [...cart], calculations, method: "online" });
+        clearCart();
+        setStatus("success");
       },
-      prefill: {
-        name: form.name,
-        email: form.email,
-        contact: form.phone,
-      },
-      theme: { color: THEME.colors.primary },
-      modal: {
-        ondismiss: function () {
-          setStatus("idle");
-        },
-      },
+      prefill: { name: form.name, email: form.email, contact: form.phone },
+      theme: { color: THEME.colors.headerBg },
+      modal: { ondismiss: () => setStatus("idle") }
     };
 
     const rzp = new window.Razorpay(options);
     rzp.open();
   };
 
-  if (cart.length === 0 && status !== "success") {
-    return <EmptyCartView onNavigate={() => setPage("menu")} />;
-  }
-
   if (status === "success" && orderSnapshot) {
-    return <SuccessView form={form} snapshot={orderSnapshot} onNavigate={() => setPage("menu")} />;
+    return (
+      <div style={styles.confirmPage}>
+        <div style={styles.confirmCard}>
+          <span style={{ fontSize: "3.5rem" }}>🎉</span>
+          <h2 style={styles.confirmTitle}>Order Confirmed</h2>
+          <p style={styles.confirmSub}>Thank you for ordering from <strong>Brewed</strong>, {form.name}!</p>
+          <button style={styles.payBtn} onClick={() => setPage("menu")}>Return to Menu</button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div style={styles.page}>
-      {status === "processing" && <ProcessingOverlay message="Securing connection checkout terminal..." />}
-      
-      {/* Global CSS Injector for Layout Control and Transitions */}
       <style>{`
-        body { background: ${THEME.colors.bgGrad}; margin: 0; min-height: 100vh; -webkit-font-smoothing: antialiased; }
-        .checkout-layout { display: flex; flex-direction: row; gap: 2rem; align-items: start; }
-        .checkout-main-panel { flex: 1; min-width: 0; }
-        .checkout-side-panel { width: 380px; flex-shrink: 0; position: sticky; top: 30px; }
-        .clickable-card { transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.25s ease, box-shadow 0.25s ease; }
-        .clickable-card:hover { transform: translateY(-3px) scale(1.005); border-color: rgba(196, 149, 106, 0.4); box-shadow: 0 16px 36px rgba(0,0,0,0.6); }
-        .hover-btn { transition: background-color 0.25s ease, transform 0.1s ease, box-shadow 0.25s ease; }
-        .hover-btn:hover { background-color: ${THEME.colors.primaryHover} !important; color: ${THEME.colors.textDark} !important; box-shadow: 0 0 15px rgba(196,149,106,0.4); }
-        .hover-btn:active { transform: scale(0.97); }
-        .input-focus-mod { transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease; }
-        .input-focus-mod:focus { border-color: ${THEME.colors.primary} !important; background: rgba(30, 18, 12, 0.8) !important; box-shadow: 0 0 8px rgba(196,149,106,0.2); }
-        @media (max-width: 960px) {
+        body { background-color: ${THEME.colors.bgPage}; margin: 0; font-family: ${THEME.fonts.sans}; color: ${THEME.colors.textDark}; }
+        .checkout-layout { display: flex; gap: 2rem; align-items: start; max-width: 1100px; margin: 0 auto; }
+        .main-panel { flex: 1; }
+        .side-panel { width: 360px; position: sticky; top: 20px; }
+        .input-box { width: 100%; padding: 0.8rem 1rem; border: 1.5px solid ${THEME.colors.cardBorder}; border-radius: 8px; font-size: 0.95rem; background: #FFF; outline: none; box-sizing: border-box; transition: border-color 0.2s; }
+        .input-box:focus { border-color: ${THEME.colors.primary}; }
+        @media (max-width: 880px) {
           .checkout-layout { flex-direction: column; }
-          .checkout-side-panel { width: 100%; position: static; order: -1; }
+          .side-panel { width: 100%; position: static; }
         }
       `}</style>
 
-      <div style={styles.container}>
-        <button style={styles.backLink} onClick={() => setPage("cart")}>← Return to Shopping Cart</button>
-        <h1 style={styles.heading}>Artisanal Checkout</h1>
+      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 1rem" }}>
+        <button style={styles.backLink} onClick={() => setPage("cart")}>← Back to Cart</button>
+        <h1 style={styles.heading}>Checkout</h1>
 
         <form onSubmit={handleFormSubmission} className="checkout-layout">
-          {/* Main Delivery Panel Form */}
-          <div className="checkout-main-panel">
-            <div style={{ ...styles.sectionCard, ...THEME.glass }}>
-              <h2 style={styles.sectionTitle}>📍 Delivery Coordinates</h2>
-              
-              <div style={styles.formRowSplit}>
-                <div style={styles.field}>
-                  <label style={styles.label}>Full Name</label>
-                  <input className="input-focus-mod" style={styles.input} name="name" value={form.name} onChange={handleInputChange} placeholder="Jane Doe" required />
+          <div className="main-panel">
+            {/* Delivery Form */}
+            <div style={styles.card}>
+              <h2 style={styles.sectionTitle}>📍 Delivery Information</h2>
+              <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+                <div style={{ flex: 1, minWidth: "200px" }}>
+                  <label style={styles.label}>Name</label>
+                  <input className="input-box" name="name" value={form.name} onChange={handleInputChange} required />
                 </div>
-                <div style={styles.field}>
-                  <label style={styles.label}>Mobile Phone Number</label>
-                  <input className="input-focus-mod" style={styles.input} type="tel" name="phone" value={form.phone} onChange={handleInputChange} placeholder="+91 XXXXX XXXXX" required />
+                <div style={{ flex: 1, minWidth: "200px" }}>
+                  <label style={styles.label}>Phone Number</label>
+                  <input className="input-box" type="tel" name="phone" value={form.phone} onChange={handleInputChange} required />
                 </div>
               </div>
-
-              <div style={styles.field}>
+              <div style={{ marginBottom: "1rem" }}>
                 <label style={styles.label}>Email Address</label>
-                <input className="input-focus-mod" style={styles.input} type="email" name="email" value={form.email} onChange={handleInputChange} placeholder="jane@example.com" required />
+                <input className="input-box" type="email" name="email" value={form.email} onChange={handleInputChange} required />
               </div>
-
-              <div style={styles.field}>
-                <label style={styles.label}>Physical Delivery Address</label>
-                <input className="input-focus-mod" style={styles.input} name="address" value={form.address} onChange={handleInputChange} placeholder="Flat/House, Apartment/Street, Landmark, City" required />
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={styles.label}>Complete Address</label>
+                <input className="input-box" name="address" value={form.address} onChange={handleInputChange} required />
               </div>
-
-              <div style={{ ...styles.field, marginBottom: 0 }}>
-                <label style={styles.label}>Special Delivery Instructions</label>
-                <textarea className="input-focus-mod" style={{ ...styles.input, height: "75px", resize: "none" }} name="instructions" value={form.instructions} onChange={handleInputChange} placeholder="e.g., Leave with gatekeeper, Drop off at front desk, Call upon arrival..." />
+              <div>
+                <label style={styles.label}>Rider Delivery Instructions</label>
+                <textarea className="input-box" style={{ height: "65px", resize: "none" }} name="instructions" value={form.instructions} onChange={handleInputChange} placeholder="Drop off instructions..." />
               </div>
             </div>
 
-            <div style={{ ...styles.sectionCard, ...THEME.glass }}>
-              <h2 style={styles.sectionTitle}>💳 Payment Terminal Settlement</h2>
-              
-              <PaymentCard 
-                id="online"
-                currentMethod={paymentMethod}
-                onSelect={setPaymentMethod}
-                icon="💳"
-                title="Instant Digital Checkout (UPI / Card / Wallet)"
-                subtitle="Securely routes transactions instantly via Razorpay routing core. Fast checks for GPay, PhonePe, and major credit tokens."
-              />
+            {/* Payment Selector */}
+            <div style={styles.card}>
+              <h2 style={styles.sectionTitle}>💳 Select Settlement Method</h2>
+              <div 
+                style={{ ...styles.paymentSelector, borderColor: paymentMethod === "online" ? THEME.colors.primary : THEME.colors.cardBorder }}
+                onClick={() => setPaymentMethod("online")}
+              >
+                <span style={{ fontSize: "1.2rem" }}>💳</span>
+                <div style={{ flex: 1 }}>
+                  <strong>Pay Online Now</strong>
+                  <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>UPI, Cards, Netbanking</p>
+                </div>
+                <input type="radio" checked={paymentMethod === "online"} readOnly />
+              </div>
 
-              <PaymentCard 
-                id="cod"
-                currentMethod={paymentMethod}
-                onSelect={setPaymentMethod}
-                icon="💵"
-                title="Cash / UPI on Delivery (COD)"
-                subtitle={`Settle directly with your dispatch rider via paper cash or scan QR. Adds dynamic handling fee surcharge of +₹${CONFIG.codFee}.`}
-              />
-
-              <div style={styles.lockNotice}>
-                <span style={{ fontSize: "1.1rem" }}>🔒</span>
-                <p style={{ margin: 0, fontSize: "0.78rem", lineHeight: "1.4" }}>
-                  <strong>Secure Payment Encryption Guarantee:</strong> Your connection parameters are fortified. Financial tokens are fully processed inside merchant sandboxes and never touch local records.
-                </p>
+              <div 
+                style={{ ...styles.paymentSelector, borderColor: paymentMethod === "cod" ? THEME.colors.primary : THEME.colors.cardBorder }}
+                onClick={() => setPaymentMethod("cod")}
+              >
+                <span style={{ fontSize: "1.2rem" }}>💵</span>
+                <div style={{ flex: 1 }}>
+                  <strong>Cash / QR on Delivery</strong>
+                  <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>Extra handling charge of +₹{CONFIG.codFee}</p>
+                </div>
+                <input type="radio" checked={paymentMethod === "cod"} readOnly />
               </div>
             </div>
           </div>
 
-          {/* Sidebar Summary & Promotional Engines */}
-          <div className="checkout-side-panel">
-            {/* Free Delivery Dynamic Progress Meter Tracker */}
-            <div style={{ ...styles.sidebarCard, ...THEME.glass, marginBottom: "1.25rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                <span style={{ fontFamily: THEME.fonts.sans, fontSize: "0.82rem", fontWeight: 600, color: THEME.colors.textMain }}>
-                  {calculations.amountNeededForFreeDelivery === 0 ? "🎉 Free Shipping Unlocked!" : "🚚 Delivery Threshold Status"}
-                </span>
-                <span style={{ fontFamily: THEME.fonts.sans, fontSize: "0.8rem", color: THEME.colors.primary, fontWeight: 700 }}>
-                  {calculations.amountNeededForFreeDelivery === 0 ? "₹0" : `₹${calculations.subtotal} / ₹${CONFIG.freeDeliveryThreshold}`}
-                </span>
-              </div>
-              <div style={styles.progressTrackBar}>
-                <div style={{ ...styles.progressFillIndicator, width: `${calculations.progressToFreeDelivery}%` }} />
-              </div>
-              {calculations.amountNeededForFreeDelivery > 0 && (
-                <p style={{ ...styles.thresholdTip, marginTop: "0.5rem", marginBottom: 0 }}>
-                  Add just <strong>₹{calculations.amountNeededForFreeDelivery}</strong> more to get completely free shipping!
-                </p>
-              )}
-            </div>
-
-            {/* Coupons Section */}
-            <div style={{ ...styles.sidebarCard, ...THEME.glass, marginBottom: "1.25rem" }}>
-              <h3 style={{ ...styles.summaryTitle, fontSize: "0.95rem", marginBottom: "0.5rem" }}>🎟️ Apply Active Store Promo Voucher</h3>
+          {/* Sidebar Summary */}
+          <div className="side-panel">
+            {/* Simple Coupon Input */}
+            <div style={{ ...styles.card, padding: "1.25rem" }}>
+              <label style={{ ...styles.label, marginBottom: "0.4rem" }}>Have a Promo Voucher?</label>
               {!appliedCoupon ? (
                 <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <input 
-                    className="input-focus-mod" 
-                    style={{ ...styles.input, padding: "0.5rem 0.75rem", fontSize: "0.85rem" }} 
-                    placeholder="e.g., COFFEE20" 
-                    value={coupon} 
-                    onChange={(e) => setCoupon(e.target.value)}
-                  />
-                  <button type="button" onClick={applyCouponCode} className="hover-btn" style={styles.couponBtn}>Apply</button>
+                  <input className="input-box" style={{ padding: "0.5rem" }} placeholder="COFFEE20" value={coupon} onChange={(e) => setCoupon(e.target.value)} />
+                  <button type="button" onClick={applyCouponCode} style={styles.couponBtn}>Apply</button>
                 </div>
               ) : (
                 <div style={styles.couponPill}>
-                  <span>🎉 Code <strong>{appliedCoupon.code}</strong> Applied!</span>
-                  <button type="button" onClick={removeCouponCode} style={styles.couponRemove}>×</button>
+                  <span>Voucher <strong>{appliedCoupon.code}</strong> Active!</span>
+                  <button type="button" onClick={() => setAppliedCoupon(null)} style={styles.removeBtn}>×</button>
                 </div>
               )}
-              {couponError && <p style={styles.errorText}>{couponError}</p>}
+              {couponError && <p style={{ color: "red", fontSize: "0.8rem", margin: "0.3rem 0 0" }}>{couponError}</p>}
             </div>
 
-            {/* Item Summary Grid Display Panel */}
-            <div style={{ ...styles.sidebarCard, ...THEME.glass }}>
-              <h3 style={styles.summaryTitle}>📦 Premium Barista Basket Summary</h3>
+            {/* Price Calculations Sheet */}
+            <div style={styles.card}>
+              <h3 style={{ margin: "0 0 1rem 0", fontFamily: THEME.fonts.serif }}>Order Summary</h3>
+              <div style={styles.calcRow}><span>Subtotal</span><span>₹{calculations.subtotal}</span></div>
+              <div style={styles.calcRow}><span>Tax / Fees (8%)</span><span>₹{calculations.tax}</span></div>
+              <div style={styles.calcRow}><span>Delivery Fee</span><span>₹{calculations.delivery}</span></div>
+              {paymentMethod === "cod" && <div style={styles.calcRow}><span>COD Surcharge</span><span>₹{calculations.cod}</span></div>}
+              {calculations.discount > 0 && <div style={{ ...styles.calcRow, color: THEME.colors.success }}><span>Discounts</span><span>-₹{calculations.discount}</span></div>}
               
-              <div style={styles.itemScrollArea}>
-                {cart.map((item) => (
-                  <div key={item.id} style={styles.summaryRow}>
-                    <span style={{ color: THEME.colors.textMain }}>{item.emoji} {item.name} <small style={{ color: THEME.colors.textMuted }}>×{item.qty}</small></span>
-                    <span style={{ color: THEME.colors.textMain }}>₹{Math.round(item.price * item.qty)}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div style={styles.divider} />
-
-              <div style={styles.summaryRow}><span>Cart Items Subtotal</span><span>₹{calculations.subtotal}</span></div>
-              <div style={styles.summaryRow}><span>Tax & Barista Fees (8%)</span><span>₹{calculations.tax}</span></div>
-              <div style={styles.summaryRow}>
-                <span>Standard Delivery Fee</span>
-                <span>{calculations.delivery === 0 ? <span style={{ color: THEME.colors.success, fontWeight: 600 }}>FREE</span> : `₹${calculations.delivery}`}</span>
-              </div>
-              {paymentMethod === "cod" && <div style={styles.summaryRow}><span>COD Handling Fee</span><span>₹{calculations.cod}</span></div>}
-              {calculations.discount > 0 && <div style={{ ...styles.summaryRow, color: THEME.colors.success }}><span>Promo Coupon Savings</span><span>-₹{calculations.discount}</span></div>}
-
-              <div style={styles.divider} />
-
-              <div style={{ ...styles.summaryRow, ...styles.summaryTotal }}>
-                <span>Grand Aggregate Total</span>
+              <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "1rem 0" }} />
+              <div style={{ ...styles.calcRow, fontWeight: "bold", fontSize: "1.1rem" }}>
+                <span>Grand Total</span>
                 <span>₹{calculations.grandTotal}</span>
               </div>
 
-              <button type="submit" className="hover-btn" style={styles.payBtn}>
-                {paymentMethod === "cod" ? `Place Cash Order · ₹${calculations.grandTotal}` : `Authorize Secure Gateway · ₹${calculations.grandTotal}`}
+              <button type="submit" disabled={status === "processing"} style={styles.payBtn}>
+                {status === "processing" ? "Processing Order..." : `Place Order · ₹${calculations.grandTotal}`}
               </button>
             </div>
           </div>
@@ -448,46 +253,21 @@ export default function CheckoutPage({ setPage }) {
   );
 }
 
-// --- High-Performance Style Manifest Sheet ---
 const styles = {
-  page: { minHeight: "100vh", padding: "3rem 1.25rem" },
-  container: { maxWidth: "1100px", margin: "0 auto" },
-  backLink: { background: "none", border: "none", cursor: "pointer", color: THEME.colors.primary, fontFamily: THEME.fonts.sans, fontSize: "0.85rem", padding: 0, marginBottom: "0.75rem", display: "inline-block", letterSpacing: "0.2px" },
-  heading: { fontFamily: THEME.fonts.serif, fontSize: "2.65rem", color: THEME.colors.textMain, margin: "0 0 2.25rem 0", fontWeight: 400, letterSpacing: "-0.5px" },
-  sectionCard: { borderRadius: "20px", padding: "2rem", marginBottom: "1.75rem" },
-  sidebarCard: { borderRadius: "20px", padding: "1.5rem" },
-  sectionTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.3rem", color: THEME.colors.primary, margin: "0 0 1.5rem 0", fontWeight: 500 },
-  formRowSplit: { display: "flex", gap: "1.25rem", flexWrap: "wrap" },
-  field: { marginBottom: "1.25rem", flex: "1 1 220px" },
-  label: { display: "block", fontFamily: THEME.fonts.sans, fontSize: "0.82rem", color: THEME.colors.textMuted, marginBottom: "0.5rem", fontWeight: 500, letterSpacing: "0.3px" },
-  input: { width: "100%", padding: "0.85rem 1.1rem", border: "1.5px solid rgba(196,149,106,0.15)", borderRadius: "12px", fontFamily: THEME.fonts.sans, fontSize: "0.92rem", color: THEME.colors.textMain, background: "rgba(21, 10, 6, 0.5)", boxSizing: "border-box", outline: "none" },
-  paymentOption: { display: "flex", alignItems: "center", gap: "1.1rem", borderRadius: "14px", padding: "1.25rem", marginBottom: "1rem", cursor: "pointer", border: "1px solid transparent" },
-  paymentIconWrapper: { width: "42px", height: "42px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContext: "center", justifyContent: "center", flexShrink: 0, transition: "background-color 0.2s ease" },
-  paymentTitle: { fontFamily: THEME.fonts.sans, fontWeight: 600, fontSize: "0.95rem", margin: 0, letterSpacing: "0.1px" },
-  paymentSub: { fontFamily: THEME.fonts.sans, color: THEME.colors.textMuted, fontSize: "0.8rem", margin: "0.3rem 0 0", lineHeight: 1.45 },
-  radio: { width: "18px", height: "18px", borderRadius: "50%", border: "2px solid rgba(196,149,106,0.35)", flexShrink: 0, boxSizing: "border-box", transition: "all 0.2s ease" },
-  radioActive: { border: `5px solid ${THEME.colors.primary}`, background: THEME.colors.textDark },
-  lockNotice: { display: "flex", gap: "0.75rem", alignItems: "start", color: THEME.colors.textMuted, fontFamily: THEME.fonts.sans, marginTop: "1.5rem" },
-  summaryTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.15rem", color: THEME.colors.primary, margin: "0 0 1.25rem 0" },
-  itemScrollArea: { maxHeight: "180px", overflowY: "auto", paddingRight: "0.35rem" },
-  summaryRow: { display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: THEME.fonts.sans, fontSize: "0.88rem", color: THEME.colors.textMuted, marginBottom: "0.75rem" },
-  progressTrackBar: { width: "100%", height: "6px", background: "rgba(255,255,255,0.06)", borderRadius: "10px", overflow: "hidden" },
-  progressFillIndicator: { height: "100%", background: "linear-gradient(90deg, #A27650, #C4956A)", borderRadius: "10px", transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)" },
-  thresholdTip: { fontFamily: THEME.fonts.sans, fontSize: "0.76rem", color: THEME.colors.textMuted, fontStyle: "italic", lineHeight: "1.4" },
-  summaryTotal: { color: THEME.colors.textMain, fontWeight: 700, fontSize: "1.15rem" },
-  divider: { borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "1.25rem 0" },
-  payBtn: { width: "100%", padding: "1.1rem", background: THEME.colors.primary, color: THEME.colors.textDark, border: "none", borderRadius: "12px", fontFamily: THEME.fonts.sans, fontWeight: 700, fontSize: "1rem", cursor: "pointer", marginTop: "1rem" },
-  couponBtn: { background: "rgba(196,149,106,0.12)", border: `1px solid ${THEME.colors.primary}`, color: THEME.colors.primary, borderRadius: "10px", padding: "0 1.25rem", fontFamily: THEME.fonts.sans, fontSize: "0.85rem", cursor: "pointer", fontWeight: 500 },
-  couponPill: { display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(92,163,116,0.12)", border: `1px solid ${THEME.colors.success}`, color: THEME.colors.textMain, padding: "0.6rem 0.85rem", borderRadius: "10px", fontFamily: THEME.fonts.sans, fontSize: "0.85rem", width: "100%", boxSizing: "border-box" },
-  couponRemove: { background: "none", border: "none", color: THEME.colors.textMuted, fontSize: "1.25rem", cursor: "pointer", lineHeight: 1, padding: 0 },
-  errorText: { color: THEME.colors.accentRed, fontSize: "0.78rem", fontFamily: THEME.fonts.sans, margin: "0.5rem 0 0 0" },
-  confirmPage: { minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem" },
-  confirmCard: { borderRadius: "28px", padding: "3rem 2.25rem", width: "100%", maxWidth: "480px", textAlign: "center" },
-  confirmIcon: { fontSize: "3.75rem", marginBottom: "1rem" },
-  confirmTitle: { fontFamily: THEME.fonts.serif, fontSize: "2.15rem", color: THEME.colors.textMain, margin: "0 0 0.5rem 0" },
-  confirmSub: { fontFamily: THEME.fonts.sans, color: THEME.colors.textMuted, marginBottom: "2rem", lineHeight: 1.55, fontSize: "0.92rem" },
-  orderDetails: { background: "rgba(0,0,0,0.25)", borderRadius: "16px", padding: "1.5rem", marginBottom: "1.5rem", textAlign: "left", border: `1px solid ${THEME.colors.cardBorder}` },
-  confirmEmail: { fontFamily: THEME.fonts.sans, fontSize: "0.82rem", color: THEME.colors.textMuted, marginBottom: "1.75rem" },
-  confirmBtn: { width: "100%", padding: "1rem", background: THEME.colors.primary, color: THEME.colors.textDark, border: "none", borderRadius: "12px", fontFamily: THEME.fonts.sans, fontWeight: 700, fontSize: "0.95rem", cursor: "pointer" },
-  loaderOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(10, 5, 3, 0.9)", backdropFilter: "blur(8px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 9999 }
+  page: { padding: "2rem 0" },
+  backLink: { background: "none", border: "none", color: THEME.colors.textMuted, cursor: "pointer", fontSize: "0.9rem", padding: 0, marginBottom: "0.5rem" },
+  heading: { fontFamily: THEME.fonts.serif, fontSize: "2.2rem", color: THEME.colors.textDark, margin: "0 0 1.5rem 0" },
+  card: { background: THEME.colors.cardBg, borderRadius: "12px", padding: "1.5rem", marginBottom: "1.5rem", border: `1px solid ${THEME.colors.cardBorder}` },
+  sectionTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.2rem", margin: "0 0 1.2rem 0", color: THEME.colors.textDark },
+  label: { display: "block", fontSize: "0.85rem", fontWeight: "600", color: THEME.colors.textMuted, marginBottom: "0.3rem" },
+  paymentSelector: { display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", border: "1.5px solid", borderRadius: "8px", cursor: "pointer", marginBottom: "0.75rem" },
+  calcRow: { display: "flex", justifyContent: "space-between", fontSize: "0.9rem", marginBottom: "0.5rem", color: THEME.colors.textDark },
+  payBtn: { width: "100%", padding: "1rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "1rem", cursor: "pointer", marginTop: "1rem" },
+  couponBtn: { backgroundColor: "transparent", border: `1px solid ${THEME.colors.textDark}`, borderRadius: "6px", padding: "0 1rem", cursor: "pointer" },
+  couponPill: { display: "flex", justifyContent: "space-between", background: "#E8F5E9", color: THEME.colors.success, padding: "0.5rem", borderRadius: "6px", fontSize: "0.85rem" },
+  removeBtn: { background: "none", border: "none", color: "red", cursor: "pointer", fontWeight: "bold" },
+  confirmPage: { display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" },
+  confirmCard: { textAlign: "center", padding: "2rem", background: "#FFF", borderRadius: "12px", border: `1px solid ${THEME.colors.cardBorder}`, maxWidth: "400px", width: "100%" },
+  confirmTitle: { fontFamily: THEME.fonts.serif, margin: "1rem 0 0.5rem" },
+  confirmSub: { fontSize: "0.9rem", color: THEME.colors.textMuted }
 };
