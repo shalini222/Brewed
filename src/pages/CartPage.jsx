@@ -1,7 +1,13 @@
+import { useEffect } from "react";
 import { useCart } from "../context/CartContext";
 
 export default function CartPage({ setPage }) {
   const { cart = [], updateQty, removeFromCart, total = 0 } = useCart();
+
+  // Forces the viewport to scroll smoothly back to the top half layout on view mount
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
 
   if (cart.length === 0) {
     return (
@@ -58,6 +64,11 @@ export default function CartPage({ setPage }) {
 
       <div style={styles.page}>
         <div style={styles.container}>
+          {/* Added Back Link Navigation */}
+          <button style={styles.backLink} onClick={() => setPage("menu")}>
+            ← Back to Menu
+          </button>
+          
           <h1 style={styles.heading}>Your Order</h1>
           <div className="cart-layout">
 
@@ -102,7 +113,8 @@ export default function CartPage({ setPage }) {
 const styles = {
   page: { background: "#FDFAF5", minHeight: "100vh", padding: "2rem 1.5rem" },
   container: { maxWidth: "900px", margin: "0 auto" },
-  heading: { fontFamily: "'Playfair Display', serif", fontSize: "2rem", color: "#1A0A00", marginBottom: "1.5rem" },
+  backLink: { background: "none", border: "none", color: "#7A6658", cursor: "pointer", fontSize: "0.95rem", padding: 0, marginBottom: "1rem", fontWeight: "600", fontFamily: "'Inter', sans-serif" },
+  heading: { fontFamily: "'Playfair Display', serif", fontSize: "2rem", color: "#1A0A00", marginBottom: "1.5rem", marginTop: "0.5rem" },
   items: { display: "flex", flexDirection: "column", gap: "1rem", flex: 1, minWidth: 0 },
   row: {
     background: "#fff", borderRadius: "14px", border: "1px solid #E8E0D5",
