@@ -4,14 +4,20 @@ import { useCart } from "../context/CartContext";
 function CheckoutForm({ setPage }) {
   const { cart, total, clearCart } = useCart();
   const [status, setStatus] = useState("idle");
+  const [paymentMethod, setPaymentMethod] = useState("upi"); // "upi" | "cod"
   const [form, setForm] = useState({ name: "", email: "", address: "" });
   const [savedCart, setSavedCart] = useState([]);
   const [savedTotal, setSavedTotal] = useState(0);
+  const [savedMethod, setSavedMethod] = useState("upi");
 
-  const grandTotal = ((savedTotal || total) * 1.08).toFixed(2);
+  const codFee = 30;
+  const baseTotal = (savedTotal || total) * 1.08;
+  const grandTotal = savedMethod === "cod" ? (baseTotal * 83 + codFee).toFixed(0) : (baseTotal * 83).toFixed(0);
+
   const displayCart = savedCart.length > 0 ? savedCart : cart;
   const upiId = "yourname@upi"; // 👈 Replace with your UPI ID
-  const upiLink = `upi://pay?pa=${upiId}&pn=Brewed%20Cafe&am=${grandTotal}&cu=INR&tn=Brewed%20Order`;
+  const upiAmount = (baseTotal * 83).toFixed(0);
+  const upiLink = `upi://pay?pa=${upiId}&pn=Brewed%20Cafe&am=${upiAmount}&cu=INR&tn=Brewed%20Order`;
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -32,7 +38,9 @@ function CheckoutForm({ setPage }) {
     e.preventDefault();
     setSavedCart([...cart]);
     setSavedTotal(total);
-    setStatus("pay");
+    setSavedMethod(paymentMethod);
+    setStatus(paymentMethod === "upi" ? "pay" : "success");
+    if (paymentMethod === "cod") clearCart();
   };
 
   const handlePaid = () => {
@@ -45,9 +53,11 @@ function CheckoutForm({ setPage }) {
     return (
       <div style={styles.confirmPage}>
         <div style={styles.confirmCard}>
-          <div style={styles.confirmIcon}>☕</div>
+          <div style={styles.confirmIcon}>{savedMethod === "cod" ? "💵" : "☕"}</div>
           <h2 style={styles.confirmTitle}>Order Confirmed!</h2>
-          <p style={styles.confirmSub}>Thanks, {form.name}! Your order is being prepared with love.</p>
+          <p style={styles.confirmSub}>
+            Thanks, {form.name}! {savedMethod === "cod" ? "Pay on delivery." : "Your order is being prepared with love."}
+          </p>
           <div style={styles.orderDetails}>
             <h3 style={styles.orderDetailsTitle}>Order Summary</h3>
             {displayCart.map((item) => (
@@ -56,10 +66,16 @@ function CheckoutForm({ setPage }) {
                 <span>₹{(item.price * item.qty * 83).toFixed(0)}</span>
               </div>
             ))}
+            {savedMethod === "cod" && (
+              <div style={styles.confirmRow}>
+                <span>COD Charge</span>
+                <span>₹{codFee}</span>
+              </div>
+            )}
             <div style={styles.confirmDivider} />
             <div style={{ ...styles.confirmRow, ...styles.confirmTotal }}>
-              <span>Total Paid</span>
-              <span>₹{(grandTotal * 83).toFixed(0)}</span>
+              <span>{savedMethod === "cod" ? "Total to Pay" : "Total Paid"}</span>
+              <span>₹{grandTotal}</span>
             </div>
           </div>
           <p style={styles.confirmEmail}>Confirmation sent to <strong>{form.email}</strong></p>
@@ -86,7 +102,7 @@ function CheckoutForm({ setPage }) {
             />
           </div>
 
-          <p style={styles.upiAmount}>₹{(grandTotal * 83).toFixed(0)}</p>
+          <p style={styles.upiAmount}>₹{upiAmount}</p>
           <p style={styles.upiId}>UPI ID: <strong>{upiId}</strong></p>
 
           <a href={upiLink} style={styles.upiBtn}>
@@ -134,16 +150,36 @@ function CheckoutForm({ setPage }) {
             <input style={styles.input} name="address" value={form.address} onChange={handleChange} placeholder="123 Coffee Lane, Kolkata" required />
           </div>
 
-          <div style={styles.upiInfoBox}>
+          <h2 style={styles.sectionTitle}>Payment Method</h2>
+
+          <div
+            style={{ ...styles.paymentOption, ...(paymentMethod === "upi" ? styles.paymentOptionActive : {}) }}
+            onClick={() => setPaymentMethod("upi")}
+          >
             <span style={{ fontSize: "1.5rem" }}>📱</span>
-            <div>
-              <p style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, color: "#1A0A00", fontSize: "0.9rem" }}>Pay via UPI</p>
-              <p style={{ fontFamily: "'Inter', sans-serif", color: "#7A6658", fontSize: "0.8rem" }}>GPay, PhonePe, Paytm & all UPI apps accepted</p>
+            <div style={{ flex: 1 }}>
+              <p style={styles.paymentTitle}>Pay via UPI</p>
+              <p style={styles.paymentSub}>GPay, PhonePe, Paytm & all UPI apps</p>
             </div>
+            <div style={{ ...styles.radio, ...(paymentMethod === "upi" ? styles.radioActive : {}) }} />
+          </div>
+
+          <div
+            style={{ ...styles.paymentOption, ...(paymentMethod === "cod" ? styles.paymentOptionActive : {}) }}
+            onClick={() => setPaymentMethod("cod")}
+          >
+            <span style={{ fontSize: "1.5rem" }}>💵</span>
+            <div style={{ flex: 1 }}>
+              <p style={styles.paymentTitle}>Cash on Delivery</p>
+              <p style={styles.paymentSub}>Pay when your order arrives · +₹{codFee} charge</p>
+            </div>
+            <div style={{ ...styles.radio, ...(paymentMethod === "cod" ? styles.radioActive : {}) }} />
           </div>
 
           <button type="submit" style={styles.payBtn}>
-            Proceed to Pay ₹{(total * 1.08 * 83).toFixed(0)}
+            {paymentMethod === "cod"
+              ? `Place Order · ₹${(total * 1.08 * 83 + codFee).toFixed(0)}`
+              : `Proceed to Pay ₹${(total * 1.08 * 83).toFixed(0)}`}
           </button>
         </div>
 
@@ -158,8 +194,12 @@ function CheckoutForm({ setPage }) {
           <div style={styles.divider} />
           <div style={styles.summaryRow}><span>Subtotal</span><span>₹{(total * 83).toFixed(0)}</span></div>
           <div style={styles.summaryRow}><span>Tax (8%)</span><span>₹{(total * 0.08 * 83).toFixed(0)}</span></div>
+          {paymentMethod === "cod" && (
+            <div style={styles.summaryRow}><span>COD Charge</span><span>₹{codFee}</span></div>
+          )}
           <div style={{ ...styles.summaryRow, ...styles.summaryTotal }}>
-            <span>Total</span><span>₹{(total * 1.08 * 83).toFixed(0)}</span>
+            <span>Total</span>
+            <span>₹{paymentMethod === "cod" ? (total * 1.08 * 83 + codFee).toFixed(0) : (total * 1.08 * 83).toFixed(0)}</span>
           </div>
         </div>
       </div>
@@ -184,12 +224,17 @@ const styles = {
   container: { maxWidth: "960px", margin: "0 auto" },
   backLink: { background: "none", border: "none", cursor: "pointer", color: "#C4956A", fontFamily: "'Inter', sans-serif", fontSize: "0.9rem", padding: 0, marginBottom: "1rem", display: "inline-block" },
   heading: { fontFamily: "'Playfair Display', serif", fontSize: "2rem", color: "#1A0A00", marginBottom: "1.5rem" },
-  sectionTitle: { fontFamily: "'Playfair Display', serif", fontSize: "1.2rem", color: "#1A0A00", marginBottom: "1rem" },
+  sectionTitle: { fontFamily: "'Playfair Display', serif", fontSize: "1.2rem", color: "#1A0A00", marginBottom: "1rem", marginTop: "1.5rem" },
   field: { marginBottom: "1rem" },
   label: { display: "block", fontFamily: "'Inter', sans-serif", fontSize: "0.82rem", color: "#7A6658", marginBottom: "0.35rem", fontWeight: 500 },
   input: { width: "100%", padding: "0.7rem 0.9rem", border: "1.5px solid #D8CDBF", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontSize: "0.95rem", color: "#1A0A00", background: "#fff", boxSizing: "border-box", outline: "none" },
-  upiInfoBox: { display: "flex", alignItems: "center", gap: "1rem", background: "#FDF6EE", border: "1.5px solid #E8D5B0", borderRadius: "12px", padding: "1rem", marginBottom: "1.25rem" },
-  payBtn: { width: "100%", padding: "0.9rem", background: "#1A0A00", color: "#C4956A", border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: "1rem", cursor: "pointer" },
+  paymentOption: { display: "flex", alignItems: "center", gap: "1rem", background: "#fff", border: "1.5px solid #E8E0D5", borderRadius: "12px", padding: "1rem", marginBottom: "0.75rem", cursor: "pointer", transition: "border-color 0.2s" },
+  paymentOptionActive: { borderColor: "#C4956A", background: "#FDF6EE" },
+  paymentTitle: { fontFamily: "'Inter', sans-serif", fontWeight: 600, color: "#1A0A00", fontSize: "0.9rem", margin: 0 },
+  paymentSub: { fontFamily: "'Inter', sans-serif", color: "#7A6658", fontSize: "0.78rem", margin: "0.15rem 0 0" },
+  radio: { width: "18px", height: "18px", borderRadius: "50%", border: "2px solid #D8CDBF", flexShrink: 0 },
+  radioActive: { border: "5px solid #C4956A" },
+  payBtn: { width: "100%", padding: "0.9rem", background: "#1A0A00", color: "#C4956A", border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: "1rem", cursor: "pointer", marginTop: "0.75rem" },
   orderSummary: { background: "#1A0A00", borderRadius: "16px", padding: "1.5rem", color: "#F5F0E8" },
   summaryTitle: { fontFamily: "'Playfair Display', serif", fontSize: "1.2rem", color: "#C4956A", marginBottom: "1rem" },
   summaryRow: { display: "flex", justifyContent: "space-between", fontFamily: "'Inter', sans-serif", fontSize: "0.85rem", color: "#C4A882", marginBottom: "0.6rem" },
