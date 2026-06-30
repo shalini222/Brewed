@@ -1,17 +1,16 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useCart } from "../context/CartContext";
 
-// --- Color Scheme Matched directly to 1000013780.jpg & 1000013781.jpg ---
 const THEME = {
   colors: {
-    bgPage: "#FAF6F0",       // Cream background from the main menu body
-    headerBg: "#1A0B05",     // Deep espresso brown for main buttons and header
-    cardBg: "#FFFFFF",       // Clean white for form and success cards
-    cardBorder: "#E6DFD5",   // Elegant tan outline matching category pills
-    primary: "#C4956A",      // Warm artisanal gold accent
-    textDark: "#1A0B05",     // Deep brown for layout readability
-    textMuted: "#70645C",    // Soft charcoal brown for descriptors
-    success: "#4A7A5B"       // Matcha green for confirmed actions
+    bgPage: "#FAF6F0",       
+    headerBg: "#1A0B05",     
+    cardBg: "#FFFFFF",       
+    cardBorder: "#E6DFD5",   
+    primary: "#C4956A",      
+    textDark: "#1A0B05",     
+    textMuted: "#70645C",    
+    success: "#4A7A5B"       
   },
   fonts: {
     serif: "'Playfair Display', serif",
@@ -40,6 +39,8 @@ export default function CheckoutPage({ setPage }) {
   const [couponError, setCouponError] = useState("");
   const [orderSnapshot, setOrderSnapshot] = useState(null);
 
+  const canvasRef = useRef(null);
+
   const CONFIG = { taxRate: 0.08, codFee: 30, deliveryFee: 40 };
 
   const calculations = useMemo(() => {
@@ -56,6 +57,81 @@ export default function CheckoutPage({ setPage }) {
   useEffect(() => {
     loadRazorpayScript();
   }, []);
+
+  // --- High Performance HTML5 Canvas Confetti Simulation ---
+  useEffect(() => {
+    if (status !== "success" || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    let animationFrameId;
+    let active = true;
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    const colors = ["#C4956A", "#4A7A5B", "#E6DFD5", "#DE6B48", "#E5B181", "#648381"];
+    const particles = [];
+
+    // Instantiate bursting particles
+    for (let i = 0; i < 120; i++) {
+      particles.push({
+        x: canvas.width / 2,
+        y: canvas.height * 0.6, // Bursting up from behind the success card area
+        radius: Math.random() * 4 + 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        vx: (Math.random() - 0.5) * 15,
+        vy: (Math.random() * -15) - 5,
+        gravity: 0.25,
+        rotation: Math.random() * 360,
+        rotationSpeed: (Math.random() - 0.5) * 10,
+        opacity: 1
+      });
+    }
+
+    const updateAndRender = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      particles.forEach((p) => {
+        p.vy += p.gravity;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rotation += p.rotationSpeed;
+        
+        if (!active) p.opacity -= 0.02; // Smooth out-fade when active window time ends
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rotation * Math.PI) / 180);
+        ctx.globalAlpha = Math.max(0, p.opacity);
+        ctx.fillStyle = p.color;
+        // Draw elegant rectangular confetti shreds
+        ctx.fillRect(-p.radius, -p.radius / 1.5, p.radius * 2, p.radius * 1.3);
+        ctx.restore();
+      });
+
+      if (active || particles.some(p => p.opacity > 0)) {
+        animationFrameId = requestAnimationFrame(updateAndRender);
+      }
+    };
+
+    updateAndRender();
+
+    // Gracefully stop generation and fade particles after exactly 5 seconds
+    const timer = setTimeout(() => {
+      active = false;
+    }, 5000);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      clearTimeout(timer);
+      window.removeEventListener("resize", resizeCanvas);
+    };
+  }, [status]);
 
   const handleInputChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -120,26 +196,74 @@ export default function CheckoutPage({ setPage }) {
   if (status === "success" && orderSnapshot) {
     return (
       <div style={styles.confirmPage}>
-        {/* Success Page Unique Animations matching 1000013781.jpg frame layout */}
+        {/* Full Screen Confetti Overlay Layer */}
+        <canvas ref={canvasRef} style={styles.confettiCanvas} />
+
         <style>{`
-          @keyframes slideUpFade {
-            from { opacity: 0; transform: translateY(24px); }
-            to { opacity: 1; transform: translateY(0); }
+          @keyframes fluidRevealCard {
+            0% { opacity: 0; transform: scale(0.96) translateY(30px); filter: blur(4px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
           }
-          @keyframes popIn {
-            0% { transform: scale(0.4); opacity: 0; }
-            70% { transform: scale(1.15); }
+          @keyframes drawCheckmark {
+            0% { stroke-dashoffset: 50; }
+            100% { stroke-dashoffset: 0; }
+          }
+          @keyframes scaleCircle {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.1); }
             100% { transform: scale(1); opacity: 1; }
           }
-          .animated-card { animation: slideUpFade 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-          .animated-pop { display: inline-block; animation: popIn 0.55s cubic-bezier(0.34, 1.6, 0.64, 1) 0.15s both; }
-          .btn-interactive { transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s; cursor: pointer; }
-          .btn-interactive:hover { transform: translateY(-2px); background-color: #2D140A !important; }
-          .btn-interactive:active { transform: translateY(0); }
+          .fluid-card { 
+            animation: fluidRevealCard 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+            position: relative;
+            z-index: 10;
+          }
+          .success-checkmark-wrapper {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            display: block;
+          }
+          .success-circle {
+            fill: none;
+            stroke: ${THEME.colors.success};
+            stroke-width: 3;
+            stroke-linecap: round;
+            transform-origin: center;
+            animation: scaleCircle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+          }
+          .checkmark-path {
+            fill: none;
+            stroke: ${THEME.colors.success};
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 50;
+            stroke-dashoffset: 50;
+            animation: drawCheckmark 0.45s cubic-bezier(0.4, 0, 0.2, 1) 0.4s both;
+          }
+          .btn-interactive { 
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s, box-shadow 0.3s; 
+            cursor: pointer; 
+          }
+          .btn-interactive:hover { 
+            transform: translateY(-3px); 
+            background-color: #2D140A !important;
+            box-shadow: 0 8px 20px rgba(26, 11, 5, 0.12);
+          }
+          .btn-interactive:active { 
+            transform: translateY(-1px); 
+          }
         `}</style>
         
-        <div className="animated-card" style={styles.confirmCard}>
-          <div className="animated-pop" style={{ fontSize: "3.5rem", marginBottom: "0.5rem" }}>🎉</div>
+        <div className="fluid-card" style={styles.confirmCard}>
+          <div className="success-checkmark-wrapper">
+            <svg viewBox="0 0 52 52" style={{ width: "100%", height: "100%" }}>
+              <circle className="success-circle" cx="26" cy="26" r="23" />
+              <path className="checkmark-path" d="M14 27l7.5 7.5L38 18" />
+            </svg>
+          </div>
+
           <h2 style={styles.confirmTitle}>Order Confirmed</h2>
           <p style={styles.confirmSub}>
             Thank you for ordering from <strong style={{ color: THEME.colors.headerBg }}>Brewed</strong>, {form.name}!
@@ -291,8 +415,9 @@ const styles = {
   couponBtn: { backgroundColor: "transparent", border: `1px solid ${THEME.colors.textDark}`, borderRadius: "6px", padding: "0 1rem", cursor: "pointer" },
   couponPill: { display: "flex", justifyContent: "space-between", background: "#E8F5E9", color: THEME.colors.success, padding: "0.5rem", borderRadius: "6px", fontSize: "0.85rem" },
   removeBtn: { background: "none", border: "none", color: "red", cursor: "pointer", fontWeight: "bold" },
-  confirmPage: { display: "flex", justifyContent: "center", alignItems: "center", minHeight: "75vh", backgroundColor: "#FAF6F0", padding: "0 1rem" },
-  confirmCard: { textAlign: "center", padding: "2.5rem 2rem", background: "#FFF", borderRadius: "16px", border: `1px solid ${THEME.colors.cardBorder}`, maxWidth: "460px", width: "100%", boxShadow: "0 4px 24px rgba(26, 11, 5, 0.04)", opacity: 0 },
-  confirmTitle: { fontFamily: THEME.fonts.serif, fontSize: "2rem", color: THEME.colors.textDark, margin: "0.75rem 0 0.5rem", fontWeight: "normal" },
+  confirmPage: { display: "flex", justifyContent: "center", alignItems: "center", minHeight: "75vh", backgroundColor: "#FAF6F0", padding: "0 1rem", position: "relative", overflow: "hidden" },
+  confettiCanvas: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 1 },
+  confirmCard: { textAlign: "center", padding: "3rem 2rem", background: "#FFF", borderRadius: "16px", border: `1px solid ${THEME.colors.cardBorder}`, maxWidth: "460px", width: "100%", boxShadow: "0 10px 30px rgba(26, 11, 5, 0.05)" },
+  confirmTitle: { fontFamily: THEME.fonts.serif, fontSize: "2.2rem", color: THEME.colors.textDark, margin: "0 0 0.5rem", fontWeight: "normal" },
   confirmSub: { fontSize: "0.95rem", color: THEME.colors.textMuted, lineHeight: "1.5", margin: "0 0 2rem 0" }
 };
