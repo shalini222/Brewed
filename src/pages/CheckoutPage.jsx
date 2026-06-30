@@ -1,25 +1,95 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext";
 
+const loadRazorpayScript = () =>
+  new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+
 function CheckoutForm({ setPage }) {
-  const { cart, total, clearCart } = useCart();
+  const { cart, total, clearCart } = useCart(); // assume `total` is now in INR
   const [status, setStatus] = useState("idle");
-  const [paymentMethod, setPaymentMethod] = useState("upi"); // "upi" | "cod"
+  const [paymentMethod, setPaymentMethod] = useState("online"); // "online" | "cod"
   const [form, setForm] = useState({ name: "", email: "", address: "" });
   const [savedCart, setSavedCart] = useState([]);
   const [savedTotal, setSavedTotal] = useState(0);
-  const [savedMethod, setSavedMethod] = useState("upi");
+  const [savedMethod, setSavedMethod] = useState("online");
 
   const codFee = 30;
-  const baseTotal = (savedTotal || total) * 1.08;
-  const grandTotal = savedMethod === "cod" ? (baseTotal * 83 + codFee).toFixed(0) : (baseTotal * 83).toFixed(0);
+  const grandTotal = savedMethod === "cod"
+    ? Math.round(savedTotal * 1.08 + codFee)
+    : Math.round(savedTotal * 1.08);
 
   const displayCart = savedCart.length > 0 ? savedCart : cart;
-  const upiId = "yourname@upi"; // 👈 Replace with your UPI ID
-  const upiAmount = (baseTotal * 83).toFixed(0);
-  const upiLink = `upi://pay?pa=${upiId}&pn=Brewed%20Cafe&am=${upiAmount}&cu=INR&tn=Brewed%20Order`;
+
+  useEffect(() => { loadRazorpayScript(); }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handlePaid = () => {
+    clearCart();
+    setStatus("success");
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSavedCart([...cart]);
+    setSavedTotal(total);
+    setSavedMethod(paymentMethod);
+
+    if (paymentMethod === "cod") {
+      clearCart();
+      setStatus("success");
+      return;
+    }
+
+    // --- ONLINE PAYMENT (cards / UPI / wallets via Razorpay) ---
+    const ok = await loadRazorpayScript();
+    if (!ok) {
+      alert("Payment SDK failed to load. Check your connection.");
+      return;
+    }
+
+    // ⚠️ In production, call YOUR backend here to create an order:
+    //   const res = await fetch("/api/create-order", { method: "POST", body: JSON.stringify({ amount: total }) });
+    //   const { orderId } = await res.json();
+    // Razorpay requires order creation server-side using your Key Secret —
+    // never put the secret in frontend code.
+
+    const amountInPaise = Math.round(total * 1.08 * 100);
+
+    const options = {
+      key: "YOUR_RAZORPAY_KEY_ID", // public key only, safe for frontend
+      amount: amountInPaise,
+      currency: "INR",
+      name: "Brewed Cafe",
+      description: "Order Payment",
+      // order_id: orderId, // from backend, recommended for verification
+      handler: function (response) {
+        // ⚠️ Also verify response.razorpay_payment_id / signature on your backend
+        // before treating the order as paid, to prevent spoofed success.
+        handlePaid();
+      },
+      prefill: {
+        name: form.name,
+        email: form.email,
+      },
+      theme: { color: "#C4956A" },
+      modal: {
+        ondismiss: function () {
+          setStatus("idle");
+        },
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  };
 
   if (cart.length === 0 && status !== "success") {
     return (
@@ -34,21 +104,6 @@ function CheckoutForm({ setPage }) {
     );
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSavedCart([...cart]);
-    setSavedTotal(total);
-    setSavedMethod(paymentMethod);
-    setStatus(paymentMethod === "upi" ? "pay" : "success");
-    if (paymentMethod === "cod") clearCart();
-  };
-
-  const handlePaid = () => {
-    clearCart();
-    setStatus("success");
-  };
-
-  // ✅ Success
   if (status === "success") {
     return (
       <div style={styles.confirmPage}>
@@ -63,7 +118,7 @@ function CheckoutForm({ setPage }) {
             {displayCart.map((item) => (
               <div key={item.id} style={styles.confirmRow}>
                 <span>{item.emoji} {item.name} ×{item.qty}</span>
-                <span>₹{(item.price * item.qty * 83).toFixed(0)}</span>
+                <span>₹{Math.round(item.price * item.qty)}</span>
               </div>
             ))}
             {savedMethod === "cod" && (
@@ -85,44 +140,6 @@ function CheckoutForm({ setPage }) {
     );
   }
 
-  // 💳 UPI Payment Screen
-  if (status === "pay") {
-    return (
-      <div style={styles.confirmPage}>
-        <div style={styles.confirmCard}>
-          <div style={styles.upiIcon}>📱</div>
-          <h2 style={styles.confirmTitle}>Pay via UPI</h2>
-          <p style={styles.confirmSub}>Scan the QR or tap the button to pay</p>
-
-          <div style={styles.qrBox}>
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(upiLink)}`}
-              alt="UPI QR Code"
-              style={{ width: "180px", height: "180px", borderRadius: "8px" }}
-            />
-          </div>
-
-          <p style={styles.upiAmount}>₹{upiAmount}</p>
-          <p style={styles.upiId}>UPI ID: <strong>{upiId}</strong></p>
-
-          <a href={upiLink} style={styles.upiBtn}>
-            Open UPI App →
-          </a>
-
-          <p style={styles.upiNote}>After paying, tap the button below</p>
-
-          <button style={styles.confirmBtn} onClick={handlePaid}>
-            ✓ I have paid
-          </button>
-          <button style={{ ...styles.confirmBtn, background: "transparent", color: "#7A6658", border: "1px solid #E8E0D5", marginTop: "0.5rem" }} onClick={() => setStatus("idle")}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // 📝 Details Form
   return (
     <form onSubmit={handleSubmit}>
       <style>{`
@@ -153,15 +170,15 @@ function CheckoutForm({ setPage }) {
           <h2 style={styles.sectionTitle}>Payment Method</h2>
 
           <div
-            style={{ ...styles.paymentOption, ...(paymentMethod === "upi" ? styles.paymentOptionActive : {}) }}
-            onClick={() => setPaymentMethod("upi")}
+            style={{ ...styles.paymentOption, ...(paymentMethod === "online" ? styles.paymentOptionActive : {}) }}
+            onClick={() => setPaymentMethod("online")}
           >
-            <span style={{ fontSize: "1.5rem" }}>📱</span>
+            <span style={{ fontSize: "1.5rem" }}>💳</span>
             <div style={{ flex: 1 }}>
-              <p style={styles.paymentTitle}>Pay via UPI</p>
-              <p style={styles.paymentSub}>GPay, PhonePe, Paytm & all UPI apps</p>
+              <p style={styles.paymentTitle}>Card / UPI / Wallet</p>
+              <p style={styles.paymentSub}>Pay securely via Razorpay — cards, GPay, PhonePe, Paytm & more</p>
             </div>
-            <div style={{ ...styles.radio, ...(paymentMethod === "upi" ? styles.radioActive : {}) }} />
+            <div style={{ ...styles.radio, ...(paymentMethod === "online" ? styles.radioActive : {}) }} />
           </div>
 
           <div
@@ -178,8 +195,8 @@ function CheckoutForm({ setPage }) {
 
           <button type="submit" style={styles.payBtn}>
             {paymentMethod === "cod"
-              ? `Place Order · ₹${(total * 1.08 * 83 + codFee).toFixed(0)}`
-              : `Proceed to Pay ₹${(total * 1.08 * 83).toFixed(0)}`}
+              ? `Place Order · ₹${Math.round(total * 1.08 + codFee)}`
+              : `Proceed to Pay ₹${Math.round(total * 1.08)}`}
           </button>
         </div>
 
@@ -188,18 +205,18 @@ function CheckoutForm({ setPage }) {
           {cart.map((item) => (
             <div key={item.id} style={styles.summaryRow}>
               <span>{item.emoji} {item.name} ×{item.qty}</span>
-              <span>₹{(item.price * item.qty * 83).toFixed(0)}</span>
+              <span>₹{Math.round(item.price * item.qty)}</span>
             </div>
           ))}
           <div style={styles.divider} />
-          <div style={styles.summaryRow}><span>Subtotal</span><span>₹{(total * 83).toFixed(0)}</span></div>
-          <div style={styles.summaryRow}><span>Tax (8%)</span><span>₹{(total * 0.08 * 83).toFixed(0)}</span></div>
+          <div style={styles.summaryRow}><span>Subtotal</span><span>₹{Math.round(total)}</span></div>
+          <div style={styles.summaryRow}><span>Tax (8%)</span><span>₹{Math.round(total * 0.08)}</span></div>
           {paymentMethod === "cod" && (
             <div style={styles.summaryRow}><span>COD Charge</span><span>₹{codFee}</span></div>
           )}
           <div style={{ ...styles.summaryRow, ...styles.summaryTotal }}>
             <span>Total</span>
-            <span>₹{paymentMethod === "cod" ? (total * 1.08 * 83 + codFee).toFixed(0) : (total * 1.08 * 83).toFixed(0)}</span>
+            <span>₹{paymentMethod === "cod" ? Math.round(total * 1.08 + codFee) : Math.round(total * 1.08)}</span>
           </div>
         </div>
       </div>
@@ -243,14 +260,8 @@ const styles = {
   confirmPage: { minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem" },
   confirmCard: { background: "#fff", borderRadius: "20px", border: "1px solid #E8E0D5", padding: "2.5rem", maxWidth: "420px", width: "100%", textAlign: "center", boxShadow: "0 4px 24px rgba(26,10,0,0.08)" },
   confirmIcon: { fontSize: "3rem", marginBottom: "1rem" },
-  upiIcon: { fontSize: "3rem", marginBottom: "1rem" },
   confirmTitle: { fontFamily: "'Playfair Display', serif", fontSize: "1.8rem", color: "#1A0A00", marginBottom: "0.5rem" },
   confirmSub: { fontFamily: "'Inter', sans-serif", color: "#7A6658", marginBottom: "1.5rem", lineHeight: 1.6, fontSize: "0.92rem" },
-  qrBox: { background: "#FDFAF5", borderRadius: "12px", padding: "1rem", display: "inline-block", marginBottom: "1rem" },
-  upiAmount: { fontFamily: "'Playfair Display', serif", fontSize: "2rem", color: "#1A0A00", fontWeight: 700, marginBottom: "0.25rem" },
-  upiId: { fontFamily: "'Inter', sans-serif", fontSize: "0.85rem", color: "#7A6658", marginBottom: "1.25rem" },
-  upiBtn: { display: "block", width: "100%", padding: "0.85rem", background: "#C4956A", color: "#1A0A00", border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: "0.95rem", cursor: "pointer", marginBottom: "0.75rem", textDecoration: "none" },
-  upiNote: { fontFamily: "'Inter', sans-serif", fontSize: "0.78rem", color: "#9A8880", margin: "0.75rem 0 0.5rem" },
   orderDetails: { background: "#FDFAF5", borderRadius: "12px", padding: "1.1rem", marginBottom: "1.1rem", textAlign: "left" },
   orderDetailsTitle: { fontFamily: "'Playfair Display', serif", fontSize: "0.95rem", color: "#1A0A00", marginBottom: "0.65rem" },
   confirmRow: { display: "flex", justifyContent: "space-between", fontFamily: "'Inter', sans-serif", fontSize: "0.85rem", color: "#7A6658", marginBottom: "0.45rem" },
