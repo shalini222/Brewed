@@ -1,14 +1,35 @@
 export const menuItems = [
-  { id: 1, name: "Espresso", category: "Coffee", price: 3.5, desc: "Rich, bold single shot", emoji: "☕" },
-  { id: 2, name: "Cappuccino", category: "Coffee", price: 4.5, desc: "Espresso with steamed milk foam", emoji: "☕" },
-  { id: 3, name: "Flat White", category: "Coffee", price: 4.0, desc: "Velvety microfoam & double shot", emoji: "🥛" },
-  { id: 4, name: "Cold Brew", category: "Coffee", price: 5.0, desc: "12-hour slow steeped, served iced", emoji: "🧊" },
-  { id: 5, name: "Caramel Latte", category: "Coffee", price: 5.5, desc: "Espresso, milk & house caramel", emoji: "🍮" },
-  { id: 6, name: "Matcha Latte", category: "Non-Coffee", price: 5.0, desc: "Ceremonial grade matcha & oat milk", emoji: "🍵" },
-  { id: 7, name: "Chai Tea", category: "Non-Coffee", price: 4.0, desc: "Spiced Indian masala chai blend", emoji: "🫖" },
-  { id: 8, name: "Croissant", category: "Food", price: 3.5, desc: "Buttery, flaky, freshly baked", emoji: "🥐" },
-  { id: 9, name: "Avocado Toast", category: "Food", price: 8.0, desc: "Sourdough, smashed avo, chili flakes", emoji: "🥑" },
-  { id: 10, name: "Blueberry Muffin", category: "Food", price: 3.0, desc: "Loaded with wild blueberries", emoji: "🫐" },
+  // --- COFFEE ---
+  { id: 1, name: "Espresso", category: "Coffee", price: 120, desc: "Rich, bold single shot of our house blend", emoji: "☕" },
+  { id: 2, name: "Cappuccino", category: "Coffee", price: 180, desc: "Espresso with steamed milk foam and a dusting of cocoa", emoji: "☕" },
+  { id: 3, name: "Flat White", category: "Coffee", price: 190, desc: "Velvety microfoam over a double ristretto shot", emoji: "🥛" },
+  { id: 4, name: "Cold Brew", category: "Coffee", price: 210, desc: "12-hour slow steeped, smooth and served over ice", emoji: "🧊" },
+  { id: 5, name: "Caramel Latte", category: "Coffee", price: 240, desc: "Espresso, steamed milk, and artisanal house caramel", emoji: "🍮" },
+  { id: 11, name: "Iced Americano", category: "Coffee", price: 160, desc: "Espresso shots topped with cold water and ice cubes", emoji: "🥤" },
+  { id: 12, name: "Vanilla Frappé", category: "Coffee", price: 260, desc: "Blended ice-cold coffee with premium vanilla bean cream", emoji: "🧋" },
+  { id: 17, name: "Vietnamese Shakerato", category: "Coffee", price: 220, desc: "Double espresso shaken hard with condensed milk over ice", emoji: "❄️" },
+  { id: 18, name: "Lotus Biscoff Latte", category: "Coffee", price: 270, desc: "Creamy espresso infused with cookie butter crumble", emoji: "🍪" },
+  { id: 19, name: "Mocha Mocha", category: "Coffee", price: 230, desc: "Rich espresso combined with dark chocolate sauce and steamed milk", emoji: "☕" },
+
+  // --- NON-COFFEE ---
+  { id: 6, name: "Matcha Latte", category: "Non-Coffee", price: 260, desc: "Ceremonial grade Japanese matcha & creamy oat milk", emoji: "🍵" },
+  { id: 7, name: "Chai Tea", category: "Non-Coffee", price: 140, desc: "Freshly brewed spiced Indian masala chai blend", emoji: "🫖" },
+  { id: 13, name: "Classic Hot Chocolate", category: "Non-Coffee", price: 220, desc: "Rich Belgian chocolate melted into warm steamed milk", emoji: "🍫" },
+  { id: 14, name: "Hibiscus Iced Tea", category: "Non-Coffee", price: 170, desc: "Refreshing, tart, and lightly sweetened floral cold brew", emoji: "🌺" },
+  { id: 20, name: "Thai Bubble Tea", category: "Non-Coffee", price: 250, desc: "Sweet, authentic orange Thai tea served with chewy tapioca pearls", emoji: "🧋" },
+  { id: 21, name: "Mint Mojito Cooler", category: "Non-Coffee", price: 180, desc: "Freshly muddled mint leaves, lime juice, and sparkling soda", emoji: "🌱" },
+  { id: 22, name: "Turmeric Ginger Latte", category: "Non-Coffee", price: 190, desc: "Warm Ayurvedic superfood blend with almond milk and honey", emoji: "💛" },
+
+  // --- FOOD ---
+  { id: 8, name: "Croissant", category: "Food", price: 150, desc: "Buttery, flaky, freshly baked morning pastry", emoji: "🥐" },
+  { id: 9, name: "Avocado Toast", category: "Food", price: 320, desc: "Artisanal sourdough, smashed avo, feta, and chili flakes", emoji: "🥑" },
+  { id: 10, name: "Blueberry Muffin", category: "Food", price: 130, desc: "Soft cake loaded to the brim with wild blueberries", emoji: "🫐" },
+  { id: 15, name: "Paneer Tikka Sandwich", category: "Food", price: 240, desc: "Spiced paneer, mint chutney, and veggies in toasted sourdough", emoji: "🥪" },
+  { id: 16, name: "Fudge Brownie", category: "Food", price: 160, desc: "Dense, gooey chocolate brownie served warm with chocolate drizzle", emoji: "🍰" },
+  { id: 23, name: "Nutella Pancakes", category: "Food", price: 290, desc: "Fluffy stack topped with melted Nutella and fresh banana slices", emoji: "🥞" },
+  { id: 24, name: "Chicken Keema Samosas", category: "Food", price: 180, desc: "Three crispy pastry pockets stuffed with minced spiced chicken", emoji: "🥟" },
+  { id: 25, name: "Hummus & Pita Platter", category: "Food", price: 260, desc: "Creamy olive-oil hummus served with warm grilled pita bread wedges", emoji: "🫓" },
+  { id: 26, name: "Truffle Parmesan Fries", category: "Food", price: 210, desc: "Crispy golden fries tossed in aromatic truffle oil and cheese", emoji: "🍟" }
 ];
 
 export const categories = ["All", "Coffee", "Non-Coffee", "Food"];
