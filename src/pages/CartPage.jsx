@@ -1,7 +1,7 @@
 import { useCart } from "../context/CartContext";
 
 export default function CartPage({ setPage }) {
-  const { cart, updateQty, removeFromCart, total } = useCart();
+  const { cart = [], updateQty, removeFromCart, total = 0 } = useCart();
 
   if (cart.length === 0) {
     return (
@@ -14,32 +14,47 @@ export default function CartPage({ setPage }) {
     );
   }
 
+  // Calculate fields matching checkout logic (rounded to whole Rupees)
+  const subtotal = Number.isFinite(total) ? total : 0;
+  const tax = Math.round(subtotal * 0.08);
+  const grandTotal = subtotal + tax;
+
   return (
     <>
       <style>{`
-  .cart-layout {
-    display: flex;
-    flex-direction: row;
-    gap: 2rem;
-    align-items: start;
-  }
-  .cart-summary {
-    width: 300px;
-    flex-shrink: 0;
-    position: sticky;
-    top: 80px;
-  }
-  @media (max-width: 768px) {
-    .cart-layout {
-      flex-direction: column;
-    }
-    .cart-summary {
-      width: 100%;
-      position: static;
-      order: 2;
-    }
-  }
-`}</style>
+        .cart-layout {
+          display: flex;
+          flex-direction: row;
+          gap: 2rem;
+          align-items: start;
+        }
+        .cart-summary {
+          width: 300px;
+          flex-shrink: 0;
+          position: sticky;
+          top: 80px;
+        }
+        .btn-interactive {
+          transition: transform 0.2s ease, opacity 0.2s;
+        }
+        .btn-interactive:hover {
+          transform: translateY(-2px);
+          opacity: 0.95;
+        }
+        .btn-interactive:active {
+          transform: translateY(0);
+        }
+        @media (max-width: 768px) {
+          .cart-layout {
+            flex-direction: column;
+          }
+          .cart-summary {
+            width: 100%;
+            position: static;
+            order: 2;
+          }
+        }
+      `}</style>
 
       <div style={styles.page}>
         <div style={styles.container}>
@@ -52,7 +67,7 @@ export default function CartPage({ setPage }) {
                   <div style={styles.rowEmoji}>{item.emoji}</div>
                   <div style={styles.rowInfo}>
                     <p style={styles.rowName}>{item.name}</p>
-                    <p style={styles.rowPrice}>${(item.price * item.qty).toFixed(2)}</p>
+                    <p style={styles.rowPrice}>₹{Math.round(item.price * item.qty)}</p>
                   </div>
                   <div style={styles.qtyControls}>
                     <button style={styles.qtyBtn} onClick={() => updateQty(item.id, item.qty - 1)}>−</button>
@@ -66,13 +81,13 @@ export default function CartPage({ setPage }) {
 
             <div className="cart-summary" style={styles.summary}>
               <h2 style={styles.summaryTitle}>Summary</h2>
-              <div style={styles.summaryRow}><span>Subtotal</span><span>${total.toFixed(2)}</span></div>
-              <div style={styles.summaryRow}><span>Tax (8%)</span><span>${(total * 0.08).toFixed(2)}</span></div>
+              <div style={styles.summaryRow}><span>Subtotal</span><span>₹{subtotal}</span></div>
+              <div style={styles.summaryRow}><span>Tax (8%)</span><span>₹{tax}</span></div>
               <div style={styles.divider} />
               <div style={{ ...styles.summaryRow, ...styles.summaryTotal }}>
-                <span>Total</span><span>${(total * 1.08).toFixed(2)}</span>
+                <span>Total</span><span>₹{grandTotal}</span>
               </div>
-              <button style={styles.checkoutBtn} onClick={() => setPage("checkout")}>
+              <button className="btn-interactive" style={styles.checkoutBtn} onClick={() => setPage("checkout")}>
                 Proceed to Checkout →
               </button>
             </div>
@@ -114,7 +129,7 @@ const styles = {
   checkoutBtn: {
     width: "100%", padding: "0.9rem", background: "#C4956A", color: "#1A0A00",
     border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif",
-    fontWeight: 700, fontSize: "1rem", cursor: "pointer",
+    fontWeight: 700, fontSize: "1rem", cursor: "pointer", outline: "none"
   },
   empty: { textAlign: "center", padding: "6rem 1.5rem", background: "#FDFAF5", minHeight: "100vh" },
   emptyIcon: { fontSize: "4rem", marginBottom: "1rem" },
