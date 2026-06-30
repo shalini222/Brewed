@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useCart } from "../context/CartContext";
 
+// --- Razorpay Script Loader Utility ---
 const loadRazorpayScript = () =>
   new Promise((resolve) => {
     if (window.Razorpay) return resolve(true);
@@ -11,65 +12,142 @@ const loadRazorpayScript = () =>
     document.body.appendChild(script);
   });
 
+// --- Sub-Component: Empty Cart View ---
+function EmptyCartView({ onNavigate }) {
+  return (
+    <div style={styles.confirmPage}>
+      <div style={styles.confirmCard}>
+        <div style={styles.confirmIcon}>🛒</div>
+        <h2 style={styles.confirmTitle}>Nothing to checkout</h2>
+        <p style={styles.confirmSub}>Add some items to your cart first.</p>
+        <button style={styles.confirmBtn} onClick={onNavigate}>Go to Menu</button>
+      </div>
+    </div>
+  );
+}
+
+// --- Sub-Component: Order Success View ---
+function SuccessView({ form, savedCart, savedMethod, savedTotal, codFee, onNavigate }) {
+  const tax = Math.round(savedTotal * 0.08);
+  const grandTotal = savedMethod === "cod" 
+    ? Math.round(savedTotal + tax + codFee) 
+    : Math.round(savedTotal + tax);
+
+  return (
+    <div style={styles.confirmPage}>
+      <div style={styles.confirmCard}>
+        <div style={styles.confirmIcon}>{savedMethod === "cod" ? "💵" : "☕"}</div>
+        <h2 style={styles.confirmTitle}>Order Confirmed!</h2>
+        <p style={styles.confirmSub}>
+          Thanks, {form.name}! {savedMethod === "cod" ? "Pay on delivery." : "Your order is being prepared with love."}
+        </p>
+        <div style={styles.orderDetails}>
+          <h3 style={styles.orderDetailsTitle}>Order Summary</h3>
+          {savedCart.map((item) => (
+            <div key={item.id} style={styles.confirmRow}>
+              <span>{item.emoji} {item.name} ×{item.qty}</span>
+              <span>₹{Math.round(item.price * item.qty)}</span>
+            </div>
+          ))}
+          {savedMethod === "cod" && (
+            <div style={styles.confirmRow}>
+              <span>COD Charge</span>
+              <span>₹{codFee}</span>
+            </div>
+          )}
+          <div style={styles.confirmDivider} />
+          <div style={{ ...styles.confirmRow, ...styles.confirmTotal }}>
+            <span>{savedMethod === "cod" ? "Total to Pay" : "Total Paid"}</span>
+            <span>₹{grandTotal}</span>
+          </div>
+        </div>
+        <p style={styles.confirmEmail}>Confirmation sent to <strong>{form.email}</strong></p>
+        <button style={styles.confirmBtn} onClick={onNavigate}>Back to Menu</button>
+      </div>
+    </div>
+  );
+}
+
+// --- Sub-Component: Payment Method Selector Option ---
+function PaymentOption({ id, currentMethod, onSelect, icon, title, subtitle }) {
+  const isActive = currentMethod === id;
+  return (
+    <div
+      style={{ ...styles.paymentOption, ...(isActive ? styles.paymentOptionActive : {}) }}
+      onClick={() => onSelect(id)}
+    >
+      <span style={{ fontSize: "1.5rem" }}>{icon}</span>
+      <div style={{ flex: 1 }}>
+        <p style={styles.paymentTitle}>{title}</p>
+        <p style={styles.paymentSub}>{subtitle}</p>
+      </div>
+      <div style={{ ...styles.radio, ...(isActive ? styles.radioActive : {}) }} />
+    </div>
+  );
+}
+
+// --- Main Checkout Form Component ---
 function CheckoutForm({ setPage }) {
-  const { cart = [], total = 0, clearCart } = useCart(); // assume `total` is now in INR
-  const safeTotal = Number.isFinite(total) ? total : 0;
+  const { cart = [], total = 0, clearCart } = useCart();
   const [status, setStatus] = useState("idle");
-  const [paymentMethod, setPaymentMethod] = useState("online"); // "online" | "cod"
+  const [paymentMethod, setPaymentMethod] = useState("online");
   const [form, setForm] = useState({ name: "", email: "", address: "" });
-  const [savedCart, setSavedCart] = useState([]);
-  const [savedTotal, setSavedTotal] = useState(0);
-  const [savedMethod, setSavedMethod] = useState("online");
+
+  // Order summary snapshots for the success window
+  const [orderSnapshot, setOrderSnapshot] = useState({ cart: [], total: 0, method: "online" });
 
   const codFee = 30;
-  const grandTotal = savedMethod === "cod"
-    ? Math.round(savedTotal * 1.08 + codFee)
-    : Math.round(savedTotal * 1.08);
+  const safeTotal = Number.isFinite(total) ? total : 0;
+  const taxAmount = Math.round(safeTotal * 0.08);
+  
+  // Dynamically calculate live totals for the checkout screen sidebar
+  const liveGrandTotal = useMemo(() => {
+    return paymentMethod === "cod" 
+      ? Math.round(safeTotal + taxAmount + codFee) 
+      : Math.round(safeTotal + taxAmount);
+  }, [safeTotal, taxAmount, paymentMethod, codFee]);
 
-  const displayCart = savedCart.length > 0 ? savedCart : cart;
+  useEffect(() => { 
+    loadRazorpayScript(); 
+  }, []);
 
-  useEffect(() => { loadRazorpayScript(); }, []);
+  const handleChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
-  const handlePaid = () => {
+  const executeOrderClearance = (chosenMethod, finalTotal) => {
+    setOrderSnapshot({
+      cart: [...cart],
+      total: finalTotal,
+      method: chosenMethod
+    });
     clearCart();
     setStatus("success");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSavedCart([...cart]);
-    setSavedTotal(safeTotal);
-    setSavedMethod(paymentMethod);
 
     if (paymentMethod === "cod") {
-      clearCart();
-      setStatus("success");
+      executeOrderClearance("cod", safeTotal);
       return;
     }
 
-    const ok = await loadRazorpayScript();
-    if (!ok) {
-      alert("Payment SDK failed to load. Check your connection.");
+    const isScriptLoaded = await loadRazorpayScript();
+    if (!isScriptLoaded) {
+      alert("Payment gateway failed to initialize. Please check your internet connection.");
       return;
     }
 
-    // ⚠️ In production, call YOUR backend here to create an order:
-    //   const res = await fetch("/api/create-order", { method: "POST", body: JSON.stringify({ amount: safeTotal }) });
-    //   const { orderId } = await res.json();
-
-    const amountInPaise = Math.round(safeTotal * 1.08 * 100);
+    // Convert live grand total (including tax) to Indian Paise for Razorpay API 
+    const amountInPaise = liveGrandTotal * 100;
 
     const options = {
-      key: "YOUR_RAZORPAY_KEY_ID", // public key only, safe for frontend
+      key: "YOUR_RAZORPAY_KEY_ID", // Replace this hardcoded string with your actual Key ID when testing
       amount: amountInPaise,
       currency: "INR",
       name: "Brewed Cafe",
-      description: "Order Payment",
-      handler: function (response) {
-        // ⚠️ Verify response.razorpay_payment_id / signature on your backend before confirming.
-        handlePaid();
+      description: "Cafe Order Payment",
+      handler: function () {
+        executeOrderClearance("online", safeTotal);
       },
       prefill: {
         name: form.name,
@@ -88,51 +166,19 @@ function CheckoutForm({ setPage }) {
   };
 
   if (cart.length === 0 && status !== "success") {
-    return (
-      <div style={styles.confirmPage}>
-        <div style={styles.confirmCard}>
-          <div style={styles.confirmIcon}>🛒</div>
-          <h2 style={styles.confirmTitle}>Nothing to checkout</h2>
-          <p style={styles.confirmSub}>Add some items to your cart first.</p>
-          <button style={styles.confirmBtn} onClick={() => setPage("menu")}>Go to Menu</button>
-        </div>
-      </div>
-    );
+    return <EmptyCartView onNavigate={() => setPage("menu")} />;
   }
 
   if (status === "success") {
     return (
-      <div style={styles.confirmPage}>
-        <div style={styles.confirmCard}>
-          <div style={styles.confirmIcon}>{savedMethod === "cod" ? "💵" : "☕"}</div>
-          <h2 style={styles.confirmTitle}>Order Confirmed!</h2>
-          <p style={styles.confirmSub}>
-            Thanks, {form.name}! {savedMethod === "cod" ? "Pay on delivery." : "Your order is being prepared with love."}
-          </p>
-          <div style={styles.orderDetails}>
-            <h3 style={styles.orderDetailsTitle}>Order Summary</h3>
-            {displayCart.map((item) => (
-              <div key={item.id} style={styles.confirmRow}>
-                <span>{item.emoji} {item.name} ×{item.qty}</span>
-                <span>₹{Math.round(item.price * item.qty)}</span>
-              </div>
-            ))}
-            {savedMethod === "cod" && (
-              <div style={styles.confirmRow}>
-                <span>COD Charge</span>
-                <span>₹{codFee}</span>
-              </div>
-            )}
-            <div style={styles.confirmDivider} />
-            <div style={{ ...styles.confirmRow, ...styles.confirmTotal }}>
-              <span>{savedMethod === "cod" ? "Total to Pay" : "Total Paid"}</span>
-              <span>₹{grandTotal}</span>
-            </div>
-          </div>
-          <p style={styles.confirmEmail}>Confirmation sent to <strong>{form.email}</strong></p>
-          <button style={styles.confirmBtn} onClick={() => setPage("menu")}>Back to Menu</button>
-        </div>
-      </div>
+      <SuccessView 
+        form={form}
+        savedCart={orderSnapshot.cart}
+        savedMethod={orderSnapshot.method}
+        savedTotal={orderSnapshot.total}
+        codFee={codFee}
+        onNavigate={() => setPage("menu")}
+      />
     );
   }
 
@@ -140,7 +186,7 @@ function CheckoutForm({ setPage }) {
     <form onSubmit={handleSubmit}>
       <style>{`
         .checkout-layout { display: flex; flex-direction: row; gap: 2rem; align-items: start; }
-        .checkout-summary { width: 300px; flex-shrink: 0; position: sticky; top: 80px; }
+        .checkout-summary { width: 320px; flex-shrink: 0; position: sticky; top: 80px; }
         @media (max-width: 768px) {
           .checkout-layout { flex-direction: column; }
           .checkout-summary { width: 100%; position: static; order: -1; }
@@ -148,6 +194,7 @@ function CheckoutForm({ setPage }) {
       `}</style>
 
       <div className="checkout-layout">
+        {/* Left Side: Forms and Payment Selection */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <h2 style={styles.sectionTitle}>Your Details</h2>
           <div style={styles.field}>
@@ -165,37 +212,30 @@ function CheckoutForm({ setPage }) {
 
           <h2 style={styles.sectionTitle}>Payment Method</h2>
 
-          <div
-            style={{ ...styles.paymentOption, ...(paymentMethod === "online" ? styles.paymentOptionActive : {}) }}
-            onClick={() => setPaymentMethod("online")}
-          >
-            <span style={{ fontSize: "1.5rem" }}>💳</span>
-            <div style={{ flex: 1 }}>
-              <p style={styles.paymentTitle}>Card / UPI / Wallet</p>
-              <p style={styles.paymentSub}>Pay securely via Razorpay — cards, GPay, PhonePe, Paytm & more</p>
-            </div>
-            <div style={{ ...styles.radio, ...(paymentMethod === "online" ? styles.radioActive : {}) }} />
-          </div>
+          <PaymentOption 
+            id="online"
+            currentMethod={paymentMethod}
+            onSelect={setPaymentMethod}
+            icon="💳"
+            title="Card / UPI / Wallet"
+            subtitle="Pay securely via Razorpay — cards, GPay, PhonePe, Paytm & more"
+          />
 
-          <div
-            style={{ ...styles.paymentOption, ...(paymentMethod === "cod" ? styles.paymentOptionActive : {}) }}
-            onClick={() => setPaymentMethod("cod")}
-          >
-            <span style={{ fontSize: "1.5rem" }}>💵</span>
-            <div style={{ flex: 1 }}>
-              <p style={styles.paymentTitle}>Cash on Delivery</p>
-              <p style={styles.paymentSub}>Pay when your order arrives · +₹{codFee} charge</p>
-            </div>
-            <div style={{ ...styles.radio, ...(paymentMethod === "cod" ? styles.radioActive : {}) }} />
-          </div>
+          <PaymentOption 
+            id="cod"
+            currentMethod={paymentMethod}
+            onSelect={setPaymentMethod}
+            icon="💵"
+            title="Cash on Delivery"
+            subtitle={`Pay when your order arrives · +₹${codFee} charge`}
+          />
 
           <button type="submit" style={styles.payBtn}>
-            {paymentMethod === "cod"
-              ? `Place Order · ₹${Math.round(safeTotal * 1.08 + codFee)}`
-              : `Proceed to Pay ₹${Math.round(safeTotal * 1.08)}`}
+            {paymentMethod === "cod" ? `Place Order · ₹${liveGrandTotal}` : `Proceed to Pay ₹${liveGrandTotal}`}
           </button>
         </div>
 
+        {/* Right Side: Sticky Live Summary */}
         <div className="checkout-summary" style={styles.orderSummary}>
           <h2 style={styles.summaryTitle}>Order Summary</h2>
           {cart.map((item) => (
@@ -206,13 +246,13 @@ function CheckoutForm({ setPage }) {
           ))}
           <div style={styles.divider} />
           <div style={styles.summaryRow}><span>Subtotal</span><span>₹{Math.round(safeTotal)}</span></div>
-          <div style={styles.summaryRow}><span>Tax (8%)</span><span>₹{Math.round(safeTotal * 0.08)}</span></div>
+          <div style={styles.summaryRow}><span>Tax (8%)</span><span>₹{taxAmount}</span></div>
           {paymentMethod === "cod" && (
             <div style={styles.summaryRow}><span>COD Charge</span><span>₹{codFee}</span></div>
           )}
           <div style={{ ...styles.summaryRow, ...styles.summaryTotal }}>
             <span>Total</span>
-            <span>₹{paymentMethod === "cod" ? Math.round(safeTotal * 1.08 + codFee) : Math.round(safeTotal * 1.08)}</span>
+            <span>₹{liveGrandTotal}</span>
           </div>
         </div>
       </div>
@@ -220,6 +260,7 @@ function CheckoutForm({ setPage }) {
   );
 }
 
+// --- Main Container Wrap ---
 export default function CheckoutPage({ setPage }) {
   return (
     <div style={styles.page}>
@@ -232,6 +273,7 @@ export default function CheckoutPage({ setPage }) {
   );
 }
 
+// --- Stylesheet Configuration ---
 const styles = {
   page: { background: "#FDFAF5", minHeight: "100vh", padding: "2rem 1.5rem" },
   container: { maxWidth: "960px", margin: "0 auto" },
@@ -241,7 +283,7 @@ const styles = {
   field: { marginBottom: "1rem" },
   label: { display: "block", fontFamily: "'Inter', sans-serif", fontSize: "0.82rem", color: "#7A6658", marginBottom: "0.35rem", fontWeight: 500 },
   input: { width: "100%", padding: "0.7rem 0.9rem", border: "1.5px solid #D8CDBF", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontSize: "0.95rem", color: "#1A0A00", background: "#fff", boxSizing: "border-box", outline: "none" },
-  paymentOption: { display: "flex", alignItems: "center", gap: "1rem", background: "#fff", border: "1.5px solid #E8E0D5", borderRadius: "12px", padding: "1rem", marginBottom: "0.75rem", cursor: "pointer", transition: "border-color 0.2s" },
+  paymentOption: { display: "flex", alignItems: "center", gap: "1rem", background: "#fff", border: "1.5px solid #E8E0D5", borderRadius: "12px", padding: "1rem", marginBottom: "0.75rem", cursor: "pointer", transition: "all 0.2s ease" },
   paymentOptionActive: { borderColor: "#C4956A", background: "#FDF6EE" },
   paymentTitle: { fontFamily: "'Inter', sans-serif", fontWeight: 600, color: "#1A0A00", fontSize: "0.9rem", margin: 0 },
   paymentSub: { fontFamily: "'Inter', sans-serif", color: "#7A6658", fontSize: "0.78rem", margin: "0.15rem 0 0" },
@@ -265,4 +307,4 @@ const styles = {
   confirmDivider: { borderTop: "1px solid #E8E0D5", margin: "0.65rem 0" },
   confirmEmail: { fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", color: "#9A8880", marginBottom: "1.25rem" },
   confirmBtn: { display: "block", width: "100%", padding: "0.85rem", background: "#1A0A00", color: "#C4956A", border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: "0.95rem", cursor: "pointer", marginTop: "0.75rem" },
-};          
+};
