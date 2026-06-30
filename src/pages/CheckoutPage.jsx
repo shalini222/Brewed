@@ -10,7 +10,8 @@ const THEME = {
     primary: "#C4956A",      
     textDark: "#1A0B05",     
     textMuted: "#70645C",    
-    success: "#4A7A5B"       
+    success: "#4A7A5B",
+    danger: "#DE6B48"       
   },
   fonts: {
     serif: "'Playfair Display', serif",
@@ -31,7 +32,7 @@ const loadRazorpayScript = () =>
 export default function CheckoutPage({ setPage }) {
   const { cart = [], total = 0, clearCart } = useCart();
   
-  const [status, setStatus] = useState("idle"); 
+  const [status, setStatus] = useState("idle"); // "idle" | "processing" | "success" | "failure"
   const [paymentMethod, setPaymentMethod] = useState("online");
   const [form, setForm] = useState({ name: "", email: "", phone: "", address: "", instructions: "" });
   const [coupon, setCoupon] = useState("");
@@ -58,9 +59,9 @@ export default function CheckoutPage({ setPage }) {
     loadRazorpayScript();
   }, []);
 
-  // --- Canvas Confetti Simulation ---
+  // --- Particle Simulation Effect for Success & Failure states ---
   useEffect(() => {
-    if (status !== "success" || !canvasRef.current) return;
+    if ((status !== "success" && status !== "failure") || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -74,20 +75,24 @@ export default function CheckoutPage({ setPage }) {
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
 
-    const colors = ["#C4956A", "#4A7A5B", "#E6DFD5", "#DE6B48", "#E5B181", "#648381"];
+    // Palette changes contextually based on Success vs Failure
+    const successColors = ["#C4956A", "#4A7A5B", "#E6DFD5", "#E5B181"];
+    const failureColors = ["#DE6B48", "#1A0B05", "#E6DFD5", "#70645C"];
+    const colors = status === "success" ? successColors : failureColors;
+    
     const particles = [];
 
     for (let i = 0; i < 140; i++) {
       particles.push({
         x: canvas.width / 2,
         y: canvas.height * 0.5,
-        radius: Math.random() * 4 + 4,
+        radius: Math.random() * 4 + 3,
         color: colors[Math.floor(Math.random() * colors.length)],
-        vx: (Math.random() - 0.5) * 18,
-        vy: (Math.random() * -18) - 6,
-        gravity: 0.3,
+        vx: (Math.random() - 0.5) * 16,
+        vy: (Math.random() * -14) - 4,
+        gravity: 0.28,
         rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() - 0.5) * 12,
+        rotationSpeed: (Math.random() - 0.5) * 10,
         opacity: 1
       });
     }
@@ -150,19 +155,8 @@ export default function CheckoutPage({ setPage }) {
     }
   };
 
-  const handleFormSubmission = async (e) => {
-    e.preventDefault();
+  const triggerRazorpayPayment = async () => {
     setStatus("processing");
-
-    if (paymentMethod === "cod") {
-      setTimeout(() => {
-        setOrderSnapshot({ cart: [...cart], calculations, method: "cod" });
-        clearCart();
-        setStatus("success");
-      }, 1200);
-      return;
-    }
-
     const scriptInitialized = await loadRazorpayScript();
     if (!scriptInitialized) {
       setStatus("idle");
@@ -183,13 +177,131 @@ export default function CheckoutPage({ setPage }) {
       },
       prefill: { name: form.name, email: form.email, contact: form.phone },
       theme: { color: THEME.colors.headerBg },
-      modal: { ondismiss: () => setStatus("idle") }
+      modal: { 
+        ondismiss: () => {
+          // Trigger the fallback failure view loop if window is dismissed or dropped
+          setStatus("failure");
+        } 
+      }
     };
 
     const rzp = new window.Razorpay(options);
+    // Mimic gateway drop errors gracefully
+    rzp.on("payment.failed", () => {
+      setStatus("failure");
+    });
     rzp.open();
   };
 
+  const handleFormSubmission = async (e) => {
+    e.preventDefault();
+    if (paymentMethod === "cod") {
+      setStatus("processing");
+      setTimeout(() => {
+        setOrderSnapshot({ cart: [...cart], calculations, method: "cod" });
+        clearCart();
+        setStatus("success");
+      }, 1200);
+      return;
+    }
+    await triggerRazorpayPayment();
+  };
+
+  // --- RENDER FALLBACK: PAYMENT FAILED PAGE ---
+  if (status === "failure") {
+    return (
+      <div style={styles.confirmPage}>
+        <canvas ref={canvasRef} style={styles.confettiCanvas} />
+        
+        <style>{`
+          @keyframes fluidRevealCard {
+            0% { opacity: 0; transform: scale(0.96) translateY(30px); filter: blur(4px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+          }
+          @keyframes drawCross {
+            0% { stroke-dashoffset: 40; opacity: 0; }
+            100% { stroke-dashoffset: 0; opacity: 1; }
+          }
+          @keyframes scaleErrorCircle {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+          }
+          .fluid-card { 
+            animation: fluidRevealCard 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+            position: relative;
+            z-index: 10;
+          }
+          .error-svg-wrapper {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            display: block;
+          }
+          .error-circle {
+            fill: none;
+            stroke: ${THEME.colors.danger};
+            stroke-width: 3;
+            stroke-linecap: round;
+            transform-origin: center;
+            animation: scaleErrorCircle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+          }
+          .cross-path-1, .cross-path-2 {
+            fill: none;
+            stroke: ${THEME.colors.danger};
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-dasharray: 40;
+            stroke-dashoffset: 40;
+          }
+          .cross-path-1 {
+            animation: drawCross 0.3s ease-out 0.4s both;
+          }
+          .cross-path-2 {
+            animation: drawCross 0.3s ease-out 0.65s both;
+          }
+          .btn-interactive { 
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s, box-shadow 0.3s; 
+            cursor: pointer; 
+          }
+          .btn-interactive:hover { 
+            transform: translateY(-3px); 
+            background-color: #2D140A !important;
+            box-shadow: 0 8px 20px rgba(26, 11, 5, 0.12);
+          }
+          .btn-interactive:active { 
+            transform: translateY(-1px); 
+          }
+        `}</style>
+
+        <div className="fluid-card" style={styles.confirmCard}>
+          <div className="error-svg-wrapper">
+            <svg viewBox="0 0 52 52" style={{ width: "100%", height: "100%" }}>
+              <circle className="error-circle" cx="26" cy="26" r="23" />
+              <path className="cross-path-1" d="M16 16l20 20" />
+              <path className="cross-path-2" d="M36 16L16 36" />
+            </svg>
+          </div>
+
+          <h2 style={{ ...styles.confirmTitle, color: THEME.colors.danger }}>Payment Failed</h2>
+          <p style={styles.confirmSub}>
+            We couldn't process your transaction. Don't worry, if any money was deducted, it will be refunded automatically.
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <button className="btn-interactive" style={styles.payBtn} onClick={triggerRazorpayPayment}>
+              Retry Payment
+            </button>
+            <button className="btn-interactive" style={styles.payBtn} onClick={() => { setStatus("idle"); setPage("menu"); }}>
+              Return to Menu
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- RENDER SUCCESS: ORDER CONFIRMED PAGE ---
   if (status === "success" && orderSnapshot) {
     return (
       <div style={styles.confirmPage}>
@@ -266,12 +378,9 @@ export default function CheckoutPage({ setPage }) {
           </p>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {/* Exactly Identical Track Order Button */}
             <button className="btn-interactive" style={styles.payBtn} onClick={() => setPage("tracking")}>
               Track Order
             </button>
-            
-            {/* Return to Menu Button */}
             <button className="btn-interactive" style={styles.payBtn} onClick={() => setPage("menu")}>
               Return to Menu
             </button>
@@ -281,6 +390,7 @@ export default function CheckoutPage({ setPage }) {
     );
   }
 
+  // --- MAIN CHECKOUT VIEW PANEL ---
   return (
     <div style={styles.page}>
       <style>{`
