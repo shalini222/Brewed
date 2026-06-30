@@ -12,7 +12,8 @@ const loadRazorpayScript = () =>
   });
 
 function CheckoutForm({ setPage }) {
-  const { cart, total, clearCart } = useCart(); // assume `total` is now in INR
+  const { cart = [], total = 0, clearCart } = useCart(); // assume `total` is now in INR
+  const safeTotal = Number.isFinite(total) ? total : 0;
   const [status, setStatus] = useState("idle");
   const [paymentMethod, setPaymentMethod] = useState("online"); // "online" | "cod"
   const [form, setForm] = useState({ name: "", email: "", address: "" });
@@ -39,7 +40,7 @@ function CheckoutForm({ setPage }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSavedCart([...cart]);
-    setSavedTotal(total);
+    setSavedTotal(safeTotal);
     setSavedMethod(paymentMethod);
 
     if (paymentMethod === "cod") {
@@ -48,7 +49,6 @@ function CheckoutForm({ setPage }) {
       return;
     }
 
-    // --- ONLINE PAYMENT (cards / UPI / wallets via Razorpay) ---
     const ok = await loadRazorpayScript();
     if (!ok) {
       alert("Payment SDK failed to load. Check your connection.");
@@ -56,12 +56,10 @@ function CheckoutForm({ setPage }) {
     }
 
     // ⚠️ In production, call YOUR backend here to create an order:
-    //   const res = await fetch("/api/create-order", { method: "POST", body: JSON.stringify({ amount: total }) });
+    //   const res = await fetch("/api/create-order", { method: "POST", body: JSON.stringify({ amount: safeTotal }) });
     //   const { orderId } = await res.json();
-    // Razorpay requires order creation server-side using your Key Secret —
-    // never put the secret in frontend code.
 
-    const amountInPaise = Math.round(total * 1.08 * 100);
+    const amountInPaise = Math.round(safeTotal * 1.08 * 100);
 
     const options = {
       key: "YOUR_RAZORPAY_KEY_ID", // public key only, safe for frontend
@@ -69,10 +67,8 @@ function CheckoutForm({ setPage }) {
       currency: "INR",
       name: "Brewed Cafe",
       description: "Order Payment",
-      // order_id: orderId, // from backend, recommended for verification
       handler: function (response) {
-        // ⚠️ Also verify response.razorpay_payment_id / signature on your backend
-        // before treating the order as paid, to prevent spoofed success.
+        // ⚠️ Verify response.razorpay_payment_id / signature on your backend before confirming.
         handlePaid();
       },
       prefill: {
@@ -195,8 +191,8 @@ function CheckoutForm({ setPage }) {
 
           <button type="submit" style={styles.payBtn}>
             {paymentMethod === "cod"
-              ? `Place Order · ₹${Math.round(total * 1.08 + codFee)}`
-              : `Proceed to Pay ₹${Math.round(total * 1.08)}`}
+              ? `Place Order · ₹${Math.round(safeTotal * 1.08 + codFee)}`
+              : `Proceed to Pay ₹${Math.round(safeTotal * 1.08)}`}
           </button>
         </div>
 
@@ -209,14 +205,14 @@ function CheckoutForm({ setPage }) {
             </div>
           ))}
           <div style={styles.divider} />
-          <div style={styles.summaryRow}><span>Subtotal</span><span>₹{Math.round(total)}</span></div>
-          <div style={styles.summaryRow}><span>Tax (8%)</span><span>₹{Math.round(total * 0.08)}</span></div>
+          <div style={styles.summaryRow}><span>Subtotal</span><span>₹{Math.round(safeTotal)}</span></div>
+          <div style={styles.summaryRow}><span>Tax (8%)</span><span>₹{Math.round(safeTotal * 0.08)}</span></div>
           {paymentMethod === "cod" && (
             <div style={styles.summaryRow}><span>COD Charge</span><span>₹{codFee}</span></div>
           )}
           <div style={{ ...styles.summaryRow, ...styles.summaryTotal }}>
             <span>Total</span>
-            <span>₹{paymentMethod === "cod" ? Math.round(total * 1.08 + codFee) : Math.round(total * 1.08)}</span>
+            <span>₹{paymentMethod === "cod" ? Math.round(safeTotal * 1.08 + codFee) : Math.round(safeTotal * 1.08)}</span>
           </div>
         </div>
       </div>
@@ -269,4 +265,4 @@ const styles = {
   confirmDivider: { borderTop: "1px solid #E8E0D5", margin: "0.65rem 0" },
   confirmEmail: { fontFamily: "'Inter', sans-serif", fontSize: "0.8rem", color: "#9A8880", marginBottom: "1.25rem" },
   confirmBtn: { display: "block", width: "100%", padding: "0.85rem", background: "#1A0A00", color: "#C4956A", border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: "0.95rem", cursor: "pointer", marginTop: "0.75rem" },
-};
+};          
