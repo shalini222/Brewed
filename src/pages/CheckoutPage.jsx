@@ -1,17 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { useCart } from "../context/CartContext";
 
-// --- Color Scheme Matched directly to 1000013780.jpg ---
+// --- Color Scheme Matched directly to 1000013780.jpg & 1000013781.jpg ---
 const THEME = {
   colors: {
-    bgPage: "#FAF6F0",       // Cream background from the menu body
-    headerBg: "#1A0B05",     // Deep espresso brown from the top banner
-    cardBg: "#FFFFFF",       // Clean crisp white for form cards
-    cardBorder: "#E6DFD5",   // Subtle tan outline matching the category pills
+    bgPage: "#FAF6F0",       // Cream background from the main menu body
+    headerBg: "#1A0B05",     // Deep espresso brown for main buttons and header
+    cardBg: "#FFFFFF",       // Clean white for form and success cards
+    cardBorder: "#E6DFD5",   // Elegant tan outline matching category pills
     primary: "#C4956A",      // Warm artisanal gold accent
-    textDark: "#1A0B05",     // Deep brown for highly readable text
-    textMuted: "#70645C",    // Soft charcoal brown for labels
-    success: "#4A7A5B"       // Matcha green for confirmed items
+    textDark: "#1A0B05",     // Deep brown for layout readability
+    textMuted: "#70645C",    // Soft charcoal brown for descriptors
+    success: "#4A7A5B"       // Matcha green for confirmed actions
   },
   fonts: {
     serif: "'Playfair Display', serif",
@@ -42,7 +42,6 @@ export default function CheckoutPage({ setPage }) {
 
   const CONFIG = { taxRate: 0.08, codFee: 30, deliveryFee: 40 };
 
-  // Simplified calculations pipeline (No threshold checks)
   const calculations = useMemo(() => {
     const subtotal = Number.isFinite(total) ? total : 0;
     const tax = Math.round(subtotal * CONFIG.taxRate);
@@ -121,11 +120,33 @@ export default function CheckoutPage({ setPage }) {
   if (status === "success" && orderSnapshot) {
     return (
       <div style={styles.confirmPage}>
-        <div style={styles.confirmCard}>
-          <span style={{ fontSize: "3.5rem" }}>🎉</span>
+        {/* Success Page Unique Animations matching 1000013781.jpg frame layout */}
+        <style>{`
+          @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes popIn {
+            0% { transform: scale(0.4); opacity: 0; }
+            70% { transform: scale(1.15); }
+            100% { transform: scale(1); opacity: 1; }
+          }
+          .animated-card { animation: slideUpFade 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+          .animated-pop { display: inline-block; animation: popIn 0.55s cubic-bezier(0.34, 1.6, 0.64, 1) 0.15s both; }
+          .btn-interactive { transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s; cursor: pointer; }
+          .btn-interactive:hover { transform: translateY(-2px); background-color: #2D140A !important; }
+          .btn-interactive:active { transform: translateY(0); }
+        `}</style>
+        
+        <div className="animated-card" style={styles.confirmCard}>
+          <div className="animated-pop" style={{ fontSize: "3.5rem", marginBottom: "0.5rem" }}>🎉</div>
           <h2 style={styles.confirmTitle}>Order Confirmed</h2>
-          <p style={styles.confirmSub}>Thank you for ordering from <strong>Brewed</strong>, {form.name}!</p>
-          <button style={styles.payBtn} onClick={() => setPage("menu")}>Return to Menu</button>
+          <p style={styles.confirmSub}>
+            Thank you for ordering from <strong style={{ color: THEME.colors.headerBg }}>Brewed</strong>, {form.name}!
+          </p>
+          <button className="btn-interactive" style={styles.payBtn} onClick={() => setPage("menu")}>
+            Return to Menu
+          </button>
         </div>
       </div>
     );
@@ -140,6 +161,8 @@ export default function CheckoutPage({ setPage }) {
         .side-panel { width: 360px; position: sticky; top: 20px; }
         .input-box { width: 100%; padding: 0.8rem 1rem; border: 1.5px solid ${THEME.colors.cardBorder}; border-radius: 8px; font-size: 0.95rem; background: #FFF; outline: none; box-sizing: border-box; transition: border-color 0.2s; }
         .input-box:focus { border-color: ${THEME.colors.primary}; }
+        .clickable-row { transition: border-color 0.2s, background-color 0.2s; cursor: pointer; }
+        .clickable-row:hover { border-color: ${THEME.colors.primary} !important; background-color: #FAF9F6; }
         @media (max-width: 880px) {
           .checkout-layout { flex-direction: column; }
           .side-panel { width: 100%; position: static; }
@@ -174,15 +197,16 @@ export default function CheckoutPage({ setPage }) {
                 <input className="input-box" name="address" value={form.address} onChange={handleInputChange} required />
               </div>
               <div>
-                <label style={styles.label}> Delivery Instructions</label>
+                <label style={styles.label}>Rider Delivery Instructions</label>
                 <textarea className="input-box" style={{ height: "65px", resize: "none" }} name="instructions" value={form.instructions} onChange={handleInputChange} placeholder="Drop off instructions..." />
               </div>
             </div>
 
             {/* Payment Selector */}
             <div style={styles.card}>
-              <h2 style={styles.sectionTitle}>💳 Select Payment Method</h2>
+              <h2 style={styles.sectionTitle}>💳 Select Settlement Method</h2>
               <div 
+                className="clickable-row"
                 style={{ ...styles.paymentSelector, borderColor: paymentMethod === "online" ? THEME.colors.primary : THEME.colors.cardBorder }}
                 onClick={() => setPaymentMethod("online")}
               >
@@ -195,6 +219,7 @@ export default function CheckoutPage({ setPage }) {
               </div>
 
               <div 
+                className="clickable-row"
                 style={{ ...styles.paymentSelector, borderColor: paymentMethod === "cod" ? THEME.colors.primary : THEME.colors.cardBorder }}
                 onClick={() => setPaymentMethod("cod")}
               >
@@ -216,7 +241,7 @@ export default function CheckoutPage({ setPage }) {
               {!appliedCoupon ? (
                 <div style={{ display: "flex", gap: "0.5rem" }}>
                   <input className="input-box" style={{ padding: "0.5rem" }} placeholder="COFFEE20" value={coupon} onChange={(e) => setCoupon(e.target.value)} />
-                  <button type="button" onClick={applyCouponCode} style={styles.couponBtn}>Apply</button>
+                  <input type="button" onClick={applyCouponCode} style={styles.couponBtn} value="Apply" />
                 </div>
               ) : (
                 <div style={styles.couponPill}>
@@ -260,14 +285,14 @@ const styles = {
   card: { background: THEME.colors.cardBg, borderRadius: "12px", padding: "1.5rem", marginBottom: "1.5rem", border: `1px solid ${THEME.colors.cardBorder}` },
   sectionTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.2rem", margin: "0 0 1.2rem 0", color: THEME.colors.textDark },
   label: { display: "block", fontSize: "0.85rem", fontWeight: "600", color: THEME.colors.textMuted, marginBottom: "0.3rem" },
-  paymentSelector: { display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", border: "1.5px solid", borderRadius: "8px", cursor: "pointer", marginBottom: "0.75rem" },
+  paymentSelector: { display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", border: "1.5px solid", borderRadius: "8px", marginBottom: "0.75rem" },
   calcRow: { display: "flex", justifyContent: "space-between", fontSize: "0.9rem", marginBottom: "0.5rem", color: THEME.colors.textDark },
-  payBtn: { width: "100%", padding: "1rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "1rem", cursor: "pointer", marginTop: "1rem" },
+  payBtn: { width: "100%", padding: "1rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "1rem", outline: "none" },
   couponBtn: { backgroundColor: "transparent", border: `1px solid ${THEME.colors.textDark}`, borderRadius: "6px", padding: "0 1rem", cursor: "pointer" },
   couponPill: { display: "flex", justifyContent: "space-between", background: "#E8F5E9", color: THEME.colors.success, padding: "0.5rem", borderRadius: "6px", fontSize: "0.85rem" },
   removeBtn: { background: "none", border: "none", color: "red", cursor: "pointer", fontWeight: "bold" },
-  confirmPage: { display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" },
-  confirmCard: { textAlign: "center", padding: "2rem", background: "#FFF", borderRadius: "12px", border: `1px solid ${THEME.colors.cardBorder}`, maxWidth: "400px", width: "100%" },
-  confirmTitle: { fontFamily: THEME.fonts.serif, margin: "1rem 0 0.5rem" },
-  confirmSub: { fontSize: "0.9rem", color: THEME.colors.textMuted }
+  confirmPage: { display: "flex", justifyContent: "center", alignItems: "center", minHeight: "75vh", backgroundColor: "#FAF6F0", padding: "0 1rem" },
+  confirmCard: { textAlign: "center", padding: "2.5rem 2rem", background: "#FFF", borderRadius: "16px", border: `1px solid ${THEME.colors.cardBorder}`, maxWidth: "460px", width: "100%", boxShadow: "0 4px 24px rgba(26, 11, 5, 0.04)", opacity: 0 },
+  confirmTitle: { fontFamily: THEME.fonts.serif, fontSize: "2rem", color: THEME.colors.textDark, margin: "0.75rem 0 0.5rem", fontWeight: "normal" },
+  confirmSub: { fontSize: "0.95rem", color: THEME.colors.textMuted, lineHeight: "1.5", margin: "0 0 2rem 0" }
 };
