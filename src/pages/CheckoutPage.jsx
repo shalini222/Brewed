@@ -58,7 +58,7 @@ export default function CheckoutPage({ setPage }) {
     loadRazorpayScript();
   }, []);
 
-  // --- High Performance HTML5 Canvas Confetti Simulation ---
+  // --- Canvas Confetti Simulation ---
   useEffect(() => {
     if (status !== "success" || !canvasRef.current) return;
 
@@ -77,18 +77,18 @@ export default function CheckoutPage({ setPage }) {
     const colors = ["#C4956A", "#4A7A5B", "#E6DFD5", "#DE6B48", "#E5B181", "#648381"];
     const particles = [];
 
-    // Instantiate bursting particles
-    for (let i = 0; i < 120; i++) {
+    // Bursting up from center-lower screen
+    for (let i = 0; i < 140; i++) {
       particles.push({
         x: canvas.width / 2,
-        y: canvas.height * 0.6, // Bursting up from behind the success card area
+        y: canvas.height * 0.5,
         radius: Math.random() * 4 + 4,
         color: colors[Math.floor(Math.random() * colors.length)],
-        vx: (Math.random() - 0.5) * 15,
-        vy: (Math.random() * -15) - 5,
-        gravity: 0.25,
+        vx: (Math.random() - 0.5) * 18,
+        vy: (Math.random() * -18) - 6,
+        gravity: 0.3,
         rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() - 0.5) * 10,
+        rotationSpeed: (Math.random() - 0.5) * 12,
         opacity: 1
       });
     }
@@ -102,14 +102,13 @@ export default function CheckoutPage({ setPage }) {
         p.y += p.vy;
         p.rotation += p.rotationSpeed;
         
-        if (!active) p.opacity -= 0.02; // Smooth out-fade when active window time ends
+        if (!active) p.opacity -= 0.02;
 
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate((p.rotation * Math.PI) / 180);
         ctx.globalAlpha = Math.max(0, p.opacity);
         ctx.fillStyle = p.color;
-        // Draw elegant rectangular confetti shreds
         ctx.fillRect(-p.radius, -p.radius / 1.5, p.radius * 2, p.radius * 1.3);
         ctx.restore();
       });
@@ -121,7 +120,6 @@ export default function CheckoutPage({ setPage }) {
 
     updateAndRender();
 
-    // Gracefully stop generation and fade particles after exactly 5 seconds
     const timer = setTimeout(() => {
       active = false;
     }, 5000);
@@ -196,7 +194,7 @@ export default function CheckoutPage({ setPage }) {
   if (status === "success" && orderSnapshot) {
     return (
       <div style={styles.confirmPage}>
-        {/* Full Screen Confetti Overlay Layer */}
+        {/* Confetti Canvas set to zIndex 9999 over top of everything */}
         <canvas ref={canvasRef} style={styles.confettiCanvas} />
 
         <style>{`
@@ -299,7 +297,6 @@ export default function CheckoutPage({ setPage }) {
 
         <form onSubmit={handleFormSubmission} className="checkout-layout">
           <div className="main-panel">
-            {/* Delivery Form */}
             <div style={styles.card}>
               <h2 style={styles.sectionTitle}>📍 Delivery Information</h2>
               <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem" }}>
@@ -326,7 +323,6 @@ export default function CheckoutPage({ setPage }) {
               </div>
             </div>
 
-            {/* Payment Selector */}
             <div style={styles.card}>
               <h2 style={styles.sectionTitle}>💳 Select Settlement Method</h2>
               <div 
@@ -357,9 +353,7 @@ export default function CheckoutPage({ setPage }) {
             </div>
           </div>
 
-          {/* Sidebar Summary */}
           <div className="side-panel">
-            {/* Simple Coupon Input */}
             <div style={{ ...styles.card, padding: "1.25rem" }}>
               <label style={{ ...styles.label, marginBottom: "0.4rem" }}>Have a Promo Voucher?</label>
               {!appliedCoupon ? (
@@ -376,7 +370,6 @@ export default function CheckoutPage({ setPage }) {
               {couponError && <p style={{ color: "red", fontSize: "0.8rem", margin: "0.3rem 0 0" }}>{couponError}</p>}
             </div>
 
-            {/* Price Calculations Sheet */}
             <div style={styles.card}>
               <h3 style={{ margin: "0 0 1rem 0", fontFamily: THEME.fonts.serif }}>Order Summary</h3>
               <div style={styles.calcRow}><span>Subtotal</span><span>₹{calculations.subtotal}</span></div>
@@ -416,7 +409,7 @@ const styles = {
   couponPill: { display: "flex", justifyContent: "space-between", background: "#E8F5E9", color: THEME.colors.success, padding: "0.5rem", borderRadius: "6px", fontSize: "0.85rem" },
   removeBtn: { background: "none", border: "none", color: "red", cursor: "pointer", fontWeight: "bold" },
   confirmPage: { display: "flex", justifyContent: "center", alignItems: "center", minHeight: "75vh", backgroundColor: "#FAF6F0", padding: "0 1rem", position: "relative", overflow: "hidden" },
-  confettiCanvas: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 1 },
+  confettiCanvas: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 9999 },
   confirmCard: { textAlign: "center", padding: "3rem 2rem", background: "#FFF", borderRadius: "16px", border: `1px solid ${THEME.colors.cardBorder}`, maxWidth: "460px", width: "100%", boxShadow: "0 10px 30px rgba(26, 11, 5, 0.05)" },
   confirmTitle: { fontFamily: THEME.fonts.serif, fontSize: "2.2rem", color: THEME.colors.textDark, margin: "0 0 0.5rem", fontWeight: "normal" },
   confirmSub: { fontSize: "0.95rem", color: THEME.colors.textMuted, lineHeight: "1.5", margin: "0 0 2rem 0" }
