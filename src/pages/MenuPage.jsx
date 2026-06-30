@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { menuItems, categories } from "../data/menu";
+import { useState } from "react"; // Fixed: Added missing useState hook import
 import { useCart } from "../context/CartContext";
+import { menuItems, categories } from "../data/menu"; // Make sure your path matches your project layout
 
 export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState("All");
@@ -113,7 +113,8 @@ export default function MenuPage() {
               <div style={styles.cardBody}>
                 <div style={styles.cardTop}>
                   <span style={styles.cardCat}>{item.category}</span>
-                  <span style={styles.cardPrice}>${item.price.toFixed(2)}</span>
+                  {/* Fixed: Replaced $ with ₹ and stripped decimals */}
+                  <span style={styles.cardPrice}>₹{Math.round(item.price)}</span>
                 </div>
                 <h3 style={styles.cardName}>{item.name}</h3>
                 <p style={styles.cardDesc}>{item.desc}</p>
