@@ -174,14 +174,14 @@ export default function CheckoutPage({ setPage }) {
                 <input className="input-box" name="address" value={form.address} onChange={handleInputChange} required />
               </div>
               <div>
-                <label style={styles.label}>Rider Delivery Instructions</label>
+                <label style={styles.label}> Delivery Instructions</label>
                 <textarea className="input-box" style={{ height: "65px", resize: "none" }} name="instructions" value={form.instructions} onChange={handleInputChange} placeholder="Drop off instructions..." />
               </div>
             </div>
 
             {/* Payment Selector */}
             <div style={styles.card}>
-              <h2 style={styles.sectionTitle}>💳 Select Settlement Method</h2>
+              <h2 style={styles.sectionTitle}>💳 Select Payment Method</h2>
               <div 
                 style={{ ...styles.paymentSelector, borderColor: paymentMethod === "online" ? THEME.colors.primary : THEME.colors.cardBorder }}
                 onClick={() => setPaymentMethod("online")}
