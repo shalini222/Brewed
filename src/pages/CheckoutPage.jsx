@@ -244,16 +244,11 @@ export default function CheckoutPage({ setPage }) {
           }
           .btn-interactive:hover { 
             transform: translateY(-3px); 
+            background-color: #2D140A !important;
             box-shadow: 0 8px 20px rgba(26, 11, 5, 0.12);
           }
           .btn-interactive:active { 
             transform: translateY(-1px); 
-          }
-          .btn-track:hover {
-            background-color: #FAF2EA !important;
-          }
-          .btn-menu:hover {
-            background-color: #2D140A !important;
           }
         `}</style>
         
@@ -271,13 +266,13 @@ export default function CheckoutPage({ setPage }) {
           </p>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {/* New Track Order Button */}
-            <button className="btn-interactive btn-track" style={styles.trackBtn} onClick={() => setPage("tracking")}>
-              📍 Track Order
+            {/* Exactly Identical Track Order Button */}
+            <button className="btn-interactive" style={styles.payBtn} onClick={() => setPage("tracking")}>
+              Track Order
             </button>
             
             {/* Return to Menu Button */}
-            <button className="btn-interactive btn-menu" style={styles.payBtn} onClick={() => setPage("menu")}>
+            <button className="btn-interactive" style={styles.payBtn} onClick={() => setPage("menu")}>
               Return to Menu
             </button>
           </div>
@@ -417,7 +412,6 @@ const styles = {
   paymentSelector: { display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", border: "1.5px solid", borderRadius: "8px", marginBottom: "0.75rem" },
   calcRow: { display: "flex", justifyContent: "space-between", fontSize: "0.9rem", marginBottom: "0.5rem", color: THEME.colors.textDark },
   payBtn: { width: "100%", padding: "1rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "1rem", outline: "none" },
-  trackBtn: { width: "100%", padding: "1rem", backgroundColor: "transparent", color: THEME.colors.primary, border: `2px solid ${THEME.colors.primary}`, borderRadius: "8px", fontWeight: "bold", fontSize: "1rem", outline: "none" },
   couponBtn: { backgroundColor: "transparent", border: `1px solid ${THEME.colors.textDark}`, borderRadius: "6px", padding: "0 1rem", cursor: "pointer" },
   couponPill: { display: "flex", justifyContent: "space-between", background: "#E8F5E9", color: THEME.colors.success, padding: "0.5rem", borderRadius: "6px", fontSize: "0.85rem" },
   removeBtn: { background: "none", border: "none", color: "red", cursor: "pointer", fontWeight: "bold" },
