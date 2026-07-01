@@ -16,44 +16,28 @@ export default function Navbar({ setPage, currentPage }) {
           z-index: 1000;
           display: flex;
           justify-content: center;
-          padding: 0 1.5rem;
+          padding: 1.5rem 2rem 0 2rem;
           box-sizing: border-box;
         }
 
-        .nav-boutique-awning {
-          background: #1A0A00; /* Rich espresso base */
+        .nav-architectural-bar {
+          background: #1A0A00; /* Rich espresso brand tone */
           display: flex;
           justify-content: space-between;
           align-items: center;
           width: 100%;
-          max-width: 1150px;
-          padding: 1.25rem 3rem 1.1rem 3rem;
-          position: relative;
+          max-width: 1200px;
+          padding: 1rem 2.5rem;
           
-          /* Premium depth configuration */
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
-          border-radius: 0 0 4px 4px;
-        }
-
-        /* 
-          Premium SVG Scallop Edge: 
-          Uses an encoded vector wave instead of harsh CSS circles for a luxury drapery flow
-        */
-        .nav-boutique-awning::after {
-          content: '';
-          position: absolute;
-          bottom: -11px;
-          left: 0;
-          width: 100%;
-          height: 12px;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 12' preserveAspectRatio='none'%3E%3Cpath d='M0,0v4.2c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0V0H0z' fill='%231A0A00'/%3E%3C/svg%3E");
-          background-size: 100% 12px;
-          background-repeat: no-repeat;
+          /* Sharp, crisp tailored outline representing an upscale storefront frame */
+          border: 1px solid rgba(196, 149, 106, 0.2);
+          border-bottom: 2px solid #C4956A; /* The golden bottom rim of the awning */
+          box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
         }
 
         .nav-logo-text {
           font-family: 'Playfair Display', serif;
-          font-size: 1.45rem;
+          font-size: 1.4rem;
           font-weight: 700;
           color: #FDFAF5;
           background: none;
@@ -61,7 +45,6 @@ export default function Navbar({ setPage, currentPage }) {
           cursor: pointer;
           padding: 0;
           letter-spacing: -0.01em;
-          z-index: 2;
         }
 
         .nav-logo-text span {
@@ -71,51 +54,44 @@ export default function Navbar({ setPage, currentPage }) {
         .nav-links-cluster {
           display: flex;
           align-items: center;
-          gap: 2.75rem;
-          z-index: 2;
         }
 
+        /* 
+          Architectural Canopy Stripes:
+          Replaces the wavy scallops with ultra-thin vertical grid lines,
+          giving a premium, tailored structural look to the buttons.
+        */
         .nav-item-btn {
           background: none;
           border: none;
+          border-left: 1px solid rgba(196, 149, 106, 0.15);
           font-family: 'Inter', sans-serif;
-          font-size: 0.8rem;
+          font-size: 0.78rem;
           font-weight: 600;
           color: #C4956A; 
           cursor: pointer;
-          padding: 0.2rem 0;
-          letter-spacing: 0.08em;
+          padding: 0.5rem 1.75rem;
+          letter-spacing: 0.1em;
           text-transform: uppercase;
-          transition: color 0.15s ease;
-          position: relative;
+          transition: all 0.2s ease;
         }
 
         .nav-item-btn:hover, .nav-item-btn.active {
           color: #FDFAF5;
+          background: rgba(196, 149, 106, 0.05);
         }
 
-        /* Minimal active indicator dot under the selected tab */
-        .nav-item-btn.active::after {
-          content: '';
-          position: absolute;
-          bottom: -6px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 4px;
-          height: 4px;
-          border-radius: 50%;
-          background: #C4956A;
-        }
-
+        /* Far right icon wrapper with a terminating border line */
         .nav-cart-trigger {
           background: none;
           border: none;
+          border-left: 1px solid rgba(196, 149, 106, 0.15);
           color: #C4956A;
           cursor: pointer;
-          padding: 0.25rem;
+          padding: 0.5rem 0 0.5rem 1.5rem;
           display: flex;
           align-items: center;
-          transition: color 0.15s ease;
+          transition: color 0.2s ease;
         }
 
         .nav-cart-trigger:hover, .nav-cart-trigger.active {
@@ -127,32 +103,31 @@ export default function Navbar({ setPage, currentPage }) {
           font-size: 0.75rem;
           font-weight: 700;
           color: #C4956A;
-          margin-left: 0.35rem;
+          margin-left: 0.4rem;
         }
 
         @media (max-width: 768px) {
           .nav-fixed-container {
             padding: 0;
           }
-          .nav-boutique-awning {
-            border-radius: 0;
-            padding: 1.1rem 1.5rem 1rem 1.5rem;
-          }
-          .nav-links-cluster {
-            gap: 1.35rem;
+          .nav-architectural-bar {
+            border-left: none;
+            border-right: none;
+            padding: 1rem 1.25rem;
           }
           .nav-item-btn {
-            font-size: 0.75rem;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.72rem;
             letter-spacing: 0.05em;
           }
-          .nav-item-btn.active::after {
-            display: none;
+          .nav-cart-trigger {
+            padding: 0.4rem 0 0.4rem 0.75rem;
           }
         }
       `}</style>
 
       <div className="nav-fixed-container">
-        <header className="nav-boutique-awning">
+        <header className="nav-architectural-bar">
           <button className="nav-logo-text" onClick={() => setPage("menu")}>
             Brewed<span>.</span>
           </button>
