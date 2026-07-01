@@ -8,41 +8,52 @@ export default function Navbar({ setPage, currentPage }) {
   return (
     <>
       <style>{`
-        .nav-wrapper {
+        .nav-fixed-container {
           position: absolute;
           top: 0;
           left: 0;
           width: 100%;
           z-index: 1000;
+          display: flex;
+          justify-content: center;
+          padding: 0 1.5rem;
           box-sizing: border-box;
-          padding: 0;
         }
 
-        .nav-awning {
-          background-color: #1A0A00; /* Rich espresso base color */
+        .nav-boutique-awning {
+          background: #1A0A00; /* Rich espresso base */
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 1.25rem 2.5rem 2rem 2.5rem;
+          width: 100%;
+          max-width: 1150px;
+          padding: 1.25rem 3rem 1.1rem 3rem;
           position: relative;
+          
+          /* Premium depth configuration */
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+          border-radius: 0 0 4px 4px;
         }
 
-        /* The Scallop Valance Border: Recreating the waves from 1000013790.jpg using pure CSS */
-        .nav-awning::after {
+        /* 
+          Premium SVG Scallop Edge: 
+          Uses an encoded vector wave instead of harsh CSS circles for a luxury drapery flow
+        */
+        .nav-boutique-awning::after {
           content: '';
           position: absolute;
-          bottom: -15px; /* Pulls the wave shape just below the header base */
+          bottom: -11px;
           left: 0;
           width: 100%;
-          height: 16px;
-          /* Seamless repeating semi-circles */
-          background-image: radial-gradient(circle at 10px -4px, #1A0A00 12px, transparent 13px);
-          background-size: 20px 20px;
+          height: 12px;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 12' preserveAspectRatio='none'%3E%3Cpath d='M0,0v4.2c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0c12.5,4.7,25.8,4.7,37.5,0c12.5-4.7,25.8-4.7,37.5,0V0H0z' fill='%231A0A00'/%3E%3C/svg%3E");
+          background-size: 100% 12px;
+          background-repeat: no-repeat;
         }
 
         .nav-logo-text {
           font-family: 'Playfair Display', serif;
-          font-size: 1.4rem;
+          font-size: 1.45rem;
           font-weight: 700;
           color: #FDFAF5;
           background: none;
@@ -60,7 +71,7 @@ export default function Navbar({ setPage, currentPage }) {
         .nav-links-cluster {
           display: flex;
           align-items: center;
-          gap: 2.5rem;
+          gap: 2.75rem;
           z-index: 2;
         }
 
@@ -75,7 +86,7 @@ export default function Navbar({ setPage, currentPage }) {
           padding: 0.2rem 0;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          transition: color 0.2s ease;
+          transition: color 0.15s ease;
           position: relative;
         }
 
@@ -83,7 +94,7 @@ export default function Navbar({ setPage, currentPage }) {
           color: #FDFAF5;
         }
 
-        /* Minimal active indicator dot under the current tab */
+        /* Minimal active indicator dot under the selected tab */
         .nav-item-btn.active::after {
           content: '';
           position: absolute;
@@ -104,7 +115,7 @@ export default function Navbar({ setPage, currentPage }) {
           padding: 0.25rem;
           display: flex;
           align-items: center;
-          transition: color 0.2s ease;
+          transition: color 0.15s ease;
         }
 
         .nav-cart-trigger:hover, .nav-cart-trigger.active {
@@ -120,11 +131,15 @@ export default function Navbar({ setPage, currentPage }) {
         }
 
         @media (max-width: 768px) {
-          .nav-awning {
-            padding: 1rem 1.25rem 1.75rem 1.25rem;
+          .nav-fixed-container {
+            padding: 0;
+          }
+          .nav-boutique-awning {
+            border-radius: 0;
+            padding: 1.1rem 1.5rem 1rem 1.5rem;
           }
           .nav-links-cluster {
-            gap: 1.25rem;
+            gap: 1.35rem;
           }
           .nav-item-btn {
             font-size: 0.75rem;
@@ -136,8 +151,8 @@ export default function Navbar({ setPage, currentPage }) {
         }
       `}</style>
 
-      <div className="nav-wrapper">
-        <header className="nav-awning">
+      <div className="nav-fixed-container">
+        <header className="nav-boutique-awning">
           <button className="nav-logo-text" onClick={() => setPage("menu")}>
             Brewed<span>.</span>
           </button>
