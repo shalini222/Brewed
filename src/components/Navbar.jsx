@@ -82,7 +82,7 @@ export default function Navbar({ setPage, currentPage }) {
           top: -2px;
           right: -2px;
           background: #C4956A; /* Caramel badge background color */
-          color: #1A0A00; /* FIXED: Back to dark brown for perfect contrast inside the caramel badge */
+          color: #FDFAF5; /* FIXED: Back to your exact body white cream text */
           font-family: 'Inter', sans-serif;
           font-size: 0.68rem;
           font-weight: 700;
