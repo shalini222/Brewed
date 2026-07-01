@@ -1,13 +1,29 @@
-import { useState } from "react"; // Fixed: Added missing useState hook import
+import { useState } from "react"; 
 import { useCart } from "../context/CartContext";
-import { menuItems, categories } from "../data/menu"; // Make sure your path matches your project layout
+import { menuItems, categories } from "../data/menu"; 
 
 export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState("All");
+  const [sortBy, setSortBy] = useState("featured"); // Options: featured, price-low, price-high
   const [added, setAdded] = useState({});
   const { addToCart } = useCart();
 
-  const filtered = activeCategory === "All" ? menuItems : menuItems.filter((i) => i.category === activeCategory);
+  // 1. First filter by category
+  const filtered = activeCategory === "All" 
+    ? [...menuItems] 
+    : menuItems.filter((i) => i.category === activeCategory);
+
+  // 2. Then sort the filtered list
+  const sortedAndFiltered = filtered.sort((a, b) => {
+    if (sortBy === "price-low") {
+      return a.price - b.price;
+    }
+    if (sortBy === "price-high") {
+      return b.price - a.price;
+    }
+    // Default "featured" sorts by name alphabetically
+    return a.name.localeCompare(b.name);
+  });
 
   const handleAdd = (item) => {
     addToCart(item);
@@ -42,14 +58,35 @@ export default function MenuPage() {
         }
         .filter-bar {
           display: flex;
-          gap: 0.5rem;
-          flex-wrap: wrap;
+          justify-content: space-between;
+          align-items: center;
+          gap: 1rem;
           padding: 1.25rem 2rem;
           background: #FDFAF5;
           border-bottom: 1px solid #E8E0D5;
           position: sticky;
           top: 64px;
           z-index: 50;
+        }
+        .categories-wrapper {
+          display: flex;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+        .sort-select {
+          padding: 0.4rem 1.5rem 0.4rem 0.75rem;
+          border-radius: 8px;
+          border: 1.5px solid #C4956A;
+          background-color: #fff;
+          color: #3B1A08;
+          font-family: 'Inter', sans-serif;
+          fontSize: 0.83rem;
+          cursor: pointer;
+          outline: none;
+          appearance: none;
+          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'><path stroke='%233B1A08' stroke-width='1.5' d='m1 1 4 4 4-4'/></svg>");
+          background-repeat: no-repeat;
+          background-position: right 0.6rem center;
         }
         .hero-title {
           font-family: 'Playfair Display', serif;
@@ -66,9 +103,14 @@ export default function MenuPage() {
             padding: 1rem;
           }
           .filter-bar {
+            flex-direction: column;
+            align-items: stretch;
             padding: 1rem;
-            gap: 0.4rem;
+            gap: 0.75rem;
             top: 56px;
+          }
+          .sort-select {
+            width: 100%;
           }
         }
         @media (max-width: 400px) {
@@ -89,31 +131,46 @@ export default function MenuPage() {
           </div>
         </div>
 
-        {/* Category Filter */}
+        {/* Filters Wrapper */}
         <div className="filter-bar">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              style={{
-                ...styles.filterBtn,
-                ...(activeCategory === cat ? styles.filterActive : {}),
-              }}
-              onClick={() => setActiveCategory(cat)}
+          {/* Left Side: Categories */}
+          <div className="categories-wrapper">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                style={{
+                  ...styles.filterBtn,
+                  ...(activeCategory === cat ? styles.filterActive : {}),
+                }}
+                onClick={() => setActiveCategory(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Right Side: Sorting Dropdown */}
+          <div>
+            <select 
+              className="sort-select" 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value)}
             >
-              {cat}
-            </button>
-          ))}
+              <option value="featured">Sort by: Featured</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+            </select>
+          </div>
         </div>
 
         {/* Grid */}
         <div className="menu-grid">
-          {filtered.map((item) => (
+          {sortedAndFiltered.map((item) => (
             <div key={item.id} className="menu-card">
               <div style={styles.cardEmoji}>{item.emoji}</div>
               <div style={styles.cardBody}>
                 <div style={styles.cardTop}>
                   <span style={styles.cardCat}>{item.category}</span>
-                  {/* Fixed: Replaced $ with ₹ and stripped decimals */}
                   <span style={styles.cardPrice}>₹{Math.round(item.price)}</span>
                 </div>
                 <h3 style={styles.cardName}>{item.name}</h3>
