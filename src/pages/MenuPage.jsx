@@ -1,19 +1,28 @@
-import { useState } from "react"; 
+    import { useState } from "react"; 
 import { useCart } from "../context/CartContext";
 import { menuItems, categories } from "../data/menu"; 
 
 export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState("All");
-  const [sortBy, setSortBy] = useState("featured"); // Options: featured, price-low, price-high
+  const [sortBy, setSortBy] = useState("featured"); 
   const [added, setAdded] = useState({});
   const { addToCart } = useCart();
 
-  // 1. First filter by category
-  const filtered = activeCategory === "All" 
-    ? [...menuItems] 
-    : menuItems.filter((i) => i.category === activeCategory);
+  // Inject sleek mock ratings onto your items data seamlessly
+  const menuWithRatings = menuItems.map(item => {
+    // Deterministic sleek mock ratings based on item IDs so they stay stable
+    const baseRating = 4.3 + ((item.id * 7) % 7) * 0.1;
+    const rating = Math.min(5, Math.max(4.2, baseRating)).toFixed(1);
+    const reviews = 12 + ((item.id * 13) % 45);
+    return { ...item, rating, reviews };
+  });
 
-  // 2. Then sort the filtered list
+  // 1. Filter by category
+  const filtered = activeCategory === "All" 
+    ? [...menuWithRatings] 
+    : menuWithRatings.filter((i) => i.category === activeCategory);
+
+  // 2. Sort the filtered list
   const sortedAndFiltered = filtered.sort((a, b) => {
     if (sortBy === "price-low") {
       return a.price - b.price;
@@ -21,7 +30,6 @@ export default function MenuPage() {
     if (sortBy === "price-high") {
       return b.price - a.price;
     }
-    // Default "featured" sorts by name alphabetically
     return a.name.localeCompare(b.name);
   });
 
@@ -80,7 +88,7 @@ export default function MenuPage() {
           background-color: #fff;
           color: #3B1A08;
           font-family: 'Inter', sans-serif;
-          fontSize: 0.83rem;
+          font-size: 0.83rem;
           cursor: pointer;
           outline: none;
           appearance: none;
@@ -95,6 +103,26 @@ export default function MenuPage() {
           font-weight: 700;
           line-height: 1.2;
           margin-bottom: 1rem;
+        }
+        /* Sleek Rating Layout Classes */
+        .rating-badge {
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+          margin-bottom: 0.4rem;
+          font-family: 'Inter', sans-serif;
+          font-size: 0.75rem;
+        }
+        .rating-star {
+          color: #C4956A;
+          font-size: 0.85rem;
+        }
+        .rating-score {
+          color: #1A0A00;
+          font-weight: 600;
+        }
+        .rating-count {
+          color: #A39081;
         }
         @media (max-width: 768px) {
           .menu-grid {
@@ -133,7 +161,6 @@ export default function MenuPage() {
 
         {/* Filters Wrapper */}
         <div className="filter-bar">
-          {/* Left Side: Categories */}
           <div className="categories-wrapper">
             {categories.map((cat) => (
               <button
@@ -149,7 +176,6 @@ export default function MenuPage() {
             ))}
           </div>
 
-          {/* Right Side: Sorting Dropdown */}
           <div>
             <select 
               className="sort-select" 
@@ -173,7 +199,16 @@ export default function MenuPage() {
                   <span style={styles.cardCat}>{item.category}</span>
                   <span style={styles.cardPrice}>₹{Math.round(item.price)}</span>
                 </div>
+                
                 <h3 style={styles.cardName}>{item.name}</h3>
+
+                {/* Added Sleek Inline Rating */}
+                <div className="rating-badge">
+                  <span className="rating-star">★</span>
+                  <span className="rating-score">{item.rating}</span>
+                  <span className="rating-count">({item.reviews})</span>
+                </div>
+
                 <p style={styles.cardDesc}>{item.desc}</p>
               </div>
               <button
@@ -223,10 +258,10 @@ const styles = {
     padding: "1.25rem 1rem 0.5rem",
     background: "linear-gradient(180deg, #FDF6EE 0%, #fff 100%)",
   },
-  cardBody: { padding: "0.85rem 1rem", flex: 1 },
+  cardBody: { padding: "0.85rem 1rem", flex: 1, display: "flex", flexDirection: "column" },
   cardTop: {
     display: "flex", justifyContent: "space-between",
-    alignItems: "center", marginBottom: "0.3rem",
+    alignItems: "center", marginBottom: "0.2rem",
   },
   cardCat: {
     fontSize: "0.68rem", color: "#C4956A",
@@ -239,11 +274,12 @@ const styles = {
   },
   cardName: {
     fontFamily: "'Playfair Display', serif",
-    fontSize: "1.05rem", color: "#1A0A00", margin: "0 0 0.3rem",
+    fontSize: "1.05rem", color: "#1A0A00", margin: "0 0 0.2rem",
   },
   cardDesc: {
     fontFamily: "'Inter', sans-serif",
     fontSize: "0.78rem", color: "#7A6658", lineHeight: 1.5,
+    marginTop: "auto", paddingTop: "0.4rem"
   },
   addBtn: {
     margin: "0 1rem 1rem",
