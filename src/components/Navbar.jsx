@@ -1,4 +1,4 @@
-import { useCart } from "../context/CartContext";
+     import { useCart } from "../context/CartContext";
 
 export default function Navbar({ setPage, currentPage }) {
   const { cart = [] } = useCart();
@@ -10,8 +10,8 @@ export default function Navbar({ setPage, currentPage }) {
     <>
       <style>{`
         .nav-header {
-          background: #FDFAF5; /* Canvas off-white from your menu */
-          border-bottom: 1px solid #E8E0D5;
+          background: #1A0A00; /* Back to your rich, beautiful dark espresso brown */
+          border-bottom: 1px solid #3B1A08; /* Deep accent border line */
           position: sticky;
           top: 0;
           z-index: 1000;
@@ -25,7 +25,7 @@ export default function Navbar({ setPage, currentPage }) {
           font-family: 'Playfair Display', serif;
           font-size: 1.35rem;
           font-weight: 700;
-          color: #1A0A00; /* Rich espresso accent */
+          color: #FDFAF5; /* Crisp, luxurious warm off-white for contrast */
           background: none;
           border: none;
           cursor: pointer;
@@ -34,7 +34,7 @@ export default function Navbar({ setPage, currentPage }) {
         }
 
         .nav-logo-text span {
-          color: #C4956A; /* Warm caramel accent */
+          color: #C4956A; /* Warm caramel accent dot */
         }
 
         /* Grouping links with comfortable, luxurious breathing room */
@@ -44,14 +44,14 @@ export default function Navbar({ setPage, currentPage }) {
           gap: 2.25rem;
         }
 
-        /* Clean, high-contrast text layout links replacing busy icons */
+        /* Clean text-only links to completely eliminate icon clutter */
         .nav-item-btn {
           background: none;
           border: none;
           font-family: 'Inter', sans-serif;
           font-size: 0.8rem;
           font-weight: 600;
-          color: #7A6658; /* Muted slate brown */
+          color: #C4956A; /* Soft caramel default text state */
           cursor: pointer;
           padding: 0.2rem 0;
           letter-spacing: 0.08em;
@@ -61,10 +61,10 @@ export default function Navbar({ setPage, currentPage }) {
         }
 
         .nav-item-btn:hover, .nav-item-btn.active {
-          color: #1A0A00;
+          color: #FDFAF5; /* Lights up beautifully on hover / focus active states */
         }
 
-        /* Minimal active indicator line matching your brand style */
+        /* Minimal active indicator underline matching your cafe theme color */
         .nav-item-btn.active::after {
           content: '';
           position: absolute;
@@ -75,11 +75,11 @@ export default function Navbar({ setPage, currentPage }) {
           background: #C4956A;
         }
 
-        /* Single micro icon action wrapper for the basket */
+        /* The lone micro icon layout button on the far right */
         .nav-cart-trigger {
           background: none;
           border: none;
-          color: #7A6658;
+          color: #C4956A;
           cursor: pointer;
           padding: 0.25rem;
           display: flex;
@@ -88,7 +88,7 @@ export default function Navbar({ setPage, currentPage }) {
         }
 
         .nav-cart-trigger:hover, .nav-cart-trigger.active {
-          color: #1A0A00;
+          color: #FDFAF5;
         }
 
         .nav-cart-num {
@@ -99,13 +99,13 @@ export default function Navbar({ setPage, currentPage }) {
           margin-left: 0.35rem;
         }
 
-        /* Clean media query step down for standard viewports */
+        /* Clean media query step down for mobile device viewports */
         @media (max-width: 768px) {
           .nav-header {
             padding: 1rem 1.25rem;
           }
           .nav-links-cluster {
-            gap: 1.25rem;
+            gap: 1.15rem;
           }
           .nav-item-btn {
             font-size: 0.75rem;
@@ -120,7 +120,7 @@ export default function Navbar({ setPage, currentPage }) {
           Brewed<span>.</span>
         </button>
 
-        {/* Minimalist interactive grouping */}
+        {/* Minimalist interactive dark text grouping */}
         <div className="nav-links-cluster">
           <button 
             className={`nav-item-btn ${currentPage === "menu" ? "active" : ""}`}
@@ -150,7 +150,7 @@ export default function Navbar({ setPage, currentPage }) {
             Sign In
           </button>
 
-          {/* The single, lightweight functional icon on the far right */}
+          {/* Your single, lightweight functional vector icon */}
           <button 
             className={`nav-cart-trigger ${currentPage === "cart" ? "active" : ""}`}
             onClick={() => setPage("cart")}
@@ -169,3 +169,4 @@ export default function Navbar({ setPage, currentPage }) {
     </>
   );
 }
+               
