@@ -54,23 +54,26 @@ export default function Navbar({ setPage, currentPage }) {
         .nav-icon-btn {
           background: none;
           border: none;
-          color: #C4956A; /* Soft elegant caramel tone */
+          color: #FDFAF5; /* Icons are now matching your gorgeous cream white */
           cursor: pointer;
           padding: 0.35rem;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: color 0.2s ease, transform 0.1s ease;
+          transition: color 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s ease;
           position: relative;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
         }
 
-        /* High-end interactive state: icons glow white on focus/hover */
+        /* High-end interactive state: icons glow bright white and scale gently */
         .nav-icon-btn:hover, .nav-icon-btn.active {
-          color: #FDFAF5;
+          color: #FFFFFF;
+          transform: translateY(-1px);
+          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
         }
         
         .nav-icon-btn:active {
-          transform: scale(0.95);
+          transform: scale(0.93);
         }
 
         /* Floating count badge anchored precisely to the top-right corner of the bag */
@@ -78,8 +81,8 @@ export default function Navbar({ setPage, currentPage }) {
           position: absolute;
           top: -2px;
           right: -2px;
-          background: #C4956A;
-          color: #1A0A00; /* Dark espresso contrast text inside badge */
+          background: #C4956A; /* High contrast caramel badge background */
+          color: #1A0A00; /* Dark espresso text inside badge for clear readability */
           font-family: 'Inter', sans-serif;
           font-size: 0.68rem;
           font-weight: 700;
@@ -91,7 +94,7 @@ export default function Navbar({ setPage, currentPage }) {
           justify-content: center;
           padding: 0 2px;
           box-sizing: border-box;
-          border: 1px solid #1A0A00; /* Micro-ring separation */
+          border: 1px solid #1A0A00; /* Micro-ring separation overlay */
         }
 
         @media (max-width: 768px) {
@@ -110,7 +113,7 @@ export default function Navbar({ setPage, currentPage }) {
           Brewed<span>.</span>
         </button>
 
-        {/* Replaced text with exactly 3 ultra-premium minimalist vector icons */}
+        {/* Minimalist layout cluster container */}
         <div className="nav-icons-group">
           
           {/* 1. Location Pin Button */}
