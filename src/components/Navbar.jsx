@@ -14,32 +14,35 @@ export default function Navbar({ setPage, currentPage }) {
           left: 0;
           width: 100%;
           z-index: 1000;
-          display: flex;
-          justify-content: center; /* Centers the roof canopy on the screen */
-          padding: 0 1.5rem;
           box-sizing: border-box;
+          padding: 0;
         }
 
-        .nav-roof-canopy {
-          background: #1A0A00; /* Your rich brand espresso brown */
+        .nav-awning {
+          background-color: #1A0A00; /* Rich espresso base color */
           display: flex;
           justify-content: space-between;
           align-items: center;
+          padding: 1.25rem 2.5rem 2rem 2.5rem;
+          position: relative;
+        }
+
+        /* The Scallop Valance Border: Recreating the waves from 1000013790.jpg using pure CSS */
+        .nav-awning::after {
+          content: '';
+          position: absolute;
+          bottom: -15px; /* Pulls the wave shape just below the header base */
+          left: 0;
           width: 100%;
-          max-width: 1100px;
-          padding: 1rem 2.5rem 1.25rem 2.5rem;
-          
-          /* The Magic: Creates a subtle, elegant architectural canopy angle on the bottom edges */
-          clip-path: polygon(0% 0%, 100% 0%, 98% 100%, 2% 100%);
-          
-          /* Adds a slim, glowing cafe lighting line right at the edge of the roof */
-          border-bottom: 1.5px solid #C4956A; 
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+          height: 16px;
+          /* Seamless repeating semi-circles */
+          background-image: radial-gradient(circle at 10px -4px, #1A0A00 12px, transparent 13px);
+          background-size: 20px 20px;
         }
 
         .nav-logo-text {
           font-family: 'Playfair Display', serif;
-          font-size: 1.35rem;
+          font-size: 1.4rem;
           font-weight: 700;
           color: #FDFAF5;
           background: none;
@@ -47,6 +50,7 @@ export default function Navbar({ setPage, currentPage }) {
           cursor: pointer;
           padding: 0;
           letter-spacing: -0.01em;
+          z-index: 2;
         }
 
         .nav-logo-text span {
@@ -57,6 +61,7 @@ export default function Navbar({ setPage, currentPage }) {
           display: flex;
           align-items: center;
           gap: 2.5rem;
+          z-index: 2;
         }
 
         .nav-item-btn {
@@ -78,7 +83,7 @@ export default function Navbar({ setPage, currentPage }) {
           color: #FDFAF5;
         }
 
-        /* Minimal active indicator dot under the selected tab */
+        /* Minimal active indicator dot under the current tab */
         .nav-item-btn.active::after {
           content: '';
           position: absolute;
@@ -115,20 +120,15 @@ export default function Navbar({ setPage, currentPage }) {
         }
 
         @media (max-width: 768px) {
-          .nav-wrapper {
-            padding: 0;
-          }
-          .nav-roof-canopy {
-            /* Flattens the canopy angles slightly on mobile frames for a cleaner fit */
-            clip-path: polygon(0% 0%, 100% 0%, 99% 100%, 1% 100%);
-            padding: 1rem 1.25rem;
+          .nav-awning {
+            padding: 1rem 1.25rem 1.75rem 1.25rem;
           }
           .nav-links-cluster {
             gap: 1.25rem;
           }
           .nav-item-btn {
-            font-size: 0.72rem;
-            letter-spacing: 0.04em;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
           }
           .nav-item-btn.active::after {
             display: none;
@@ -137,7 +137,7 @@ export default function Navbar({ setPage, currentPage }) {
       `}</style>
 
       <div className="nav-wrapper">
-        <header className="nav-roof-canopy">
+        <header className="nav-awning">
           <button className="nav-logo-text" onClick={() => setPage("menu")}>
             Brewed<span>.</span>
           </button>
