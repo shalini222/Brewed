@@ -1,16 +1,31 @@
+import { useState } from "react"; // 1. Import useState to manage temporary login state
 import { useCart } from "../context/CartContext";
 
 export default function Navbar({ setPage, currentPage }) {
   const { cart = [] } = useCart();
   
-  // Calculate total item count inside the cart dynamically
+  // 2. Create a local temporary state. False = Logged Out, True = Logged In
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
   const cartItemCount = cart.reduce((total, item) => total + (item.qty || 1), 0);
+
+  // 3. A temporary function to handle clicking the profile icon
+  const handleProfileClick = () => {
+    if (!isLoggedIn) {
+      // Simulate logging in instantly
+      setIsLoggedIn(true);
+      alert("Mock Login: You are now logged in! (Icon updated)");
+    } else {
+      // Simulate logging out instantly
+      setIsLoggedIn(false);
+      alert("Mock Logout: You are now logged out!");
+    }
+  };
 
   return (
     <>
       <style>{`
         .nav-header {
-          /* Headless layout - floats invisibly over the hero section gradient */
           background: transparent;
           border: none;
           position: absolute;
@@ -19,8 +34,6 @@ export default function Navbar({ setPage, currentPage }) {
           width: 100%;
           box-sizing: border-box;
           z-index: 1000;
-          
-          /* Balanced breathing room spacing matching your layout frames */
           padding: 1.75rem 2.5rem;
           display: flex;
           justify-content: space-between;
@@ -31,7 +44,7 @@ export default function Navbar({ setPage, currentPage }) {
           font-family: 'Playfair Display', serif;
           font-size: 1.45rem;
           font-weight: 700;
-          color: #FDFAF5; /* Premium crisp warm off-white */
+          color: #FDFAF5;
           background: none;
           border: none;
           cursor: pointer;
@@ -40,21 +53,19 @@ export default function Navbar({ setPage, currentPage }) {
         }
 
         .nav-logo-text span {
-          color: #C4956A; /* Accent dot matching your brand identity */
+          color: #C4956A;
         }
 
-        /* Minimalist icon tray alignment on the right side */
         .nav-icons-group {
           display: flex;
           align-items: center;
           gap: 1.75rem;
         }
 
-        /* Pure wireframe icon buttons with zero background clutter */
         .nav-icon-btn {
           background: none;
           border: none;
-          color: #FDFAF5; /* Body cream white icons */
+          color: #FDFAF5;
           cursor: pointer;
           padding: 0.35rem;
           display: flex;
@@ -65,24 +76,33 @@ export default function Navbar({ setPage, currentPage }) {
           filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
         }
 
-        /* Premium hover interaction: clean bright white text illumination */
         .nav-icon-btn:hover, .nav-icon-btn.active {
           color: #FFFFFF;
           transform: translateY(-1px);
           filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+
+        /* Golden dot indicator to cleanly display authentication state */
+        .nav-icon-btn.logged-in::after {
+          content: '';
+          position: absolute;
+          bottom: -4px;
+          width: 4px;
+          height: 4px;
+          background: #C4956A;
+          border-radius: 50%;
         }
         
         .nav-icon-btn:active {
           transform: scale(0.93);
         }
 
-        /* Floating count badge anchored precisely to the top-right corner of the bag */
         .nav-cart-badge {
           position: absolute;
           top: -2px;
           right: -2px;
-          background: #1A0A00; /* FIXED: Now using the darkest espresso brown for the circle */
-          color: #FDFAF5; /* White cream number text for clean legibility */
+          background: #1A0A00;
+          color: #FDFAF5;
           font-family: 'Inter', sans-serif;
           font-size: 0.68rem;
           font-weight: 700;
@@ -94,7 +114,7 @@ export default function Navbar({ setPage, currentPage }) {
           justify-content: center;
           padding: 0 2px;
           box-sizing: border-box;
-          border: 1px solid #FDFAF5; /* FIXED: Crisp body white cream border ring */
+          border: 1px solid #FDFAF5;
         }
 
         @media (max-width: 768px) {
@@ -108,15 +128,13 @@ export default function Navbar({ setPage, currentPage }) {
       `}</style>
 
       <header className="nav-header">
-        {/* Main Typographic Branding */}
         <button className="nav-logo-text" onClick={() => setPage("menu")}>
           Brewed<span>.</span>
         </button>
 
-        {/* Minimalist icon tray links layout */}
         <div className="nav-icons-group">
           
-          {/* 1. Location Pin Button */}
+          {/* Location Pin */}
           <button 
             className={`nav-icon-btn ${currentPage === "locator" ? "active" : ""}`}
             onClick={() => setPage("locator")}
@@ -128,19 +146,30 @@ export default function Navbar({ setPage, currentPage }) {
             </svg>
           </button>
 
-          {/* 2. Profile / Login Button */}
+          {/* Profile Button - Now dynamically changing icons on click */}
           <button 
-            className={`nav-icon-btn ${currentPage === "login" ? "active" : ""}`}
-            onClick={() => setPage("login")}
-            title="Account"
+            className={`nav-icon-btn ${isLoggedIn ? "logged-in" : ""}`}
+            onClick={handleProfileClick}
+            title={isLoggedIn ? "Click to Mock Logout" : "Click to Mock Login"}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
+            {isLoggedIn ? (
+              /* LOGGED IN STYLE: Replaces standard user outline with a badge layout */
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M5 21v-2a4 4 0 0 1 4-4h2.5" />
+                <circle cx="10" cy="7" r="4" />
+                <path d="m16 11 2 2 4-4" stroke="#C4956A" /> 
+              </svg>
+            ) : (
+              /* LOGGED OUT STYLE: Minimal clean outline placeholder */
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            )}
           </button>
 
-          {/* 3. Shopping Bag Button with Dark Espresso Counter Circle */}
+          {/* Shopping Bag */}
           <button 
             className={`nav-icon-btn ${currentPage === "cart" ? "active" : ""}`}
             onClick={() => setPage("cart")}
