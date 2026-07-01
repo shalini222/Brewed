@@ -81,8 +81,8 @@ export default function Navbar({ setPage, currentPage }) {
           position: absolute;
           top: -2px;
           right: -2px;
-          background: #C4956A; /* Caramel badge background color */
-          color: #FDFAF5; /* FIXED: Back to your exact body white cream text */
+          background: #1A0A00; /* FIXED: Now using the darkest espresso brown for the circle */
+          color: #FDFAF5; /* White cream number text for clean legibility */
           font-family: 'Inter', sans-serif;
           font-size: 0.68rem;
           font-weight: 700;
@@ -94,7 +94,7 @@ export default function Navbar({ setPage, currentPage }) {
           justify-content: center;
           padding: 0 2px;
           box-sizing: border-box;
-          border: 1px solid #1A0A00; /* Subtle background ring separation line */
+          border: 1px solid #FDFAF5; /* FIXED: Crisp body white cream border ring */
         }
 
         @media (max-width: 768px) {
@@ -140,7 +140,7 @@ export default function Navbar({ setPage, currentPage }) {
             </svg>
           </button>
 
-          {/* 3. Shopping Bag Button with Corrected Top-Right Counter */}
+          {/* 3. Shopping Bag Button with Dark Espresso Counter Circle */}
           <button 
             className={`nav-icon-btn ${currentPage === "cart" ? "active" : ""}`}
             onClick={() => setPage("cart")}
