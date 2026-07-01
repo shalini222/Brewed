@@ -1,4 +1,4 @@
-    import { useState } from "react"; 
+import { useState } from "react"; 
 import { useCart } from "../context/CartContext";
 import { menuItems, categories } from "../data/menu"; 
 
@@ -8,13 +8,40 @@ export default function MenuPage() {
   const [added, setAdded] = useState({});
   const { addToCart } = useCart();
 
-  // Inject sleek mock ratings onto your items data seamlessly
+  // Mapping specific, realistic ratings and reviews to match each unique item ID
+  const itemRatingsMap = {
+    1: { rating: "4.5", reviews: 142 }, // Espresso
+    2: { rating: "4.8", reviews: 320 }, // Cappuccino
+    3: { rating: "4.6", reviews: 88 },  // Flat White
+    4: { rating: "4.7", reviews: 215 }, // Cold Brew
+    5: { rating: "4.9", reviews: 412 }, // Caramel Latte
+    6: { rating: "4.4", reviews: 67 },  // Matcha Latte
+    7: { rating: "4.8", reviews: 523 }, // Chai Tea
+    8: { rating: "4.6", reviews: 198 }, // Croissant
+    9: { rating: "4.5", reviews: 154 }, // Avocado Toast
+    10: { rating: "4.3", reviews: 92 }, // Blueberry Muffin
+    11: { rating: "4.4", reviews: 110 }, // Iced Americano
+    12: { rating: "4.7", reviews: 280 }, // Vanilla Frappé
+    13: { rating: "4.9", reviews: 345 }, // Classic Hot Chocolate
+    14: { rating: "4.2", reviews: 54 },  // Hibiscus Iced Tea
+    15: { rating: "4.7", reviews: 267 }, // Paneer Tikka Sandwich
+    16: { rating: "4.8", reviews: 189 }, // Fudge Brownie
+    17: { rating: "4.6", reviews: 76 },  // Vietnamese Shakerato
+    18: { rating: "4.9", reviews: 231 }, // Lotus Biscoff Latte
+    19: { rating: "4.5", reviews: 143 }, // Mocha Mocha
+    20: { rating: "4.4", reviews: 98 },  // Thai Bubble Tea
+    21: { rating: "4.6", reviews: 165 }, // Mint Mojito Cooler
+    22: { rating: "4.3", reviews: 42 },  // Turmeric Ginger Latte
+    23: { rating: "4.7", reviews: 178 }, // Nutella Pancakes
+    24: { rating: "4.8", reviews: 294 }, // Chicken Keema Samosas
+    25: { rating: "4.5", reviews: 83 },  // Hummus & Pita Platter
+    26: { rating: "4.6", reviews: 201 }  // Truffle Fries
+  };
+
+  // Attach the realistic dynamic ratings to your data array
   const menuWithRatings = menuItems.map(item => {
-    // Deterministic sleek mock ratings based on item IDs so they stay stable
-    const baseRating = 4.3 + ((item.id * 7) % 7) * 0.1;
-    const rating = Math.min(5, Math.max(4.2, baseRating)).toFixed(1);
-    const reviews = 12 + ((item.id * 13) % 45);
-    return { ...item, rating, reviews };
+    const data = itemRatingsMap[item.id] || { rating: "4.5", reviews: 50 }; // fallback just in case
+    return { ...item, rating: data.rating, reviews: data.reviews };
   });
 
   // 1. Filter by category
@@ -104,7 +131,6 @@ export default function MenuPage() {
           line-height: 1.2;
           margin-bottom: 1rem;
         }
-        /* Sleek Rating Layout Classes */
         .rating-badge {
           display: flex;
           align-items: center;
@@ -202,7 +228,7 @@ export default function MenuPage() {
                 
                 <h3 style={styles.cardName}>{item.name}</h3>
 
-                {/* Added Sleek Inline Rating */}
+                {/* Elegant Minimalist Rating Row */}
                 <div className="rating-badge">
                   <span className="rating-star">★</span>
                   <span className="rating-score">{item.rating}</span>
