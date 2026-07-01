@@ -1,179 +1,195 @@
-import { useState } from "react";
 import { useCart } from "../context/CartContext";
 
-export default function Navbar() {
-  const { cart } = useCart();
+export default function Navbar({ setPage, currentPage }) {
+  const { cart = [] } = useCart();
   
-  // Calculate total items currently inside the shopping cart
-  const cartItemCount = cart ? cart.reduce((total, item) => total + (item.quantity || 1), 0) : 0;
+  // Calculate clean total items in the cart
+  const cartItemCount = cart.reduce((total, item) => total + (item.qty || 1), 0);
 
   return (
     <>
       <style>{`
-        .navbar {
+        .nav-container {
+          background: #FDFAF5; /* Soft, premium off-white canvas */
+          border-bottom: 1px solid #E8E0D5; /* Subtle earthy line border */
+          position: sticky;
+          top: 0;
+          z-index: 1000;
+          padding: 1rem 2.5rem;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          background: #1A0A00; /* Deep rich espresso background */
-          padding: 0.75rem 2rem;
-          position: sticky;
-          top: 0;
-          z-index: 100;
-          border-bottom: 1px solid #3B1A08;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         }
-        
-        .nav-logo {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
+
+        .nav-brand {
           font-family: 'Playfair Display', serif;
-          font-size: 1.35rem;
+          font-size: 1.4rem;
           font-weight: 700;
-          color: #FDFAF5;
-          text-decoration: none;
-          cursor: pointer;
-          letter-spacing: 0.05em;
-        }
-
-        .nav-logo span {
-          color: #C4956A; /* Warm caramel accent */
-        }
-
-        .nav-actions {
-          display: flex;
-          align-items: center;
-          gap: 1.25rem;
-        }
-
-        /* Sleek Minimalist Icon Buttons */
-        .nav-icon-btn {
-          background: transparent;
-          border: none;
-          color: #C4956A;
-          cursor: pointer;
-          padding: 0.5rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          transition: all 0.2s ease;
-          position: relative;
-          text-decoration: none;
-        }
-
-        .nav-icon-btn:hover {
-          color: #FDFAF5;
-          background: rgba(196, 149, 106, 0.12);
-          transform: translateY(-1px);
-        }
-
-        /* Dynamic Cart Badge */
-        .cart-badge {
-          position: absolute;
-          top: -2px;
-          right: -2px;
-          background: #C4956A;
           color: #1A0A00;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+          letter-spacing: -0.02em;
+        }
+
+        .nav-brand span {
+          color: #C4956A;
+        }
+
+        .nav-links-group {
+          display: flex;
+          align-items: center;
+          gap: 2rem;
+        }
+
+        /* Sleek minimalist text navigation buttons */
+        .nav-text-link {
+          background: none;
+          border: none;
           font-family: 'Inter', sans-serif;
-          font-size: 0.68rem;
-          font-weight: 700;
-          min-width: 16px;
-          height: 16px;
-          border-radius: 999px;
+          font-size: 0.85rem;
+          font-weight: 500;
+          color: #7A6658; /* Muted taupe color */
+          cursor: pointer;
+          padding: 0.25rem 0;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          transition: color 0.2s ease;
+          position: relative;
+        }
+
+        .nav-text-link:hover, .nav-text-link.active {
+          color: #1A0A00; /* Dark contrast accent on hover/active state */
+        }
+
+        /* Subtle underline effect for the active page view */
+        .nav-text-link.active::after {
+          content: '';
+          position: absolute;
+          bottom: -4px;
+          left: 0;
+          width: 100%;
+          height: 1.5px;
+          background: #C4956A;
+        }
+
+        .nav-utility-group {
+          display: flex;
+          align-items: center;
+          gap: 1.5rem;
+          border-left: 1px solid #E8E0D5;
+          padding-left: 1.5rem;
+        }
+
+        /* Pure minimalist outline icons */
+        .nav-utility-btn {
+          background: none;
+          border: none;
+          color: #7A6658;
+          cursor: pointer;
+          padding: 0.4rem;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 0 4px;
-          border: 1.5px solid #1A0A00;
+          transition: color 0.2s ease;
+          position: relative;
         }
 
-        /* Tooltip style on hover for clarity */
-        .nav-icon-btn::after {
-          content: attr(data-tooltip);
-          position: absolute;
-          bottom: -32px;
-          left: 50%;
-          transform: translateX(-50%) scale(0.85);
-          background: #3B1A08;
-          color: #FDFAF5;
+        .nav-utility-btn:hover {
+          color: #1A0A00;
+        }
+
+        /* Clean modern floating text cart badge */
+        .nav-cart-count {
           font-family: 'Inter', sans-serif;
-          font-size: 0.7rem;
-          padding: 0.25rem 0.5rem;
-          border-radius: 4px;
-          white-space: nowrap;
-          opacity: 0;
-          pointer-events: none;
-          transition: all 0.15s ease;
-          border: 1px solid #5C2E0E;
-        }
-
-        .nav-icon-btn:hover::after {
-          opacity: 1;
-          transform: translateX(-50%) scale(1);
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #C4956A;
+          margin-left: 0.25rem;
         }
 
         @media (max-width: 768px) {
-          .navbar {
-            padding: 0.75rem 1rem;
+          .nav-container {
+            padding: 1rem 1.5rem;
           }
-          .nav-actions {
-            gap: 0.75rem;
+          .nav-links-group {
+            gap: 1.25rem;
+          }
+          .nav-utility-group {
+            padding-left: 1rem;
+            gap: 1rem;
+          }
+          .hide-mobile {
+            display: none;
           }
         }
       `}</style>
 
-      <nav className="navbar">
-        {/* Logo brand configuration */}
-        <a href="#" className="nav-logo">
-          ☕ Brewed<span>.</span>
-        </a>
+      <nav className="nav-container">
+        {/* Simple typography branding */}
+        <button className="nav-brand" onClick={() => setPage("menu")}>
+          Brewed<span>.</span>
+        </button>
 
-        {/* Action icons row */}
-        <div className="nav-actions">
-          
-          {/* 1. Menu Icon */}
-          <button className="nav-icon-btn" data-tooltip="View Menu">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 12h18M3 6h18M3 18h18"/>
-            </svg>
-          </button>
+        {/* Navigation & Utility actions */}
+        <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
+          <div className="nav-links-group">
+            <button 
+              className={`nav-text-link ${currentPage === "menu" ? "active" : ""}`}
+              onClick={() => setPage("menu")}
+            >
+              Menu
+            </button>
+            <button 
+              className={`nav-text-link ${currentPage === "locator" ? "active" : ""}`}
+              onClick={() => setPage("locator")}
+            >
+              Find Us
+            </button>
+          </div>
 
-          {/* 2. Store Locator Icon */}
-          <button className="nav-icon-btn" data-tooltip="Find a Café">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
-          </button>
+          <div className="nav-utility-group">
+            {/* 1. Order History Button */}
+            <button 
+              className="nav-utility-btn" 
+              onClick={() => setPage("history")}
+              title="Order History"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 8v4l3 3"/>
+                <circle cx="12" cy="12" r="9"/>
+              </svg>
+            </button>
 
-          {/* 3. Order History Icon */}
-          <button className="nav-icon-btn" data-tooltip="Order History">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 8v4l3 3"/>
-              <circle cx="12" cy="12" r="9"/>
-            </svg>
-          </button>
+            {/* 2. Login / Account Button */}
+            <button 
+              className="nav-utility-btn" 
+              onClick={() => setPage("login")}
+              title="Account"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </button>
 
-          {/* 4. Login / Profile Icon */}
-          <button className="nav-icon-btn" data-tooltip="Account">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </button>
-
-          {/* 5. Cart Icon with Dynamic Count Badge */}
-          <button className="nav-icon-btn" data-tooltip="Shopping Cart">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
-              <path d="M3 6h18M16 10a4 4 0 0 1-8 0"/>
-            </svg>
-            {cartItemCount > 0 && (
-              <div className="cart-badge">{cartItemCount}</div>
-            )}
-          </button>
-
+            {/* 3. Shopping Cart Button */}
+            <button 
+              className="nav-utility-btn" 
+              onClick={() => setPage("cart")}
+              title="Cart"
+              style={{ paddingRight: 0 }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+                <path d="M3 6h18M16 10a4 4 0 0 1-8 0"/>
+              </svg>
+              {cartItemCount > 0 && (
+                <span className="nav-cart-count">{cartItemCount}</span>
+              )}
+            </button>
+          </div>
         </div>
       </nav>
     </>
