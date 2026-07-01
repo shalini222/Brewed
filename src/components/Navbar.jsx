@@ -3,14 +3,14 @@ import { useCart } from "../context/CartContext";
 export default function Navbar({ setPage, currentPage }) {
   const { cart = [] } = useCart();
   
-  // Calculate total item count inside the cart
+  // Calculate total item count inside the cart dynamically
   const cartItemCount = cart.reduce((total, item) => total + (item.qty || 1), 0);
 
   return (
     <>
       <style>{`
         .nav-header {
-          /* Completely headless - floats invisibly over the hero section */
+          /* Headless layout - floats invisibly over the hero section gradient */
           background: transparent;
           border: none;
           position: absolute;
@@ -20,7 +20,7 @@ export default function Navbar({ setPage, currentPage }) {
           box-sizing: border-box;
           z-index: 1000;
           
-          /* Luxurious spacing to let the brand mark and icons breathe */
+          /* Balanced breathing room spacing matching your layout frames */
           padding: 1.75rem 2.5rem;
           display: flex;
           justify-content: space-between;
@@ -43,7 +43,7 @@ export default function Navbar({ setPage, currentPage }) {
           color: #C4956A; /* Accent dot matching your brand identity */
         }
 
-        /* Minimalist icon tray on the right side */
+        /* Minimalist icon tray alignment on the right side */
         .nav-icons-group {
           display: flex;
           align-items: center;
@@ -54,7 +54,7 @@ export default function Navbar({ setPage, currentPage }) {
         .nav-icon-btn {
           background: none;
           border: none;
-          color: #FDFAF5; /* Icons are now matching your gorgeous cream white */
+          color: #FDFAF5; /* Body cream white icons */
           cursor: pointer;
           padding: 0.35rem;
           display: flex;
@@ -65,7 +65,7 @@ export default function Navbar({ setPage, currentPage }) {
           filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
         }
 
-        /* High-end interactive state: icons glow bright white and scale gently */
+        /* Premium hover interaction: clean bright white text illumination */
         .nav-icon-btn:hover, .nav-icon-btn.active {
           color: #FFFFFF;
           transform: translateY(-1px);
@@ -81,8 +81,8 @@ export default function Navbar({ setPage, currentPage }) {
           position: absolute;
           top: -2px;
           right: -2px;
-          background: #C4956A; /* High contrast caramel badge background */
-          color: #1A0A00; /* Dark espresso text inside badge for clear readability */
+          background: #C4956A; /* Caramel badge background color */
+          color: #FDFAF5; /* FIXED: Now matches your exact body white cream text */
           font-family: 'Inter', sans-serif;
           font-size: 0.68rem;
           font-weight: 700;
@@ -94,7 +94,7 @@ export default function Navbar({ setPage, currentPage }) {
           justify-content: center;
           padding: 0 2px;
           box-sizing: border-box;
-          border: 1px solid #1A0A00; /* Micro-ring separation overlay */
+          border: 1px solid #1A0A00; /* Subtle background ring separation line */
         }
 
         @media (max-width: 768px) {
@@ -113,7 +113,7 @@ export default function Navbar({ setPage, currentPage }) {
           Brewed<span>.</span>
         </button>
 
-        {/* Minimalist layout cluster container */}
+        {/* Minimalist icon tray links layout */}
         <div className="nav-icons-group">
           
           {/* 1. Location Pin Button */}
@@ -140,7 +140,7 @@ export default function Navbar({ setPage, currentPage }) {
             </svg>
           </button>
 
-          {/* 3. Shopping Bag Button with Top-Right Counter */}
+          {/* 3. Shopping Bag Button with Corrected Top-Right Counter */}
           <button 
             className={`nav-icon-btn ${currentPage === "cart" ? "active" : ""}`}
             onClick={() => setPage("cart")}
