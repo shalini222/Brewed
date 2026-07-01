@@ -1,21 +1,28 @@
-     import { useCart } from "../context/CartContext";
+import { useCart } from "../context/CartContext";
 
 export default function Navbar({ setPage, currentPage }) {
   const { cart = [] } = useCart();
   
-  // Clean cart counter combining item quantities
   const cartItemCount = cart.reduce((total, item) => total + (item.qty || 1), 0);
 
   return (
     <>
       <style>{`
         .nav-header {
-          background: #1A0A00; /* Back to your rich, beautiful dark espresso brown */
-          border-bottom: 1px solid #3B1A08; /* Deep accent border line */
-          position: sticky;
+          /* Completely headless - blends seamlessly into the hero gradient */
+          background: transparent; 
+          border-bottom: none; 
+          
+          /* Absolute positioning overlays it on top of your existing hero section */
+          position: absolute;
           top: 0;
+          left: 0;
+          width: 100%;
+          box-sizing: border-box;
           z-index: 1000;
-          padding: 1.1rem 2rem;
+          
+          /* Generous spacing to let the text breathe */
+          padding: 1.5rem 2.5rem;
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -23,9 +30,9 @@ export default function Navbar({ setPage, currentPage }) {
 
         .nav-logo-text {
           font-family: 'Playfair Display', serif;
-          font-size: 1.35rem;
+          font-size: 1.4rem;
           font-weight: 700;
-          color: #FDFAF5; /* Crisp, luxurious warm off-white for contrast */
+          color: #FDFAF5; /* Keeping your crisp warm cream */
           background: none;
           border: none;
           cursor: pointer;
@@ -34,48 +41,48 @@ export default function Navbar({ setPage, currentPage }) {
         }
 
         .nav-logo-text span {
-          color: #C4956A; /* Warm caramel accent dot */
+          color: #C4956A; /* Keeping your warm caramel accent dot */
         }
 
-        /* Grouping links with comfortable, luxurious breathing room */
         .nav-links-cluster {
           display: flex;
           align-items: center;
-          gap: 2.25rem;
+          gap: 2.5rem;
         }
 
-        /* Clean text-only links to completely eliminate icon clutter */
         .nav-item-btn {
           background: none;
           border: none;
           font-family: 'Inter', sans-serif;
           font-size: 0.8rem;
           font-weight: 600;
-          color: #C4956A; /* Soft caramel default text state */
+          color: #C4956A; 
           cursor: pointer;
           padding: 0.2rem 0;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          transition: color 0.15s ease;
+          transition: opacity 0.2s ease, color 0.2s ease;
           position: relative;
         }
 
+        /* Sleek hover state: text glows white cleanly instead of using a heavy bar */
         .nav-item-btn:hover, .nav-item-btn.active {
-          color: #FDFAF5; /* Lights up beautifully on hover / focus active states */
+          color: #FDFAF5;
         }
 
-        /* Minimal active indicator underline matching your cafe theme color */
+        /* A highly minimalist tiny dot indicator instead of a loud underline */
         .nav-item-btn.active::after {
           content: '';
           position: absolute;
-          bottom: -4px;
-          left: 0;
-          width: 100%;
-          height: 2px;
+          bottom: -6px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
           background: #C4956A;
         }
 
-        /* The lone micro icon layout button on the far right */
         .nav-cart-trigger {
           background: none;
           border: none;
@@ -84,7 +91,7 @@ export default function Navbar({ setPage, currentPage }) {
           padding: 0.25rem;
           display: flex;
           align-items: center;
-          transition: color 0.15s ease;
+          transition: color 0.2s ease;
         }
 
         .nav-cart-trigger:hover, .nav-cart-trigger.active {
@@ -99,28 +106,29 @@ export default function Navbar({ setPage, currentPage }) {
           margin-left: 0.35rem;
         }
 
-        /* Clean media query step down for mobile device viewports */
         @media (max-width: 768px) {
           .nav-header {
-            padding: 1rem 1.25rem;
+            padding: 1.25rem 1.5rem;
           }
           .nav-links-cluster {
-            gap: 1.15rem;
+            gap: 1.35rem;
           }
           .nav-item-btn {
             font-size: 0.75rem;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.06em;
+          }
+          /* Remove the active dot on mobile layout to save space */
+          .nav-item-btn.active::after {
+            display: none;
           }
         }
       `}</style>
 
       <header className="nav-header">
-        {/* Brand typographic signature */}
         <button className="nav-logo-text" onClick={() => setPage("menu")}>
           Brewed<span>.</span>
         </button>
 
-        {/* Minimalist interactive dark text grouping */}
         <div className="nav-links-cluster">
           <button 
             className={`nav-item-btn ${currentPage === "menu" ? "active" : ""}`}
@@ -150,7 +158,6 @@ export default function Navbar({ setPage, currentPage }) {
             Sign In
           </button>
 
-          {/* Your single, lightweight functional vector icon */}
           <button 
             className={`nav-cart-trigger ${currentPage === "cart" ? "active" : ""}`}
             onClick={() => setPage("cart")}
@@ -169,4 +176,3 @@ export default function Navbar({ setPage, currentPage }) {
     </>
   );
 }
-               
