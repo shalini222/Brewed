@@ -61,7 +61,7 @@ export default function MenuPage() {
   return (
     <>
       <style>{`
-        /* --- Premium Responsive Control Bar Architecture --- */
+        /* --- Premium Control Bar Layout --- */
         .filter-bar {
           display: flex;
           justify-content: space-between;
@@ -120,41 +120,48 @@ export default function MenuPage() {
           border-color: #1A0A00;
         }
 
+        /* --- Re-Engineered Premium Sort Dropdown --- */
         .sort-select-wrapper {
           position: relative;
           flex-shrink: 0;
         }
 
         .sort-select {
-          padding: 0.5rem 2.2rem 0.5rem 1.25rem;
-          border-radius: 999px;
-          border: 1px solid rgba(196, 149, 106, 0.25);
-          background-color: transparent;
-          color: #3B1A08;
+          appearance: none;
+          -webkit-appearance: none;
           font-family: 'Inter', sans-serif;
           font-size: 0.82rem;
           font-weight: 500;
+          color: #1A0A00;
+          background-color: #FDFAF5;
+          border: 1px solid rgba(196, 149, 106, 0.3);
+          padding: 0.55rem 2.2rem 0.55rem 1.25rem;
+          border-radius: 999px;
           cursor: pointer;
           outline: none;
-          appearance: none;
-          -webkit-appearance: none;
-          transition: border-color 0.2s;
+          transition: all 0.2s ease;
           min-width: 160px;
         }
 
         .sort-select:hover, .sort-select:focus {
-          border-color: #C4956A;
+          border-color: #1A0A00;
+          background-color: #FFFFFF;
         }
 
         .sort-custom-arrow {
           position: absolute;
-          right: 1rem;
+          right: 1.1rem;
           top: 50%;
           transform: translateY(-50%);
-          color: #C4956A;
+          color: #1A0A00;
           pointer-events: none;
           display: flex;
           align-items: center;
+          transition: transform 0.2s ease;
+        }
+
+        .sort-select-wrapper:hover .sort-custom-arrow {
+          transform: translateY(-50%) rotate(180deg);
         }
 
         /* --- Grid Structure Styles --- */
@@ -216,7 +223,7 @@ export default function MenuPage() {
           color: #A39081;
         }
 
-        /* --- Tablet & Mobile Layout Shifts --- */
+        /* --- Mobile Responsive Layout Overhauls --- */
         @media (max-width: 768px) {
           .filter-bar {
             flex-direction: column;
@@ -227,16 +234,24 @@ export default function MenuPage() {
 
           .categories-scroll-wrapper {
             width: 100%;
-            padding-bottom: 0.2rem;
           }
 
+          /* Keeps the sorting action beautifully compact and floated to the right edge */
           .sort-select-wrapper {
-            width: 100%;
+            align-self: flex-end; 
+            margin-top: 0.25rem;
           }
 
           .sort-select {
-            width: 100%;
-            box-sizing: border-box;
+            font-size: 0.78rem;
+            padding: 0.45rem 1.8rem 0.45rem 1rem;
+            background-color: #FFFFFF;
+            border-color: rgba(196, 149, 106, 0.2);
+            min-width: auto;
+          }
+          
+          .sort-custom-arrow {
+            right: 0.75rem;
           }
 
           .menu-grid {
@@ -264,7 +279,7 @@ export default function MenuPage() {
           </div>
         </div>
 
-        {/* Refined Filters Wrapper */}
+        {/* Filters Wrapper */}
         <div className="filter-bar">
           <div className="categories-scroll-wrapper">
             <div className="categories-wrapper">
@@ -302,7 +317,6 @@ export default function MenuPage() {
             <div key={item.id} className="menu-card">
               <div style={styles.cardEmoji}>{item.emoji}</div>
               <div style={styles.cardBody}>
-                {/* layout top modified to isolate price structure on the far right */}
                 <div style={styles.cardTop}>
                   <div style={{ flex: 1 }}>
                     <h3 style={styles.cardName}>{item.name}</h3>
@@ -387,3 +401,4 @@ const styles = {
   },
   addedBtn: { background: "#C4956A", color: "#1A0A00" },
 };
+
