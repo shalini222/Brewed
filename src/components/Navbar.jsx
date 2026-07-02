@@ -6,7 +6,7 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
       <style>{`
         /* --- True Headless Overlay Architecture --- */
         .headless-header {
-          position: absolute; /* Floating directly over the hero banner */
+          position: absolute;
           top: 0;
           left: 0;
           width: 100%;
@@ -14,7 +14,7 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
           justify-content: space-between;
           align-items: center;
           padding: 1.5rem 2rem;
-          background: transparent; /* No background color blocking */
+          background: transparent;
           z-index: 100;
           box-sizing: border-box;
         }
@@ -23,7 +23,7 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
           font-family: 'Playfair Display', serif;
           font-size: 1.6rem;
           font-weight: 700;
-          color: #FDFAF5; /* Premium light cream to contrast against the dark hero */
+          color: #FDFAF5;
           cursor: pointer;
           user-select: none;
           letter-spacing: -0.02em;
@@ -43,7 +43,7 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
         .nav-icon-btn {
           background: transparent;
           border: none;
-          color: #FDFAF5; /* Light icons to match the seamless look */
+          color: #FDFAF5;
           cursor: pointer;
           padding: 0.5rem;
           border-radius: 50%;
@@ -55,7 +55,7 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
         }
 
         .nav-icon-btn:hover {
-          color: #C4956A; /* Warm gold accent on hover */
+          color: #C4956A;
           background-color: rgba(253, 250, 245, 0.08);
         }
 
@@ -72,7 +72,7 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
           position: absolute;
           top: -1px;
           right: -1px;
-          background-color: #C4956A; /* Gold pop badge so it stands out beautifully */
+          background-color: #C4956A;
           color: #1A0A00;
           font-family: 'Inter', sans-serif;
           font-size: 0.68rem;
@@ -91,6 +91,7 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
           .headless-header {
             padding: 1.25rem 1rem;
           }
+
           .nav-icons-group {
             gap: 0.85rem;
           }
@@ -98,16 +99,14 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
       `}</style>
 
       <header className="headless-header">
-        {/* Floats perfectly on the left side of the hero */}
         <div className="brand-logo" onClick={() => setPage("menu")}>
           Brewed.
         </div>
 
-        {/* Minimal icon deck floating on the right side of the hero */}
         <div className="nav-icons-group">
-          
-          {/* Location Pin */}
-          <button 
+
+          {/* Location */}
+          <button
             className={`nav-icon-btn ${currentPage === "locator" ? "active" : ""}`}
             onClick={() => setPage("locator")}
             title="Café Locator"
@@ -118,8 +117,8 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
             </svg>
           </button>
 
-          {/* Profile / Account Access */}
-          <button 
+          {/* Login */}
+          <button
             className={`nav-icon-btn ${currentPage === "login" ? "active" : ""}`}
             onClick={() => setPage("login")}
             title="Account Login"
@@ -130,8 +129,8 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
             </svg>
           </button>
 
-          {/* Shopping Bag */}
-          <button 
+          {/* Cart */}
+          <button
             className={`nav-icon-btn nav-bag-btn ${currentPage === "cart" ? "active" : ""}`}
             onClick={() => setPage("cart")}
             title="View Cart"
@@ -140,8 +139,11 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
               <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
               <path d="M3 6h18M16 10a4 4 0 0 1-8 0"/>
             </svg>
+
             {cartItemCount > 0 && (
-              <span className="nav-cart-badge">{cartItemCount}</span>
+              <span className="nav-cart-badge">
+                {cartItemCount}
+              </span>
             )}
           </button>
 
