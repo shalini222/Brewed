@@ -78,22 +78,21 @@ export default function MenuPage() {
           box-sizing: border-box;
         }
 
-        /* Mobile Swiping Container Strategy */
         .categories-scroll-wrapper {
           overflow-x: auto;
-          scrollbar-width: none; /* Firefox */
+          scrollbar-width: none;
           -webkit-overflow-scrolling: touch;
           flex-grow: 1;
         }
 
         .categories-scroll-wrapper::-webkit-scrollbar {
-          display: none; /* Safari & Chrome browser scroll hiding */
+          display: none;
         }
 
         .categories-wrapper {
           display: flex;
           gap: 0.65rem;
-          white-space: nowrap; /* Prevents wrapping text pills onto new lines */
+          white-space: nowrap;
         }
 
         .filter-pill-btn {
@@ -121,7 +120,6 @@ export default function MenuPage() {
           border-color: #1A0A00;
         }
 
-        /* Custom Premium Select Dropdown Container */
         .sort-select-wrapper {
           position: relative;
           flex-shrink: 0;
@@ -304,12 +302,13 @@ export default function MenuPage() {
             <div key={item.id} className="menu-card">
               <div style={styles.cardEmoji}>{item.emoji}</div>
               <div style={styles.cardBody}>
+                {/* layout top modified to isolate price structure on the far right */}
                 <div style={styles.cardTop}>
-                  <span style={styles.cardCat}>{item.category}</span>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={styles.cardName}>{item.name}</h3>
+                  </div>
                   <span style={styles.cardPrice}>₹{Math.round(item.price)}</span>
                 </div>
-                
-                <h3 style={styles.cardName}>{item.name}</h3>
 
                 <div className="rating-badge">
                   <span className="rating-star">★</span>
@@ -361,22 +360,17 @@ const styles = {
   cardBody: { padding: "1.25rem", flex: 1, display: "flex", flexDirection: "column" },
   cardTop: {
     display: "flex", justifyContent: "space-between",
-    alignItems: "center", marginBottom: "0.3rem",
-  },
-  cardCat: {
-    fontSize: "0.68rem", color: "#C4956A",
-    fontFamily: "'Inter', sans-serif",
-    textTransform: "uppercase", letterSpacing: "0.12em",
-    fontWeight: 600
+    alignItems: "flex-start", gap: "1rem", marginBottom: "0.4rem",
   },
   cardPrice: {
     fontFamily: "'Playfair Display', serif",
     fontSize: "1.1rem", color: "#1A0A00", fontWeight: 700,
+    whiteSpace: "nowrap"
   },
   cardName: {
     fontFamily: "'Playfair Display', serif",
-    fontSize: "1.2rem", color: "#1A0A00", margin: "0 0 0.3rem",
-    fontWeight: 700
+    fontSize: "1.2rem", color: "#1A0A00", margin: "0",
+    fontWeight: 700, lineHeight: 1.2
   },
   cardDesc: {
     fontFamily: "'Inter', sans-serif",
