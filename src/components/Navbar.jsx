@@ -4,27 +4,34 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
   return (
     <>
       <style>{`
-        /* --- Clean Transparent/Headless Header Layout --- */
+        /* --- True Headless Overlay Architecture --- */
         .headless-header {
+          position: absolute; /* Floating directly over the hero banner */
+          top: 0;
+          left: 0;
+          width: 100%;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 1.25rem 2rem;
-          background: transparent; /* No blocky solid background panels */
-          border: none;             /* Completely eliminates distracting panel seams */
-          max-width: 1200px;
-          margin: 0 auto;
+          padding: 1.5rem 2rem;
+          background: transparent; /* No background color blocking */
+          z-index: 100;
           box-sizing: border-box;
         }
 
         .brand-logo {
           font-family: 'Playfair Display', serif;
-          font-size: 1.5rem;
+          font-size: 1.6rem;
           font-weight: 700;
-          color: #1A0A00;
+          color: #FDFAF5; /* Premium light cream to contrast against the dark hero */
           cursor: pointer;
           user-select: none;
           letter-spacing: -0.02em;
+          transition: opacity 0.2s ease;
+        }
+
+        .brand-logo:hover {
+          opacity: 0.9;
         }
 
         .nav-icons-group {
@@ -36,7 +43,7 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
         .nav-icon-btn {
           background: transparent;
           border: none;
-          color: #3B1A08;
+          color: #FDFAF5; /* Light icons to match the seamless look */
           cursor: pointer;
           padding: 0.5rem;
           border-radius: 50%;
@@ -44,17 +51,17 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
           align-items: center;
           justify-content: center;
           position: relative;
-          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          transition: all 0.2s ease;
         }
 
         .nav-icon-btn:hover {
-          color: #C4956A;
-          background-color: rgba(196, 149, 106, 0.08);
+          color: #C4956A; /* Warm gold accent on hover */
+          background-color: rgba(253, 250, 245, 0.08);
         }
 
         .nav-icon-btn.active {
           color: #C4956A;
-          background-color: rgba(26, 10, 0, 0.04);
+          background-color: rgba(253, 250, 245, 0.05);
         }
 
         .nav-bag-btn {
@@ -63,26 +70,26 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
 
         .nav-cart-badge {
           position: absolute;
-          top: -2px;
-          right: -2px;
-          background-color: #1A0A00;
-          color: #FDFAF5;
+          top: -1px;
+          right: -1px;
+          background-color: #C4956A; /* Gold pop badge so it stands out beautifully */
+          color: #1A0A00;
           font-family: 'Inter', sans-serif;
-          font-size: 0.7rem;
-          font-weight: 600;
-          min-width: 16px;
-          height: 16px;
+          font-size: 0.68rem;
+          font-weight: 700;
+          min-width: 15px;
+          height: 15px;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 0 4px;
-          border: 1.5px solid #FDFAF5;
+          padding: 0 3px;
+          border: 1px solid #3B1A08;
         }
 
         @media (max-width: 768px) {
           .headless-header {
-            padding: 1rem;
+            padding: 1.25rem 1rem;
           }
           .nav-icons-group {
             gap: 0.85rem;
@@ -91,12 +98,12 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
       `}</style>
 
       <header className="headless-header">
-        {/* Brand identity anchor aligned to the left */}
+        {/* Floats perfectly on the left side of the hero */}
         <div className="brand-logo" onClick={() => setPage("menu")}>
           Brewed.
         </div>
 
-        {/* Headless interactive controls grouped cleanly to the right */}
+        {/* Minimal icon deck floating on the right side of the hero */}
         <div className="nav-icons-group">
           
           {/* Location Pin */}
@@ -111,7 +118,7 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
             </svg>
           </button>
 
-          {/* Profile / Account Access - Direct link to your login view */}
+          {/* Profile / Account Access */}
           <button 
             className={`nav-icon-btn ${currentPage === "login" ? "active" : ""}`}
             onClick={() => setPage("login")}
