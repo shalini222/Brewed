@@ -4,7 +4,29 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
   return (
     <>
       <style>{`
-        /* --- Sleek Headless Icon Layout Container --- */
+        /* --- Clean Transparent/Headless Header Layout --- */
+        .headless-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 1.25rem 2rem;
+          background: transparent; /* No blocky solid background panels */
+          border: none;             /* Completely eliminates distracting panel seams */
+          max-width: 1200px;
+          margin: 0 auto;
+          box-sizing: border-box;
+        }
+
+        .brand-logo {
+          font-family: 'Playfair Display', serif;
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1A0A00;
+          cursor: pointer;
+          user-select: none;
+          letter-spacing: -0.02em;
+        }
+
         .nav-icons-group {
           display: flex;
           align-items: center;
@@ -35,7 +57,6 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
           background-color: rgba(26, 10, 0, 0.04);
         }
 
-        /* Fine-tuned spatial padding alignment for the dynamic shopping bag asset */
         .nav-bag-btn {
           padding-right: 0.2rem;
         }
@@ -60,54 +81,65 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
         }
 
         @media (max-width: 768px) {
+          .headless-header {
+            padding: 1rem;
+          }
           .nav-icons-group {
             gap: 0.85rem;
           }
         }
       `}</style>
 
-      <div className="nav-icons-group">
-        
-        {/* Location Pin */}
-        <button 
-          className={`nav-icon-btn ${currentPage === "locator" ? "active" : ""}`}
-          onClick={() => setPage("locator")}
-          title="Café Locator"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-            <circle cx="12" cy="10" r="3"/>
-          </svg>
-        </button>
+      <header className="headless-header">
+        {/* Brand identity anchor aligned to the left */}
+        <div className="brand-logo" onClick={() => setPage("menu")}>
+          Brewed.
+        </div>
 
-        {/* Profile / Account Access - Wired up directly to login.jsx */}
-        <button 
-          className={`nav-icon-btn ${currentPage === "login" ? "active" : ""}`}
-          onClick={() => setPage("login")}
-          title="Account Login"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
-        </button>
+        {/* Headless interactive controls grouped cleanly to the right */}
+        <div className="nav-icons-group">
+          
+          {/* Location Pin */}
+          <button 
+            className={`nav-icon-btn ${currentPage === "locator" ? "active" : ""}`}
+            onClick={() => setPage("locator")}
+            title="Café Locator"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </button>
 
-        {/* Shopping Bag */}
-        <button 
-          className={`nav-icon-btn nav-bag-btn ${currentPage === "cart" ? "active" : ""}`}
-          onClick={() => setPage("cart")}
-          title="View Cart"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
-            <path d="M3 6h18M16 10a4 4 0 0 1-8 0"/>
-          </svg>
-          {cartItemCount > 0 && (
-            <span className="nav-cart-badge">{cartItemCount}</span>
-          )}
-        </button>
+          {/* Profile / Account Access - Direct link to your login view */}
+          <button 
+            className={`nav-icon-btn ${currentPage === "login" ? "active" : ""}`}
+            onClick={() => setPage("login")}
+            title="Account Login"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </button>
 
-      </div>
+          {/* Shopping Bag */}
+          <button 
+            className={`nav-icon-btn nav-bag-btn ${currentPage === "cart" ? "active" : ""}`}
+            onClick={() => setPage("cart")}
+            title="View Cart"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+              <path d="M3 6h18M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+            {cartItemCount > 0 && (
+              <span className="nav-cart-badge">{cartItemCount}</span>
+            )}
+          </button>
+
+        </div>
+      </header>
     </>
   );
 }
