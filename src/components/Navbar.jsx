@@ -1,137 +1,101 @@
-import { useState } from "react"; // 1. Import useState to manage temporary login state
-import { useCart } from "../context/CartContext";
+import React from 'react';
 
-export default function Navbar({ setPage, currentPage }) {
-  const { cart = [] } = useCart();
-  
-  // 2. Create a local temporary state. False = Logged Out, True = Logged In
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  
-  const cartItemCount = cart.reduce((total, item) => total + (item.qty || 1), 0);
-
-  // 3. A temporary function to handle clicking the profile icon
-  const handleProfileClick = () => {
-    if (!isLoggedIn) {
-      // Simulate logging in instantly
-      setIsLoggedIn(true);
-      alert("Mock Login: You are now logged in! (Icon updated)");
-    } else {
-      // Simulate logging out instantly
-      setIsLoggedIn(false);
-      alert("Mock Logout: You are now logged out!");
-    }
-  };
-
+export default function Navbar({ currentPage, setPage, cartItemCount = 0 }) {
   return (
     <>
       <style>{`
-        .nav-header {
-          background: transparent;
-          border: none;
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          box-sizing: border-box;
-          z-index: 1000;
-          padding: 1.75rem 2.5rem;
+        .main-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          padding: 1rem 2rem;
+          background: #FDFAF5;
+          border-bottom: 1px solid rgba(196, 149, 106, 0.15);
+          position: sticky;
+          top: 0;
+          z-index: 100;
         }
 
-        .nav-logo-text {
+        .brand-logo {
           font-family: 'Playfair Display', serif;
-          font-size: 1.45rem;
+          font-size: 1.5rem;
           font-weight: 700;
-          color: #FDFAF5;
-          background: none;
-          border: none;
+          color: #1A0A00;
           cursor: pointer;
-          padding: 0;
-          letter-spacing: -0.01em;
-        }
-
-        .nav-logo-text span {
-          color: #C4956A;
+          user-select: none;
         }
 
         .nav-icons-group {
           display: flex;
           align-items: center;
-          gap: 1.75rem;
+          gap: 1.25rem;
         }
 
         .nav-icon-btn {
-          background: none;
+          background: transparent;
           border: none;
-          color: #FDFAF5;
+          color: #3B1A08;
           cursor: pointer;
-          padding: 0.35rem;
+          padding: 0.5rem;
+          border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: color 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s ease;
           position: relative;
-          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+          transition: all 0.2s ease;
         }
 
-        .nav-icon-btn:hover, .nav-icon-btn.active {
-          color: #FFFFFF;
-          transform: translateY(-1px);
-          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        .nav-icon-btn:hover {
+          color: #C4956A;
+          background-color: rgba(196, 149, 106, 0.08);
         }
 
-        /* Golden dot indicator to cleanly display authentication state */
-        .nav-icon-btn.logged-in::after {
-          content: '';
-          position: absolute;
-          bottom: -4px;
-          width: 4px;
-          height: 4px;
-          background: #C4956A;
-          border-radius: 50%;
+        .nav-icon-btn.active {
+          color: #C4956A;
+          background-color: rgba(26, 10, 0, 0.04);
         }
-        
-        .nav-icon-btn:active {
-          transform: scale(0.93);
+
+        /* Specific padding adjustment for the shopping bag */
+        .nav-bag-btn {
+          padding-right: 0.2rem;
         }
 
         .nav-cart-badge {
           position: absolute;
           top: -2px;
           right: -2px;
-          background: #1A0A00;
+          background-color: #1A0A00;
           color: #FDFAF5;
           font-family: 'Inter', sans-serif;
-          font-size: 0.68rem;
-          font-weight: 700;
-          min-width: 15px;
-          height: 15px;
+          font-size: 0.7rem;
+          font-weight: 600;
+          min-width: 16px;
+          height: 16px;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 0 2px;
-          box-sizing: border-box;
-          border: 1px solid #FDFAF5;
+          padding: 0 4px;
+          border: 1.5px solid #FDFAF5;
         }
 
         @media (max-width: 768px) {
-          .nav-header {
-            padding: 1.25rem 1.5rem;
+          .main-header {
+            padding: 1rem;
           }
           .nav-icons-group {
-            gap: 1.25rem;
+            gap: 0.75rem;
           }
         }
       `}</style>
 
-      <header className="nav-header">
-        <button className="nav-logo-text" onClick={() => setPage("menu")}>
-          Brewed<span>.</span>
-        </button>
+      <header className="main-header">
+        {/* Brand Identity Branding Logo */}
+        <div className="brand-logo" onClick={() => setPage("menu")}>
+          Brewed.
+        </div>
 
+        {/* Navigation Action Buttons Container */}
         <div className="nav-icons-group">
           
           {/* Location Pin */}
@@ -146,35 +110,23 @@ export default function Navbar({ setPage, currentPage }) {
             </svg>
           </button>
 
-          {/* Profile Button - Now dynamically changing icons on click */}
+          {/* Profile Button - Direct Connection to login.jsx routing */}
           <button 
-            className={`nav-icon-btn ${isLoggedIn ? "logged-in" : ""}`}
-            onClick={handleProfileClick}
-            title={isLoggedIn ? "Click to Mock Logout" : "Click to Mock Login"}
+            className={`nav-icon-btn ${currentPage === "login" ? "active" : ""}`}
+            onClick={() => setPage("login")}
+            title="Account Login"
           >
-            {isLoggedIn ? (
-              /* LOGGED IN STYLE: Replaces standard user outline with a badge layout */
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M5 21v-2a4 4 0 0 1 4-4h2.5" />
-                <circle cx="10" cy="7" r="4" />
-                <path d="m16 11 2 2 4-4" stroke="#C4956A" /> 
-              </svg>
-            ) : (
-              /* LOGGED OUT STYLE: Minimal clean outline placeholder */
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-            )}
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
           </button>
 
           {/* Shopping Bag */}
           <button 
-            className={`nav-icon-btn ${currentPage === "cart" ? "active" : ""}`}
+            className={`nav-icon-btn nav-bag-btn ${currentPage === "cart" ? "active" : ""}`}
             onClick={() => setPage("cart")}
             title="View Cart"
-            style={{ paddingRight: "0.2rem" }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
