@@ -6,12 +6,14 @@ import MenuPage from "./pages/MenuPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import Login from "./pages/login";
+import { AuthProvider } from "./context/AuthContext";
 
 export default function App() {
   const [page, setPage] = useState("menu");
 
   return (
     <CartProvider>
+      <AuthProvider>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
         * {
@@ -38,6 +40,7 @@ export default function App() {
       {page === "login" && <Login />}
 
       <Footer />
+      </AuthProvider>
     </CartProvider>
   );
 }
