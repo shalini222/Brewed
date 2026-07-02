@@ -8,55 +8,47 @@ export default function MenuPage() {
   const [added, setAdded] = useState({});
   const { addToCart } = useCart();
 
-  // Mapping specific, realistic ratings and reviews to match each unique item ID
   const itemRatingsMap = {
-    1: { rating: "4.5", reviews: 142 }, // Espresso
-    2: { rating: "4.8", reviews: 320 }, // Cappuccino
-    3: { rating: "4.6", reviews: 88 },  // Flat White
-    4: { rating: "4.7", reviews: 215 }, // Cold Brew
-    5: { rating: "4.9", reviews: 412 }, // Caramel Latte
-    6: { rating: "4.4", reviews: 67 },  // Matcha Latte
-    7: { rating: "4.8", reviews: 523 }, // Chai Tea
-    8: { rating: "4.6", reviews: 198 }, // Croissant
-    9: { rating: "4.5", reviews: 154 }, // Avocado Toast
-    10: { rating: "4.3", reviews: 92 }, // Blueberry Muffin
-    11: { rating: "4.4", reviews: 110 }, // Iced Americano
-    12: { rating: "4.7", reviews: 280 }, // Vanilla Frappé
-    13: { rating: "4.9", reviews: 345 }, // Classic Hot Chocolate
-    14: { rating: "4.2", reviews: 54 },  // Hibiscus Iced Tea
-    15: { rating: "4.7", reviews: 267 }, // Paneer Tikka Sandwich
-    16: { rating: "4.8", reviews: 189 }, // Fudge Brownie
-    17: { rating: "4.6", reviews: 76 },  // Vietnamese Shakerato
-    18: { rating: "4.9", reviews: 231 }, // Lotus Biscoff Latte
-    19: { rating: "4.5", reviews: 143 }, // Mocha Mocha
-    20: { rating: "4.4", reviews: 98 },  // Thai Bubble Tea
-    21: { rating: "4.6", reviews: 165 }, // Mint Mojito Cooler
-    22: { rating: "4.3", reviews: 42 },  // Turmeric Ginger Latte
-    23: { rating: "4.7", reviews: 178 }, // Nutella Pancakes
-    24: { rating: "4.8", reviews: 294 }, // Chicken Keema Samosas
-    25: { rating: "4.5", reviews: 83 },  // Hummus & Pita Platter
-    26: { rating: "4.6", reviews: 201 }  // Truffle Fries
+    1: { rating: "4.5", reviews: 142 },
+    2: { rating: "4.8", reviews: 320 },
+    3: { rating: "4.6", reviews: 88 },
+    4: { rating: "4.7", reviews: 215 },
+    5: { rating: "4.9", reviews: 412 },
+    6: { rating: "4.4", reviews: 67 },
+    7: { rating: "4.8", reviews: 523 },
+    8: { rating: "4.6", reviews: 198 },
+    9: { rating: "4.5", reviews: 154 },
+    10: { rating: "4.3", reviews: 92 },
+    11: { rating: "4.4", reviews: 110 },
+    12: { rating: "4.7", reviews: 280 },
+    13: { rating: "4.9", reviews: 345 },
+    14: { rating: "4.2", reviews: 54 },
+    15: { rating: "4.7", reviews: 267 },
+    16: { rating: "4.8", reviews: 189 },
+    17: { rating: "4.6", reviews: 76 },
+    18: { rating: "4.9", reviews: 231 },
+    19: { rating: "4.5", reviews: 143 },
+    20: { rating: "4.4", reviews: 98 },
+    21: { rating: "4.6", reviews: 165 },
+    22: { rating: "4.3", reviews: 42 },
+    23: { rating: "4.7", reviews: 178 },
+    24: { rating: "4.8", reviews: 294 },
+    25: { rating: "4.5", reviews: 83 },
+    26: { rating: "4.6", reviews: 201 }
   };
 
-  // Attach the realistic dynamic ratings to your data array
   const menuWithRatings = menuItems.map(item => {
-    const data = itemRatingsMap[item.id] || { rating: "4.5", reviews: 50 }; // fallback just in case
+    const data = itemRatingsMap[item.id] || { rating: "4.5", reviews: 50 };
     return { ...item, rating: data.rating, reviews: data.reviews };
   });
 
-  // 1. Filter by category
   const filtered = activeCategory === "All" 
     ? [...menuWithRatings] 
     : menuWithRatings.filter((i) => i.category === activeCategory);
 
-  // 2. Sort the filtered list
   const sortedAndFiltered = filtered.sort((a, b) => {
-    if (sortBy === "price-low") {
-      return a.price - b.price;
-    }
-    if (sortBy === "price-high") {
-      return b.price - a.price;
-    }
+    if (sortBy === "price-low") return a.price - b.price;
+    if (sortBy === "price-high") return b.price - a.price;
     return a.name.localeCompare(b.name);
   });
 
@@ -69,114 +61,203 @@ export default function MenuPage() {
   return (
     <>
       <style>{`
-        .menu-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-          gap: 1.5rem;
-          padding: 2rem;
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-        .menu-card {
-          background: #fff;
-          border-radius: 16px;
-          border: 1px solid #E8E0D5;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          box-shadow: 0 2px 12px rgba(26,10,0,0.06);
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .menu-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 6px 20px rgba(26,10,0,0.1);
-        }
+        /* --- Premium Responsive Control Bar Architecture --- */
         .filter-bar {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 1rem;
+          gap: 1.5rem;
           padding: 1.25rem 2rem;
           background: #FDFAF5;
-          border-bottom: 1px solid #E8E0D5;
+          border-bottom: 1px solid rgba(196, 149, 106, 0.15);
           position: sticky;
-          top: 64px;
+          top: 0;
           z-index: 50;
+          max-width: 1200px;
+          margin: 0 auto;
+          box-sizing: border-box;
         }
+
+        /* Mobile Swiping Container Strategy */
+        .categories-scroll-wrapper {
+          overflow-x: auto;
+          scrollbar-width: none; /* Firefox */
+          -webkit-overflow-scrolling: touch;
+          flex-grow: 1;
+        }
+
+        .categories-scroll-wrapper::-webkit-scrollbar {
+          display: none; /* Safari & Chrome browser scroll hiding */
+        }
+
         .categories-wrapper {
           display: flex;
-          gap: 0.5rem;
-          flex-wrap: wrap;
+          gap: 0.65rem;
+          white-space: nowrap; /* Prevents wrapping text pills onto new lines */
         }
-        .sort-select {
-          padding: 0.4rem 1.5rem 0.4rem 0.75rem;
-          border-radius: 8px;
-          border: 1.5px solid #C4956A;
-          background-color: #fff;
+
+        .filter-pill-btn {
+          padding: 0.5rem 1.25rem;
+          border-radius: 999px;
+          border: 1px solid rgba(196, 149, 106, 0.25);
+          background: transparent;
           color: #3B1A08;
           font-family: 'Inter', sans-serif;
-          font-size: 0.83rem;
+          font-size: 0.82rem;
+          font-weight: 500;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .filter-pill-btn:hover {
+          color: #C4956A;
+          border-color: #C4956A;
+        }
+
+        .filter-pill-btn.active {
+          background: #1A0A00;
+          color: #FDFAF5;
+          border-color: #1A0A00;
+        }
+
+        /* Custom Premium Select Dropdown Container */
+        .sort-select-wrapper {
+          position: relative;
+          flex-shrink: 0;
+        }
+
+        .sort-select {
+          padding: 0.5rem 2.2rem 0.5rem 1.25rem;
+          border-radius: 999px;
+          border: 1px solid rgba(196, 149, 106, 0.25);
+          background-color: transparent;
+          color: #3B1A08;
+          font-family: 'Inter', sans-serif;
+          font-size: 0.82rem;
+          font-weight: 500;
           cursor: pointer;
           outline: none;
           appearance: none;
-          background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'><path stroke='%233B1A08' stroke-width='1.5' d='m1 1 4 4 4-4'/></svg>");
-          background-repeat: no-repeat;
-          background-position: right 0.6rem center;
+          -webkit-appearance: none;
+          transition: border-color 0.2s;
+          min-width: 160px;
         }
+
+        .sort-select:hover, .sort-select:focus {
+          border-color: #C4956A;
+        }
+
+        .sort-custom-arrow {
+          position: absolute;
+          right: 1rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #C4956A;
+          pointer-events: none;
+          display: flex;
+          align-items: center;
+        }
+
+        /* --- Grid Structure Styles --- */
+        .menu-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 2rem;
+          padding: 3rem 2rem;
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+
+        .menu-card {
+          background: #fff;
+          border-radius: 16px;
+          border: 1px solid rgba(196, 149, 106, 0.12);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          box-shadow: 0 4px 20px rgba(26,10,0,0.02);
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+        }
+
+        .menu-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 30px rgba(26,10,0,0.06);
+        }
+
         .hero-title {
           font-family: 'Playfair Display', serif;
-          font-size: clamp(1.8rem, 5vw, 3.5rem);
+          font-size: clamp(2rem, 6vw, 3.5rem);
           color: #FDFAF5;
           font-weight: 700;
-          line-height: 1.2;
+          line-height: 1.15;
           margin-bottom: 1rem;
+          letter-spacing: -0.01em;
         }
+
         .rating-badge {
           display: flex;
           align-items: center;
-          gap: 0.25rem;
-          margin-bottom: 0.4rem;
+          gap: 0.3rem;
+          margin-bottom: 0.5rem;
           font-family: 'Inter', sans-serif;
-          font-size: 0.75rem;
+          font-size: 0.78rem;
         }
+
         .rating-star {
           color: #C4956A;
           font-size: 0.85rem;
         }
+
         .rating-score {
           color: #1A0A00;
           font-weight: 600;
         }
+
         .rating-count {
           color: #A39081;
         }
+
+        /* --- Tablet & Mobile Layout Shifts --- */
         @media (max-width: 768px) {
-          .menu-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            padding: 1rem;
-          }
           .filter-bar {
             flex-direction: column;
             align-items: stretch;
             padding: 1rem;
-            gap: 0.75rem;
-            top: 56px;
+            gap: 0.85rem;
           }
-          .sort-select {
+
+          .categories-scroll-wrapper {
+            width: 100%;
+            padding-bottom: 0.2rem;
+          }
+
+          .sort-select-wrapper {
             width: 100%;
           }
+
+          .sort-select {
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .menu-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.25rem;
+            padding: 1.5rem 1rem;
+          }
         }
-        @media (max-width: 400px) {
+
+        @media (max-width: 520px) {
           .menu-grid {
             grid-template-columns: 1fr;
+            gap: 1.5rem;
           }
         }
       `}</style>
 
       <div style={styles.page}>
-
-        {/* Hero */}
+        {/* Editorial Brand Hero */}
         <div style={styles.hero}>
           <div style={styles.heroInner}>
             <p style={styles.eyebrow}>Est. 2024 · Kolkata</p>
@@ -185,24 +266,23 @@ export default function MenuPage() {
           </div>
         </div>
 
-        {/* Filters Wrapper */}
+        {/* Refined Filters Wrapper */}
         <div className="filter-bar">
-          <div className="categories-wrapper">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                style={{
-                  ...styles.filterBtn,
-                  ...(activeCategory === cat ? styles.filterActive : {}),
-                }}
-                onClick={() => setActiveCategory(cat)}
-              >
-                {cat}
-              </button>
-            ))}
+          <div className="categories-scroll-wrapper">
+            <div className="categories-wrapper">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  className={`filter-pill-btn ${activeCategory === cat ? "active" : ""}`}
+                  onClick={() => setActiveCategory(cat)}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div>
+          <div className="sort-select-wrapper">
             <select 
               className="sort-select" 
               value={sortBy} 
@@ -212,10 +292,13 @@ export default function MenuPage() {
               <option value="price-low">Price: Low to High</option>
               <option value="price-high">Price: High to Low</option>
             </select>
+            <span className="sort-custom-arrow">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </span>
           </div>
         </div>
 
-        {/* Grid */}
+        {/* Clean Menu Card Grid */}
         <div className="menu-grid">
           {sortedAndFiltered.map((item) => (
             <div key={item.id} className="menu-card">
@@ -228,7 +311,6 @@ export default function MenuPage() {
                 
                 <h3 style={styles.cardName}>{item.name}</h3>
 
-                {/* Elegant Minimalist Rating Row */}
                 <div className="rating-badge">
                   <span className="rating-star">★</span>
                   <span className="rating-score">{item.rating}</span>
@@ -249,7 +331,6 @@ export default function MenuPage() {
             </div>
           ))}
         </div>
-
       </div>
     </>
   );
@@ -259,60 +340,56 @@ const styles = {
   page: { background: "#FDFAF5", minHeight: "100vh" },
   hero: {
     background: "linear-gradient(135deg, #1A0A00 0%, #3B1A08 60%, #5C2E0E 100%)",
-    padding: "4rem 1.5rem 3rem",
+    padding: "5rem 1.5rem 4rem",
     textAlign: "center",
   },
   heroInner: { maxWidth: "600px", margin: "0 auto" },
   eyebrow: {
     color: "#C4956A", fontFamily: "'Inter', sans-serif",
     fontSize: "0.78rem", letterSpacing: "0.15em",
-    textTransform: "uppercase", marginBottom: "1rem",
+    textTransform: "uppercase", marginBottom: "1.25rem",
   },
   heroSub: {
-    color: "#C4956A", fontFamily: "'Inter', sans-serif",
-    fontSize: "0.95rem", opacity: 0.9,
+    color: "rgba(253, 250, 245, 0.75)", fontFamily: "'Inter', sans-serif",
+    fontSize: "0.95rem", lineHeight: 1.6
   },
-  filterBtn: {
-    padding: "0.4rem 1.1rem", borderRadius: "999px",
-    border: "1.5px solid #C4956A", background: "transparent",
-    color: "#3B1A08", fontFamily: "'Inter', sans-serif",
-    fontSize: "0.83rem", cursor: "pointer", whiteSpace: "nowrap",
-  },
-  filterActive: { background: "#1A0A00", color: "#C4956A", borderColor: "#1A0A00" },
   cardEmoji: {
     fontSize: "2.8rem", textAlign: "center",
-    padding: "1.25rem 1rem 0.5rem",
+    padding: "1.75rem 1rem 0.75rem",
     background: "linear-gradient(180deg, #FDF6EE 0%, #fff 100%)",
   },
-  cardBody: { padding: "0.85rem 1rem", flex: 1, display: "flex", flexDirection: "column" },
+  cardBody: { padding: "1.25rem", flex: 1, display: "flex", flexDirection: "column" },
   cardTop: {
     display: "flex", justifyContent: "space-between",
-    alignItems: "center", marginBottom: "0.2rem",
+    alignItems: "center", marginBottom: "0.3rem",
   },
   cardCat: {
     fontSize: "0.68rem", color: "#C4956A",
     fontFamily: "'Inter', sans-serif",
-    textTransform: "uppercase", letterSpacing: "0.1em",
+    textTransform: "uppercase", letterSpacing: "0.12em",
+    fontWeight: 600
   },
   cardPrice: {
     fontFamily: "'Playfair Display', serif",
-    fontSize: "1rem", color: "#1A0A00", fontWeight: 700,
+    fontSize: "1.1rem", color: "#1A0A00", fontWeight: 700,
   },
   cardName: {
     fontFamily: "'Playfair Display', serif",
-    fontSize: "1.05rem", color: "#1A0A00", margin: "0 0 0.2rem",
+    fontSize: "1.2rem", color: "#1A0A00", margin: "0 0 0.3rem",
+    fontWeight: 700
   },
   cardDesc: {
     fontFamily: "'Inter', sans-serif",
-    fontSize: "0.78rem", color: "#7A6658", lineHeight: 1.5,
-    marginTop: "auto", paddingTop: "0.4rem"
+    fontSize: "0.82rem", color: "#7A6658", lineHeight: 1.5,
+    marginTop: "auto", paddingTop: "0.75rem"
   },
   addBtn: {
-    margin: "0 1rem 1rem",
-    padding: "0.55rem", borderRadius: "10px",
+    margin: "0 1.25rem 1.25rem",
+    padding: "0.65rem", borderRadius: "12px",
     border: "none", background: "#1A0A00",
-    color: "#C4956A", fontFamily: "'Inter', sans-serif",
-    fontWeight: 600, fontSize: "0.85rem", cursor: "pointer",
+    color: "#FDFAF5", fontFamily: "'Inter', sans-serif",
+    fontWeight: 600, fontSize: "0.88rem", cursor: "pointer",
+    transition: "all 0.2s ease"
   },
   addedBtn: { background: "#C4956A", color: "#1A0A00" },
 };
