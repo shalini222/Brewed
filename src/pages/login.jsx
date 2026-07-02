@@ -1,4 +1,7 @@
-<div>
-
-  <h1>this is a login page</h1>
-</div>
+export default function Login() {
+  return (
+    <div>
+      <h1>This is the Login Page</h1>
+    </div>
+  );
+}
