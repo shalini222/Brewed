@@ -220,9 +220,14 @@ const [showMenu, setShowMenu] = useState(false);
       <small>{currentUser.email}</small>
     </div>
 
-    <button onClick={() => setPage("profile")}>
-      👤 Profile
-    </button>
+    <button
+  onClick={() => {
+    setShowMenu(false);
+    setPage("profile");
+  }}
+>
+  👤 Profile
+</button>
 
     <button onClick={() => setPage("orders")}>
       ☕ My Orders
