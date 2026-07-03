@@ -28,38 +28,49 @@ export default function Login({setPage}) {
 }
   
  
-  
   async function handleSubmit(e) {
   e.preventDefault();
   setLoading(true);
   setMessage("");
 
   try {
+    let userCredential;
+
     if (isLogin) {
-      await signInWithEmailAndPassword(
+      userCredential = await signInWithEmailAndPassword(
         auth,
         email,
         password
       );
-
-      setMessage("Welcome back! ☕");
-      setPage("menu");
     } else {
-      await createUserWithEmailAndPassword(
+      userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
         password
       );
-
-      setMessage("Account created successfully!");
-      setPage("menu");
     }
+
+    const user = userCredential.user;
+
+    const displayName =
+      user.displayName ||
+      email.split("@")[0];
+
+    setUserName(displayName);
+    setShowGreeting(true);
+
+    setTimeout(() => {
+      setPage("menu");
+    }, 2200);
+
   } catch (error) {
     setMessage(error.message);
   }
 
   setLoading(false);
-  }
+}
+  
+
   
 
   async function handleGoogleLogin() {
