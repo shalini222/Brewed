@@ -220,17 +220,23 @@ const [showMenu, setShowMenu] = useState(false);
       <small>{currentUser.email}</small>
     </div>
 
-    <button onClick={() => alert("Coming Soon!")}>
-      👤 My Profile
+    <button onClick={() => setPage("profile")}>
+      👤 Profile
     </button>
 
-    <button onClick={() => alert("Coming Soon!")}>
+    <button onClick={() => setPage("orders")}>
       ☕ My Orders
     </button>
 
-    <button onClick={() => alert("Coming Soon!")}>
+    <button onClick={() => setPage("favorites")}>
       ❤️ Favorites
     </button>
+
+    <button onClick={() => setPage("rewards")}>
+      ⭐ Rewards
+    </button>
+
+    <hr />
 
     <button onClick={handleLogout}>
       🚪 Logout
