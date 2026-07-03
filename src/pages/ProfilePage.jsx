@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 
-export default function ProfilePage() {
+export default function ProfilePage({setPage}) {
   const { currentUser } = useAuth();
 
   const [fullName, setFullName] = useState("");
