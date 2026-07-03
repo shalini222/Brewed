@@ -1,7 +1,6 @@
 import React from "react";
 
 export default function OrdersPage({ setPage }) {
-
   const orders = [
     {
       id: "#BR1025",
@@ -32,12 +31,6 @@ export default function OrdersPage({ setPage }) {
     }
   ];
 
-  // Helper function to dynamically match the status string to its CSS selector rules
-  function badgeClass(status) {
-    if (!status) return "";
-    return status.toLowerCase();
-  }
-
   return (
     <>
       <style>{`
@@ -51,31 +44,6 @@ export default function OrdersPage({ setPage }) {
           margin: 0;
           background: #FDFAF5;
           font-family: 'Inter', sans-serif;
-        }
-
-        .order-main {
-          display: flex;
-          gap: 22px;
-          align-items: center;
-        }
-
-        .order-image {
-          width: 120px;
-          height: 120px;
-          border-radius: 18px;
-          object-fit: cover;
-          flex-shrink: 0;
-        }
-
-        .order-info {
-          flex: 1;
-        }
-
-        .drink-name {
-          font-family: 'Playfair Display', serif;
-          font-size: 1.6rem;
-          color: #3B1A08;
-          margin-bottom: 6px;
         }
 
         .orders-page {
@@ -133,6 +101,31 @@ export default function OrdersPage({ setPage }) {
           transform: translateY(-4px);
         }
 
+        .order-main {
+          display: flex;
+          gap: 22px;
+          align-items: center;
+        }
+
+        .order-image {
+          width: 120px;
+          height: 120px;
+          border-radius: 18px;
+          object-fit: cover;
+          flex-shrink: 0;
+        }
+
+        .order-info {
+          flex: 1;
+        }
+
+        .drink-name {
+          font-family: 'Playfair Display', serif;
+          font-size: 1.6rem;
+          color: #3B1A08;
+          margin-bottom: 6px;
+        }
+
         .order-top {
           display: flex;
           justify-content: space-between;
@@ -175,6 +168,7 @@ export default function OrdersPage({ setPage }) {
           border-radius: 999px;
           font-size: .9rem;
           font-weight: 600;
+          text-transform: capitalize;
         }
 
         .completed {
@@ -265,20 +259,12 @@ export default function OrdersPage({ setPage }) {
       <div className="orders-page">
         <div className="orders-container">
 
-          <button
-            className="back-button"
-            onClick={() => setPage("menu")}
-          >
+          <button className="back-button" onClick={() => setPage("menu")}>
             ← Back
           </button>
 
-          <h1 className="page-title">
-            My Orders
-          </h1>
-
-          <p className="page-subtitle">
-            Every cup tells a story. Here's your Brewed journey.
-          </p>
+          <h1 className="page-title">My Orders</h1>
+          <p className="page-subtitle">Every cup tells a story. Here's your Brewed journey.</p>
 
           {orders.length === 0 ? (
             <div className="empty">
@@ -286,57 +272,43 @@ export default function OrdersPage({ setPage }) {
               <p>Looks like you haven't placed your first order.</p>
             </div>
           ) : (
-            orders.map((order) => (
-              <div className="order-card" key={order.id}>
-                <div className="order-main">
-                  
-                  <img
-                    src={order.image}
-                    className="order-image"
-                    alt={order.name}
-                  />
+            orders.map(function(order) {
+              return (
+                <div className="order-card" key={order.id}>
+                  <div className="order-main">
+                    
+                    <img src={order.image} className="order-image" alt={order.name} />
 
-                  <div className="order-info">
-                    <div className="drink-name">
-                      {order.name}
-                    </div>
+                    <div className="order-info">
+                      <div className="drink-name">{order.name}</div>
 
-                    <div className="order-top">
-                      <div>
-                        <div className="order-id">
-                          {order.id}
+                      <div className="order-top">
+                        <div>
+                          <div className="order-id">{order.id}</div>
+                          <div className="order-date">{order.date}</div>
                         </div>
-                        <div className="order-date">
-                          {order.date}
-                        </div>
+                        <span className={"badge " + order.status.toLowerCase()}>
+                          {order.status}
+                        </span>
                       </div>
 
-                      <span className={`badge ${badgeClass(order.status)}`}>
-                        {order.status}
-                      </span>
-                    </div>
+                      <div className="order-items">{order.items}</div>
 
-                    <div className="order-items">
-                      {order.items}
-                    </div>
-
-                    <div className="order-bottom">
-                      <div className="order-total">
-                        {order.total}
+                      <div className="order-bottom">
+                        <div className="order-total">{order.total}</div>
+                        <button 
+                          className="order-btn" 
+                          onClick={() => alert("Order Again feature coming soon ☕")}
+                        >
+                          Order Again
+                        </button>
                       </div>
 
-                      <button
-                        className="order-btn"
-                        onClick={() => alert("Order Again feature coming soon ☕")}
-                      >
-                        Order Again
-                      </button>
                     </div>
-
-                  </div> {/* .order-info close */}
-                </div> {/* .order-main close */}
-              </div> {/* .order-card close */}
-            ))
+                  </div>
+                </div>
+              );
+            })
           )}
 
         </div>
