@@ -242,10 +242,15 @@ const [showMenu, setShowMenu] = useState(false);
       ❤️ Favorites
     </button>
 
-    <button onClick={() => setPage("rewards")}>
-      ⭐ Rewards
-    </button>
-
+    
+<button
+  onClick={() => {
+    setShowMenu(false);
+    setPage("rewards");
+  }}
+>
+  ⭐ Rewards
+</button>
     <hr />
 
     <button onClick={handleLogout}>
