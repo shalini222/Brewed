@@ -11,6 +11,13 @@ import ProfilePage from "./pages/ProfilePage";
 
 export default function App() {
   const [page, setPage] = useState("menu");
+  const hideNavbarPages = [
+  "login",
+  "profile",
+  "orders",
+  "favorites",
+  "rewards",
+];
 
   return (
     <CartProvider>
@@ -30,10 +37,12 @@ export default function App() {
         }
       `}</style>
 
-      <Navbar
-        currentPage={page}
-        setPage={setPage}
-      />
+      {!hideNavbarPages.includes(page) && (
+  <Navbar
+    currentPage={page}
+    setPage={setPage}
+  />
+)}
 
       {page === "menu" && <MenuPage />}
       {page === "cart" && <CartPage setPage={setPage} />}
