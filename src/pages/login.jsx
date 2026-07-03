@@ -69,14 +69,24 @@ export default function Login({setPage}) {
 
   setLoading(false);
 }
-  
+    
 
-  
-
-  async function handleGoogleLogin() {
+async function handleGoogleLogin() {
   try {
-    await signInWithPopup(auth, googleProvider);
-    setPage("menu");
+    const result = await signInWithPopup(
+      auth,
+      googleProvider
+    );
+
+    const user = result.user;
+
+    setUserName(user.displayName);
+    setShowGreeting(true);
+
+    setTimeout(() => {
+      setPage("menu");
+    }, 2200);
+
   } catch (error) {
     setMessage(error.message);
   }
