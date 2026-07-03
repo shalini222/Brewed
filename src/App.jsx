@@ -8,6 +8,7 @@ import CheckoutPage from "./pages/CheckoutPage";
 import Login from "./pages/login";
 import { AuthProvider } from "./context/AuthContext";
 import ProfilePage from "./pages/ProfilePage";
+import OrdersPage from "./pages/OrdersPage";
 
 export default function App() {
   const [page, setPage] = useState("menu");
@@ -49,6 +50,7 @@ export default function App() {
       {page === "checkout" && <CheckoutPage setPage={setPage} />}
       {page === "login" && <Login setPage={setPage} />}
       {page === "profile" && <ProfilePage setPage={setPage} />}
+      {page === "orders" && <OrdersPage setPage={setPage} />}
 
       <Footer />
       </AuthProvider>
