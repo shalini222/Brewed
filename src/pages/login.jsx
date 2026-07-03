@@ -7,7 +7,7 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
 
-export default function Login() {
+export default function Login({setPage}) {
   const [isLogin, setIsLogin] = useState(true);
 
   const [name, setName] = useState("");
@@ -18,40 +18,46 @@ export default function Login() {
   const [message, setMessage] = useState("");
 
   async function handleSubmit(e) {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
+  e.preventDefault();
+  setLoading(true);
+  setMessage("");
 
-    try {
-      if (isLogin) {
-        await signInWithEmailAndPassword(
-          auth,
-          email,
-          password
-        );
-        setMessage("Welcome back! ☕");
-      } else {
-        await createUserWithEmailAndPassword(
-          auth,
-          email,
-          password
-        );
-        setMessage("Account created successfully!");
-      }
-    } catch (error) {
-      setMessage(error.message);
+  try {
+    if (isLogin) {
+      await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      setMessage("Welcome back! ☕");
+      setPage("menu");
+    } else {
+      await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      setMessage("Account created successfully!");
+      setPage("menu");
     }
-
-    setLoading(false);
+  } catch (error) {
+    setMessage(error.message);
   }
+
+  setLoading(false);
+  }
+  
 
   async function handleGoogleLogin() {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error) {
-      setMessage(error.message);
-    }
+  try {
+    await signInWithPopup(auth, googleProvider);
+    setPage("menu");
+  } catch (error) {
+    setMessage(error.message);
   }
+}
 
   async function forgotPassword() {
     if (!email) {
