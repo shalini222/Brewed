@@ -1,6 +1,4 @@
 import React, { useState } from "react";
-const [showGreeting, setShowGreeting] = useState(false);
-const [userName, setUserName] = useState("");
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -19,6 +17,9 @@ export default function Login({setPage}) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  const [showGreeting, setShowGreeting] = useState(false);
+  const [userName, setUserName] = useState("");
+ 
   function getGreeting() {
   const hour = new Date().getHours();
 
