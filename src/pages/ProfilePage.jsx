@@ -237,6 +237,22 @@ height:100px;
 }
 
 }
+.back-btn{
+  background:#F8F4EE;
+  border:none;
+  color:#3B1A08;
+  padding:10px 18px;
+  border-radius:999px;
+  cursor:pointer;
+  font-weight:600;
+  transition:.3s;
+  margin-bottom:30px;
+}
+
+.back-btn:hover{
+  background:#C4956A;
+  color:white;
+}
 `}</style>
 
 <div className="profile-page">
