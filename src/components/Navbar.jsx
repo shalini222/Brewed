@@ -238,9 +238,14 @@ const [showMenu, setShowMenu] = useState(false);
   ☕ My Orders
 </button>
 
-    <button onClick={() => setPage("favorites")}>
-      ❤️ Favorites
-    </button>
+    <<button
+  onClick={() => {
+    setShowMenu(false);
+    setPage("favorites");
+  }}
+>
+  ❤️ Favorites
+</button>
 
     
 <button
