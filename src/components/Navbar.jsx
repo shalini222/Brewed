@@ -229,9 +229,14 @@ const [showMenu, setShowMenu] = useState(false);
   👤 Profile
 </button>
 
-    <button onClick={() => setPage("orders")}>
-      ☕ My Orders
-    </button>
+    <button
+  onClick={() => {
+    setShowMenu(false);
+    setPage("orders");
+  }}
+>
+  ☕ My Orders
+</button>
 
     <button onClick={() => setPage("favorites")}>
       ❤️ Favorites
