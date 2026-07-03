@@ -190,6 +190,54 @@ export default function Login({setPage}) {
           color:#8A5A32;
           cursor:pointer;
         }
+        .greeting-screen{
+  position:fixed;
+  inset:0;
+  background:#FDFAF5;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  z-index:9999;
+  animation:fadeIn .7s ease;
+}
+
+.greeting-logo{
+  font-family:'Playfair Display',serif;
+  font-size:3rem;
+  color:#3B1A08;
+  margin-bottom:40px;
+}
+
+.greeting-title{
+  font-size:2.4rem;
+  color:#3B1A08;
+  font-weight:600;
+}
+
+.greeting-name{
+  margin-top:12px;
+  font-size:3rem;
+  color:#C4956A;
+  font-family:'Playfair Display',serif;
+}
+
+.greeting-sub{
+  margin-top:18px;
+  color:#6B5C53;
+  font-size:1.2rem;
+}
+
+@keyframes fadeIn{
+  from{
+    opacity:0;
+    transform:scale(.98);
+  }
+  to{
+    opacity:1;
+    transform:scale(1);
+  }
+}
       `}</style>
 
       <div className="login-page">
