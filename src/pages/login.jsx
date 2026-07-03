@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+const [showGreeting, setShowGreeting] = useState(false);
+const [userName, setUserName] = useState("");
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
