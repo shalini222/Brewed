@@ -10,6 +10,7 @@ import { AuthProvider } from "./context/AuthContext";
 import ProfilePage from "./pages/ProfilePage";
 import OrdersPage from "./pages/OrdersPage";
 import RewardsPage from "./pages/RewardsPage";
+import FavoritesPage from "./pages/FavoritesPage";
 
 export default function App() {
   const [page, setPage] = useState("menu");
@@ -52,7 +53,8 @@ export default function App() {
       {page === "login" && <Login setPage={setPage} />}
       {page === "profile" && <ProfilePage setPage={setPage} />}
       {page === "orders" && <OrdersPage setPage={setPage} />}
-        {page === "rewards" && <RewardsPage setPage={setPage} />}
+      {page === "rewards" && <RewardsPage setPage={setPage} />}
+      {page === "favorites" && (<FavoritesPage setPage={setPage} />)}
 
       <Footer />
       </AuthProvider>
