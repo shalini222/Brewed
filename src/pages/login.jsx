@@ -272,6 +272,27 @@ async function handleGoogleLogin() {
   }
 }
       `}</style>
+      {showGreeting && (
+  <div className="greeting-screen">
+
+    <div className="greeting-logo">
+      Brewed.
+    </div>
+
+    <div className="greeting-title">
+      {getGreeting()},
+    </div>
+
+    <div className="greeting-name">
+      {userName} ☕
+    </div>
+
+    <div className="greeting-sub">
+      Ready for your next coffee?
+    </div>
+
+  </div>
+)}
 
       <div className="login-page">
         <div className="login-card">
