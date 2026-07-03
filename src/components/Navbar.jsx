@@ -1,6 +1,21 @@
 import React from 'react';
+import { useState } from "react";
+import { signOut } from "firebase/auth";
+import { auth } from "../firebase";
+import { useAuth } from "../context/AuthContext";
+
+async function handleLogout() {
+  await signOut(auth);
+  setShowMenu(false);
+  setPage("menu");
+}
 
 export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0 }) {
+
+const { currentUser } = useAuth();
+
+const [showMenu, setShowMenu] = useState(false);
+  
   return (
     <>
       <style>{`
@@ -96,6 +111,43 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
             gap: 0.85rem;
           }
         }
+        .profile-menu{
+  position:absolute;
+  top:55px;
+  right:0;
+  width:250px;
+  background:#FDFAF5;
+  border-radius:16px;
+  box-shadow:0 15px 40px rgba(0,0,0,.18);
+  overflow:hidden;
+  z-index:999;
+}
+
+.profile-header{
+  padding:18px;
+  border-bottom:1px solid #eee;
+  display:flex;
+  flex-direction:column;
+}
+
+.profile-header small{
+  margin-top:5px;
+  color:#777;
+}
+
+.profile-menu button{
+  width:100%;
+  background:none;
+  border:none;
+  padding:15px 18px;
+  text-align:left;
+  cursor:pointer;
+  font-size:15px;
+}
+
+.profile-menu button:hover{
+  background:#F5EFE7;
+}
       `}</style>
 
       <header className="headless-header">
@@ -119,15 +171,73 @@ export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0
 
           {/* Login */}
           <button
-            className={`nav-icon-btn ${currentPage === "login" ? "active" : ""}`}
-            onClick={() => setPage("login")}
-            title="Account Login"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </button>
+  className={`nav-icon-btn ${currentPage === "login" ? "active" : ""}`}
+  onClick={() => {
+    if (currentUser) {
+      setShowMenu(!showMenu);
+    } else {
+      setPage("login");
+    }
+  }}
+  title="Account"
+>
+  {currentUser?.photoURL ? (
+    <img
+      src={currentUser.photoURL}
+      alt="profile"
+      style={{
+        width: 28,
+        height: 28,
+        borderRadius: "50%",
+        objectFit: "cover",
+      }}
+    />
+  ) : (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+    </svg>
+  )}
+</button>
+          {currentUser && showMenu && (
+  <div className="profile-menu">
+
+    <div className="profile-header">
+      <strong>
+        👋 Hi, {currentUser.displayName || currentUser.email.split("@")[0]}
+      </strong>
+
+      <small>{currentUser.email}</small>
+    </div>
+
+    <button onClick={() => alert("Coming Soon!")}>
+      👤 My Profile
+    </button>
+
+    <button onClick={() => alert("Coming Soon!")}>
+      ☕ My Orders
+    </button>
+
+    <button onClick={() => alert("Coming Soon!")}>
+      ❤️ Favorites
+    </button>
+
+    <button onClick={handleLogout}>
+      🚪 Logout
+    </button>
+
+  </div>
+)}
 
           {/* Cart */}
           <button
