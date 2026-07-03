@@ -237,21 +237,26 @@ height:100px;
 }
 
 }
-.back-btn{
-  background:#F8F4EE;
-  border:none;
-  color:#3B1A08;
-  padding:10px 18px;
-  border-radius:999px;
-  cursor:pointer;
-  font-weight:600;
-  transition:.3s;
-  margin-bottom:30px;
+.profile-container{
+  width:100%;
+  max-width:760px;
 }
 
-.back-btn:hover{
-  background:#C4956A;
-  color:white;
+.back-button{
+  background:none;
+  border:none;
+  color:#3B1A08;
+  font-size:16px;
+  font-weight:600;
+  cursor:pointer;
+  margin-bottom:20px;
+  padding:0;
+  transition:.3s;
+}
+
+.back-button:hover{
+  color:#C4956A;
+  transform:translateX(-4px);
 }
 `}</style>
 
