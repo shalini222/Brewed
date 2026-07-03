@@ -19,6 +19,16 @@ export default function Login({setPage}) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  function getGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour < 12) return "Good Morning";
+  if (hour < 17) return "Good Afternoon";
+  return "Good Evening";
+}
+  
+ 
+  
   async function handleSubmit(e) {
   e.preventDefault();
   setLoading(true);
