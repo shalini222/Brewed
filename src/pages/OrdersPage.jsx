@@ -3,41 +3,36 @@ import React from "react";
 export default function OrdersPage({ setPage }) {
 
   const orders = [
-    {
-      id: "#BR1025",
-      date: "3 July 2026",
-      items: "2x Cappuccino • 1x Croissant",
-      total: "₹780",
-      status: "Completed"
-    },
-    {
-      id: "#BR1024",
-      date: "1 July 2026",
-      items: "1x Iced Latte",
-      total: "₹320",
-      status: "Preparing"
-    },
-    {
-      id: "#BR1023",
-      date: "28 June 2026",
-      items: "2x Espresso",
-      total: "₹420",
-      status: "Ready"
-    }
-  ];
+  {
+    id:"#BR1025",
+    image:"https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=80",
+    name:"Cappuccino",
+    items:"2x Cappuccino • 1x Croissant",
+    total:"₹780",
+    date:"3 July 2026",
+    status:"Completed"
+  },
 
-  function badgeClass(status){
-    switch(status){
-      case "Completed":
-        return "completed";
+  {
+    id:"#BR1024",
+    image:"https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=400&q=80",
+    name:"Iced Latte",
+    items:"1x Iced Latte",
+    total:"₹320",
+    date:"1 July 2026",
+    status:"Preparing"
+  },
 
-      case "Preparing":
-        return "preparing";
-
-      default:
-        return "ready";
-    }
+  {
+    id:"#BR1023",
+    image:"https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80",
+    name:"Espresso",
+    items:"2x Espresso",
+    total:"₹420",
+    date:"28 June 2026",
+    status:"Ready"
   }
+];
 
   return (
     <>
@@ -52,7 +47,42 @@ body{
   background:#FDFAF5;
   font-family:'Inter',sans-serif;
 }
+.order-main{
+display:flex;
+gap:22px;
+align-items:center;
+}
+@media(max-width:768px){
 
+.order-main{
+flex-direction:column;
+align-items:flex-start;
+}
+
+.order-image{
+width:100%;
+height:210px;
+}
+
+}
+.order-image{
+width:120px;
+height:120px;
+border-radius:18px;
+object-fit:cover;
+flex-shrink:0;
+}
+
+.order-info{
+flex:1;
+}
+
+.drink-name{
+font-family:'Playfair Display',serif;
+font-size:1.6rem;
+color:#3B1A08;
+margin-bottom:6px;
+}
 .orders-page{
   min-height:100vh;
   background:#FDFAF5;
@@ -270,7 +300,21 @@ width:100%;
           key={order.id}
         >
 
-          <div className="order-top">
+          <div className="order-main">
+
+<img
+  src={order.image}
+  className="order-image"
+  alt={order.name}
+/>
+
+<div className="order-info">
+
+<div className="drink-name">
+  {order.name}
+</div>
+
+<div className="order-top">
 
             <div>
 
