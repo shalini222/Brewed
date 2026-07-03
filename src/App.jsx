@@ -37,7 +37,7 @@ export default function App() {
       {page === "menu" && <MenuPage />}
       {page === "cart" && <CartPage setPage={setPage} />}
       {page === "checkout" && <CheckoutPage setPage={setPage} />}
-      {page === "login" && <Login />}
+      {page === "login" && <Login setPage={setPage} />}
 
       <Footer />
       </AuthProvider>
