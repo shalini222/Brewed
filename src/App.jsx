@@ -23,6 +23,7 @@ export default function App() {
   "orders",
   "favorites",
   "rewards",
+  "notifications",
 ];
 
   return (
