@@ -207,7 +207,35 @@ body{
 .empty-text{
   color:#7A675C;
 }
+.page-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:20px;
+  margin-bottom:35px;
+}
 
+.page-header .page-subtitle{
+  margin-bottom:0;
+}
+
+.clear-btn{
+  padding:12px 22px;
+  background:#3B1A08;
+  color:white;
+  border:none;
+  border-radius:999px;
+  font-weight:600;
+  cursor:pointer;
+  transition:all .3s ease;
+}
+
+.clear-btn:hover{
+  background:#C4956A;
+  color:#3B1A08;
+  transform:translateY(-2px);
+  box-shadow:0 10px 25px rgba(196,149,106,.35);
+}
 @media(max-width:768px){
 
 .notifications-page{
@@ -226,7 +254,14 @@ body{
   width:55px;
   height:55px;
 }
+.page-header{
+  flex-direction:column;
+  align-items:flex-start;
+}
 
+.clear-btn{
+  width:100%;
+}
 .new-badge{
   margin-top:12px;
 }
@@ -246,6 +281,10 @@ body{
       Back
     </button>
 
+    <div className="page-header">
+
+  <div>
+
     <h1 className="page-title">
       Notifications
     </h1>
@@ -253,6 +292,17 @@ body{
     <p className="page-subtitle">
       Stay updated with your orders, rewards and exclusive Brewed offers.
     </p>
+
+  </div>
+
+  <button
+    className="clear-btn"
+    onClick={() => setNotificationList([])}
+  >
+    Clear All
+  </button>
+
+</div>
 
     {notificationList.length === 0 ? (
 
