@@ -159,10 +159,12 @@ const [showMenu, setShowMenu] = useState(false);
         <div className="nav-icons-group">
           {/* Notification */}
           <button
-  className="nav-icon"
+  className="icon-btn notification-btn"
   onClick={() => setPage("notifications")}
 >
-  <Bell size={22} />
+  <Bell size={22} strokeWidth={1.8} />
+
+  <span className="notification-dot"></span>
 </button>
 
           {/* Location */}
