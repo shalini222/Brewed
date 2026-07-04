@@ -3,6 +3,7 @@ import { useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { useAuth } from "../context/AuthContext";
+import { Bell } from "lucide-react";
 
 async function handleLogout() {
   await signOut(auth);
@@ -156,6 +157,13 @@ const [showMenu, setShowMenu] = useState(false);
         </div>
 
         <div className="nav-icons-group">
+          {/* Notification */}
+          <button
+  className="nav-icon"
+  onClick={() => setPage("notifications")}
+>
+  <Bell size={22} />
+</button>
 
           {/* Location */}
           <button
