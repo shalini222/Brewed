@@ -12,6 +12,9 @@ import OrdersPage from "./pages/OrdersPage";
 import RewardsPage from "./pages/RewardsPage";
 import FavoritesPage from "./pages/FavoritesPage";
 
+
+
+
 export default function App() {
   const [page, setPage] = useState("menu");
   const hideNavbarPages = [
@@ -55,6 +58,8 @@ export default function App() {
       {page === "orders" && <OrdersPage setPage={setPage} />}
       {page === "rewards" && <RewardsPage setPage={setPage} />}
       {page === "favorites" && (<FavoritesPage setPage={setPage} />)}
+      {page === "notifications" && (<NotificationsPage setPage={setPage} />
+)}  
 
       <Footer />
       </AuthProvider>
