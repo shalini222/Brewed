@@ -12,12 +12,14 @@ import OrdersPage from "./pages/OrdersPage";
 import RewardsPage from "./pages/RewardsPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import ProductPage from "./pages/ProductPage";
 
 
 
 
 export default function App() {
   const [page, setPage] = useState("menu");
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const hideNavbarPages = [
   "login",
   "profile",
@@ -52,7 +54,7 @@ export default function App() {
   />
 )}
 
-      {page === "menu" && <MenuPage />}
+      {page === "menu" && <MenuPage setPage={setPage} setSelectedProduct={setSelectedProduct} />
       {page === "cart" && <CartPage setPage={setPage} />}
       {page === "checkout" && <CheckoutPage setPage={setPage} />}
       {page === "login" && <Login setPage={setPage} />}
@@ -61,6 +63,8 @@ export default function App() {
       {page === "rewards" && <RewardsPage setPage={setPage} />}
       {page === "favorites" && (<FavoritesPage setPage={setPage} />)}
       {page === "notifications" && (<NotificationsPage setPage={setPage} />
+      {page === "product" && (<ProductPage setPage={setPage} product={selectedProduct} />
+)}
 )}  
 
       <Footer />
