@@ -85,7 +85,6 @@ body{
   font-weight:600;
   cursor:pointer;
   margin-bottom:30px;
-  padding:0;
   transition:.3s;
 }
 
@@ -112,15 +111,15 @@ body{
   align-items:flex-start;
   gap:20px;
   background:white;
-  border-radius:22px;
   padding:24px;
+  border-radius:22px;
   margin-bottom:20px;
   box-shadow:0 15px 40px rgba(0,0,0,.08);
   transition:.3s;
 }
 
 .notification-card:hover{
-  transform:translateY(-6px);
+  transform:translateY(-5px);
 }
 
 .notification-card.unread{
@@ -131,12 +130,12 @@ body{
 .notification-icon{
   width:60px;
   height:60px;
-  border-radius:18px;
   background:#F6ECE1;
   color:#3B1A08;
+  border-radius:18px;
   display:flex;
-  align-items:center;
   justify-content:center;
+  align-items:center;
   flex-shrink:0;
   transition:.3s;
 }
@@ -163,7 +162,7 @@ body{
 }
 
 .notification-time{
-  margin-top:14px;
+  margin-top:12px;
   color:#A08D81;
   font-size:.9rem;
 }
@@ -175,12 +174,11 @@ body{
   border-radius:999px;
   font-size:.75rem;
   font-weight:700;
-  align-self:flex-start;
 }
 
 .empty-state{
   background:white;
-  border-radius:24px;
+  border-radius:22px;
   padding:80px 30px;
   text-align:center;
   box-shadow:0 15px 40px rgba(0,0,0,.08);
@@ -188,9 +186,9 @@ body{
 
 .empty-title{
   font-family:'Playfair Display',serif;
-  font-size:2rem;
   color:#3B1A08;
-  margin-bottom:12px;
+  font-size:2rem;
+  margin-bottom:10px;
 }
 
 .empty-text{
@@ -289,11 +287,9 @@ body{
           </div>
 
           {item.unread && (
-
             <div className="new-badge">
               NEW
             </div>
-
           )}
 
         </div>
@@ -302,171 +298,11 @@ body{
 
     )}
 
-  @media(max-width:768px){
-
-.notifications-page{
-  padding:90px 18px 50px;
-}
-
-.page-title{
-  font-size:2.2rem;
-}
-
-.notification-card{
-  flex-direction:column;
-}
-
-.notification-icon{
-  width:55px;
-  height:55px;
-}
-
-.new-badge{
-  margin-top:12px;
-}
-
-}
-`}</style>
-
-<div className="notifications-page">
-
-  <div className="notifications-container">
-
-    <button
-      className="back-button"
-      onClick={() => setPage("menu")}
-    >
-      <ArrowLeft size={20} />
-      Back
-    </button>
-
-    <h1 className="page-title">
-      Notifications
-    </h1>
-
-    <p className="page-subtitle">
-      Stay updated with your orders, rewards and exclusive Brewed offers.
-    </p>
-
-    {notifications.length === 0 ? (
-
-      <div className="empty-state">
-
-        <div className="empty-title">
-          You're all caught up ☕
-        </div>
-
-        <div className="empty-text">
-          New notifications will appear here.
-        </div>
-
-      </div>
-
-    ) : (
-
-      notifications.map((item) => (
-
-        <div
-          key={item.id}
-          className={`notification-card ${
-            item.unread ? "unread" : ""
-          }`}
-        >
-
-          <div className="notification-icon">
-            {item.icon}
-          </div>
-
-          <div className="notification-content">
-
-            <div className="notification-title">
-              {item.title}
-            </div>
-
-            <div className="notification-message">
-              {item.message}
-            </div>
-
-            <div className="notification-time">
-              {item.time}
-            </div>
-
-          </div>
-
-          {item.unread && (
-
-  <div className="new-badge">
-    NEW
   </div>
 
-)}
-
 </div>
 
-))
-
-)}
-    {notifications.length === 0 ? (
-
-  <div className="empty-state">
-
-    <div className="empty-title">
-      You're all caught up ☕
-    </div>
-
-    <div className="empty-text">
-      New notifications will appear here.
-    </div>
-
-  </div>
-
-) : (
-
-  notifications.map((item) => (
-
-    <div
-      key={item.id}
-      className={`notification-card ${
-        item.unread ? "unread" : ""
-      }`}
-    >
-
-      <div className="notification-icon">
-        {item.icon}
-      </div>
-
-      <div className="notification-content">
-
-        <div className="notification-title">
-          {item.title}
-        </div>
-
-        <div className="notification-message">
-          {item.message}
-        </div>
-
-        <div className="notification-time">
-          {item.time}
-        </div>
-
-      </div>
-
-      {item.unread && (
-        <div className="new-badge">
-          NEW
-        </div>
-      )}
-
-    </div>
-
-  ))
-
-)}
-
-</div>
-
-</div>
-
-</>
+    </>
   );
 }
+ 
