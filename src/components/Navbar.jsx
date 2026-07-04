@@ -69,7 +69,49 @@ const [showMenu, setShowMenu] = useState(false);
           position: relative;
           transition: all 0.2s ease;
         }
+         .icon-btn{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 
+  width:42px;
+  height:42px;
+
+  border:none;
+  background:transparent;
+
+  color:#FDF8F3;
+  cursor:pointer;
+
+  border-radius:50%;
+  transition:.25s ease;
+}
+
+.icon-btn:hover{
+  background:rgba(255,255,255,.08);
+}
+
+.notification-btn svg{
+  width:22px;
+  height:22px;
+}
+
+.notification-dot{
+  position:absolute;
+
+  top:8px;
+  right:8px;
+
+  width:8px;
+  height:8px;
+
+  border-radius:50%;
+
+  background:#C4956A;
+
+  border:2px solid #3B1A08;
+}
         .nav-icon-btn:hover {
           color: #C4956A;
           background-color: rgba(253, 250, 245, 0.08);
