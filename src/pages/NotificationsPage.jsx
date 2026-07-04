@@ -47,6 +47,19 @@ export default function NotificationsPage({ setPage }) {
     }
   ];
 
+
+  const [notificationList, setNotificationList] = React.useState(notifications);
+  
+  function markAsRead(id) {
+  setNotificationList(
+    notificationList.map((item) =>
+      item.id === id
+        ? { ...item, unread: false }
+        : item
+    )
+  );
+  }
+
   return (
     <>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
@@ -241,7 +254,7 @@ body{
       Stay updated with your orders, rewards and exclusive Brewed offers.
     </p>
 
-    {notifications.length === 0 ? (
+    {notificationList.length === 0 ? (
 
       <div className="empty-state">
 
@@ -257,14 +270,15 @@ body{
 
     ) : (
 
-      notifications.map((item) => (
+      notificationList.map((item) => (
 
-        <div
-          key={item.id}
-          className={`notification-card ${
-            item.unread ? "unread" : ""
-          }`}
-        >
+       <div
+  key={item.id}
+  className={`notification-card ${
+    item.unread ? "unread" : ""
+  }`}
+  onClick={() => markAsRead(item.id)}
+>
 
           <div className="notification-icon">
             {item.icon}
