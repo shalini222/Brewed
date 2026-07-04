@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useCart } from "../context/CartContext";
 import { menuItems, categories } from "../data/menu"; 
 
-export default function MenuPage() {
+export default function MenuPage({setPage}) {
   const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState("featured"); 
   const [added, setAdded] = useState({});
@@ -314,7 +314,12 @@ export default function MenuPage() {
         {/* Clean Menu Card Grid */}
         <div className="menu-grid">
           {sortedAndFiltered.map((item) => (
-            <div key={item.id} className="menu-card">
+            <div
+  key={item.id}
+  className="menu-card"
+  onClick={() => setPage("product")}
+  style={{ cursor: "pointer" }}
+>
               <div style={styles.cardEmoji}>{item.emoji}</div>
               <div style={styles.cardBody}>
                 <div style={styles.cardTop}>
@@ -337,7 +342,10 @@ export default function MenuPage() {
                   ...styles.addBtn,
                   ...(added[item.id] ? styles.addedBtn : {}),
                 }}
-                onClick={() => handleAdd(item)}
+                onClick={(e) => {
+  e.stopPropagation();
+  handleAdd(item);
+}}
               >
                 {added[item.id] ? "✓ Added" : "+ Add"}
               </button>
