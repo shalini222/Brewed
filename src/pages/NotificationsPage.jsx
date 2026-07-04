@@ -302,7 +302,168 @@ body{
 
     )}
 
+  @media(max-width:768px){
+
+.notifications-page{
+  padding:90px 18px 50px;
+}
+
+.page-title{
+  font-size:2.2rem;
+}
+
+.notification-card{
+  flex-direction:column;
+}
+
+.notification-icon{
+  width:55px;
+  height:55px;
+}
+
+.new-badge{
+  margin-top:12px;
+}
+
+}
+`}</style>
+
+<div className="notifications-page">
+
+  <div className="notifications-container">
+
+    <button
+      className="back-button"
+      onClick={() => setPage("menu")}
+    >
+      <ArrowLeft size={20} />
+      Back
+    </button>
+
+    <h1 className="page-title">
+      Notifications
+    </h1>
+
+    <p className="page-subtitle">
+      Stay updated with your orders, rewards and exclusive Brewed offers.
+    </p>
+
+    {notifications.length === 0 ? (
+
+      <div className="empty-state">
+
+        <div className="empty-title">
+          You're all caught up ☕
+        </div>
+
+        <div className="empty-text">
+          New notifications will appear here.
+        </div>
+
+      </div>
+
+    ) : (
+
+      notifications.map((item) => (
+
+        <div
+          key={item.id}
+          className={`notification-card ${
+            item.unread ? "unread" : ""
+          }`}
+        >
+
+          <div className="notification-icon">
+            {item.icon}
+          </div>
+
+          <div className="notification-content">
+
+            <div className="notification-title">
+              {item.title}
+            </div>
+
+            <div className="notification-message">
+              {item.message}
+            </div>
+
+            <div className="notification-time">
+              {item.time}
+            </div>
+
+          </div>
+
+          {item.unread && (
+
+  <div className="new-badge">
+    NEW
   </div>
+
+)}
+
+</div>
+
+))
+
+)}
+    {notifications.length === 0 ? (
+
+  <div className="empty-state">
+
+    <div className="empty-title">
+      You're all caught up ☕
+    </div>
+
+    <div className="empty-text">
+      New notifications will appear here.
+    </div>
+
+  </div>
+
+) : (
+
+  notifications.map((item) => (
+
+    <div
+      key={item.id}
+      className={`notification-card ${
+        item.unread ? "unread" : ""
+      }`}
+    >
+
+      <div className="notification-icon">
+        {item.icon}
+      </div>
+
+      <div className="notification-content">
+
+        <div className="notification-title">
+          {item.title}
+        </div>
+
+        <div className="notification-message">
+          {item.message}
+        </div>
+
+        <div className="notification-time">
+          {item.time}
+        </div>
+
+      </div>
+
+      {item.unread && (
+        <div className="new-badge">
+          NEW
+        </div>
+      )}
+
+    </div>
+
+  ))
+
+)}
+
+</div>
 
 </div>
 
