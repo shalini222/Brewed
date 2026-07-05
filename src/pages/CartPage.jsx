@@ -100,10 +100,6 @@ export default function CartPage({ setPage }) {
                   <span>Estimated Tax (8%)</span>
                   <span>₹{Math.round(total * 0.08)}</span>
                 </div>
-                <div style={styles.summaryRow}>
-                  <span>Delivery Fee</span>
-                  <span style={styles.deliveryNotice}>Calculated next step</span>
-                </div>
                 
                 <hr style={styles.divider} />
 
@@ -302,11 +298,6 @@ const styles = {
     color: "#6B5E55",
     fontSize: "15px",
     alignItems: "center"
-  },
-  deliveryNotice: {
-    fontSize: "13px",
-    color: "#A88467",
-    fontStyle: "italic"
   },
   divider: {
     border: "none",
