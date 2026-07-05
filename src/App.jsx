@@ -9,7 +9,7 @@ import MenuPage from "./pages/MenuPage";
 import ProductPage from "./pages/ProductPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
-import TrackingPage from "./pages/TrackingPage"; // Added Tracking Import
+import TrackingPage from "./pages/TrackingPage"; 
 import Login from "./pages/login";
 import ProfilePage from "./pages/ProfilePage";
 import OrdersPage from "./pages/OrdersPage";
@@ -20,12 +20,15 @@ import NotificationsPage from "./pages/NotificationsPage";
 export default function App() {
   const [page, setPage] = useState("menu");
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [activeOrder, setActiveOrder] = useState(null); // Holds the payload for tracking locks
+  const [activeOrder, setActiveOrder] = useState(null); 
 
   // Unified routing handler to catch tracking data from Checkout
   const navigateTo = (nextPage, orderSnapshot = null) => {
     if (orderSnapshot) {
       setActiveOrder(orderSnapshot);
+    } else if (nextPage === "menu" || nextPage === "cart") {
+      // Clear snapshot when returning to the shopping flow
+      setActiveOrder(null);
     }
     setPage(nextPage);
   };
@@ -37,7 +40,7 @@ export default function App() {
     "favorites",
     "rewards",
     "notifications",
-    "tracking", // Hidden navbar from tracking to maximize clarity
+    "tracking", 
   ];
 
   return (
