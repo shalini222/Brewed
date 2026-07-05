@@ -6,36 +6,54 @@ export function CartProvider({ children }) {
   const [cart, setCart] = useState([]);
 
   const addToCart = (item) => {
-  setCart((prev) => {
-    const existing = prev.find(
-      (i) =>
-        i.id === item.id &&
-        i.size === item.size &&
-        i.milk === item.milk &&
-        JSON.stringify(i.toppings) === JSON.stringify(item.toppings) &&
-        i.temperature === item.temperature &&
-        i.iceLevel === item.iceLevel &&
-        i.sweetness === item.sweetness &&
-        i.instructions === item.instructions
-    );
+    setCart((prev) => {
+      const incomingItem = {
+        ...item,
+        qty: item.qty || 1,
+        size: item.size || "Medium",
+        milk: item.milk || "Whole Milk",
+        toppings: item.toppings || [],
+        temperature: item.temperature || "Hot",
+        iceLevel: item.iceLevel || "Regular",
+        sweetness: item.sweetness !== undefined ? item.sweetness : 50,
+        instructions: item.instructions || ""
+      };
 
-    if (existing) {
-      return prev.map((i) =>
-        i === existing
-          ? { ...i, qty: i.qty + item.qty }
-          : i
+      const existing = prev.find(
+        (i) =>
+          i.id === incomingItem.id &&
+          (i.size || "Medium") === incomingItem.size &&
+          (i.milk || "Whole Milk") === incomingItem.milk &&
+          JSON.stringify(i.toppings || []) === JSON.stringify(incomingItem.toppings) &&
+          (i.temperature || "Hot") === incomingItem.temperature &&
+          (i.iceLevel || "Regular") === incomingItem.iceLevel &&
+          (i.sweetness ?? 50) === incomingItem.sweetness &&
+          (i.instructions || "") === incomingItem.instructions
       );
-    }
 
-    return [...prev, item];
-  });
-};
+      if (existing) {
+        return prev.map((i) =>
+          i === existing
+            ? { ...i, qty: i.qty + incomingItem.qty }
+            : i
+        );
+      }
 
-  const removeFromCart = (id) => setCart((prev) => prev.filter((i) => i.id !== id));
+      return [...prev, incomingItem];
+    });
+  };
 
-  const updateQty = (id, qty) => {
-    if (qty < 1) return removeFromCart(id);
-    setCart((prev) => prev.map((i) => i.id === id ? { ...i, qty } : i));
+  // FIX: Identify items by looking at their unique reference object
+  const removeFromCart = (itemToRemove) => {
+    setCart((prev) => prev.filter((i) => i !== itemToRemove));
+  };
+
+  // FIX: Identify the exact customized item to update quantity
+  const updateQty = (itemToUpdate, qty) => {
+    if (qty < 1) return removeFromCart(itemToUpdate);
+    setCart((prev) =>
+      prev.map((i) => (i === itemToUpdate ? { ...i, qty } : i))
+    );
   };
 
   const clearCart = () => setCart([]);
