@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useCart } from "../context/CartContext";
 import { menuItems, categories } from "../data/menu"; 
 
-export default function MenuPage({setPage}) {
+export default function MenuPage({
+  setPage,
+  setSelectedProduct,
+}) {
   const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState("featured"); 
   const [added, setAdded] = useState({});
@@ -312,47 +315,59 @@ export default function MenuPage({setPage}) {
         </div>
 
         {/* Clean Menu Card Grid */}
-        <div className="menu-grid">
-          {sortedAndFiltered.map((item) => (
-            <div
-  key={item.id}
-  className="menu-card"
-  onClick={() => setPage("product")}
-  style={{ cursor: "pointer" }}
->
-              <div style={styles.cardEmoji}>{item.emoji}</div>
-              <div style={styles.cardBody}>
-                <div style={styles.cardTop}>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={styles.cardName}>{item.name}</h3>
-                  </div>
-                  <span style={styles.cardPrice}>₹{Math.round(item.price)}</span>
-                </div>
+         {/* Clean Menu Card Grid */}
+<div className="menu-grid">
+  {sortedAndFiltered.map((item) => (
+    <div
+      key={item.id}
+      className="menu-card"
+      style={{ cursor: "pointer" }}
+      onClick={() => {
+        setSelectedProduct(item);
+        setPage("product");
+      }}
+    >
+      <div style={styles.cardEmoji}>{item.emoji}</div>
 
-                <div className="rating-badge">
-                  <span className="rating-star">★</span>
-                  <span className="rating-score">{item.rating}</span>
-                  <span className="rating-count">({item.reviews})</span>
-                </div>
+      <div style={styles.cardBody}>
+        <div style={styles.cardTop}>
+          <div style={{ flex: 1 }}>
+            <h3 style={styles.cardName}>{item.name}</h3>
+          </div>
 
-                <p style={styles.cardDesc}>{item.desc}</p>
-              </div>
-              <button
-                style={{
-                  ...styles.addBtn,
-                  ...(added[item.id] ? styles.addedBtn : {}),
-                }}
-                onClick={(e) => {
-  e.stopPropagation();
-  handleAdd(item);
-}}
-              >
-                {added[item.id] ? "✓ Added" : "+ Add"}
-              </button>
-            </div>
-          ))}
+          <span style={styles.cardPrice}>
+            ₹{Math.round(item.price)}
+          </span>
         </div>
+
+        <div className="rating-badge">
+          <span className="rating-star">★</span>
+          <span className="rating-score">{item.rating}</span>
+          <span className="rating-count">
+            ({item.reviews})
+          </span>
+        </div>
+
+        <p style={styles.cardDesc}>
+          {item.desc}
+        </p>
       </div>
+
+      <button
+        style={{
+          ...styles.addBtn,
+          ...(added[item.id] ? styles.addedBtn : {}),
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleAdd(item);
+        }}
+      >
+        {added[item.id] ? "✓ Added" : "+ Add"}
+      </button>
+    </div>
+  ))}
+</div>
     </>
   );
 }
