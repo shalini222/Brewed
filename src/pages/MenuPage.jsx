@@ -315,7 +315,7 @@ export default function MenuPage({
         </div>
 
         {/* Clean Menu Card Grid */}
-         {/* Clean Menu Card Grid */}
+         
 <div className="menu-grid">
   {sortedAndFiltered.map((item) => (
     <div
@@ -367,7 +367,8 @@ export default function MenuPage({
       </button>
     </div>
   ))}
-</div>
+  </div>
+  </div>
     </>
   );
 }
