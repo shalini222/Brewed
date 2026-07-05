@@ -6,12 +6,30 @@ export function CartProvider({ children }) {
   const [cart, setCart] = useState([]);
 
   const addToCart = (item) => {
-    setCart((prev) => {
-      const existing = prev.find((i) => i.id === item.id);
-      if (existing) return prev.map((i) => i.id === item.id ? { ...i, qty: i.qty + 1 } : i);
-      return [...prev, { ...item, qty: 1 }];
-    });
-  };
+  setCart((prev) => {
+    const existing = prev.find(
+      (i) =>
+        i.id === item.id &&
+        i.size === item.size &&
+        i.milk === item.milk &&
+        JSON.stringify(i.toppings) === JSON.stringify(item.toppings) &&
+        i.temperature === item.temperature &&
+        i.iceLevel === item.iceLevel &&
+        i.sweetness === item.sweetness &&
+        i.instructions === item.instructions
+    );
+
+    if (existing) {
+      return prev.map((i) =>
+        i === existing
+          ? { ...i, qty: i.qty + item.qty }
+          : i
+      );
+    }
+
+    return [...prev, item];
+  });
+};
 
   const removeFromCart = (id) => setCart((prev) => prev.filter((i) => i.id !== id));
 
