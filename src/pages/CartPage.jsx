@@ -1,4 +1,4 @@
-    import React from "react";
+import React from "react";
 import { useCart } from "../context/CartContext";
 
 export default function CartPage({ setPage }) {
@@ -100,6 +100,13 @@ export default function CartPage({ setPage }) {
                   <span>Estimated Tax (8%)</span>
                   <span>₹{Math.round(total * 0.08)}</span>
                 </div>
+                <div style={styles.summaryRow}>
+                  <span>Delivery Fee</span>
+                  <span style={styles.deliveryNotice}>Calculated next step</span>
+                </div>
+                
+                <hr style={styles.divider} />
+
                 <div style={styles.summaryRow}>
                   <span>Estimated Total</span>
                   <span style={styles.finalTotal}>₹{Math.round(total * 1.08)}</span>
@@ -294,6 +301,17 @@ const styles = {
     marginBottom: "12px",
     color: "#6B5E55",
     fontSize: "15px",
+    alignItems: "center"
+  },
+  deliveryNotice: {
+    fontSize: "13px",
+    color: "#A88467",
+    fontStyle: "italic"
+  },
+  divider: {
+    border: "none",
+    borderTop: "1px dashed #EAE3D8",
+    margin: "15px 0"
   },
   finalTotal: {
     fontWeight: "700",
