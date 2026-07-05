@@ -47,8 +47,11 @@ export default function ProductPage({
       images: []
     }
   ]);
-
-  const basePrice = 245;
+  
+  
+  const { addToCart } = useCart();
+  
+  const basePrice = product.price;
 
   const sizePrices = {
     Small: -50,
@@ -72,7 +75,6 @@ export default function ProductPage({
     "Vanilla Syrup": 20
   };
   
-  const { addToCart } = useCart();
   
   const toppingsTotal = toppings.reduce(
     (sum, topping) => sum + (toppingPrices[topping] || 0),
@@ -136,6 +138,18 @@ export default function ProductPage({
 };
 
   const quickRequests = ["Extra Hot", "Less Sweet", "No Ice", "Make it Vegan"];
+  
+  if (!product) {
+  return (
+    <div style={{ padding: 40 }}>
+      <h2>No product selected.</h2>
+
+      <button onClick={() => setPage("menu")}>
+        Back to Menu
+      </button>
+    </div>
+  );
+  }
 
   return (
     <>
