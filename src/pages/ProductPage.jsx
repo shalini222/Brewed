@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useCart } from "../context/CartContext";
 import {
   ArrowLeft,
   Heart,
@@ -67,7 +68,9 @@ export default function ProductPage({ setPage }) {
     "Caramel Drizzle": 25,
     "Vanilla Syrup": 20
   };
-
+  
+  const { addToCart } = useCart();
+  
   const toppingsTotal = toppings.reduce(
     (sum, topping) => sum + (toppingPrices[topping] || 0),
     0
@@ -111,6 +114,23 @@ export default function ProductPage({ setPage }) {
     setReviewRating(5);
     setReviewImages([]);
   };
+
+  const handleAddToCart = () => {
+  addToCart({
+    ...product,
+    price: singlePrice,
+    qty: quantity,
+    size,
+    milk,
+    toppings,
+    temperature,
+    iceLevel,
+    sweetness,
+    instructions,
+  });
+
+  setPage("cart");
+};
 
   const quickRequests = ["Extra Hot", "Less Sweet", "No Ice", "Make it Vegan"];
 
@@ -1321,7 +1341,7 @@ body{
                 <span>{quantity}</span>
                 <button type="button" onClick={() => setQuantity(quantity + 1)}>+</button>
               </div>
-              <button className="sticky-cart-button" onClick={() => alert("Added to cart! ☕")}>
+              <button className="sticky-cart-button" onClick={handleAddToCart}>
                 ₹{totalPrice}
                 <span>Add to Cart</span>
               </button>
