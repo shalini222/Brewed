@@ -1,4 +1,4 @@
-import React from "react";
+    import React from "react";
 import { useCart } from "../context/CartContext";
 
 export default function CartPage({ setPage }) {
@@ -55,7 +55,7 @@ export default function CartPage({ setPage }) {
                     {item.instructions && (
                       <p style={styles.itemNotes}>⚠️ Note: "{item.instructions}"</p>
                     )}
-                    <span style={styles.itemPrice}>${(item.price * item.qty).toFixed(2)}</span>
+                    <span style={styles.itemPrice}>₹{Math.round(item.price * item.qty)}</span>
                   </div>
 
                   {/* Quantity Actions */}
@@ -94,15 +94,15 @@ export default function CartPage({ setPage }) {
                 
                 <div style={styles.summaryRow}>
                   <span>Subtotal</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>₹{Math.round(total)}</span>
                 </div>
                 <div style={styles.summaryRow}>
-                  <span>Estimated Tax</span>
-                  <span>${(total * 0.08).toFixed(2)}</span>
+                  <span>Estimated Tax (8%)</span>
+                  <span>₹{Math.round(total * 0.08)}</span>
                 </div>
                 <div style={styles.summaryRow}>
                   <span>Estimated Total</span>
-                  <span style={styles.finalTotal}>${(total * 1.08).toFixed(2)}</span>
+                  <span style={styles.finalTotal}>₹{Math.round(total * 1.08)}</span>
                 </div>
 
                 <button 
@@ -167,7 +167,6 @@ const styles = {
   },
   listHeader: {
     display: "flex",
-    justifyContent: "between",
     alignItems: "center",
     justifyContent: "space-between",
     paddingBottom: "10px",
