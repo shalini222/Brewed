@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import { useCart } from "../context/CartContext";
+import React, { useState, useEffect } from "react";
 
 const THEME = {
   colors: {
@@ -11,7 +10,7 @@ const THEME = {
     textDark: "#1A0B05",     
     textMuted: "#70645C",    
     success: "#4A7A5B",
-    danger: "#DE6B48"       
+    accentLight: "#FAF9F6"
   },
   fonts: {
     serif: "'Playfair Display', serif",
@@ -19,490 +18,183 @@ const THEME = {
   }
 };
 
-const loadRazorpayScript = () =>
-  new Promise((resolve) => {
-    if (window.Razorpay) return resolve(true);
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
+// Mock cart items if none are passed via props for local standalone testing
+const MOCK_CART = [
+  { id: 101, name: "Artisanal Espresso", qty: 2, price: 180 },
+  { id: 102, name: "Cold Brew Bold", qty: 1, price: 240 }
+];
 
-export default function CheckoutPage({ setPage }) {
-  const { cart = [], total = 0, clearCart } = useCart();
-  
-  const [status, setStatus] = useState("idle"); // "idle" | "processing" | "success" | "failure"
+export default function CheckoutPage({ setPage, cartItems = MOCK_CART }) {
   const [paymentMethod, setPaymentMethod] = useState("online");
-  const [form, setForm] = useState({ name: "", email: "", phone: "", address: "", instructions: "" });
-  const [coupon, setCoupon] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState(null); 
-  const [couponError, setCouponError] = useState("");
-  const [orderSnapshot, setOrderSnapshot] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1100);
+  const [address, setAddress] = useState({ street: "", city: "", zip: "" });
 
-  const canvasRef = useRef(null);
-
-  const CONFIG = { taxRate: 0.08, codFee: 30, deliveryFee: 40 };
-
-  const calculations = useMemo(() => {
-    const subtotal = Number.isFinite(total) ? total : 0;
-    const tax = Math.round(subtotal * CONFIG.taxRate);
-    const delivery = subtotal > 0 ? CONFIG.deliveryFee : 0;
-    const cod = paymentMethod === "cod" ? CONFIG.codFee : 0;
-    const discount = appliedCoupon ? appliedCoupon.discount : 0;
-    const grandTotal = Math.max(0, Math.round(subtotal + tax + delivery + cod - discount));
-
-    return { subtotal, tax, delivery, cod, discount, grandTotal };
-  }, [total, paymentMethod, appliedCoupon]);
-
+  // Handle dynamic responsive layouts
   useEffect(() => {
-    loadRazorpayScript();
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // --- Particle Simulation Effect for Success & Failure states ---
-  useEffect(() => {
-    if ((status !== "success" && status !== "failure") || !canvasRef.current) return;
+  // Financial Calculations
+  const itemTotal = cartItems.reduce((acc, item) => acc + item.price * item.qty, 0);
+  const deliveryFee = itemTotal > 400 ? 0 : 40;
+  const taxes = Math.round(itemTotal * 0.05); // 5% cafe cess
+  const grandTotal = itemTotal + deliveryFee + taxes;
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    let animationFrameId;
-    let active = true;
-
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
-
-    // Palette changes contextually based on Success vs Failure
-    const successColors = ["#C4956A", "#4A7A5B", "#E6DFD5", "#E5B181"];
-    const failureColors = ["#DE6B48", "#1A0B05", "#E6DFD5", "#70645C"];
-    const colors = status === "success" ? successColors : failureColors;
-    
-    const particles = [];
-
-    for (let i = 0; i < 140; i++) {
-      particles.push({
-        x: canvas.width / 2,
-        y: canvas.height * 0.5,
-        radius: Math.random() * 4 + 3,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        vx: (Math.random() - 0.5) * 16,
-        vy: (Math.random() * -14) - 4,
-        gravity: 0.28,
-        rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() - 0.5) * 10,
-        opacity: 1
-      });
-    }
-
-    const updateAndRender = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      particles.forEach((p) => {
-        p.vy += p.gravity;
-        p.x += p.vx;
-        p.y += p.vy;
-        p.rotation += p.rotationSpeed;
-        
-        if (!active) p.opacity -= 0.02;
-
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate((p.rotation * Math.PI) / 180);
-        ctx.globalAlpha = Math.max(0, p.opacity);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-p.radius, -p.radius / 1.5, p.radius * 2, p.radius * 1.3);
-        ctx.restore();
-      });
-
-      if (active || particles.some(p => p.opacity > 0)) {
-        animationFrameId = requestAnimationFrame(updateAndRender);
-      }
-    };
-
-    updateAndRender();
-
-    const timer = setTimeout(() => {
-      active = false;
-    }, 5000);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      clearTimeout(timer);
-      window.removeEventListener("resize", resizeCanvas);
-    };
-  }, [status]);
-
-  const handleInputChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-
-  const applyCouponCode = (e) => {
+  const handlePlaceOrder = (e) => {
     e.preventDefault();
-    setCouponError("");
-    const sanitized = coupon.trim().toUpperCase();
+    setIsProcessing(true);
 
-    if (sanitized === "BREW100") {
-      if (calculations.subtotal < 200) {
-        setCouponError("Minimum spend for BREW100 is ₹200");
-        return;
-      }
-      setAppliedCoupon({ code: "BREW100", discount: 100 });
-    } else if (sanitized === "COFFEE20") {
-      setAppliedCoupon({ code: "COFFEE20", discount: Math.round(calculations.subtotal * 0.20) });
-    } else {
-      setCouponError("Invalid coupon code.");
-    }
+    // Mock an elegant API authorization delay
+    setTimeout(() => {
+      setIsProcessing(false);
+      setIsSuccess(true);
+    }, 2000);
   };
 
-  const triggerRazorpayPayment = async () => {
-    setStatus("processing");
-    const scriptInitialized = await loadRazorpayScript();
-    if (!scriptInitialized) {
-      setStatus("idle");
-      alert("Payment gateway failed to load.");
-      return;
-    }
-
-    const options = {
-      key: "YOUR_RAZORPAY_KEY_ID",
-      amount: calculations.grandTotal * 100, 
-      currency: "INR",
-      name: "Brewed Cafe",
-      description: "Artisanal Coffee Order",
-      handler: function () {
-        setOrderSnapshot({ cart: [...cart], calculations, method: "online" });
-        clearCart();
-        setStatus("success");
+  const handleGoToTracking = () => {
+    // Generate the exact data structure required by TrackingPage
+    const orderSnapshot = {
+      id: "BRW-" + Math.floor(100000 + Math.random() * 900000),
+      method: paymentMethod,
+      calculations: {
+        itemTotal,
+        deliveryFee,
+        grandTotal
       },
-      prefill: { name: form.name, email: form.email, contact: form.phone },
-      theme: { color: THEME.colors.headerBg },
-      modal: { 
-        ondismiss: () => {
-          // Trigger the fallback failure view loop if window is dismissed or dropped
-          setStatus("failure");
-        } 
-      }
+      shippingAddress: address
     };
 
-    const rzp = new window.Razorpay(options);
-    // Mimic gateway drop errors gracefully
-    rzp.on("payment.failed", () => {
-      setStatus("failure");
-    });
-    rzp.open();
+    // Transition smoothly to the tracking page with the payload
+    setPage("tracking", orderSnapshot);
   };
 
-  const handleFormSubmission = async (e) => {
-    e.preventDefault();
-    if (paymentMethod === "cod") {
-      setStatus("processing");
-      setTimeout(() => {
-        setOrderSnapshot({ cart: [...cart], calculations, method: "cod" });
-        clearCart();
-        setStatus("success");
-      }, 1200);
-      return;
-    }
-    await triggerRazorpayPayment();
-  };
+  const isMobile = windowWidth <= 880;
 
-  // --- RENDER FALLBACK: PAYMENT FAILED PAGE ---
-  if (status === "failure") {
+  // View 1: Order Confirmed Screen
+  if (isSuccess) {
     return (
-      <div style={styles.confirmPage}>
-        <canvas ref={canvasRef} style={styles.confettiCanvas} />
-        
-        <style>{`
-          @keyframes fluidRevealCard {
-            0% { opacity: 0; transform: scale(0.96) translateY(30px); filter: blur(4px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
-          }
-          @keyframes drawCross {
-            0% { stroke-dashoffset: 40; opacity: 0; }
-            100% { stroke-dashoffset: 0; opacity: 1; }
-          }
-          @keyframes scaleErrorCircle {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); opacity: 1; }
-          }
-          .fluid-card { 
-            animation: fluidRevealCard 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
-            position: relative;
-            z-index: 10;
-          }
-          .error-svg-wrapper {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 1.5rem;
-            display: block;
-          }
-          .error-circle {
-            fill: none;
-            stroke: ${THEME.colors.danger};
-            stroke-width: 3;
-            stroke-linecap: round;
-            transform-origin: center;
-            animation: scaleErrorCircle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-          }
-          .cross-path-1, .cross-path-2 {
-            fill: none;
-            stroke: ${THEME.colors.danger};
-            stroke-width: 4;
-            stroke-linecap: round;
-            stroke-dasharray: 40;
-            stroke-dashoffset: 40;
-          }
-          .cross-path-1 {
-            animation: drawCross 0.3s ease-out 0.4s both;
-          }
-          .cross-path-2 {
-            animation: drawCross 0.3s ease-out 0.65s both;
-          }
-          .btn-interactive { 
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s, box-shadow 0.3s; 
-            cursor: pointer; 
-          }
-          .btn-interactive:hover { 
-            transform: translateY(-3px); 
-            background-color: #2D140A !important;
-            box-shadow: 0 8px 20px rgba(26, 11, 5, 0.12);
-          }
-          .btn-interactive:active { 
-            transform: translateY(-1px); 
-          }
-        `}</style>
-
-        <div className="fluid-card" style={styles.confirmCard}>
-          <div className="error-svg-wrapper">
-            <svg viewBox="0 0 52 52" style={{ width: "100%", height: "100%" }}>
-              <circle className="error-circle" cx="26" cy="26" r="23" />
-              <path className="cross-path-1" d="M16 16l20 20" />
-              <path className="cross-path-2" d="M36 16L16 36" />
-            </svg>
-          </div>
-
-          <h2 style={{ ...styles.confirmTitle, color: THEME.colors.danger }}>Payment Failed</h2>
-          <p style={styles.confirmSub}>
-            We couldn't process your transaction. Don't worry, if any money was deducted, it will be refunded automatically.
-          </p>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <button className="btn-interactive" style={styles.payBtn} onClick={triggerRazorpayPayment}>
-              Retry Payment
-            </button>
-            <button className="btn-interactive" style={styles.payBtn} onClick={() => { setStatus("idle"); setPage("menu"); }}>
-              Return to Menu
-            </button>
-          </div>
+      <div style={styles.successContainer}>
+        <div style={styles.successCard}>
+          <div style={styles.successBadge}>✓</div>
+          <h1 style={styles.successTitle}>Order Confirmed!</h1>
+          <p style={styles.successMsg}>Your order has been sent to our roastery floor. The master baristas are prepping your extraction profiles right now.</p>
+          <button className="btn-primary" style={styles.primaryActionBtn} onClick={handleGoToTracking}>
+            Track Realtime Order →
+          </button>
         </div>
       </div>
     );
   }
 
-  // --- RENDER SUCCESS: ORDER CONFIRMED PAGE ---
-  if (status === "success" && orderSnapshot) {
-    return (
-      <div style={styles.confirmPage}>
-        <canvas ref={canvasRef} style={styles.confettiCanvas} />
-
-        <style>{`
-          @keyframes fluidRevealCard {
-            0% { opacity: 0; transform: scale(0.96) translateY(30px); filter: blur(4px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
-          }
-          @keyframes drawCheckmark {
-            0% { stroke-dashoffset: 50; }
-            100% { stroke-dashoffset: 0; }
-          }
-          @keyframes scaleCircle {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); opacity: 1; }
-          }
-          .fluid-card { 
-            animation: fluidRevealCard 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
-            position: relative;
-            z-index: 10;
-          }
-          .success-checkmark-wrapper {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 1.5rem;
-            display: block;
-          }
-          .success-circle {
-            fill: none;
-            stroke: ${THEME.colors.success};
-            stroke-width: 3;
-            stroke-linecap: round;
-            transform-origin: center;
-            animation: scaleCircle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-          }
-          .checkmark-path {
-            fill: none;
-            stroke: ${THEME.colors.success};
-            stroke-width: 4;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            stroke-dasharray: 50;
-            stroke-dashoffset: 50;
-            animation: drawCheckmark 0.45s cubic-bezier(0.4, 0, 0.2, 1) 0.4s both;
-          }
-          .btn-interactive { 
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s, box-shadow 0.3s; 
-            cursor: pointer; 
-          }
-          .btn-interactive:hover { 
-            transform: translateY(-3px); 
-            background-color: #2D140A !important;
-            box-shadow: 0 8px 20px rgba(26, 11, 5, 0.12);
-          }
-          .btn-interactive:active { 
-            transform: translateY(-1px); 
-          }
-        `}</style>
-        
-        <div className="fluid-card" style={styles.confirmCard}>
-          <div className="success-checkmark-wrapper">
-            <svg viewBox="0 0 52 52" style={{ width: "100%", height: "100%" }}>
-              <circle className="success-circle" cx="26" cy="26" r="23" />
-              <path className="checkmark-path" d="M14 27l7.5 7.5L38 18" />
-            </svg>
-          </div>
-
-          <h2 style={styles.confirmTitle}>Order Confirmed</h2>
-          <p style={styles.confirmSub}>
-            Thank you for ordering from <strong style={{ color: THEME.colors.headerBg }}>Brewed</strong>, {form.name}!
-          </p>
-          
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <button className="btn-interactive" style={styles.payBtn} onClick={() => setPage("tracking")}>
-              Track Order
-            </button>
-            <button className="btn-interactive" style={styles.payBtn} onClick={() => setPage("menu")}>
-              Return to Menu
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // --- MAIN CHECKOUT VIEW PANEL ---
+  // View 2: Main Interactive Checkout Form Layout
   return (
-    <div style={styles.page}>
+    <div style={{ ...styles.page, padding: isMobile ? "1.5rem 1rem" : "3rem 0" }}>
       <style>{`
         body { background-color: ${THEME.colors.bgPage}; margin: 0; font-family: ${THEME.fonts.sans}; color: ${THEME.colors.textDark}; }
-        .checkout-layout { display: flex; gap: 2rem; align-items: start; max-width: 1100px; margin: 0 auto; }
-        .main-panel { flex: 1; }
-        .side-panel { width: 360px; position: sticky; top: 20px; }
-        .input-box { width: 100%; padding: 0.8rem 1rem; border: 1.5px solid ${THEME.colors.cardBorder}; border-radius: 8px; font-size: 0.95rem; background: #FFF; outline: none; box-sizing: border-box; transition: border-color 0.2s; }
-        .input-box:focus { border-color: ${THEME.colors.primary}; }
-        .clickable-row { transition: border-color 0.2s, background-color 0.2s; cursor: pointer; }
-        .clickable-row:hover { border-color: ${THEME.colors.primary} !important; background-color: #FAF9F6; }
-        @media (max-width: 880px) {
-          .checkout-layout { flex-direction: column; }
-          .side-panel { width: 100%; position: static; }
-        }
+        .checkout-grid { display: flex; gap: 2rem; flex-direction: ${isMobile ? "column" : "row"}; max-width: 940px; margin: 0 auto; }
+        .checkout-card { background: ${THEME.colors.cardBg}; border-radius: 16px; padding: ${isMobile ? "1.25rem" : "2rem"}; border: 1px solid ${THEME.colors.cardBorder}; box-shadow: 0 4px 24px rgba(26, 11, 5, 0.01); box-sizing: border-box; }
+        .form-group { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.4rem; }
+        .form-input { padding: 0.8rem; border-radius: 8px; border: 1px solid ${THEME.colors.cardBorder}; font-family: ${THEME.fonts.sans}; font-size: 0.95rem; color: ${THEME.colors.textDark}; background: ${THEME.colors.accentLight}; outline: none; }
+        .form-input:focus { border-color: ${THEME.colors.primary}; background: #FFF; }
+        .radio-box { display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid ${THEME.colors.cardBorder}; border-radius: 10px; cursor: pointer; margin-bottom: 0.75rem; transition: background 0.2s; }
+        .radio-box.active { border-color: ${THEME.colors.primary}; background: ${THEME.colors.accentLight}; }
+        .btn-primary { transition: transform 0.2s, background-color 0.2s; cursor: pointer; }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); background-color: #2D140A; }
       `}</style>
 
-      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 1rem" }}>
-        <button style={styles.backLink} onClick={() => setPage("cart")}>← Back to Cart</button>
-        <h1 style={styles.heading}>Checkout</h1>
+      <div style={{ maxWidth: "940px", margin: "0 auto" }}>
+        <button style={styles.backLink} onClick={() => setPage("menu")}>← Modify Selection</button>
+        <h1 style={styles.heading}>Secure Checkout</h1>
 
-        <form onSubmit={handleFormSubmission} className="checkout-layout">
-          <div className="main-panel">
-            <div style={styles.card}>
-              <h2 style={styles.sectionTitle}>📍 Delivery Information</h2>
-              <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem" }}>
-                <div style={{ flex: 1, minWidth: "200px" }}>
-                  <label style={styles.label}>Name</label>
-                  <input className="input-box" name="name" value={form.name} onChange={handleInputChange} required />
-                </div>
-                <div style={{ flex: 1, minWidth: "200px" }}>
-                  <label style={styles.label}>Phone Number</label>
-                  <input className="input-box" type="tel" name="phone" value={form.phone} onChange={handleInputChange} required />
-                </div>
-              </div>
-              <div style={{ marginBottom: "1rem" }}>
-                <label style={styles.label}>Email Address</label>
-                <input className="input-box" type="email" name="email" value={form.email} onChange={handleInputChange} required />
-              </div>
-              <div style={{ marginBottom: "1rem" }}>
-                <label style={styles.label}>Complete Address</label>
-                <input className="input-box" name="address" value={form.address} onChange={handleInputChange} required />
-              </div>
-              <div>
-                <label style={styles.label}>Rider Delivery Instructions</label>
-                <textarea className="input-box" style={{ height: "65px", resize: "none" }} name="instructions" value={form.instructions} onChange={handleInputChange} placeholder="Drop off instructions..." />
-              </div>
-            </div>
-
-            <div style={styles.card}>
-              <h2 style={styles.sectionTitle}>💳 Select Settlement Method</h2>
-              <div 
-                className="clickable-row"
-                style={{ ...styles.paymentSelector, borderColor: paymentMethod === "online" ? THEME.colors.primary : THEME.colors.cardBorder }}
-                onClick={() => setPaymentMethod("online")}
-              >
-                <span style={{ fontSize: "1.2rem" }}>💳</span>
-                <div style={{ flex: 1 }}>
-                  <strong>Pay Online Now</strong>
-                  <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>UPI, Cards, Netbanking</p>
-                </div>
-                <input type="radio" checked={paymentMethod === "online"} readOnly />
+        <form onSubmit={handlePlaceOrder} className="checkout-grid">
+          {/* Left Column: Shipping & Payment Details */}
+          <div style={{ flex: 1, width: "100%" }}>
+            <div className="checkout-card">
+              <h3 style={styles.sectionTitle}>Delivery Address</h3>
+              
+              <div className="form-group">
+                <label style={styles.label}>Street Address</label>
+                <input required className="form-input" type="text" placeholder="House/Flat No, Building, Street Name" value={address.street} onChange={(e) => setAddress({...address, street: e.target.value})} />
               </div>
 
-              <div 
-                className="clickable-row"
-                style={{ ...styles.paymentSelector, borderColor: paymentMethod === "cod" ? THEME.colors.primary : THEME.colors.cardBorder }}
-                onClick={() => setPaymentMethod("cod")}
-              >
-                <span style={{ fontSize: "1.2rem" }}>💵</span>
-                <div style={{ flex: 1 }}>
-                  <strong>Cash / QR on Delivery</strong>
-                  <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>Extra handling charge of +₹{CONFIG.codFee}</p>
+              <div style={{ display: "flex", gap: "1rem" }}>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label style={styles.label}>City</label>
+                  <input required className="form-input" type="text" placeholder="Kolkata" value={address.city} onChange={(e) => setAddress({...address, city: e.target.value})} />
                 </div>
-                <input type="radio" checked={paymentMethod === "cod"} readOnly />
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label style={styles.label}>PIN Code</label>
+                  <input required className="form-input" type="text" pattern="[0-9]{6}" placeholder="700001" value={address.zip} onChange={(e) => setAddress({...address, zip: e.target.value})} />
+                </div>
+              </div>
+
+              <div style={{ margin: "2.5rem 0 1.5rem" }} />
+
+              <h3 style={styles.sectionTitle}>Payment Protocol</h3>
+              
+              <div className={`radio-box ${paymentMethod === "online" ? "active" : ""}`} onClick={() => setPaymentMethod("online")}>
+                <input type="radio" checked={paymentMethod === "online"} readOnly name="payment" />
+                <div>
+                  <strong style={{ display: "block", fontSize: "0.95rem" }}>Instant Online Settlement</strong>
+                  <span style={{ fontSize: "0.8rem", color: THEME.colors.textMuted }}>Credit/Debit Cards, UPI, Netbanking</span>
+                </div>
+              </div>
+
+              <div className={`radio-box ${paymentMethod === "cod" ? "active" : ""}`} onClick={() => setPaymentMethod("cod")}>
+                <input type="radio" checked={paymentMethod === "cod"} readOnly name="payment" />
+                <div>
+                  <strong style={{ display: "block", fontSize: "0.95rem" }}>Cash / Digital QR on Delivery</strong>
+                  <span style={{ fontSize: "0.8rem", color: THEME.colors.textMuted }}>Settle with courier via scan or cash</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="side-panel">
-            <div style={{ ...styles.card, padding: "1.25rem" }}>
-              <label style={{ ...styles.label, marginBottom: "0.4rem" }}>Have a Promo Voucher?</label>
-              {!appliedCoupon ? (
-                <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <input className="input-box" style={{ padding: "0.5rem" }} placeholder="COFFEE20" value={coupon} onChange={(e) => setCoupon(e.target.value)} />
-                  <input type="button" onClick={applyCouponCode} style={styles.couponBtn} value="Apply" />
-                </div>
-              ) : (
-                <div style={styles.couponPill}>
-                  <span>Voucher <strong>{appliedCoupon.code}</strong> Active!</span>
-                  <button type="button" onClick={() => setAppliedCoupon(null)} style={styles.removeBtn}>×</button>
-                </div>
-              )}
-              {couponError && <p style={{ color: "red", fontSize: "0.8rem", margin: "0.3rem 0 0" }}>{couponError}</p>}
-            </div>
-
-            <div style={styles.card}>
-              <h3 style={{ margin: "0 0 1rem 0", fontFamily: THEME.fonts.serif }}>Order Summary</h3>
-              <div style={styles.calcRow}><span>Subtotal</span><span>₹{calculations.subtotal}</span></div>
-              <div style={styles.calcRow}><span>Tax / Fees (8%)</span><span>₹{calculations.tax}</span></div>
-              <div style={styles.calcRow}><span>Delivery Fee</span><span>₹{calculations.delivery}</span></div>
-              {paymentMethod === "cod" && <div style={styles.calcRow}><span>COD Surcharge</span><span>₹{calculations.cod}</span></div>}
-              {calculations.discount > 0 && <div style={{ ...styles.calcRow, color: THEME.colors.success }}><span>Discounts</span><span>-₹{calculations.discount}</span></div>}
+          {/* Right Column: Order Recapitulation Summary */}
+          <div style={{ width: isMobile ? "100%" : "340px" }}>
+            <div className="checkout-card" style={{ background: THEME.colors.accentLight }}>
+              <h3 style={styles.sectionTitle}>Order Summary</h3>
               
-              <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "1rem 0" }} />
-              <div style={{ ...styles.calcRow, fontWeight: "bold", fontSize: "1.1rem" }}>
-                <span>Grand Total</span>
-                <span>₹{calculations.grandTotal}</span>
+              <div style={styles.cartList}>
+                {cartItems.map((item) => (
+                  <div key={item.id} style={styles.cartItem}>
+                    <div>
+                      <p style={styles.itemName}>{item.name}</p>
+                      <span style={styles.itemQty}>Qty: {item.qty}</span>
+                    </div>
+                    <span style={styles.itemPrice}>₹{item.price * item.qty}</span>
+                  </div>
+                ))}
               </div>
 
-              <button type="submit" disabled={status === "processing"} style={styles.payBtn}>
-                {status === "processing" ? "Processing Order..." : `Place Order · ₹${calculations.grandTotal}`}
+              <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "1rem 0" }} />
+
+              <div style={styles.billRow}>
+                <span>Basket Subtotal</span>
+                <span>₹{itemTotal}</span>
+              </div>
+              <div style={styles.billRow}>
+                <span>Aroma & Thermal Logistics</span>
+                <span>{deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}</span>
+              </div>
+              <div style={styles.billRow}>
+                <span>State Cafe Taxes (5%)</span>
+                <span>₹{taxes}</span>
+              </div>
+
+              <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "1rem 0" }} />
+
+              <div style={{ ...styles.billRow, fontSize: "1.1rem", fontWeight: "700", color: THEME.colors.textDark }}>
+                <span>Grand Total</span>
+                <span>₹{grandTotal}</span>
+              </div>
+
+              <button type="submit" disabled={isProcessing} className="btn-primary" style={styles.payBtn}>
+                {isProcessing ? "Authorizing Security..." : `Confirm & Pay ₹${grandTotal}`}
               </button>
             </div>
           </div>
@@ -513,21 +205,24 @@ export default function CheckoutPage({ setPage }) {
 }
 
 const styles = {
-  page: { padding: "2rem 0" },
+  page: { minHeight: "85vh", boxSizing: "border-box" },
   backLink: { background: "none", border: "none", color: THEME.colors.textMuted, cursor: "pointer", fontSize: "0.9rem", padding: 0, marginBottom: "0.5rem" },
-  heading: { fontFamily: THEME.fonts.serif, fontSize: "2.2rem", color: THEME.colors.textDark, margin: "0 0 1.5rem 0" },
-  card: { background: THEME.colors.cardBg, borderRadius: "12px", padding: "1.5rem", marginBottom: "1.5rem", border: `1px solid ${THEME.colors.cardBorder}` },
-  sectionTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.2rem", margin: "0 0 1.2rem 0", color: THEME.colors.textDark },
-  label: { display: "block", fontSize: "0.85rem", fontWeight: "600", color: THEME.colors.textMuted, marginBottom: "0.3rem" },
-  paymentSelector: { display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", border: "1.5px solid", borderRadius: "8px", marginBottom: "0.75rem" },
-  calcRow: { display: "flex", justifyContent: "space-between", fontSize: "0.9rem", marginBottom: "0.5rem", color: THEME.colors.textDark },
-  payBtn: { width: "100%", padding: "1rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "1rem", outline: "none" },
-  couponBtn: { backgroundColor: "transparent", border: `1px solid ${THEME.colors.textDark}`, borderRadius: "6px", padding: "0 1rem", cursor: "pointer" },
-  couponPill: { display: "flex", justifyContent: "space-between", background: "#E8F5E9", color: THEME.colors.success, padding: "0.5rem", borderRadius: "6px", fontSize: "0.85rem" },
-  removeBtn: { background: "none", border: "none", color: "red", cursor: "pointer", fontWeight: "bold" },
-  confirmPage: { display: "flex", justifyContent: "center", alignItems: "center", minHeight: "75vh", backgroundColor: "#FAF6F0", padding: "0 1rem", position: "relative", overflow: "hidden" },
-  confettiCanvas: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 9999 },
-  confirmCard: { textAlign: "center", padding: "3rem 2rem", background: "#FFF", borderRadius: "16px", border: `1px solid ${THEME.colors.cardBorder}`, maxWidth: "460px", width: "100%", boxShadow: "0 10px 30px rgba(26, 11, 5, 0.05)" },
-  confirmTitle: { fontFamily: THEME.fonts.serif, fontSize: "2.2rem", color: THEME.colors.textDark, margin: "0 0 0.5rem", fontWeight: "normal" },
-  confirmSub: { fontSize: "0.95rem", color: THEME.colors.textMuted, lineHeight: "1.5", margin: "0 0 2rem 0" }
+  heading: { fontFamily: THEME.fonts.serif, fontSize: "2.2rem", color: THEME.colors.textDark, margin: "0 0 2rem 0", fontWeight: "normal" },
+  sectionTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.2rem", margin: "0 0 1.25rem 0", color: THEME.colors.textDark, fontWeight: "normal" },
+  label: { fontSize: "0.85rem", fontWeight: "600", color: THEME.colors.textMuted },
+  cartList: { display: "flex", flexDirection: "column", gap: "1rem" },
+  cartItem: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" },
+  itemName: { margin: 0, fontSize: "0.95rem", fontWeight: "600" },
+  itemQty: { fontSize: "0.8rem", color: THEME.colors.textMuted },
+  itemPrice: { fontSize: "0.95rem", fontWeight: "600" },
+  billRow: { display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: THEME.colors.textMuted, marginBottom: "0.6rem" },
+  payBtn: { width: "100%", padding: "0.9rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "1rem", marginTop: "1.5rem" },
+  
+  // Success state styling elements
+  successContainer: { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "75vh", padding: "1rem" },
+  successCard: { background: "#FFF", maxWidth: "460px", padding: "3rem 2rem", borderRadius: "20px", textAlign: "center", border: `1px solid ${THEME.colors.cardBorder}`, boxShadow: "0 10px 40px rgba(26,11,5,0.04)" },
+  successBadge: { width: "64px", height: "64px", background: THEME.colors.success, color: "#FFF", fontSize: "2rem", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" },
+  successTitle: { fontFamily: THEME.fonts.serif, fontSize: "2rem", color: THEME.colors.textDark, margin: "0 0 1rem 0", fontWeight: "normal" },
+  successMsg: { fontSize: "0.95rem", color: THEME.colors.textMuted, lineHeight: "1.6", margin: "0 0 2rem 0" },
+  primaryActionBtn: { width: "100%", padding: "0.9rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "0.95rem" }
 };
