@@ -3,19 +3,20 @@ import { useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext"; // 👈 Hooked up your cart context
 import { Bell } from "lucide-react";
 
-async function handleLogout() {
-  await signOut(auth);
-  setShowMenu(false);
-  setPage("menu");
-}
+export default function HeadlessNavbar({ currentPage, setPage }) {
+  const { currentUser } = useAuth();
+  const { count } = useCart(); // 👈 Destructured the live count value directly from your context state
+  const [showMenu, setShowMenu] = useState(false);
 
-export default function HeadlessNavbar({ currentPage, setPage, cartItemCount = 0 }) {
-
-const { currentUser } = useAuth();
-
-const [showMenu, setShowMenu] = useState(false);
+  // Moved safely inside the component so it has direct access to setPage and setShowMenu without throwing reference errors
+  async function handleLogout() {
+    await signOut(auth);
+    setShowMenu(false);
+    setPage("menu");
+  }
   
   return (
     <>
@@ -69,49 +70,42 @@ const [showMenu, setShowMenu] = useState(false);
           position: relative;
           transition: all 0.2s ease;
         }
-         .icon-btn{
-  position:relative;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+        
+        .icon-btn{
+          position:relative;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          width:42px;
+          height:42px;
+          border:none;
+          background:transparent;
+          color:#FDF8F3;
+          cursor:pointer;
+          border-radius:50%;
+          transition:.25s ease;
+        }
 
-  width:42px;
-  height:42px;
+        .icon-btn:hover{
+          background:rgba(255,255,255,.08);
+        }
 
-  border:none;
-  background:transparent;
+        .notification-btn svg{
+          width:22px;
+          height:22px;
+        }
 
-  color:#FDF8F3;
-  cursor:pointer;
+        .notification-dot{
+          position:absolute;
+          top:8px;
+          right:8px;
+          width:8px;
+          height:8px;
+          border-radius:50%;
+          background:#C4956A;
+          border:2px solid #3B1A08;
+        }
 
-  border-radius:50%;
-  transition:.25s ease;
-}
-
-.icon-btn:hover{
-  background:rgba(255,255,255,.08);
-}
-
-.notification-btn svg{
-  width:22px;
-  height:22px;
-}
-
-.notification-dot{
-  position:absolute;
-
-  top:8px;
-  right:8px;
-
-  width:8px;
-  height:8px;
-
-  border-radius:50%;
-
-  background:#C4956A;
-
-  border:2px solid #3B1A08;
-}
         .nav-icon-btn:hover {
           color: #C4956A;
           background-color: rgba(253, 250, 245, 0.08);
@@ -130,18 +124,18 @@ const [showMenu, setShowMenu] = useState(false);
           position: absolute;
           top: -1px;
           right: -1px;
-          background-color: #C4956A;
-          color: #1A0A00;
+          background-color: #4A6FA5; /* Blue accent color matching your live build */
+          color: #FDFAF5;
           font-family: 'Inter', sans-serif;
           font-size: 0.68rem;
           font-weight: 700;
-          min-width: 15px;
-          height: 15px;
+          min-width: 16px;
+          height: 16px;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 0 3px;
+          padding: 0;
           border: 1px solid #3B1A08;
         }
 
@@ -154,43 +148,44 @@ const [showMenu, setShowMenu] = useState(false);
             gap: 0.85rem;
           }
         }
+        
         .profile-menu{
-  position:absolute;
-  top:55px;
-  right:0;
-  width:250px;
-  background:#FDFAF5;
-  border-radius:16px;
-  box-shadow:0 15px 40px rgba(0,0,0,.18);
-  overflow:hidden;
-  z-index:999;
-}
+          position:absolute;
+          top:55px;
+          right:0;
+          width:250px;
+          background:#FDFAF5;
+          border-radius:16px;
+          box-shadow:0 15px 40px rgba(0,0,0,.18);
+          overflow:hidden;
+          z-index:999;
+        }
 
-.profile-header{
-  padding:18px;
-  border-bottom:1px solid #eee;
-  display:flex;
-  flex-direction:column;
-}
+        .profile-header{
+          padding:18px;
+          border-bottom:1px solid #eee;
+          display:flex;
+          flex-direction:column;
+        }
 
-.profile-header small{
-  margin-top:5px;
-  color:#777;
-}
+        .profile-header small{
+          margin-top:5px;
+          color:#777;
+        }
 
-.profile-menu button{
-  width:100%;
-  background:none;
-  border:none;
-  padding:15px 18px;
-  text-align:left;
-  cursor:pointer;
-  font-size:15px;
-}
+        .profile-menu button{
+          width:100%;
+          background:none;
+          border:none;
+          padding:15px 18px;
+          text-align:left;
+          cursor:pointer;
+          font-size:15px;
+        }
 
-.profile-menu button:hover{
-  background:#F5EFE7;
-}
+        .profile-menu button:hover{
+          background:#F5EFE7;
+        }
       `}</style>
 
       <header className="headless-header">
@@ -201,13 +196,12 @@ const [showMenu, setShowMenu] = useState(false);
         <div className="nav-icons-group">
           {/* Notification */}
           <button
-  className="icon-btn notification-btn"
-  onClick={() => setPage("notifications")}
->
-  <Bell size={22} strokeWidth={1.8} />
-
-  <span className="notification-dot"></span>
-</button>
+            className="icon-btn notification-btn"
+            onClick={() => setPage("notifications")}
+          >
+            <Bell size={22} strokeWidth={1.8} />
+            <span className="notification-dot"></span>
+          </button>
 
           {/* Location */}
           <button
@@ -223,99 +217,96 @@ const [showMenu, setShowMenu] = useState(false);
 
           {/* Login */}
           <button
-  className={`nav-icon-btn ${currentPage === "login" ? "active" : ""}`}
-  onClick={() => {
-    if (currentUser) {
-      setShowMenu(!showMenu);
-    } else {
-      setPage("login");
-    }
-  }}
-  title="Account"
->
-  {currentUser?.photoURL ? (
-    <img
-      src={currentUser.photoURL}
-      alt="profile"
-      style={{
-        width: 28,
-        height: 28,
-        borderRadius: "50%",
-        objectFit: "cover",
-      }}
-    />
-  ) : (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-      <circle cx="12" cy="7" r="4"/>
-    </svg>
-  )}
-</button>
+            className={`nav-icon-btn ${currentPage === "login" ? "active" : ""}`}
+            onClick={() => {
+              if (currentUser) {
+                setShowMenu(!showMenu);
+              } else {
+                setPage("login");
+              }
+            }}
+            title="Account"
+          >
+            {currentUser?.photoURL ? (
+              <img
+                src={currentUser.photoURL}
+                alt="profile"
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            )}
+          </button>
+          
           {currentUser && showMenu && (
-  <div className="profile-menu">
+            <div className="profile-menu">
+              <div className="profile-header">
+                <strong>
+                  👋 Hi, {currentUser.displayName || currentUser.email.split("@")[0]}
+                </strong>
+                <small>{currentUser.email}</small>
+              </div>
 
-    <div className="profile-header">
-      <strong>
-        👋 Hi, {currentUser.displayName || currentUser.email.split("@")[0]}
-      </strong>
+              <button
+                onClick={() => {
+                  setShowMenu(false);
+                  setPage("profile");
+                }}
+              >
+                👤 Profile
+              </button>
 
-      <small>{currentUser.email}</small>
-    </div>
+              <button
+                onClick={() => {
+                  setShowMenu(false);
+                  setPage("orders");
+                }}
+              >
+                ☕ My Orders
+              </button>
 
-    <button
-  onClick={() => {
-    setShowMenu(false);
-    setPage("profile");
-  }}
->
-  👤 Profile
-</button>
+              <button
+                onClick={() => {
+                  setShowMenu(false);
+                  setPage("favorites");
+                }}
+              >
+                ❤️ Favorites
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowMenu(false);
+                  setPage("rewards");
+                }}
+              >
+                ⭐ Rewards
+              </button>
+              <hr />
 
-    <button
-  onClick={() => {
-    setShowMenu(false);
-    setPage("orders");
-  }}
->
-  ☕ My Orders
-</button>
-
-    <button
-  onClick={() => {
-    setShowMenu(false);
-    setPage("favorites");
-  }}
->
-  ❤️ Favorites
-</button>
-
-    
-<button
-  onClick={() => {
-    setShowMenu(false);
-    setPage("rewards");
-  }}
->
-  ⭐ Rewards
-</button>
-    <hr />
-
-    <button onClick={handleLogout}>
-      🚪 Logout
-    </button>
-
-  </div>
-)}
+              <button onClick={handleLogout}>
+                🚪 Logout
+              </button>
+            </div>
+          )}
 
           {/* Cart */}
           <button
@@ -328,9 +319,10 @@ const [showMenu, setShowMenu] = useState(false);
               <path d="M3 6h18M16 10a4 4 0 0 1-8 0"/>
             </svg>
 
-            {cartItemCount > 0 && (
+            {/* Changed from prop check to check the live context count variable instead */}
+            {count > 0 && (
               <span className="nav-cart-badge">
-                {cartItemCount}
+                {count}
               </span>
             )}
           </button>
