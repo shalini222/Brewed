@@ -9,6 +9,7 @@ import MenuPage from "./pages/MenuPage";
 import ProductPage from "./pages/ProductPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
+import TrackingPage from "./pages/TrackingPage"; // Added Tracking Import
 import Login from "./pages/login";
 import ProfilePage from "./pages/ProfilePage";
 import OrdersPage from "./pages/OrdersPage";
@@ -19,6 +20,15 @@ import NotificationsPage from "./pages/NotificationsPage";
 export default function App() {
   const [page, setPage] = useState("menu");
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [activeOrder, setActiveOrder] = useState(null); // Holds the payload for tracking locks
+
+  // Unified routing handler to catch tracking data from Checkout
+  const navigateTo = (nextPage, orderSnapshot = null) => {
+    if (orderSnapshot) {
+      setActiveOrder(orderSnapshot);
+    }
+    setPage(nextPage);
+  };
 
   const hideNavbarPages = [
     "login",
@@ -27,6 +37,7 @@ export default function App() {
     "favorites",
     "rewards",
     "notifications",
+    "tracking", // Hidden navbar from tracking to maximize clarity
   ];
 
   return (
@@ -53,54 +64,62 @@ export default function App() {
         {!hideNavbarPages.includes(page) && (
           <Navbar
             currentPage={page}
-            setPage={setPage}
+            setPage={navigateTo}
           />
         )}
 
         {page === "menu" && (
           <MenuPage
-            setPage={setPage}
+            setPage={navigateTo}
             setSelectedProduct={setSelectedProduct}
           />
         )}
 
         {page === "product" && (
           <ProductPage
-            setPage={setPage}
+            setPage={navigateTo}
             product={selectedProduct}
           />
         )}
 
         {page === "cart" && (
-          <CartPage setPage={setPage} />
+          <CartPage setPage={navigateTo} />
         )}
 
         {page === "checkout" && (
-          <CheckoutPage setPage={setPage} />
+          <CheckoutPage setPage={navigateTo} />
+        )}
+
+        {/* Realtime Protected Tracking Stage */}
+        {page === "tracking" && (
+          <TrackingPage 
+            setPage={navigateTo} 
+            orderSnapshot={activeOrder} 
+          />
         )}
 
         {page === "login" && (
-          <Login setPage={setPage} />
+          <Login setPage={navigateTo} />
         )}
 
         {page === "profile" && (
-          <ProfilePage setPage={setPage} />
+          <ProfilePage setPage={navigateTo} />
         )}
 
         {page === "orders" && (
-          <OrdersPage setPage={setPage} />
+          <OrdersPage setPage={navigateTo} />
         )}
 
         {page === "rewards" && (
-          <RewardsPage setPage={setPage} />
+          <RewardsPage setPage={navigateTo} />
         )}
 
         {page === "favorites" && (
-          <FavoritesPage setPage={setPage} />
+          <FavoritesPage setPage={navigateTo} />
         )}
 
         {page === "notifications" && (
-          <NotificationsPage setPage={setPage} />
+          <NotificationsPage setPage={navigateTo} />
         )}
 
         <Footer />
