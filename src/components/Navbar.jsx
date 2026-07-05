@@ -3,15 +3,14 @@ import { useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { useAuth } from "../context/AuthContext";
-import { useCart } from "../context/CartContext"; // 👈 Hooked up your cart context
+import { useCart } from "../context/CartContext"; 
 import { Bell } from "lucide-react";
 
 export default function HeadlessNavbar({ currentPage, setPage }) {
   const { currentUser } = useAuth();
-  const { count } = useCart(); // 👈 Destructured the live count value directly from your context state
+  const { count } = useCart(); 
   const [showMenu, setShowMenu] = useState(false);
 
-  // Moved safely inside the component so it has direct access to setPage and setShowMenu without throwing reference errors
   async function handleLogout() {
     await signOut(auth);
     setShowMenu(false);
@@ -120,12 +119,13 @@ export default function HeadlessNavbar({ currentPage, setPage }) {
           padding-right: 0.2rem;
         }
 
+        /* Fixed to match your warm caramel and dark brown palette */
         .nav-cart-badge {
           position: absolute;
           top: -1px;
           right: -1px;
-          background-color: #4A6FA5; /* Blue accent color matching your live build */
-          color: #FDFAF5;
+          background-color: #C4956A; 
+          color: #3B1A08;            
           font-family: 'Inter', sans-serif;
           font-size: 0.68rem;
           font-weight: 700;
@@ -136,7 +136,7 @@ export default function HeadlessNavbar({ currentPage, setPage }) {
           align-items: center;
           justify-content: center;
           padding: 0;
-          border: 1px solid #3B1A08;
+          border: 1px solid #3B1A08; 
         }
 
         @media (max-width: 768px) {
@@ -319,7 +319,6 @@ export default function HeadlessNavbar({ currentPage, setPage }) {
               <path d="M3 6h18M16 10a4 4 0 0 1-8 0"/>
             </svg>
 
-            {/* Changed from prop check to check the live context count variable instead */}
             {count > 0 && (
               <span className="nav-cart-badge">
                 {count}
