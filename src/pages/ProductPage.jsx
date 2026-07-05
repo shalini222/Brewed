@@ -12,7 +12,10 @@ import {
   ImagePlus
 } from "lucide-react";
 
-export default function ProductPage({ setPage }) {
+export default function ProductPage({
+  setPage,
+  product,
+})  {
   const [favorite, setFavorite] = useState(false);
   const [size, setSize] = useState("Medium");
   const [milk, setMilk] = useState("Whole Milk");
