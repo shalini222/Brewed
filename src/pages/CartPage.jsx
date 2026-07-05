@@ -1,155 +1,338 @@
-import { useEffect } from "react";
+import React from "react";
 import { useCart } from "../context/CartContext";
 
 export default function CartPage({ setPage }) {
-  const { cart = [], updateQty, removeFromCart, total = 0 } = useCart();
+  const { cart, updateQty, removeFromCart, total, clearCart } = useCart();
 
-  // Forces the viewport to scroll smoothly back to the top half layout on view mount
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
-  }, []);
-
-  if (cart.length === 0) {
-    return (
-      <div style={styles.empty}>
-        <div style={styles.emptyIcon}>☕</div>
-        <h2 style={styles.emptyTitle}>Your cart is empty</h2>
-        <p style={styles.emptySub}>Add something delicious from our menu.</p>
-        <button style={styles.browseBtn} onClick={() => setPage("menu")}>Browse Menu</button>
-      </div>
-    );
-  }
-
-  // Calculate fields matching checkout logic (rounded to whole Rupees)
-  const subtotal = Number.isFinite(total) ? total : 0;
-  const tax = Math.round(subtotal * 0.08);
-  const grandTotal = subtotal + tax;
+  // Helper to format item modifications into a neat comma-separated string
+  const formatCustomizations = (item) => {
+    const modifications = [];
+    if (item.size) modifications.push(`Size: ${item.size}`);
+    if (item.milk) modifications.push(item.milk);
+    if (item.temperature) modifications.push(item.temperature);
+    if (item.iceLevel && item.temperature !== "Hot") modifications.push(`Ice: ${item.iceLevel}`);
+    if (item.sweetness !== undefined) modifications.push(`Sweetness: ${item.sweetness}%`);
+    if (item.toppings && item.toppings.length > 0) {
+      modifications.push(`Toppings: ${item.toppings.join(", ")}`);
+    }
+    return modifications.join(" | ");
+  };
 
   return (
-    <>
-      <style>{`
-        .cart-layout {
-          display: flex;
-          flex-direction: row;
-          gap: 2rem;
-          align-items: start;
-        }
-        .cart-summary {
-          width: 300px;
-          flex-shrink: 0;
-          position: sticky;
-          top: 80px;
-        }
-        .btn-interactive {
-          transition: transform 0.2s ease, opacity 0.2s;
-        }
-        .btn-interactive:hover {
-          transform: translateY(-2px);
-          opacity: 0.95;
-        }
-        .btn-interactive:active {
-          transform: translateY(0);
-        }
-        @media (max-width: 768px) {
-          .cart-layout {
-            flex-direction: column;
-          }
-          .cart-summary {
-            width: 100%;
-            position: static;
-            order: 2;
-          }
-        }
-      `}</style>
+    <div style={styles.container}>
+      <div style={styles.wrapper}>
+        <h1 style={styles.title}>Your Shopping Cart</h1>
 
-      <div style={styles.page}>
-        <div style={styles.container}>
-          {/* Added Back Link Navigation */}
-          <button style={styles.backLink} onClick={() => setPage("menu")}>
-            ← Back to Menu
-          </button>
-          
-          <h1 style={styles.heading}>Your Order</h1>
-          <div className="cart-layout">
+        {cart.length === 0 ? (
+          <div style={styles.emptyContainer}>
+            <p style={styles.emptyText}>Your cart feels a bit light! Let's find some delicious coffee.</p>
+            <button style={styles.primaryButton} onClick={() => setPage("menu")}>
+              Browse Menu
+            </button>
+          </div>
+        ) : (
+          <div style={styles.cartContent}>
+            {/* Left Side: Items List */}
+            <div style={styles.itemsColumn}>
+              <div style={styles.listHeader}>
+                <span>Items</span>
+                <button style={styles.clearAllBtn} onClick={clearCart}>Clear All</button>
+              </div>
 
-            <div style={styles.items}>
-              {cart.map((item) => (
-                <div key={item.id} style={styles.row}>
-                  <div style={styles.rowEmoji}>{item.emoji}</div>
-                  <div style={styles.rowInfo}>
-                    <p style={styles.rowName}>{item.name}</p>
-                    <p style={styles.rowPrice}>₹{Math.round(item.price * item.qty)}</p>
+              {cart.map((item, index) => (
+                <div key={`${item.id}-${index}`} style={styles.cartItem}>
+                  <img 
+                    src={item.image || "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=150"} 
+                    alt={item.name} 
+                    style={styles.itemImage}
+                  />
+                  
+                  <div style={styles.itemDetails}>
+                    <h3 style={styles.itemName}>{item.name}</h3>
+                    <p style={styles.itemCustoms}>
+                      {formatCustomizations(item)}
+                    </p>
+                    {item.instructions && (
+                      <p style={styles.itemNotes}>⚠️ Note: "{item.instructions}"</p>
+                    )}
+                    <span style={styles.itemPrice}>${(item.price * item.qty).toFixed(2)}</span>
                   </div>
-                  <div style={styles.qtyControls}>
-                    <button style={styles.qtyBtn} onClick={() => updateQty(item.id, item.qty - 1)}>−</button>
-                    <span style={styles.qtyNum}>{item.qty}</span>
-                    <button style={styles.qtyBtn} onClick={() => updateQty(item.id, item.qty + 1)}>+</button>
+
+                  {/* Quantity Actions */}
+                  <div style={styles.actionBlock}>
+                    <div style={styles.qtyControl}>
+                      <button 
+                        style={styles.qtyBtn} 
+                        onClick={() => updateQty(item, item.qty - 1)}
+                      >
+                        -
+                      </button>
+                      <span style={styles.qtyValue}>{item.qty}</span>
+                      <button 
+                        style={styles.qtyBtn} 
+                        onClick={() => updateQty(item, item.qty + 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <button 
+                      style={styles.removeBtn} 
+                      onClick={() => removeFromCart(item)}
+                    >
+                      Remove
+                    </button>
                   </div>
-                  <button style={styles.removeBtn} onClick={() => removeFromCart(item.id)}>✕</button>
                 </div>
               ))}
             </div>
 
-            <div className="cart-summary" style={styles.summary}>
-              <h2 style={styles.summaryTitle}>Summary</h2>
-              <div style={styles.summaryRow}><span>Subtotal</span><span>₹{subtotal}</span></div>
-              <div style={styles.summaryRow}><span>Tax (8%)</span><span>₹{tax}</span></div>
-              <div style={styles.divider} />
-              <div style={{ ...styles.summaryRow, ...styles.summaryTotal }}>
-                <span>Total</span><span>₹{grandTotal}</span>
-              </div>
-              <button className="btn-interactive" style={styles.checkoutBtn} onClick={() => setPage("checkout")}>
-                Proceed to Checkout →
-              </button>
-            </div>
+            {/* Right Side: Order Summary */}
+            <div style={styles.summaryColumn}>
+              <div style={styles.summaryCard}>
+                <h2 style={styles.summaryTitle}>Order Summary</h2>
+                
+                <div style={styles.summaryRow}>
+                  <span>Subtotal</span>
+                  <span>${total.toFixed(2)}</span>
+                </div>
+                <div style={styles.summaryRow}>
+                  <span>Estimated Tax</span>
+                  <span>${(total * 0.08).toFixed(2)}</span>
+                </div>
+                <div style={styles.summaryRow}>
+                  <span>Estimated Total</span>
+                  <span style={styles.finalTotal}>${(total * 1.08).toFixed(2)}</span>
+                </div>
 
+                <button 
+                  style={styles.checkoutButton}
+                  onClick={() => setPage("checkout")}
+                >
+                  Proceed to Checkout
+                </button>
+
+                <button 
+                  style={styles.continueButton}
+                  onClick={() => setPage("menu")}
+                >
+                  Continue Shopping
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
-    </>
+    </div>
   );
 }
 
 const styles = {
-  page: { background: "#FDFAF5", minHeight: "100vh", padding: "2rem 1.5rem" },
-  container: { maxWidth: "900px", margin: "0 auto" },
-  backLink: { background: "none", border: "none", color: "#7A6658", cursor: "pointer", fontSize: "0.95rem", padding: 0, marginBottom: "1rem", fontWeight: "600", fontFamily: "'Inter', sans-serif" },
-  heading: { fontFamily: "'Playfair Display', serif", fontSize: "2rem", color: "#1A0A00", marginBottom: "1.5rem", marginTop: "0.5rem" },
-  items: { display: "flex", flexDirection: "column", gap: "1rem", flex: 1, minWidth: 0 },
-  row: {
-    background: "#fff", borderRadius: "14px", border: "1px solid #E8E0D5",
-    display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.9rem 1rem",
+  container: {
+    minHeight: "80vh",
+    padding: "40px 20px",
+    fontFamily: "'Inter', sans-serif",
   },
-  rowEmoji: { fontSize: "1.75rem" },
-  rowInfo: { flex: 1, minWidth: 0 },
-  rowName: { fontFamily: "'Playfair Display', serif", fontSize: "1rem", color: "#1A0A00", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  rowPrice: { fontFamily: "'Inter', sans-serif", fontSize: "0.88rem", color: "#C4956A", fontWeight: 600, margin: "0.2rem 0 0" },
-  qtyControls: { display: "flex", alignItems: "center", gap: "0.4rem" },
+  wrapper: {
+    maxWidth: "1100px",
+    margin: "0 auto",
+  },
+  title: {
+    fontFamily: "'Playfair Display', serif",
+    fontSize: "32px",
+    fontWeight: "700",
+    color: "#2C1B11",
+    marginBottom: "30px",
+  },
+  emptyContainer: {
+    textAlign: "center",
+    padding: "60px 20px",
+    background: "#FFF",
+    borderRadius: "12px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+  },
+  emptyText: {
+    fontSize: "18px",
+    color: "#6B5E55",
+    marginBottom: "20px",
+  },
+  cartContent: {
+    display: "flex",
+    gap: "30px",
+    flexWrap: "wrap",
+  },
+  itemsColumn: {
+    flex: "2",
+    minWidth: "320px",
+  },
+  listHeader: {
+    display: "flex",
+    justifyContent: "between",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingBottom: "10px",
+    borderBottom: "1px solid #EAE3D8",
+    color: "#6B5E55",
+    fontWeight: "500",
+    fontSize: "14px",
+    marginBottom: "15px",
+  },
+  clearAllBtn: {
+    background: "none",
+    border: "none",
+    color: "#A04040",
+    cursor: "pointer",
+    fontWeight: "600",
+  },
+  cartItem: {
+    display: "flex",
+    alignItems: "center",
+    background: "#FFF",
+    padding: "20px",
+    borderRadius: "12px",
+    marginBottom: "15px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+    gap: "20px",
+    flexWrap: "wrap",
+  },
+  itemImage: {
+    width: "80px",
+    height: "80px",
+    objectFit: "cover",
+    borderRadius: "8px",
+  },
+  itemDetails: {
+    flex: "1",
+    minWidth: "200px",
+  },
+  itemName: {
+    fontSize: "18px",
+    fontWeight: "600",
+    color: "#2C1B11",
+    marginBottom: "4px",
+  },
+  itemCustoms: {
+    fontSize: "13px",
+    color: "#8A796E",
+    lineHeight: "1.4",
+    marginBottom: "4px",
+  },
+  itemNotes: {
+    fontSize: "12px",
+    color: "#B37D4E",
+    fontStyle: "italic",
+    marginBottom: "6px",
+  },
+  itemPrice: {
+    fontWeight: "700",
+    color: "#2C1B11",
+    fontSize: "16px",
+  },
+  actionBlock: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-end",
+    gap: "10px",
+    justifyContent: "center",
+  },
+  qtyControl: {
+    display: "flex",
+    alignItems: "center",
+    border: "1px solid #EAE3D8",
+    borderRadius: "20px",
+    padding: "2px",
+    background: "#FDFAF5",
+  },
   qtyBtn: {
-    width: "30px", height: "30px", borderRadius: "8px",
-    border: "1.5px solid #3B1A08", background: "transparent",
-    color: "#1A0A00", fontSize: "1rem", cursor: "pointer",
-    display: "flex", alignItems: "center", justifyContent: "center",
+    background: "none",
+    border: "none",
+    width: "28px",
+    height: "28px",
+    cursor: "pointer",
+    fontWeight: "bold",
+    fontSize: "16px",
+    color: "#2C1B11",
   },
-  qtyNum: { fontFamily: "'Inter', sans-serif", fontWeight: 600, color: "#1A0A00", minWidth: "22px", textAlign: "center" },
-  removeBtn: { background: "none", border: "none", cursor: "pointer", color: "#C0A090", fontSize: "0.9rem" },
-  summary: { background: "#1A0A00", borderRadius: "16px", padding: "1.5rem", color: "#F5F0E8" },
-  summaryTitle: { fontFamily: "'Playfair Display', serif", fontSize: "1.2rem", color: "#C4956A", marginBottom: "1.1rem" },
-  summaryRow: { display: "flex", justifyContent: "space-between", fontFamily: "'Inter', sans-serif", fontSize: "0.9rem", color: "#C4A882", marginBottom: "0.7rem" },
-  summaryTotal: { color: "#FDFAF5", fontWeight: 700, fontSize: "1.05rem", marginBottom: "1.25rem" },
-  divider: { borderTop: "1px solid #3B1A08", margin: "0.75rem 0" },
-  checkoutBtn: {
-    width: "100%", padding: "0.9rem", background: "#C4956A", color: "#1A0A00",
-    border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif",
-    fontWeight: 700, fontSize: "1rem", cursor: "pointer", outline: "none"
+  qtyValue: {
+    padding: "0 12px",
+    fontWeight: "600",
+    minWidth: "20px",
+    textAlign: "center",
+    fontSize: "14px",
   },
-  empty: { textAlign: "center", padding: "6rem 1.5rem", background: "#FDFAF5", minHeight: "100vh" },
-  emptyIcon: { fontSize: "4rem", marginBottom: "1rem" },
-  emptyTitle: { fontFamily: "'Playfair Display', serif", fontSize: "1.8rem", color: "#1A0A00" },
-  emptySub: { fontFamily: "'Inter', sans-serif", color: "#7A6658", marginBottom: "2rem" },
-  browseBtn: {
-    padding: "0.75rem 2rem", background: "#1A0A00", color: "#C4956A",
-    border: "none", borderRadius: "10px", fontFamily: "'Inter', sans-serif",
-    fontWeight: 600, cursor: "pointer", fontSize: "1rem",
+  removeBtn: {
+    background: "none",
+    border: "none",
+    color: "#A0A0A0",
+    cursor: "pointer",
+    fontSize: "13px",
+    textDecoration: "underline",
+  },
+  summaryColumn: {
+    flex: "1",
+    minWidth: "300px",
+  },
+  summaryCard: {
+    background: "#FFF",
+    padding: "25px",
+    borderRadius: "12px",
+    boxShadow: "0 4px 16px rgba(0,0,0,0.04)",
+    position: "sticky",
+    top: "20px",
+  },
+  summaryTitle: {
+    fontFamily: "'Playfair Display', serif",
+    fontSize: "22px",
+    fontWeight: "600",
+    color: "#2C1B11",
+    marginBottom: "20px",
+    borderBottom: "1px solid #EAE3D8",
+    paddingBottom: "10px",
+  },
+  summaryRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: "12px",
+    color: "#6B5E55",
+    fontSize: "15px",
+  },
+  finalTotal: {
+    fontWeight: "700",
+    fontSize: "18px",
+    color: "#2C1B11",
+  },
+  checkoutButton: {
+    width: "100%",
+    padding: "14px",
+    background: "#D4A373",
+    color: "#FFF",
+    border: "none",
+    borderRadius: "30px",
+    fontWeight: "600",
+    fontSize: "16px",
+    cursor: "pointer",
+    marginTop: "15px",
+    boxShadow: "0 4px 10px rgba(212, 163, 115, 0.2)",
+  },
+  continueButton: {
+    width: "100%",
+    padding: "12px",
+    background: "none",
+    color: "#D4A373",
+    border: "1px solid #D4A373",
+    borderRadius: "30px",
+    fontWeight: "600",
+    fontSize: "14px",
+    cursor: "pointer",
+    marginTop: "10px",
+  },
+  primaryButton: {
+    padding: "12px 28px",
+    background: "#D4A373",
+    color: "#FFF",
+    border: "none",
+    borderRadius: "30px",
+    fontWeight: "600",
+    cursor: "pointer",
   },
 };
