@@ -46,7 +46,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
 
   // Simulate timeline progression for testing staging flows
   useEffect(() => {
-    if (!orderSnapshot || currentStep >= 4) return;
+    if (!orderSnapshot || currentStep >= STEPS.length) return;
     const interval = setInterval(() => {
       setCurrentStep((prev) => {
         setEstimatedTime((time) => Math.max(0, time - 7));
@@ -62,9 +62,9 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const isMobile = windowWidth <= 880;
 
   return (
-    <div style={{ ...styles.page, padding: isMobile ? "1.5rem 1rem" : "3rem 0" }}>
+    // Replaced body selector targeting with an explicit background color wrapper container
+    <div style={{ ...styles.page, backgroundColor: THEME.colors.bgPage, padding: isMobile ? "1.5rem 1rem" : "3rem 0" }}>
       <style>{`
-        body { background-color: ${THEME.colors.bgPage}; margin: 0; font-family: ${THEME.fonts.sans}; color: ${THEME.colors.textDark}; }
         .pulse-container { position: relative; display: flex; align-items: center; justify-content: center; }
         .pulse-ring {
           position: absolute;
@@ -180,7 +180,9 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
 
             <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
               <h3 style={styles.sectionTitle}>Order Information</h3>
-              <p style={styles.orderId}>ID: #BRW-{orderSnapshot?.id?.toString().slice(-6) || "938402"}</p>
+              <p style={styles.orderId}>
+                ID: #BRW-{orderSnapshot?.id ? orderSnapshot.id.toString().slice(-6) : "938402"}
+              </p>
               
               <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
               
@@ -207,7 +209,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
 }
 
 const styles = {
-  page: { minHeight: "85vh", boxSizing: "border-box" },
+  page: { minHeight: "85vh", boxSizing: "border-box", fontFamily: THEME.fonts.sans, color: THEME.colors.textDark },
   container: { maxWidth: "940px", margin: "0 auto" },
   backLink: { background: "none", border: "none", color: THEME.colors.textMuted, cursor: "pointer", fontSize: "0.9rem", padding: 0, marginBottom: "0.5rem" },
   heading: { fontFamily: THEME.fonts.serif, fontSize: "2.2rem", color: THEME.colors.textDark, margin: "0 0 2rem 0", fontWeight: "normal" },
@@ -230,4 +232,3 @@ const styles = {
   summarySummary: { display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: THEME.colors.textMuted, marginTop: "0.5rem" },
   completeBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "0.9rem", marginTop: "1.25rem" }
 };
-
