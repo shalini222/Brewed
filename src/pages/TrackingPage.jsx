@@ -87,6 +87,70 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     setPage("menu");
   };
 
+  // Helper component for the Order Information card layout to keep code DRY while swapping
+  const OrderInformationCard = () => (
+    <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
+      <h3 style={{ ...styles.sectionTitle, marginBottom: "0.5rem" }}>Order Information</h3>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: isFailed ? "1rem" : "0.5rem" }}>
+        <p style={styles.orderId}>ID: {displayId}</p>
+        
+        <button onClick={handleCopy} className="copy-btn" title="Copy Order ID">
+          {copied ? (
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: THEME.colors.success }}>
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          ) : (
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          )}
+        </button>
+      </div>
+
+      {isFailed ? (
+        <div style={styles.failedStatusIndicator}>
+          <span style={styles.failedStatusDot} />
+          Delivery Failed
+        </div>
+      ) : (
+        <>
+          <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
+          
+          <div style={styles.summarySummary}>
+            <span>Payment Mode:</span>
+            <span style={{ fontWeight: "600" }}>{orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online"}</span>
+          </div>
+          
+          <div style={styles.summarySummary}>
+            <span>Amount Paid:</span>
+            <span style={{ fontWeight: "600" }}>₹{(orderSnapshot?.calculations?.grandTotal || 0) + (selectedTip || 0)}</span>
+          </div>
+
+          <div style={{ marginTop: "1.25rem" }}>
+            <button className="btn-action" style={styles.reorderSecondaryBtn} onClick={handleReorder}>
+              <span className="reorder-btn-inner">
+                Order Something Else
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+              </span>
+            </button>
+
+            <button className="receipt-link" onClick={handleDownloadReceipt}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Download Receipt
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div style={{ ...styles.page, backgroundColor: THEME.colors.bgPage, padding: isMobile ? "1.5rem 1rem" : "3rem 0" }}>
       <style>{`
@@ -266,74 +330,15 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           {/* Sidebar Panel */}
           <div className="side-panel">
             
-            {/* Box A: Upper Column - Always Order Information */}
-            <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
-              <h3 style={{ ...styles.sectionTitle, marginBottom: "0.5rem" }}>Order Information</h3>
-              <div style={{ display: "flex", alignItems: "center", marginBottom: isFailed ? "1rem" : "0.5rem" }}>
-                <p style={styles.orderId}>ID: {displayId}</p>
-                
-                <button onClick={handleCopy} className="copy-btn" title="Copy Order ID">
-                  {copied ? (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: THEME.colors.success }}>
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                  ) : (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                  )}
-                </button>
-              </div>
+            {/* CONDITIONAL SIDEBAR ROUTING LAYER */}
+            {isFailed ? (
+              /* FAILED STATE CARD LAYOUT STRUCTURE */
+              <>
+                {/* 1st Card: Order Information */}
+                <OrderInformationCard />
 
-              {isFailed ? (
-                /* Delivery Failed State: Clear non-button text status indicator badge layout */
-                <div style={styles.failedStatusIndicator}>
-                  <span style={styles.failedStatusDot} />
-                  Delivery Failed
-                </div>
-              ) : (
-                /* Successful / Active State Details (Preserved intact) */
-                <>
-                  <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
-                  
-                  <div style={styles.summarySummary}>
-                    <span>Payment Mode:</span>
-                    <span style={{ fontWeight: "600" }}>{orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online"}</span>
-                  </div>
-                  
-                  <div style={styles.summarySummary}>
-                    <span>Amount Paid:</span>
-                    <span style={{ fontWeight: "600" }}>₹{(orderSnapshot?.calculations?.grandTotal || 0) + (selectedTip || 0)}</span>
-                  </div>
-
-                  <div style={{ marginTop: "1.25rem" }}>
-                    <button className="btn-action" style={styles.reorderSecondaryBtn} onClick={handleReorder}>
-                      <span className="reorder-btn-inner">
-                        Order Something Else
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-                        </svg>
-                      </span>
-                    </button>
-
-                    <button className="receipt-link" onClick={handleDownloadReceipt}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                      </svg>
-                      Download Receipt
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Box B: Action/Update Context Box */}
-            <div className="interactive-card">
-              {isFailed ? (
-                <>
+                {/* 2nd Card: Action Update Box */}
+                <div className="interactive-card">
                   <h3 style={styles.apologyHeading}>We Are Sorry</h3>
                   <p style={styles.failureMessage}>Your order ran into an issue. We're on it.</p>
                   
@@ -345,9 +350,13 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                       Contact Support
                     </button>
                   </div>
-                </>
-              ) : (
-                <>
+                </div>
+              </>
+            ) : (
+              /* SUCCESS / ACTIVE STATE CARD LAYOUT STRUCTURE */
+              <>
+                {/* 1st Card: Delivery Partner profile */}
+                <div className="interactive-card">
                   <h3 style={styles.sectionTitle}>Delivery Partner</h3>
                   <div style={styles.riderProfile}>
                     <div style={styles.avatar}>🛵</div>
@@ -381,9 +390,12 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                       </p>
                     )}
                   </div>
-                </>
-              )}
-            </div>
+                </div>
+
+                {/* 2nd Card: Order Information Breakdown fallback */}
+                <OrderInformationCard />
+              </>
+            )}
 
           </div>
         </div>
