@@ -315,22 +315,20 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                 <span style={{ fontWeight: "600" }}>₹{(orderSnapshot?.calculations?.grandTotal || 0) + (selectedTip || 0)}</span>
               </div>
 
-              {/* Both Buttons Stacked Once Order completes */}
+              {/* Action Stack Block */}
               <div style={{ marginTop: "1.25rem" }}>
                 {currentStep === 4 && (
                   <>
-                    {/* Unclickable status indicator badge */}
                     <div style={styles.deliveredBadge}>
                       Order Delivered
                     </div>
                     
-                    {/* Reorder Action Button (Clean vector refresh icon used) */}
                     <button className="btn-action" style={styles.completeBtn} onClick={handleReorder}>
                       <span className="reorder-btn-inner">
+                        Reorder
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
                         </svg>
-                        Order Again
                       </span>
                     </button>
                   </>
@@ -339,15 +337,14 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                 {currentStep < 4 && (
                   <button className="btn-action" style={styles.reorderSecondaryBtn} onClick={handleReorder}>
                     <span className="reorder-btn-inner">
+                      Order Something Else
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
                       </svg>
-                      Order Something Else
                     </span>
                   </button>
                 )}
 
-                {/* Receipt Action */}
                 <button className="receipt-link" onClick={handleDownloadReceipt}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
