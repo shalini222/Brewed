@@ -9,7 +9,8 @@ const THEME = {
     primary: "#C4956A",      
     textDark: "#1A0B05",     
     textMuted: "#70645C",    
-    success: "#4A7A5B", // Solid vibrant green
+    success: "#4A7A5B",
+    error: "#BA3C3C", // High contrast attention red for delivery failure
     accentLight: "#FAF9F6"
   },
   fonts: {
@@ -22,7 +23,7 @@ const STEPS = [
   { id: 1, label: "Order Placed", desc: "We have received your coffee order.", icon: "📝" },
   { id: 2, label: "Brewing", desc: "Our barista is crafting your beverage.", icon: "☕" },
   { id: 3, label: "Out for Delivery", desc: "Your rider is heading your way.", icon: "🛵" },
-  { id: 4, label: "Delivered", desc: "Enjoy your fresh artisanal brew!", icon: "🏠" }
+  { id: 4, label: "Delivery Failed", desc: "We encountered an issue with your delivery.", icon: "❌" }
 ];
 
 export default function TrackingPage({ setPage, orderSnapshot }) {
@@ -201,8 +202,10 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             <div className="interactive-card">
               <div style={styles.etaHeader}>
                 <div>
-                  <p style={styles.etaLabel}>Estimated Arrival</p>
-                  <h2 style={styles.etaTime}>{estimatedTime > 0 ? `${estimatedTime} mins` : "Arrived!"}</h2>
+                  <p style={styles.etaLabel}>Status Updates</p>
+                  <h2 style={{...styles.etaTime, color: currentStep === 4 ? THEME.colors.error : THEME.colors.textDark }}>
+                    {currentStep > 3 ? "Delivery Failed" : `${estimatedTime} mins`}
+                  </h2>
                 </div>
                 <div className="pulse-container" style={{ width: 50, height: 50 }}>
                   {currentStep < 4 && <div className="pulse-ring" />}
@@ -217,17 +220,19 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                 {STEPS.map((step, index) => {
                   const isCompleted = currentStep > step.id;
                   const isActive = currentStep === step.id;
+                  const isFailedStep = step.id === 4 && isActive;
                   
                   return (
                     <div key={step.id} style={styles.stepRow}>
                       <div style={styles.iconColumn}>
                         <div style={{
                           ...styles.dot,
-                          backgroundColor: isCompleted || isActive ? THEME.colors.success : THEME.colors.cardBorder,
-                          border: isActive ? `3px solid ${THEME.colors.primary}` : "none",
-                          boxShadow: isActive ? `0 0 10px ${THEME.colors.primary}` : "none"
+                          backgroundColor: isFailedStep ? THEME.colors.error : (isCompleted || isActive ? THEME.colors.success : THEME.colors.cardBorder),
+                          border: isActive && !isFailedStep ? `3px solid ${THEME.colors.primary}` : "none",
+                          boxShadow: isActive && !isFailedStep ? `0 0 10px ${THEME.colors.primary}` : "none"
                         }}>
                           {isCompleted && <span style={{ color: "#FFF", fontSize: "0.65rem", fontWeight: "bold" }}>✓</span>}
+                          {isFailedStep && <span style={{ color: "#FFF", fontSize: "0.65rem", fontWeight: "bold" }}>✕</span>}
                         </div>
                         {index < STEPS.length - 1 && (
                           <div style={{
@@ -238,7 +243,11 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                       </div>
                       
                       <div style={{ ...styles.stepContent, opacity: isActive || isCompleted ? 1 : 0.4 }}>
-                        <h4 style={{ ...styles.stepTitle, fontWeight: isActive ? "700" : "500", color: isActive ? THEME.colors.primary : THEME.colors.textDark }}>
+                        <h4 style={{ 
+                          ...styles.stepTitle, 
+                          fontWeight: isActive ? "700" : "500", 
+                          color: isFailedStep ? THEME.colors.error : (isActive ? THEME.colors.primary : THEME.colors.textDark) 
+                        }}>
                           {step.label}
                         </h4>
                         <p style={styles.stepDesc}>{step.desc}</p>
@@ -324,8 +333,9 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               <div style={{ marginTop: "1.25rem" }}>
                 {currentStep === 4 && (
                   <div className="action-row-split">
-                    <div style={styles.deliveredBadge}>
-                      Delivered
+                    {/* Unclickable state indicator in a prominent red tone */}
+                    <div style={styles.failedBadge}>
+                      Delivery Failed
                     </div>
                     
                     <button className="btn-action" style={styles.completeBtnSide} onClick={handleReorder}>
@@ -374,11 +384,11 @@ const styles = {
   heading: { fontFamily: THEME.fonts.serif, fontSize: "2.2rem", color: THEME.colors.textDark, margin: "0 0 2rem 0", fontWeight: "normal" },
   etaHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", borderBottom: `1px solid ${THEME.colors.cardBorder}`, paddingBottom: "1.25rem" },
   etaLabel: { margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, fontWeight: "500" },
-  etaTime: { margin: "0.2rem 0 0 0", fontFamily: THEME.fonts.serif, fontSize: "2rem", color: THEME.colors.textDark },
+  etaTime: { margin: "0.2rem 0 0 0", fontFamily: THEME.fonts.serif, fontSize: "2rem", color: THEME.colors.textDark, transition: "color 0.3s ease" },
   timeline: { display: "flex", flexDirection: "column" },
   stepRow: { display: "flex", gap: "1.25rem", minHeight: "75px" },
   iconColumn: { display: "flex", flexDirection: "column", alignItems: "center" },
-  dot: { width: "16px", height: "16px", borderRadius: "50%", display: "flex", alignItems: "center", justifycontent: "center", zIndex: 2, boxSizing: "border-box" },
+  dot: { width: "16px", height: "16px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2, boxSizing: "border-box" },
   connector: { width: "2px", flex: 1, margin: "4px 0", zIndex: 1 },
   stepContent: { paddingTop: "0rem", paddingBottom: "1.25rem" },
   stepTitle: { margin: 0, fontSize: "1rem", fontFamily: THEME.fonts.sans },
@@ -390,8 +400,8 @@ const styles = {
   orderId: { margin: 0, fontSize: "0.9rem", fontWeight: "700", color: THEME.colors.textDark, letterSpacing: "0.02em" },
   summarySummary: { display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: THEME.colors.textMuted, marginTop: "0.5rem" },
   
-  // High contrast solid vibrant green design
-  deliveredBadge: { flex: 1, padding: "0.75rem 0.5rem", backgroundColor: THEME.colors.success, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", textAlign: "center", boxSizing: "border-box", pointerEvents: "none", userSelect: "none" },
+  // Custom styled failure token badge
+  failedBadge: { flex: 1, padding: "0.75rem 0.5rem", backgroundColor: THEME.colors.error, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", textAlign: "center", boxSizing: "border-box", pointerEvents: "none", userSelect: "none" },
   completeBtnSide: { flex: 1, padding: "0.75rem 0.5rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", boxSizing: "border-box" },
   
   reorderSecondaryBtn: { width: "100%", padding: "0.75rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" }
