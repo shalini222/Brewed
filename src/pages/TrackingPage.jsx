@@ -68,6 +68,16 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDownloadReceipt = () => {
+    alert("Downloading your receipt...");
+    // Link or generator logic goes here
+  };
+
+  const handleReorder = () => {
+    // Optional: Add logic here to reload items into cart state if needed
+    setPage("menu");
+  };
+
   return (
     <div style={{ ...styles.page, backgroundColor: THEME.colors.bgPage, padding: isMobile ? "1.5rem 1rem" : "3rem 0" }}>
       <style>{`
@@ -114,7 +124,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           background: none;
           border: none;
           cursor: pointer;
-          margin-left: 0.75rem; /* Increased spacing */
+          margin-left: 0.75rem; 
           padding: 0.25rem;
           display: inline-flex;
           align-items: center;
@@ -150,6 +160,24 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           background-color: ${THEME.colors.headerBg} !important;
           border-color: ${THEME.colors.headerBg};
           color: #FFF;
+        }
+        .receipt-link {
+          background: none;
+          border: none;
+          color: ${THEME.colors.primary};
+          font-size: 0.85rem;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.4rem;
+          margin: 1rem auto 0 auto;
+          transition: opacity 0.2s;
+        }
+        .receipt-link:hover {
+          opacity: 0.8;
+          text-decoration: underline;
         }
       `}</style>
 
@@ -256,7 +284,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               <div style={{ display: "flex", alignItems: "center", marginBottom: "0.5rem" }}>
                 <p style={styles.orderId}>ID: {displayId}</p>
                 
-                {/* SVG-Based Premium Copy Button Action */}
                 <button onClick={handleCopy} className="copy-btn" title="Copy Order ID">
                   {copied ? (
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: THEME.colors.success }}>
@@ -283,11 +310,30 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                 <span style={{ fontWeight: "600" }}>₹{(orderSnapshot?.calculations?.grandTotal || 0) + (selectedTip || 0)}</span>
               </div>
 
-              {currentStep === 4 && (
-                <button className="btn-action" style={styles.completeBtn} onClick={() => setPage("menu")}>
-                  Order Delivered
+              {/* Action Block Dependent on Order Lifecycle State */}
+              <div style={{ marginTop: "1.25rem" }}>
+                {currentStep < 4 ? (
+                  // Active state: Show elegant Reorder option alongside order tracker
+                  <button className="btn-action" style={styles.reorderSecondaryBtn} onClick={handleReorder}>
+                    🔄 Order Something Else
+                  </button>
+                ) : (
+                  // Terminal State: Make Reorder the hero button once delivered
+                  <button className="btn-action" style={styles.completeBtn} onClick={handleReorder}>
+                    Order Again
+                  </button>
+                )}
+
+                {/* Download Receipt Minimal Action Trigger */}
+                <button className="receipt-link" onClick={handleDownloadReceipt}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  Download Receipt
                 </button>
-              )}
+              </div>
             </div>
           </div>
         </div>
@@ -318,5 +364,6 @@ const styles = {
   commsBtn: { flex: 1, display: "block", textAlign: "center", padding: "0.65rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textDecoration: "none", boxSizing: "border-box", border: "none" },
   orderId: { margin: 0, fontSize: "0.9rem", fontWeight: "700", color: THEME.colors.textDark, letterSpacing: "0.02em" },
   summarySummary: { display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: THEME.colors.textMuted, marginTop: "0.5rem" },
-  completeBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "0.9rem", marginTop: "1.25rem" }
+  completeBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "0.9rem" },
+  reorderSecondaryBtn: { width: "100%", padding: "0.75rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" }
 };
