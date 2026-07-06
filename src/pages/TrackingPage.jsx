@@ -91,7 +91,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const OrderInformationCard = () => (
     <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
       <h3 style={{ ...styles.sectionTitle, marginBottom: "0.5rem" }}>Order Information</h3>
-      <div style={{ display: "flex", alignItems: "center", marginBottom: isFailed ? "1rem" : "0.5rem" }}>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: "0.75rem" }}>
         <p style={styles.orderId}>ID: {displayId}</p>
         
         <button onClick={handleCopy} className="copy-btn" title="Copy Order ID">
@@ -109,7 +109,8 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
       </div>
 
       {isFailed ? (
-        <div style={styles.failedStatusIndicator}>
+        /* Full width status indicator for failure state */
+        <div style={styles.failedStatusIndicatorFull}>
           <span style={styles.failedStatusDot} />
           Delivery Failed
         </div>
@@ -334,7 +335,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             {isFailed ? (
               /* FAILED STATE CARD LAYOUT STRUCTURE */
               <>
-                {/* 1st Card: Order Information */}
+                {/* 1st Card: Order Information (with Full-width indicator) */}
                 <OrderInformationCard />
 
                 {/* 2nd Card: Action Update Box */}
@@ -415,7 +416,7 @@ const styles = {
   timeline: { display: "flex", flexDirection: "column" },
   stepRow: { display: "flex", gap: "1.25rem", minHeight: "75px" },
   iconColumn: { display: "flex", flexDirection: "column", alignItems: "center" },
-  dot: { width: "16px", height: "16px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2, boxSizing: "border-box" },
+  dot: { width: "16px", height: "16px", borderRadius: "50%", display: "flex", alignItems: "center", justifycontent: "center", zIndex: 2, boxSizing: "border-box" },
   connector: { width: "2px", flex: 1, margin: "4px 0", zIndex: 1 },
   stepContent: { paddingTop: "0rem", paddingBottom: "1.25rem" },
   stepTitle: { margin: 0, fontSize: "1rem", fontFamily: THEME.fonts.sans },
@@ -430,7 +431,8 @@ const styles = {
   orderId: { margin: 0, fontSize: "0.9rem", fontWeight: "700", color: THEME.colors.textDark, letterSpacing: "0.02em" },
   summarySummary: { display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: THEME.colors.textMuted, marginTop: "0.5rem" },
   
-  failedStatusIndicator: { display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 0.8rem", backgroundColor: "rgba(186, 60, 60, 0.1)", color: THEME.colors.error, border: `1px solid rgba(186, 60, 60, 0.2)`, borderRadius: "20px", fontWeight: "600", fontSize: "0.8rem" },
+  // Full-width delivery status display block configuration
+  failedStatusIndicatorFull: { display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: "0.6rem", padding: "0.75rem", backgroundColor: "rgba(186, 60, 60, 0.08)", color: THEME.colors.error, border: `1px solid rgba(186, 60, 60, 0.15)`, borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", boxSizing: "border-box" },
   failedStatusDot: { width: "8px", height: "8px", borderRadius: "50%", backgroundColor: THEME.colors.error },
 
   failureMessage: { margin: "0 0 1.25rem 0", fontSize: "0.95rem", color: THEME.colors.textDark, lineHeight: "1.5" },
