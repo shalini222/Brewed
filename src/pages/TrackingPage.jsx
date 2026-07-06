@@ -194,13 +194,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           justify-content: center;
           gap: 0.5rem;
         }
-        .action-row-split {
-          display: flex;
-          gap: 0.5rem;
-          align-items: center;
-          width: 100%;
-          margin-top: 1.25rem;
-        }
       `}</style>
 
       <div style={{ maxWidth: "940px", margin: "0 auto" }}>
@@ -273,7 +266,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           {/* Sidebar Panel */}
           <div className="side-panel">
             
-            {/* Box A: Failed State Upper Column box */}
+            {/* Box A: Upper Column - Delivery Failed Context */}
             {isFailed && (
               <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
                 <h3 style={{ ...styles.sectionTitle, marginBottom: "0.5rem" }}>Order Details</h3>
@@ -297,20 +290,20 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               </div>
             )}
 
-            {/* Box B: Rider/Issue context layout */}
+            {/* Box B: Action/Update Box (With Stacked Buttons) */}
             <div className="interactive-card">
               {isFailed ? (
                 <>
                   <h3 style={styles.sectionTitle}>Order Update</h3>
                   <p style={styles.failureMessage}>Your order ran into an issue. We're on it.</p>
                   
-                  {/* Buttons structured side-by-side inside split flex container */}
-                  <div className="action-row-split">
-                    <button className="btn-action" style={styles.supportSplitBtn} onClick={handleContactSupport}>
-                      Contact Support
-                    </button>
-                    <button className="btn-action" style={styles.tryAgainSplitBtn} onClick={handleTryAgain}>
+                  {/* Reverted back to stacked structure */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.25rem" }}>
+                    <button className="btn-action" style={styles.tryAgainBtn} onClick={handleTryAgain}>
                       Try Again: 10% Off
+                    </button>
+                    <button className="btn-action" style={styles.supportBtn} onClick={handleContactSupport}>
+                      Contact Support
                     </button>
                   </div>
                 </>
@@ -426,7 +419,7 @@ const styles = {
   timeline: { display: "flex", flexDirection: "column" },
   stepRow: { display: "flex", gap: "1.25rem", minHeight: "75px" },
   iconColumn: { display: "flex", flexDirection: "column", alignItems: "center" },
-  dot: { width: "16px", height: "16px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2, boxSizing: "border-box" },
+  dot: { width: "16px", height: "16px", borderRadius: "50%", display: "flex", alignItems: "center", justifycontent: "center", zIndex: 2, boxSizing: "border-box" },
   connector: { width: "2px", flex: 1, margin: "4px 0", zIndex: 1 },
   stepContent: { paddingTop: "0rem", paddingBottom: "1.25rem" },
   stepTitle: { margin: 0, fontSize: "1rem", fontFamily: THEME.fonts.sans },
@@ -441,9 +434,9 @@ const styles = {
   failedBadgeFull: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.error, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textAlign: "center", boxSizing: "border-box", pointerEvents: "none", userSelect: "none" },
   failureMessage: { margin: "0 0 1.25rem 0", fontSize: "0.95rem", color: THEME.colors.textDark, lineHeight: "1.5" },
   
-  // Side by Side Row Configurations
-  supportSplitBtn: { flex: 1, padding: "0.8rem 0.5rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center" },
-  tryAgainSplitBtn: { flex: 1, padding: "0.8rem 0.5rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", textAlign: "center" },
+  // Clean Stacked Layout configurations
+  tryAgainBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textAlign: "center" },
+  supportBtn: { width: "100%", padding: "0.8rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "center" },
   
   reorderSecondaryBtn: { width: "100%", padding: "0.75rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" }
 };
