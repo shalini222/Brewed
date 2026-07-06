@@ -10,6 +10,7 @@ const THEME = {
     textDark: "#1A0B05",     
     textMuted: "#70645C",    
     success: "#4A7A5B",
+    successLight: "#E8F0EC",
     accentLight: "#FAF9F6"
   },
   fonts: {
@@ -70,11 +71,9 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
 
   const handleDownloadReceipt = () => {
     alert("Downloading your receipt...");
-    // Link or generator logic goes here
   };
 
   const handleReorder = () => {
-    // Optional: Add logic here to reload items into cart state if needed
     setPage("menu");
   };
 
@@ -178,6 +177,12 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         .receipt-link:hover {
           opacity: 0.8;
           text-decoration: underline;
+        }
+        .reorder-btn-inner {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
         }
       `}</style>
 
@@ -310,21 +315,39 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                 <span style={{ fontWeight: "600" }}>₹{(orderSnapshot?.calculations?.grandTotal || 0) + (selectedTip || 0)}</span>
               </div>
 
-              {/* Action Block Dependent on Order Lifecycle State */}
+              {/* Both Buttons Stacked Once Order completes */}
               <div style={{ marginTop: "1.25rem" }}>
-                {currentStep < 4 ? (
-                  // Active state: Show elegant Reorder option alongside order tracker
+                {currentStep === 4 && (
+                  <>
+                    {/* Unclickable status indicator badge */}
+                    <div style={styles.deliveredBadge}>
+                      Order Delivered
+                    </div>
+                    
+                    {/* Reorder Action Button (Clean vector refresh icon used) */}
+                    <button className="btn-action" style={styles.completeBtn} onClick={handleReorder}>
+                      <span className="reorder-btn-inner">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                        </svg>
+                        Order Again
+                      </span>
+                    </button>
+                  </>
+                )}
+
+                {currentStep < 4 && (
                   <button className="btn-action" style={styles.reorderSecondaryBtn} onClick={handleReorder}>
-                    🔄 Order Something Else
-                  </button>
-                ) : (
-                  // Terminal State: Make Reorder the hero button once delivered
-                  <button className="btn-action" style={styles.completeBtn} onClick={handleReorder}>
-                    Order Again
+                    <span className="reorder-btn-inner">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                      </svg>
+                      Order Something Else
+                    </span>
                   </button>
                 )}
 
-                {/* Download Receipt Minimal Action Trigger */}
+                {/* Receipt Action */}
                 <button className="receipt-link" onClick={handleDownloadReceipt}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
@@ -364,6 +387,7 @@ const styles = {
   commsBtn: { flex: 1, display: "block", textAlign: "center", padding: "0.65rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textDecoration: "none", boxSizing: "border-box", border: "none" },
   orderId: { margin: 0, fontSize: "0.9rem", fontWeight: "700", color: THEME.colors.textDark, letterSpacing: "0.02em" },
   summarySummary: { display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: THEME.colors.textMuted, marginTop: "0.5rem" },
+  deliveredBadge: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.successLight, color: THEME.colors.success, border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "0.9rem", textAlign: "center", boxSizing: "border-box", marginBottom: "0.75rem", pointerEvents: "none", userSelect: "none" },
   completeBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "0.9rem" },
   reorderSecondaryBtn: { width: "100%", padding: "0.75rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" }
 };
