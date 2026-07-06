@@ -194,12 +194,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           justify-content: center;
           gap: 0.5rem;
         }
-        .action-row-split {
-          display: flex;
-          gap: 0.5rem;
-          align-items: center;
-          width: 100%;
-        }
       `}</style>
 
       <div style={{ maxWidth: "940px", margin: "0 auto" }}>
@@ -269,17 +263,33 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             </div>
           </div>
 
-          {/* Sidebar Panel with Conditional Hierarchy Reversal */}
+          {/* Sidebar Panel */}
           <div className="side-panel">
             
-            {/* Box A: Order Info Box (Moves up on failure) */}
+            {/* Box A: Moves to top on failure, now tracking Order ID context */}
             {isFailed && (
               <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
+                <div style={{ display: "flex", alignItems: "center", marginBottom: "0.75rem" }}>
+                  <p style={styles.orderId}>ID: {displayId}</p>
+                  
+                  <button onClick={handleCopy} className="copy-btn" title="Copy Order ID">
+                    {copied ? (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: THEME.colors.success }}>
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    ) : (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                    )}
+                  </button>
+                </div>
                 <div style={styles.failedBadgeFull}>Delivery Failed</div>
               </div>
             )}
 
-            {/* Box B: Delivery Partner / Issue Information Box */}
+            {/* Box B: Actionable context box (Support/Try again vs Partner info) */}
             <div className="interactive-card">
               {isFailed ? (
                 <>
@@ -334,7 +344,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               )}
             </div>
 
-            {/* Box A Alternative: Standard Order Info Box (Shown at bottom if active) */}
+            {/* Box A Alternative: Standard view container */}
             {!isFailed && (
               <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
                 <h3 style={styles.sectionTitle}>Order Information</h3>
@@ -419,11 +429,9 @@ const styles = {
   orderId: { margin: 0, fontSize: "0.9rem", fontWeight: "700", color: THEME.colors.textDark, letterSpacing: "0.02em" },
   summarySummary: { display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: THEME.colors.textMuted, marginTop: "0.5rem" },
   
-  // Failure messaging context
   failedBadgeFull: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.error, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textAlign: "center", boxSizing: "border-box", pointerEvents: "none", userSelect: "none" },
   failureMessage: { margin: "0 0 1.25rem 0", fontSize: "0.95rem", color: THEME.colors.textDark, lineHeight: "1.5" },
   
-  // Primary alternative conversion CTA stacks
   tryAgainBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textAlign: "center" },
   supportBtn: { width: "100%", padding: "0.8rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "center" },
   reorderSecondaryBtn: { width: "100%", padding: "0.75rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" }
