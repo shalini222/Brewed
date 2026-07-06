@@ -294,7 +294,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             <div className="interactive-card">
               {isFailed ? (
                 <>
-                  <h3 style={styles.sectionTitle}>We are sorry</h3>
+                  <h3 style={styles.apologyHeading}>We are sorry</h3>
                   <p style={styles.failureMessage}>Your order ran into an issue. We're on it.</p>
                   
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.25rem" }}>
@@ -424,6 +424,10 @@ const styles = {
   stepTitle: { margin: 0, fontSize: "1rem", fontFamily: THEME.fonts.sans },
   stepDesc: { margin: "0.2rem 0 0 0", fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.4" },
   sectionTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.15rem", margin: "0 0 1rem 0", color: THEME.colors.textDark, fontWeight: "normal" },
+  
+  // Larger and bolder "We are sorry" style
+  apologyHeading: { fontFamily: THEME.fonts.serif, fontSize: "1.45rem", margin: "0 0 0.8rem 0", color: THEME.colors.textDark, fontWeight: "700" },
+  
   riderProfile: { display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.25rem" },
   avatar: { width: "42px", height: "42px", borderRadius: "50%", backgroundColor: THEME.colors.accentLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", border: `1px solid ${THEME.colors.cardBorder}` },
   commsBtn: { flex: 1, display: "block", textAlign: "center", padding: "0.65rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textDecoration: "none", boxSizing: "border-box", border: "none" },
