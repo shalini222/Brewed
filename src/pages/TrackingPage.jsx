@@ -22,29 +22,28 @@ const STEPS = [
   { id: 1, label: "Order Placed", desc: "We have received your coffee order.", icon: "📝" },
   { id: 2, label: "Brewing", desc: "Our barista is crafting your beverage.", icon: "☕" },
   { id: 3, label: "Out for Delivery", desc: "Your rider is heading your way.", icon: "🛵" },
-  { id: 4, label: "Delivered", desc: "Enjoy your fresh artisanal brew!", icon: "✨" }
+  { id: 4, label: "Delivered", desc: "Enjoy your fresh artisanal brew!", icon: "🏠" }
 ];
 
 export default function TrackingPage({ setPage, orderSnapshot }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [estimatedTime, setEstimatedTime] = useState(25);
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1100);
+  const [copied, setCopied] = useState(false);
+  const [selectedTip, setSelectedTip] = useState(null);
 
-  // Guard clause: If there's no successful order session snapshot, boot them back to safety
   useEffect(() => {
     if (!orderSnapshot) {
       setPage("menu");
     }
   }, [orderSnapshot, setPage]);
 
-  // Track window resizing for strict responsive layout adjustments
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Simulate timeline progression for testing staging flows
   useEffect(() => {
     if (!orderSnapshot || currentStep >= STEPS.length) return;
     const interval = setInterval(() => {
@@ -52,7 +51,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         setEstimatedTime((time) => Math.max(0, time - 7));
         return prev + 1;
       });
-    }, 15000); // Advances step every 15 seconds
+    }, 15000);
 
     return () => clearInterval(interval);
   }, [currentStep, orderSnapshot]);
@@ -60,9 +59,16 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   if (!orderSnapshot) return null;
 
   const isMobile = windowWidth <= 880;
+  const rawId = orderSnapshot?.id ? orderSnapshot.id.toString() : "938402";
+  const displayId = rawId.startsWith("BRW-") ? rawId : `#BRW-${rawId.slice(-6)}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(displayId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
-    // Replaced body selector targeting with an explicit background color wrapper container
     <div style={{ ...styles.page, backgroundColor: THEME.colors.bgPage, padding: isMobile ? "1.5rem 1rem" : "3rem 0" }}>
       <style>{`
         .pulse-container { position: relative; display: flex; align-items: center; justify-content: center; }
@@ -97,11 +103,45 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           box-sizing: border-box;
         }
         .btn-action {
-          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s;
+          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s;
           cursor: pointer;
         }
         .btn-action:hover {
           transform: translateY(-2px);
+          opacity: 0.9;
+        }
+        .copy-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 0.9rem;
+          margin-left: 0.5rem;
+          padding: 0.2rem;
+          display: inline-flex;
+          align-items: center;
+          color: ${THEME.colors.primary};
+          transition: transform 0.1s;
+        }
+        .copy-btn:active {
+          transform: scale(0.9);
+        }
+        .tip-pill {
+          flex: 1;
+          padding: 0.5rem;
+          border: 1.5px solid ${THEME.colors.cardBorder};
+          border-radius: 8px;
+          background: transparent;
+          color: ${THEME.colors.textDark};
+          font-weight: 600;
+          font-size: 0.85rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-align: center;
+        }
+        .tip-pill.active {
+          background-color: ${THEME.colors.headerBg};
+          border-color: ${THEME.colors.headerBg};
+          color: #FFF;
         }
       `}</style>
 
@@ -153,7 +193,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                       
                       <div style={{ ...styles.stepContent, opacity: isActive || isCompleted ? 1 : 0.4 }}>
                         <h4 style={{ ...styles.stepTitle, fontWeight: isActive ? "700" : "500", color: isActive ? THEME.colors.primary : THEME.colors.textDark }}>
-                          {step.label} {isActive && "• Processing"}
+                          {step.label}
                         </h4>
                         <p style={styles.stepDesc}>{step.desc}</p>
                       </div>
@@ -167,37 +207,66 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           {/* Sidebar Metadata Panel */}
           <div className="side-panel">
             <div className="interactive-card">
-              <h3 style={styles.sectionTitle}>Delivery Valet</h3>
+              <h3 style={styles.sectionTitle}>Delivery Partner</h3>
               <div style={styles.riderProfile}>
                 <div style={styles.avatar}>🛵</div>
                 <div style={{ flex: 1 }}>
                   <strong style={{ fontSize: "0.95rem" }}>Rahul Kumar</strong>
-                  <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>Brewed Dispatch Fleet</p>
+                  <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>Brewed Delivery Fleet</p>
                 </div>
               </div>
-              <a href="tel:#" className="btn-action" style={styles.callBtn}>📞 Call Rider</a>
+
+              {/* Side-by-Side Call & Text actions */}
+              <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem" }}>
+                <a href="tel:#" className="btn-action" style={styles.commsBtn}>📞 Call</a>
+                <a href="sms:#" className="btn-action" style={styles.commsBtn}>💬 Text</a>
+              </div>
+
+              {/* Rider Tip Section */}
+              <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, paddingTop: "1rem" }}>
+                <p style={{ ...styles.etaLabel, marginBottom: "0.5rem", fontWeight: "600" }}>Thank your partner with a tip</p>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  {[20, 30, 50].map((amount) => (
+                    <button
+                      key={amount}
+                      onClick={() => setSelectedTip(selectedTip === amount ? null : amount)}
+                      className={`tip-pill ${selectedTip === amount ? "active" : ""}`}
+                    >
+                      ₹{amount}
+                    </button>
+                  ))}
+                </div>
+                {selectedTip && (
+                  <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: THEME.colors.success, fontWeight: "500" }}>
+                    ₹{selectedTip} will be added to your delivery partner's profile!
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
               <h3 style={styles.sectionTitle}>Order Information</h3>
-              <p style={styles.orderId}>
-                ID: #BRW-{orderSnapshot?.id ? orderSnapshot.id.toString().slice(-6) : "938402"}
-              </p>
+              <div style={{ display: "flex", alignItems: "center", marginBottom: "0.5rem" }}>
+                <p style={styles.orderId}>ID: {displayId}</p>
+                <button onClick={handleCopy} className="copy-btn" title="Copy Order ID">
+                  {copied ? "✓" : "📋"}
+                </button>
+              </div>
               
               <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
               
               <div style={styles.summarySummary}>
-                <span>Settlement:</span>
+                <span>Payment Mode:</span>
                 <span style={{ fontWeight: "600" }}>{orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online"}</span>
               </div>
               <div style={styles.summarySummary}>
                 <span>Amount Paid:</span>
-                <span style={{ fontWeight: "600" }}>₹{orderSnapshot?.calculations?.grandTotal || 0}</span>
+                <span style={{ fontWeight: "600" }}>₹{(orderSnapshot?.calculations?.grandTotal || 0) + (selectedTip || 0)}</span>
               </div>
 
               {currentStep === 4 && (
                 <button className="btn-action" style={styles.completeBtn} onClick={() => setPage("menu")}>
-                  Order Received ✓
+                  Order Delivered ✓
                 </button>
               )}
             </div>
@@ -227,7 +296,7 @@ const styles = {
   sectionTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.15rem", margin: "0 0 1rem 0", color: THEME.colors.textDark, fontWeight: "normal" },
   riderProfile: { display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.25rem" },
   avatar: { width: "42px", height: "42px", borderRadius: "50%", backgroundColor: THEME.colors.accentLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", border: `1px solid ${THEME.colors.cardBorder}` },
-  callBtn: { display: "block", textAlign: "center", width: "100%", padding: "0.75rem", border: `1.5px solid ${THEME.colors.headerBg}`, color: THEME.colors.headerBg, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textDecoration: "none", boxSizing: "border-box", backgroundColor: "transparent" },
+  commsBtn: { flex: 1, display: "block", textAlign: "center", padding: "0.65rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textDecoration: "none", boxSizing: "border-box", border: "none" },
   orderId: { margin: 0, fontSize: "0.9rem", fontWeight: "700", color: THEME.colors.textDark, letterSpacing: "0.02em" },
   summarySummary: { display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: THEME.colors.textMuted, marginTop: "0.5rem" },
   completeBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "0.9rem", marginTop: "1.25rem" }
