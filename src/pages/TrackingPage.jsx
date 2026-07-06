@@ -194,6 +194,13 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           justify-content: center;
           gap: 0.5rem;
         }
+        .action-row-split {
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+          width: 100%;
+          margin-top: 1.25rem;
+        }
       `}</style>
 
       <div style={{ maxWidth: "940px", margin: "0 auto" }}>
@@ -266,10 +273,11 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           {/* Sidebar Panel */}
           <div className="side-panel">
             
-            {/* Box A: Moves to top on failure, now tracking Order ID context */}
+            {/* Box A: Failed State Upper Column box */}
             {isFailed && (
               <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
-                <div style={{ display: "flex", alignItems: "center", marginBottom: "0.75rem" }}>
+                <h3 style={{ ...styles.sectionTitle, marginBottom: "0.5rem" }}>Order Details</h3>
+                <div style={{ display: "flex", alignItems: "center", marginBottom: "1rem" }}>
                   <p style={styles.orderId}>ID: {displayId}</p>
                   
                   <button onClick={handleCopy} className="copy-btn" title="Copy Order ID">
@@ -289,19 +297,20 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               </div>
             )}
 
-            {/* Box B: Actionable context box (Support/Try again vs Partner info) */}
+            {/* Box B: Rider/Issue context layout */}
             <div className="interactive-card">
               {isFailed ? (
                 <>
                   <h3 style={styles.sectionTitle}>Order Update</h3>
                   <p style={styles.failureMessage}>Your order ran into an issue. We're on it.</p>
                   
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.25rem" }}>
-                    <button className="btn-action" style={styles.tryAgainBtn} onClick={handleTryAgain}>
-                      Try Again: 10% Off
-                    </button>
-                    <button className="btn-action" style={styles.supportBtn} onClick={handleContactSupport}>
+                  {/* Buttons structured side-by-side inside split flex container */}
+                  <div className="action-row-split">
+                    <button className="btn-action" style={styles.supportSplitBtn} onClick={handleContactSupport}>
                       Contact Support
+                    </button>
+                    <button className="btn-action" style={styles.tryAgainSplitBtn} onClick={handleTryAgain}>
+                      Try Again: 10% Off
                     </button>
                   </div>
                 </>
@@ -344,7 +353,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               )}
             </div>
 
-            {/* Box A Alternative: Standard view container */}
+            {/* Box A Alternative: Standard view layout container */}
             {!isFailed && (
               <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
                 <h3 style={styles.sectionTitle}>Order Information</h3>
@@ -432,7 +441,9 @@ const styles = {
   failedBadgeFull: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.error, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textAlign: "center", boxSizing: "border-box", pointerEvents: "none", userSelect: "none" },
   failureMessage: { margin: "0 0 1.25rem 0", fontSize: "0.95rem", color: THEME.colors.textDark, lineHeight: "1.5" },
   
-  tryAgainBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textAlign: "center" },
-  supportBtn: { width: "100%", padding: "0.8rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "center" },
+  // Side by Side Row Configurations
+  supportSplitBtn: { flex: 1, padding: "0.8rem 0.5rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center" },
+  tryAgainSplitBtn: { flex: 1, padding: "0.8rem 0.5rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", textAlign: "center" },
+  
   reorderSecondaryBtn: { width: "100%", padding: "0.75rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" }
 };
