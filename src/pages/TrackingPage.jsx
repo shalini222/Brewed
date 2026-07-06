@@ -9,8 +9,7 @@ const THEME = {
     primary: "#C4956A",      
     textDark: "#1A0B05",     
     textMuted: "#70645C",    
-    success: "#4A7A5B",
-    successLight: "#E8F0EC",
+    success: "#4A7A5B", // Solid vibrant green
     accentLight: "#FAF9F6"
   },
   fonts: {
@@ -184,6 +183,12 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           justify-content: center;
           gap: 0.5rem;
         }
+        .action-row-split {
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+          width: 100%;
+        }
       `}</style>
 
       <div style={{ maxWidth: "940px", margin: "0 auto" }}>
@@ -311,27 +316,27 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               </div>
               
               <div style={styles.summarySummary}>
-                <span>{orderSnapshot?.method === "cod" ? "Amount Due:" : "Amount Paid:"}</span>
+                <span>Amount Paid:</span>
                 <span style={{ fontWeight: "600" }}>₹{(orderSnapshot?.calculations?.grandTotal || 0) + (selectedTip || 0)}</span>
               </div>
 
               {/* Action Stack Block */}
               <div style={{ marginTop: "1.25rem" }}>
                 {currentStep === 4 && (
-                  <>
+                  <div className="action-row-split">
                     <div style={styles.deliveredBadge}>
-                      Order Delivered
+                      Delivered
                     </div>
                     
-                    <button className="btn-action" style={styles.completeBtn} onClick={handleReorder}>
+                    <button className="btn-action" style={styles.completeBtnSide} onClick={handleReorder}>
                       <span className="reorder-btn-inner">
                         Reorder
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
                         </svg>
                       </span>
                     </button>
-                  </>
+                  </div>
                 )}
 
                 {currentStep < 4 && (
@@ -373,7 +378,7 @@ const styles = {
   timeline: { display: "flex", flexDirection: "column" },
   stepRow: { display: "flex", gap: "1.25rem", minHeight: "75px" },
   iconColumn: { display: "flex", flexDirection: "column", alignItems: "center" },
-  dot: { width: "16px", height: "16px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2, boxSizing: "border-box" },
+  dot: { width: "16px", height: "16px", borderRadius: "50%", display: "flex", alignItems: "center", justifycontent: "center", zIndex: 2, boxSizing: "border-box" },
   connector: { width: "2px", flex: 1, margin: "4px 0", zIndex: 1 },
   stepContent: { paddingTop: "0rem", paddingBottom: "1.25rem" },
   stepTitle: { margin: 0, fontSize: "1rem", fontFamily: THEME.fonts.sans },
@@ -384,7 +389,10 @@ const styles = {
   commsBtn: { flex: 1, display: "block", textAlign: "center", padding: "0.65rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textDecoration: "none", boxSizing: "border-box", border: "none" },
   orderId: { margin: 0, fontSize: "0.9rem", fontWeight: "700", color: THEME.colors.textDark, letterSpacing: "0.02em" },
   summarySummary: { display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: THEME.colors.textMuted, marginTop: "0.5rem" },
-  deliveredBadge: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.successLight, color: THEME.colors.success, border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "0.9rem", textAlign: "center", boxSizing: "border-box", marginBottom: "0.75rem", pointerEvents: "none", userSelect: "none" },
-  completeBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "0.9rem" },
+  
+  // High contrast solid vibrant green design
+  deliveredBadge: { flex: 1, padding: "0.75rem 0.5rem", backgroundColor: THEME.colors.success, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", textAlign: "center", boxSizing: "border-box", pointerEvents: "none", userSelect: "none" },
+  completeBtnSide: { flex: 1, padding: "0.75rem 0.5rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", boxSizing: "border-box" },
+  
   reorderSecondaryBtn: { width: "100%", padding: "0.75rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" }
 };
