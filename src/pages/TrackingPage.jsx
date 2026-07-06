@@ -22,7 +22,7 @@ const THEME = {
 const STEPS = [
   { id: 1, label: "Order Placed", desc: "We have received your coffee order.", icon: "📝" },
   { id: 2, label: "Brewing", desc: "Our barista is crafting your beverage.", icon: "☕" },
-  { id: 3, label: "Out for Delivery", desc: "Your rider is heading your way.", icon: "🛵" },
+  { id: 3, label: "Delivered", desc: "Enjoy your freshly brewed coffee!", icon: "🎉" },
   { id: 4, label: "Delivery Failed", desc: "We encountered an issue with your delivery.", icon: "❌" }
 ];
 
@@ -46,10 +46,10 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   }, []);
 
   useEffect(() => {
-    if (!orderSnapshot || currentStep >= STEPS.length) return;
+    if (!orderSnapshot || currentStep >= 3) return; // Stop auto-advancing once it hits Delivered
     const interval = setInterval(() => {
       setCurrentStep((prev) => {
-        setEstimatedTime((time) => Math.max(0, time - 7));
+        setEstimatedTime((time) => Math.max(0, time - 12));
         return prev + 1;
       });
     }, 15000);
@@ -60,6 +60,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   if (!orderSnapshot) return null;
 
   const isMobile = windowWidth <= 880;
+  const isDelivered = currentStep === 3;
   const isFailed = currentStep === 4;
   const rawId = orderSnapshot?.id ? orderSnapshot.id.toString() : "938402";
   const displayId = rawId.startsWith("BRW-") ? rawId : `#BRW-${rawId.slice(-6)}`;
@@ -87,7 +88,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     setPage("menu");
   };
 
-  // Helper component for the Order Information card layout to keep code DRY while swapping
+  // Shared Helper component for the Order Information card layout
   const OrderInformationCard = () => (
     <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
       <h3 style={{ ...styles.sectionTitle, marginBottom: "0.5rem" }}>Order Information</h3>
@@ -108,13 +109,23 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         </button>
       </div>
 
-      {isFailed ? (
-        /* Full width status indicator for failure state */
+      {/* Status Indicators Conditions */}
+      {isFailed && (
         <div style={styles.failedStatusIndicatorFull}>
           <span style={styles.failedStatusDot} />
           Delivery Failed
         </div>
-      ) : (
+      )}
+
+      {isDelivered && (
+        <div style={styles.successStatusIndicatorFull}>
+          <span style={styles.successStatusDot} />
+          Delivered Successfully
+        </div>
+      )}
+
+      {/* Payment details and standard reorder buttons are hidden on failure state, shown on active/delivered */}
+      {!isFailed && (
         <>
           <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
           
@@ -131,7 +142,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           <div style={{ marginTop: "1.25rem" }}>
             <button className="btn-action" style={styles.reorderSecondaryBtn} onClick={handleReorder}>
               <span className="reorder-btn-inner">
-                Order Something Else
+                {isDelivered ? "Order from Us Again" : "Order Something Else"}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
                 </svg>
@@ -140,7 +151,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
 
             <button className="receipt-link" onClick={handleDownloadReceipt}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                <path d="M21 15v4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
@@ -272,12 +283,15 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               <div style={styles.etaHeader}>
                 <div>
                   <p style={styles.etaLabel}>Status Update</p>
-                  <h2 style={{...styles.etaTime, color: isFailed ? THEME.colors.error : THEME.colors.textDark }}>
-                    {isFailed ? "Delivery Failed" : `${estimatedTime} mins`}
+                  <h2 style={{
+                    ...styles.etaTime, 
+                    color: isFailed ? THEME.colors.error : (isDelivered ? THEME.colors.success : THEME.colors.textDark) 
+                  }}>
+                    {isFailed ? "Delivery Failed" : (isDelivered ? "Delivered" : `${estimatedTime} mins`)}
                   </h2>
                 </div>
                 <div className="pulse-container" style={{ width: 50, height: 50 }}>
-                  {!isFailed && <div className="pulse-ring" />}
+                  {(!isFailed && !isDelivered) && <div className="pulse-ring" />}
                   <span style={{ fontSize: "2rem", zIndex: 2 }}>
                     {STEPS[currentStep - 1]?.icon || "☕"}
                   </span>
@@ -287,9 +301,13 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               {/* Progress Line Tracker */}
               <div style={styles.timeline}>
                 {STEPS.map((step, index) => {
+                  // Hide step 4 (Failed) completely if the order has been delivered successfully
+                  if (step.id === 4 && isDelivered) return null;
+
                   const isCompleted = currentStep > step.id;
                   const isActive = currentStep === step.id;
                   const isFailedStep = step.id === 4 && isActive;
+                  const isDeliveredStep = step.id === 3 && (isActive || isCompleted);
                   
                   return (
                     <div key={step.id} style={styles.stepRow}>
@@ -297,16 +315,17 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                         <div style={{
                           ...styles.dot,
                           backgroundColor: isFailedStep ? THEME.colors.error : (isCompleted || isActive ? THEME.colors.success : THEME.colors.cardBorder),
-                          border: isActive && !isFailedStep ? `3px solid ${THEME.colors.primary}` : "none",
-                          boxShadow: isActive && !isFailedStep ? `0 0 10px ${THEME.colors.primary}` : "none"
+                          border: isActive && !isFailedStep && !isDeliveredStep ? `3px solid ${THEME.colors.primary}` : "none",
+                          boxShadow: isActive && !isFailedStep && !isDeliveredStep ? `0 0 10px ${THEME.colors.primary}` : "none"
                         }}>
                           {isCompleted && <span style={{ color: "#FFF", fontSize: "0.65rem", fontWeight: "bold" }}>✓</span>}
+                          {isDeliveredStep && <span style={{ color: "#FFF", fontSize: "0.65rem", fontWeight: "bold" }}>✓</span>}
                           {isFailedStep && <span style={{ color: "#FFF", fontSize: "0.65rem", fontWeight: "bold" }}>✕</span>}
                         </div>
-                        {index < STEPS.length - 1 && (
+                        {index < (isDelivered ? 2 : STEPS.length - 1) && (
                           <div style={{
                             ...styles.connector,
-                            backgroundColor: isCompleted ? THEME.colors.success : THEME.colors.cardBorder
+                            backgroundColor: isCompleted || (isDelivered && step.id < 3) ? THEME.colors.success : THEME.colors.cardBorder
                           }} />
                         )}
                       </div>
@@ -315,7 +334,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                         <h4 style={{ 
                           ...styles.stepTitle, 
                           fontWeight: isActive ? "700" : "500", 
-                          color: isFailedStep ? THEME.colors.error : (isActive ? THEME.colors.primary : THEME.colors.textDark) 
+                          color: isFailedStep ? THEME.colors.error : (isDeliveredStep ? THEME.colors.success : (isActive ? THEME.colors.primary : THEME.colors.textDark)) 
                         }}>
                           {step.label}
                         </h4>
@@ -331,18 +350,14 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           {/* Sidebar Panel */}
           <div className="side-panel">
             
-            {/* CONDITIONAL SIDEBAR ROUTING LAYER */}
+            {/* CONDITIONAL ROUTING LAYER */}
             {isFailed ? (
-              /* FAILED STATE CARD LAYOUT STRUCTURE */
+              /* FAILED STATE */
               <>
-                {/* 1st Card: Order Information (with Full-width indicator) */}
                 <OrderInformationCard />
-
-                {/* 2nd Card: Action Update Box */}
                 <div className="interactive-card">
                   <h3 style={styles.apologyHeading}>We Are Sorry</h3>
                   <p style={styles.failureMessage}>Your order ran into an issue. We're on it.</p>
-                  
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.25rem" }}>
                     <button className="btn-action" style={styles.tryAgainBtn} onClick={handleTryAgain}>
                       Try Again: 10% Off
@@ -353,10 +368,21 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                   </div>
                 </div>
               </>
-            ) : (
-              /* SUCCESS / ACTIVE STATE CARD LAYOUT STRUCTURE */
+            ) : isDelivered ? (
+              /* DELIVERED STATE */
               <>
-                {/* 1st Card: Delivery Partner profile */}
+                <OrderInformationCard />
+                <div className="interactive-card" style={{ textAlign: "center", padding: "2rem 1.5rem" }}>
+                  <span style={{ fontSize: "2.5rem" }}>😋</span>
+                  <h3 style={{ ...styles.apologyHeading, marginTop: "1rem", marginBottom: "0.5rem" }}>Hope You Love It!</h3>
+                  <p style={{ ...styles.failureMessage, margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted }}>
+                    Your order was handed over successfully. Let us know if you need anything else!
+                  </p>
+                </div>
+              </>
+            ) : (
+              /* ACTIVE / EN ROUTE STATE */
+              <>
                 <div className="interactive-card">
                   <h3 style={styles.sectionTitle}>Delivery Partner</h3>
                   <div style={styles.riderProfile}>
@@ -393,7 +419,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                   </div>
                 </div>
 
-                {/* 2nd Card: Order Information Breakdown fallback */}
                 <OrderInformationCard />
               </>
             )}
@@ -407,7 +432,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
 
 const styles = {
   page: { minHeight: "85vh", boxSizing: "border-box", fontFamily: THEME.fonts.sans, color: THEME.colors.textDark },
-  container: { maxWidth: "940px", margin: "0 auto" },
   backLink: { background: "none", border: "none", color: THEME.colors.textMuted, cursor: "pointer", fontSize: "0.9rem", padding: 0, marginBottom: "0.5rem" },
   heading: { fontFamily: THEME.fonts.serif, fontSize: "2.2rem", color: THEME.colors.textDark, margin: "0 0 2rem 0", fontWeight: "normal" },
   etaHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", borderBottom: `1px solid ${THEME.colors.cardBorder}`, paddingBottom: "1.25rem" },
@@ -416,7 +440,7 @@ const styles = {
   timeline: { display: "flex", flexDirection: "column" },
   stepRow: { display: "flex", gap: "1.25rem", minHeight: "75px" },
   iconColumn: { display: "flex", flexDirection: "column", alignItems: "center" },
-  dot: { width: "16px", height: "16px", borderRadius: "50%", display: "flex", alignItems: "center", justifycontent: "center", zIndex: 2, boxSizing: "border-box" },
+  dot: { width: "16px", height: "16px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2, boxSizing: "border-box" },
   connector: { width: "2px", flex: 1, margin: "4px 0", zIndex: 1 },
   stepContent: { paddingTop: "0rem", paddingBottom: "1.25rem" },
   stepTitle: { margin: 0, fontSize: "1rem", fontFamily: THEME.fonts.sans },
@@ -431,9 +455,13 @@ const styles = {
   orderId: { margin: 0, fontSize: "0.9rem", fontWeight: "700", color: THEME.colors.textDark, letterSpacing: "0.02em" },
   summarySummary: { display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: THEME.colors.textMuted, marginTop: "0.5rem" },
   
-  // Full-width delivery status display block configuration
+  // Failure Block Styling
   failedStatusIndicatorFull: { display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: "0.6rem", padding: "0.75rem", backgroundColor: "rgba(186, 60, 60, 0.08)", color: THEME.colors.error, border: `1px solid rgba(186, 60, 60, 0.15)`, borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", boxSizing: "border-box" },
   failedStatusDot: { width: "8px", height: "8px", borderRadius: "50%", backgroundColor: THEME.colors.error },
+
+  // Success Block Styling (Added matching layout style here)
+  successStatusIndicatorFull: { display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: "0.6rem", padding: "0.75rem", backgroundColor: "rgba(74, 122, 91, 0.08)", color: THEME.colors.success, border: `1px solid rgba(74, 122, 91, 0.15)`, borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", boxSizing: "border-box" },
+  successStatusDot: { width: "8px", height: "8px", borderRadius: "50%", backgroundColor: THEME.colors.success },
 
   failureMessage: { margin: "0 0 1.25rem 0", fontSize: "0.95rem", color: THEME.colors.textDark, lineHeight: "1.5" },
   
