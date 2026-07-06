@@ -20,10 +20,11 @@ const THEME = {
 };
 
 const STEPS = [
-  { id: 1, label: "Order Placed", desc: "We have received your coffee order.", icon: "📝" },
+  { id: 1, label: "Order Confirmed", desc: "We have received your coffee order.", icon: "📝" },
   { id: 2, label: "Brewing", desc: "Our barista is crafting your beverage.", icon: "☕" },
-  { id: 3, label: "Delivered", desc: "Enjoy your freshly brewed coffee!", icon: "🎉" },
-  { id: 4, label: "Delivery Failed", desc: "We encountered an issue with your delivery.", icon: "❌" }
+  { id: 3, label: "Out for Delivery", desc: "Your rider is heading your way.", icon: "🛵" },
+  { id: 4, label: "Delivered", desc: "Enjoy your freshly brewed coffee!", icon: "🏠" },
+  { id: 5, label: "Delivery Failed", desc: "We encountered an issue with your delivery.", icon: "❌" }
 ];
 
 export default function TrackingPage({ setPage, orderSnapshot }) {
@@ -46,10 +47,10 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   }, []);
 
   useEffect(() => {
-    if (!orderSnapshot || currentStep >= 3) return; // Stop auto-advancing once it hits Delivered
+    if (!orderSnapshot || currentStep >= 4) return; // Stop auto-advancing at Delivered (Step 4)
     const interval = setInterval(() => {
       setCurrentStep((prev) => {
-        setEstimatedTime((time) => Math.max(0, time - 12));
+        setEstimatedTime((time) => Math.max(0, time - 8));
         return prev + 1;
       });
     }, 15000);
@@ -60,8 +61,8 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   if (!orderSnapshot) return null;
 
   const isMobile = windowWidth <= 880;
-  const isDelivered = currentStep === 3;
-  const isFailed = currentStep === 4;
+  const isDelivered = currentStep === 4;
+  const isFailed = currentStep === 5;
   const rawId = orderSnapshot?.id ? orderSnapshot.id.toString() : "938402";
   const displayId = rawId.startsWith("BRW-") ? rawId : `#BRW-${rawId.slice(-6)}`;
 
@@ -88,7 +89,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     setPage("menu");
   };
 
-  // Shared Helper component for the Order Information card layout
+  // Helper component for the Order Information card layout
   const OrderInformationCard = () => (
     <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
       <h3 style={{ ...styles.sectionTitle, marginBottom: "0.5rem" }}>Order Information</h3>
@@ -109,23 +110,12 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         </button>
       </div>
 
-      {/* Status Indicators Conditions */}
-      {isFailed && (
+      {isFailed ? (
         <div style={styles.failedStatusIndicatorFull}>
           <span style={styles.failedStatusDot} />
           Delivery Failed
         </div>
-      )}
-
-      {isDelivered && (
-        <div style={styles.successStatusIndicatorFull}>
-          <span style={styles.successStatusDot} />
-          Delivered Successfully
-        </div>
-      )}
-
-      {/* Payment details and standard reorder buttons are hidden on failure state, shown on active/delivered */}
-      {!isFailed && (
+      ) : (
         <>
           <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
           
@@ -139,7 +129,16 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             <span style={{ fontWeight: "600" }}>₹{(orderSnapshot?.calculations?.grandTotal || 0) + (selectedTip || 0)}</span>
           </div>
 
-          <div style={{ marginTop: "1.25rem" }}>
+          <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            
+            {/* If delivered, show the full width delivered status button here */}
+            {isDelivered && (
+              <div style={styles.successStatusIndicatorFull}>
+                <span style={styles.successStatusDot} />
+                Delivered Successfully
+              </div>
+            )}
+
             <button className="btn-action" style={styles.reorderSecondaryBtn} onClick={handleReorder}>
               <span className="reorder-btn-inner">
                 {isDelivered ? "Order from Us Again" : "Order Something Else"}
@@ -151,7 +150,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
 
             <button className="receipt-link" onClick={handleDownloadReceipt}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
@@ -177,7 +176,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           opacity: 0;
         }
         @keyframes pulseExpand {
-          0% { transform: scale(0.6); opacity: 0.8; }
+          0 { transform: scale(0.6); opacity: 0.8; }
           100% { transform: scale(1.4); opacity: 0; }
         }
         .layout-grid { 
@@ -257,7 +256,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           align-items: center;
           justify-content: center;
           gap: 0.4rem;
-          margin: 1rem auto 0 auto;
+          margin: 0.25rem auto 0 auto;
           transition: opacity 0.2s;
         }
         .receipt-link:hover {
@@ -301,13 +300,13 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               {/* Progress Line Tracker */}
               <div style={styles.timeline}>
                 {STEPS.map((step, index) => {
-                  // Hide step 4 (Failed) completely if the order has been delivered successfully
-                  if (step.id === 4 && isDelivered) return null;
+                  // Hide step 5 (Failed) completely if the order has been delivered successfully
+                  if (step.id === 5 && isDelivered) return null;
 
                   const isCompleted = currentStep > step.id;
                   const isActive = currentStep === step.id;
-                  const isFailedStep = step.id === 4 && isActive;
-                  const isDeliveredStep = step.id === 3 && (isActive || isCompleted);
+                  const isFailedStep = step.id === 5 && isActive;
+                  const isDeliveredStep = step.id === 4 && (isActive || isCompleted);
                   
                   return (
                     <div key={step.id} style={styles.stepRow}>
@@ -322,10 +321,10 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                           {isDeliveredStep && <span style={{ color: "#FFF", fontSize: "0.65rem", fontWeight: "bold" }}>✓</span>}
                           {isFailedStep && <span style={{ color: "#FFF", fontSize: "0.65rem", fontWeight: "bold" }}>✕</span>}
                         </div>
-                        {index < (isDelivered ? 2 : STEPS.length - 1) && (
+                        {index < (isDelivered ? 3 : STEPS.length - 1) && (
                           <div style={{
                             ...styles.connector,
-                            backgroundColor: isCompleted || (isDelivered && step.id < 3) ? THEME.colors.success : THEME.colors.cardBorder
+                            backgroundColor: isCompleted || (isDelivered && step.id < 4) ? THEME.colors.success : THEME.colors.cardBorder
                           }} />
                         )}
                       </div>
@@ -352,7 +351,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             
             {/* CONDITIONAL ROUTING LAYER */}
             {isFailed ? (
-              /* FAILED STATE */
+              /* FAILED STATE: Order information remains on top */
               <>
                 <OrderInformationCard />
                 <div className="interactive-card">
@@ -368,20 +367,8 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                   </div>
                 </div>
               </>
-            ) : isDelivered ? (
-              /* DELIVERED STATE */
-              <>
-                <OrderInformationCard />
-                <div className="interactive-card" style={{ textAlign: "center", padding: "2rem 1.5rem" }}>
-                  <span style={{ fontSize: "2.5rem" }}>😋</span>
-                  <h3 style={{ ...styles.apologyHeading, marginTop: "1rem", marginBottom: "0.5rem" }}>Hope You Love It!</h3>
-                  <p style={{ ...styles.failureMessage, margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted }}>
-                    Your order was handed over successfully. Let us know if you need anything else!
-                  </p>
-                </div>
-              </>
             ) : (
-              /* ACTIVE / EN ROUTE STATE */
+              /* STANDARD & DELIVERED STATES: Rider always stays first (on top) */
               <>
                 <div className="interactive-card">
                   <h3 style={styles.sectionTitle}>Delivery Partner</h3>
@@ -455,11 +442,9 @@ const styles = {
   orderId: { margin: 0, fontSize: "0.9rem", fontWeight: "700", color: THEME.colors.textDark, letterSpacing: "0.02em" },
   summarySummary: { display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: THEME.colors.textMuted, marginTop: "0.5rem" },
   
-  // Failure Block Styling
   failedStatusIndicatorFull: { display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: "0.6rem", padding: "0.75rem", backgroundColor: "rgba(186, 60, 60, 0.08)", color: THEME.colors.error, border: `1px solid rgba(186, 60, 60, 0.15)`, borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", boxSizing: "border-box" },
   failedStatusDot: { width: "8px", height: "8px", borderRadius: "50%", backgroundColor: THEME.colors.error },
 
-  // Success Block Styling (Added matching layout style here)
   successStatusIndicatorFull: { display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: "0.6rem", padding: "0.75rem", backgroundColor: "rgba(74, 122, 91, 0.08)", color: THEME.colors.success, border: `1px solid rgba(74, 122, 91, 0.15)`, borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", boxSizing: "border-box" },
   successStatusDot: { width: "8px", height: "8px", borderRadius: "50%", backgroundColor: THEME.colors.success },
 
