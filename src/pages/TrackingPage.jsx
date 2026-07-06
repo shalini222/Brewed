@@ -114,13 +114,16 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           background: none;
           border: none;
           cursor: pointer;
-          font-size: 0.9rem;
-          margin-left: 0.5rem;
-          padding: 0.2rem;
+          margin-left: 0.75rem; /* Increased spacing */
+          padding: 0.25rem;
           display: inline-flex;
           align-items: center;
+          justify-content: center;
+          color: ${THEME.colors.textMuted};
+          transition: transform 0.1s, color 0.2s;
+        }
+        .copy-btn:hover {
           color: ${THEME.colors.primary};
-          transition: transform 0.1s;
         }
         .copy-btn:active {
           transform: scale(0.9);
@@ -135,11 +138,16 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           font-weight: 600;
           font-size: 0.85rem;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
           text-align: center;
         }
+        .tip-pill:hover {
+          transform: translateY(-2px);
+          border-color: ${THEME.colors.primary};
+          background-color: ${THEME.colors.accentLight};
+        }
         .tip-pill.active {
-          background-color: ${THEME.colors.headerBg};
+          background-color: ${THEME.colors.headerBg} !important;
           border-color: ${THEME.colors.headerBg};
           color: #FFF;
         }
@@ -212,11 +220,10 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                 <div style={styles.avatar}>🛵</div>
                 <div style={{ flex: 1 }}>
                   <strong style={{ fontSize: "0.95rem" }}>Rahul Kumar</strong>
-                  <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>Brewed Delivery Fleet</p>
+                  <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>Brewed Delivery Partner</p>
                 </div>
               </div>
 
-              {/* Side-by-Side Call & Text actions */}
               <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem" }}>
                 <a href="tel:#" className="btn-action" style={styles.commsBtn}>📞 Call</a>
                 <a href="sms:#" className="btn-action" style={styles.commsBtn}>💬 Text</a>
@@ -248,8 +255,19 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               <h3 style={styles.sectionTitle}>Order Information</h3>
               <div style={{ display: "flex", alignItems: "center", marginBottom: "0.5rem" }}>
                 <p style={styles.orderId}>ID: {displayId}</p>
+                
+                {/* SVG-Based Premium Copy Button Action */}
                 <button onClick={handleCopy} className="copy-btn" title="Copy Order ID">
-                  {copied ? "✓" : "📋"}
+                  {copied ? (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: THEME.colors.success }}>
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  ) : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  )}
                 </button>
               </div>
               
@@ -259,14 +277,15 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                 <span>Payment Mode:</span>
                 <span style={{ fontWeight: "600" }}>{orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online"}</span>
               </div>
+              
               <div style={styles.summarySummary}>
-                <span>Amount Paid:</span>
+                <span>{orderSnapshot?.method === "cod" ? "Amount Due:" : "Amount Paid:"}</span>
                 <span style={{ fontWeight: "600" }}>₹{(orderSnapshot?.calculations?.grandTotal || 0) + (selectedTip || 0)}</span>
               </div>
 
               {currentStep === 4 && (
                 <button className="btn-action" style={styles.completeBtn} onClick={() => setPage("menu")}>
-                  Order Delivered ✓
+                  Order Delivered
                 </button>
               )}
             </div>
