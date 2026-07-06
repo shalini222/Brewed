@@ -80,10 +80,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     setPage("menu");
   };
 
-  const handleContactSupport = () => {
-    alert("Connecting you with support...");
-  };
-
   const handleTryAgain = () => {
     alert("Applying 10% discount and redirecting to checkout...");
     setPage("menu");
@@ -131,26 +127,38 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
 
           <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             
-            {/* If delivered, show the full width delivered status button here */}
-            {isDelivered && (
-              <div style={styles.successStatusIndicatorFull}>
-                <span style={styles.successStatusDot} />
-                Delivered Successfully
-              </div>
-            )}
-
-            <button className="btn-action" style={styles.reorderSecondaryBtn} onClick={handleReorder}>
-              <span className="reorder-btn-inner">
-                {isDelivered ? "Order from Us Again" : "Order Something Else"}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-                </svg>
-              </span>
-            </button>
+            {/* Horizontal Split Layout for Actions */}
+            <div style={styles.actionSplitRow}>
+              {isDelivered ? (
+                <>
+                  <div style={styles.successStatusIndicatorHalf}>
+                    <span style={styles.successStatusDot} />
+                    Delivered
+                  </div>
+                  <button className="btn-action" style={styles.reorderHalfBtn} onClick={handleReorder}>
+                    <span className="reorder-btn-inner">
+                      Reorder
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                      </svg>
+                    </span>
+                  </button>
+                </>
+              ) : (
+                <button className="btn-action" style={styles.reorderFullBtn} onClick={handleReorder}>
+                  <span className="reorder-btn-inner">
+                    Order Something Else
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                    </svg>
+                  </span>
+                </button>
+              )}
+            </div>
 
             <button className="receipt-link" onClick={handleDownloadReceipt}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
@@ -176,7 +184,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           opacity: 0;
         }
         @keyframes pulseExpand {
-          0 { transform: scale(0.6); opacity: 0.8; }
+          0% { transform: scale(0.6); opacity: 0.8; }
           100% { transform: scale(1.4); opacity: 0; }
         }
         .layout-grid { 
@@ -300,7 +308,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               {/* Progress Line Tracker */}
               <div style={styles.timeline}>
                 {STEPS.map((step, index) => {
-                  // Hide step 5 (Failed) completely if the order has been delivered successfully
                   if (step.id === 5 && isDelivered) return null;
 
                   const isCompleted = currentStep > step.id;
@@ -351,7 +358,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             
             {/* CONDITIONAL ROUTING LAYER */}
             {isFailed ? (
-              /* FAILED STATE: Order information remains on top */
               <>
                 <OrderInformationCard />
                 <div className="interactive-card">
@@ -361,14 +367,13 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                     <button className="btn-action" style={styles.tryAgainBtn} onClick={handleTryAgain}>
                       Try Again: 10% Off
                     </button>
-                    <button className="btn-action" style={styles.supportBtn} onClick={handleContactSupport}>
+                    <button className="btn-action" style={styles.supportBtn} onClick={() => alert("Connecting you with support...")}>
                       Contact Support
                     </button>
                   </div>
                 </div>
               </>
             ) : (
-              /* STANDARD & DELIVERED STATES: Rider always stays first (on top) */
               <>
                 <div className="interactive-card">
                   <h3 style={styles.sectionTitle}>Delivery Partner</h3>
@@ -442,16 +447,19 @@ const styles = {
   orderId: { margin: 0, fontSize: "0.9rem", fontWeight: "700", color: THEME.colors.textDark, letterSpacing: "0.02em" },
   summarySummary: { display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: THEME.colors.textMuted, marginTop: "0.5rem" },
   
+  actionSplitRow: { display: "flex", width: "100%", gap: "0.5rem", alignItems: "center" },
+  
   failedStatusIndicatorFull: { display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: "0.6rem", padding: "0.75rem", backgroundColor: "rgba(186, 60, 60, 0.08)", color: THEME.colors.error, border: `1px solid rgba(186, 60, 60, 0.15)`, borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", boxSizing: "border-box" },
   failedStatusDot: { width: "8px", height: "8px", borderRadius: "50%", backgroundColor: THEME.colors.error },
 
-  successStatusIndicatorFull: { display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: "0.6rem", padding: "0.75rem", backgroundColor: "rgba(74, 122, 91, 0.08)", color: THEME.colors.success, border: `1px solid rgba(74, 122, 91, 0.15)`, borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", boxSizing: "border-box" },
-  successStatusDot: { width: "8px", height: "8px", borderRadius: "50%", backgroundColor: THEME.colors.success },
+  successStatusIndicatorHalf: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem 0.5rem", backgroundColor: "rgba(74, 122, 91, 0.08)", color: THEME.colors.success, border: `1px solid rgba(74, 122, 91, 0.15)`, borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", boxSizing: "border-box" },
+  successStatusDot: { width: "7px", height: "7px", borderRadius: "50%", backgroundColor: THEME.colors.success },
 
   failureMessage: { margin: "0 0 1.25rem 0", fontSize: "0.95rem", color: THEME.colors.textDark, lineHeight: "1.5" },
   
   tryAgainBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textAlign: "center" },
   supportBtn: { width: "100%", padding: "0.8rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "center" },
   
-  reorderSecondaryBtn: { width: "100%", padding: "0.75rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" }
+  reorderFullBtn: { width: "100%", padding: "0.75rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" },
+  reorderHalfBtn: { flex: 1, padding: "0.75rem 0.5rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" }
 };
