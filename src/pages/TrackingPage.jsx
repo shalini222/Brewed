@@ -206,7 +206,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             <div className="interactive-card">
               <div style={styles.etaHeader}>
                 <div>
-                  <p style={styles.etaLabel}>Status Updates</p>
+                  <p style={styles.etaLabel}>Status Update</p>
                   <h2 style={{...styles.etaTime, color: isFailed ? THEME.colors.error : THEME.colors.textDark }}>
                     {isFailed ? "Delivery Failed" : `${estimatedTime} mins`}
                   </h2>
@@ -269,7 +269,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             {/* Box A: Upper Column - Delivery Failed Context */}
             {isFailed && (
               <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
-                <h3 style={{ ...styles.sectionTitle, marginBottom: "0.5rem" }}>Order Details</h3>
+                <h3 style={{ ...styles.sectionTitle, marginBottom: "0.5rem" }}>Order Information</h3>
                 <div style={{ display: "flex", alignItems: "center", marginBottom: "1rem" }}>
                   <p style={styles.orderId}>ID: {displayId}</p>
                   
@@ -286,7 +286,12 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                     )}
                   </button>
                 </div>
-                <div style={styles.failedBadgeFull}>Delivery Failed</div>
+                
+                {/* Redesigned to be a pure indicator/badge layout rather than button style layout */}
+                <div style={styles.failedStatusIndicator}>
+                  <span style={styles.failedStatusDot} />
+                  Delivery Failed
+                </div>
               </div>
             )}
 
@@ -294,7 +299,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             <div className="interactive-card">
               {isFailed ? (
                 <>
-                  <h3 style={styles.apologyHeading}>We are sorry</h3>
+                  <h3 style={styles.apologyHeading}>We Are Sorry</h3>
                   <p style={styles.failureMessage}>Your order ran into an issue. We're on it.</p>
                   
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.25rem" }}>
@@ -425,7 +430,6 @@ const styles = {
   stepDesc: { margin: "0.2rem 0 0 0", fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.4" },
   sectionTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.15rem", margin: "0 0 1rem 0", color: THEME.colors.textDark, fontWeight: "normal" },
   
-  // Larger and bolder "We are sorry" style
   apologyHeading: { fontFamily: THEME.fonts.serif, fontSize: "1.45rem", margin: "0 0 0.8rem 0", color: THEME.colors.textDark, fontWeight: "700" },
   
   riderProfile: { display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.25rem" },
@@ -434,7 +438,10 @@ const styles = {
   orderId: { margin: 0, fontSize: "0.9rem", fontWeight: "700", color: THEME.colors.textDark, letterSpacing: "0.02em" },
   summarySummary: { display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: THEME.colors.textMuted, marginTop: "0.5rem" },
   
-  failedBadgeFull: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.error, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textAlign: "center", boxSizing: "border-box", pointerEvents: "none", userSelect: "none" },
+  // Clean, non-button text status indicator badge styles
+  failedStatusIndicator: { display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 0.8rem", backgroundColor: "rgba(186, 60, 60, 0.1)", color: THEME.colors.error, border: `1px solid rgba(186, 60, 60, 0.2)`, borderRadius: "20px", fontWeight: "600", fontSize: "0.8rem" },
+  failedStatusDot: { width: "8px", height: "8px", borderRadius: "50%", backgroundColor: THEME.colors.error },
+
   failureMessage: { margin: "0 0 1.25rem 0", fontSize: "0.95rem", color: THEME.colors.textDark, lineHeight: "1.5" },
   
   tryAgainBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textAlign: "center" },
