@@ -10,7 +10,7 @@ const THEME = {
     textDark: "#1A0B05",     
     textMuted: "#70645C",    
     success: "#4A7A5B",
-    error: "#BA3C3C", // High contrast attention red for delivery failure
+    error: "#BA3C3C", 
     accentLight: "#FAF9F6"
   },
   fonts: {
@@ -60,6 +60,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   if (!orderSnapshot) return null;
 
   const isMobile = windowWidth <= 880;
+  const isFailed = currentStep === 4;
   const rawId = orderSnapshot?.id ? orderSnapshot.id.toString() : "938402";
   const displayId = rawId.startsWith("BRW-") ? rawId : `#BRW-${rawId.slice(-6)}`;
 
@@ -74,6 +75,15 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   };
 
   const handleReorder = () => {
+    setPage("menu");
+  };
+
+  const handleContactSupport = () => {
+    alert("Connecting you with support...");
+  };
+
+  const handleTryAgain = () => {
+    alert("Applying 10% discount and redirecting to checkout...");
     setPage("menu");
   };
 
@@ -203,12 +213,12 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               <div style={styles.etaHeader}>
                 <div>
                   <p style={styles.etaLabel}>Status Updates</p>
-                  <h2 style={{...styles.etaTime, color: currentStep === 4 ? THEME.colors.error : THEME.colors.textDark }}>
-                    {currentStep > 3 ? "Delivery Failed" : `${estimatedTime} mins`}
+                  <h2 style={{...styles.etaTime, color: isFailed ? THEME.colors.error : THEME.colors.textDark }}>
+                    {isFailed ? "Delivery Failed" : `${estimatedTime} mins`}
                   </h2>
                 </div>
                 <div className="pulse-container" style={{ width: 50, height: 50 }}>
-                  {currentStep < 4 && <div className="pulse-ring" />}
+                  {!isFailed && <div className="pulse-ring" />}
                   <span style={{ fontSize: "2rem", zIndex: 2 }}>
                     {STEPS[currentStep - 1]?.icon || "☕"}
                   </span>
@@ -259,97 +269,105 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             </div>
           </div>
 
-          {/* Sidebar Metadata Panel */}
+          {/* Sidebar Panel with Conditional Hierarchy Reversal */}
           <div className="side-panel">
+            
+            {/* Box A: Order Info Box (Moves up on failure) */}
+            {isFailed && (
+              <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
+                <div style={styles.failedBadgeFull}>Delivery Failed</div>
+              </div>
+            )}
+
+            {/* Box B: Delivery Partner / Issue Information Box */}
             <div className="interactive-card">
-              <h3 style={styles.sectionTitle}>Delivery Partner</h3>
-              <div style={styles.riderProfile}>
-                <div style={styles.avatar}>🛵</div>
-                <div style={{ flex: 1 }}>
-                  <strong style={{ fontSize: "0.95rem" }}>Rahul Kumar</strong>
-                  <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>Brewed Delivery Partner</p>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem" }}>
-                <a href="tel:#" className="btn-action" style={styles.commsBtn}>📞 Call</a>
-                <a href="sms:#" className="btn-action" style={styles.commsBtn}>💬 Text</a>
-              </div>
-
-              {/* Rider Tip Section */}
-              <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, paddingTop: "1rem" }}>
-                <p style={{ ...styles.etaLabel, marginBottom: "0.5rem", fontWeight: "600" }}>Thank your partner with a tip</p>
-                <div style={{ display: "flex", gap: "0.5rem" }}>
-                  {[20, 30, 50].map((amount) => (
-                    <button
-                      key={amount}
-                      onClick={() => setSelectedTip(selectedTip === amount ? null : amount)}
-                      className={`tip-pill ${selectedTip === amount ? "active" : ""}`}
-                    >
-                      ₹{amount}
+              {isFailed ? (
+                <>
+                  <h3 style={styles.sectionTitle}>Order Update</h3>
+                  <p style={styles.failureMessage}>Your order ran into an issue. We're on it.</p>
+                  
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.25rem" }}>
+                    <button className="btn-action" style={styles.tryAgainBtn} onClick={handleTryAgain}>
+                      Try Again: 10% Off
                     </button>
-                  ))}
-                </div>
-                {selectedTip && (
-                  <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: THEME.colors.success, fontWeight: "500" }}>
-                    ₹{selectedTip} will be added to your delivery partner's profile!
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
-              <h3 style={styles.sectionTitle}>Order Information</h3>
-              <div style={{ display: "flex", alignItems: "center", marginBottom: "0.5rem" }}>
-                <p style={styles.orderId}>ID: {displayId}</p>
-                
-                <button onClick={handleCopy} className="copy-btn" title="Copy Order ID">
-                  {copied ? (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: THEME.colors.success }}>
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                  ) : (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                  )}
-                </button>
-              </div>
-              
-              <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
-              
-              <div style={styles.summarySummary}>
-                <span>Payment Mode:</span>
-                <span style={{ fontWeight: "600" }}>{orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online"}</span>
-              </div>
-              
-              <div style={styles.summarySummary}>
-                <span>Amount Paid:</span>
-                <span style={{ fontWeight: "600" }}>₹{(orderSnapshot?.calculations?.grandTotal || 0) + (selectedTip || 0)}</span>
-              </div>
-
-              {/* Action Stack Block */}
-              <div style={{ marginTop: "1.25rem" }}>
-                {currentStep === 4 && (
-                  <div className="action-row-split">
-                    {/* Unclickable state indicator in a prominent red tone */}
-                    <div style={styles.failedBadge}>
-                      Delivery Failed
-                    </div>
-                    
-                    <button className="btn-action" style={styles.completeBtnSide} onClick={handleReorder}>
-                      <span className="reorder-btn-inner">
-                        Reorder
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-                        </svg>
-                      </span>
+                    <button className="btn-action" style={styles.supportBtn} onClick={handleContactSupport}>
+                      Contact Support
                     </button>
                   </div>
-                )}
+                </>
+              ) : (
+                <>
+                  <h3 style={styles.sectionTitle}>Delivery Partner</h3>
+                  <div style={styles.riderProfile}>
+                    <div style={styles.avatar}>🛵</div>
+                    <div style={{ flex: 1 }}>
+                      <strong style={{ fontSize: "0.95rem" }}>Rahul Kumar</strong>
+                      <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>Brewed Delivery Partner</p>
+                    </div>
+                  </div>
 
-                {currentStep < 4 && (
+                  <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem" }}>
+                    <a href="tel:#" className="btn-action" style={styles.commsBtn}>📞 Call</a>
+                    <a href="sms:#" className="btn-action" style={styles.commsBtn}>💬 Text</a>
+                  </div>
+
+                  <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, paddingTop: "1rem" }}>
+                    <p style={{ ...styles.etaLabel, marginBottom: "0.5rem", fontWeight: "600" }}>Thank your partner with a tip</p>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      {[20, 30, 50].map((amount) => (
+                        <button
+                          key={amount}
+                          onClick={() => setSelectedTip(selectedTip === amount ? null : amount)}
+                          className={`tip-pill ${selectedTip === amount ? "active" : ""}`}
+                        >
+                          ₹{amount}
+                        </button>
+                      ))}
+                    </div>
+                    {selectedTip && (
+                      <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: THEME.colors.success, fontWeight: "500" }}>
+                        ₹{selectedTip} will be added to your delivery partner's profile!
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Box A Alternative: Standard Order Info Box (Shown at bottom if active) */}
+            {!isFailed && (
+              <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
+                <h3 style={styles.sectionTitle}>Order Information</h3>
+                <div style={{ display: "flex", alignItems: "center", marginBottom: "0.5rem" }}>
+                  <p style={styles.orderId}>ID: {displayId}</p>
+                  
+                  <button onClick={handleCopy} className="copy-btn" title="Copy Order ID">
+                    {copied ? (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: THEME.colors.success }}>
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    ) : (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                
+                <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
+                
+                <div style={styles.summarySummary}>
+                  <span>Payment Mode:</span>
+                  <span style={{ fontWeight: "600" }}>{orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online"}</span>
+                </div>
+                
+                <div style={styles.summarySummary}>
+                  <span>Amount Paid:</span>
+                  <span style={{ fontWeight: "600" }}>₹{(orderSnapshot?.calculations?.grandTotal || 0) + (selectedTip || 0)}</span>
+                </div>
+
+                <div style={{ marginTop: "1.25rem" }}>
                   <button className="btn-action" style={styles.reorderSecondaryBtn} onClick={handleReorder}>
                     <span className="reorder-btn-inner">
                       Order Something Else
@@ -358,18 +376,19 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                       </svg>
                     </span>
                   </button>
-                )}
 
-                <button className="receipt-link" onClick={handleDownloadReceipt}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                  </svg>
-                  Download Receipt
-                </button>
+                  <button className="receipt-link" onClick={handleDownloadReceipt}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download Receipt
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
+
           </div>
         </div>
       </div>
@@ -400,9 +419,12 @@ const styles = {
   orderId: { margin: 0, fontSize: "0.9rem", fontWeight: "700", color: THEME.colors.textDark, letterSpacing: "0.02em" },
   summarySummary: { display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: THEME.colors.textMuted, marginTop: "0.5rem" },
   
-  // Custom styled failure token badge
-  failedBadge: { flex: 1, padding: "0.75rem 0.5rem", backgroundColor: THEME.colors.error, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", textAlign: "center", boxSizing: "border-box", pointerEvents: "none", userSelect: "none" },
-  completeBtnSide: { flex: 1, padding: "0.75rem 0.5rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", boxSizing: "border-box" },
+  // Failure messaging context
+  failedBadgeFull: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.error, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textAlign: "center", boxSizing: "border-box", pointerEvents: "none", userSelect: "none" },
+  failureMessage: { margin: "0 0 1.25rem 0", fontSize: "0.95rem", color: THEME.colors.textDark, lineHeight: "1.5" },
   
+  // Primary alternative conversion CTA stacks
+  tryAgainBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textAlign: "center" },
+  supportBtn: { width: "100%", padding: "0.8rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "center" },
   reorderSecondaryBtn: { width: "100%", padding: "0.75rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" }
 };
