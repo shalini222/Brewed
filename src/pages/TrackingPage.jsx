@@ -1,6 +1,7 @@
-  import React, { useState, useEffect } from "react";
+     import React, { useState, useEffect } from "react";
 import { jsPDF } from "jspdf"; 
 import { useCart } from "../context/CartContext"; 
+import DeliveryMap from "../components/DeliveryMap"; // Added Map Component Import
 
 const THEME = {
   colors: {
@@ -88,7 +89,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         return nextStep;
       });
     }, 15000);
-
     return () => clearInterval(interval);
   }, [currentStep, orderSnapshot]);
 
@@ -102,26 +102,24 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
 
   // HELPER FUNCTION TO EXTRACT CALCULATIONS RELIABLY
   const getCalculatedFees = () => {
-  const subtotal = orderSnapshot?.calculations?.subtotal ?? orderSnapshot?.subtotal ?? 0;
-  const calculatedTax = orderSnapshot?.calculations?.tax ?? orderSnapshot?.tax ?? 0; 
-  const discount = orderSnapshot?.calculations?.discount ?? orderSnapshot?.discount ?? 0;
+    const subtotal = orderSnapshot?.calculations?.subtotal ?? orderSnapshot?.subtotal ?? 0;
+    const calculatedTax = orderSnapshot?.calculations?.tax ?? orderSnapshot?.tax ?? 0; 
+    const discount = orderSnapshot?.calculations?.discount ?? orderSnapshot?.discount ?? 0;
 
-  // Added orderSnapshot?.calculations?.delivery and .cod to match your checkout memo!
-  const deliveryFee = orderSnapshot?.calculations?.deliveryFee ?? 
-                      orderSnapshot?.calculations?.delivery ?? 
-                      orderSnapshot?.deliveryFee ?? 
-                      orderSnapshot?.delivery ?? 0;
+    const deliveryFee = orderSnapshot?.calculations?.deliveryFee ?? 
+                        orderSnapshot?.calculations?.delivery ?? 
+                        orderSnapshot?.deliveryFee ?? 
+                        orderSnapshot?.delivery ?? 0;
 
-  const codSurcharge = orderSnapshot?.calculations?.codSurcharge ?? 
-                       orderSnapshot?.calculations?.cod ??            // <--- Added this line
-                       orderSnapshot?.calculations?.codCharge ?? 
-                       orderSnapshot?.codSurcharge ?? 
-                       orderSnapshot?.cod ??                   // <--- Added this line
-                       orderSnapshot?.codCharge ?? 0;
+    const codSurcharge = orderSnapshot?.calculations?.codSurcharge ?? 
+                         orderSnapshot?.calculations?.cod ??            
+                         orderSnapshot?.calculations?.codCharge ?? 
+                         orderSnapshot?.codSurcharge ?? 
+                         orderSnapshot?.cod ??                   
+                         orderSnapshot?.codCharge ?? 0;
 
-  return { subtotal, calculatedTax, deliveryFee, codSurcharge, discount };
-};
-
+    return { subtotal, calculatedTax, deliveryFee, codSurcharge, discount };
+  };
 
   // PREMIUM AUTOMATED PDF RECEIPT GENERATION
   const handleDownloadReceipt = () => {
@@ -825,6 +823,10 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               <>
                 <div className="interactive-card">
                   <h3 style={styles.sectionTitle}>Delivery Partner</h3>
+                  
+                  {/* Mounted DeliveryMap here dynamically tracking currentStep state */}
+                  <DeliveryMap currentStep={currentStep} />
+
                   <div style={styles.riderProfile}>
                     <div style={styles.avatar}>🛵</div>
                     <div style={{ flex: 1 }}>
@@ -915,3 +917,4 @@ const styles = {
   modalCancelActionBtn: { flex: 1, padding: "0.75rem", backgroundColor: "transparent", border: `1px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", color: THEME.colors.textDark, cursor: "pointer" },
   modalSubmitActionBtn: { flex: 2, padding: "0.75rem", backgroundColor: THEME.colors.headerBg, border: "none", borderRadius: "8px", fontWeight: "600", color: "#FFF" }
 };
+                        
