@@ -1,4 +1,5 @@
-  import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useCart } from "../context/CartContext"; 
 
 const THEME = {
   colors: {
@@ -43,7 +44,9 @@ const CURATED_RECOMMENDATIONS = [
   { id: "p5", name: "Classic French Macarons", price: 180, icon: "🍬", desc: "An elegant trio of salted caramel, vanilla, and pistachio shells." }
 ];
 
-export default function TrackingPage({ setPage, orderSnapshot, setSideOrderItem }) {
+export default function TrackingPage({ setPage, orderSnapshot }) {
+  const { addToCart } = useCart();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [estimatedTime, setEstimatedTime] = useState(25);
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1100);
@@ -113,9 +116,19 @@ export default function TrackingPage({ setPage, orderSnapshot, setSideOrderItem 
   };
 
   const handleProceedToCartWithItem = (item) => {
-    if (typeof setSideOrderItem === "function") {
-      setSideOrderItem(item); 
-    }
+    addToCart({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      qty: 1, 
+      size: "Regular",
+      milk: "None",
+      temperature: "Ambient",
+      toppings: [],
+      iceLevel: "None",
+      sweetness: 0,
+      instructions: "Side item pairing"
+    });
     setPage("cart"); 
   };
 
@@ -367,7 +380,7 @@ export default function TrackingPage({ setPage, orderSnapshot, setSideOrderItem 
           transform: scale(1.15);
         }
         
-        /* INVERTED TRIANGLE CARDS PATTERN SETUP */
+        /* INVERTED TRIANGLE CARDS DESIGN */
         .pairing-modal-container {
           display: flex;
           flex-direction: column;
@@ -594,7 +607,7 @@ export default function TrackingPage({ setPage, orderSnapshot, setSideOrderItem 
         </div>
       )}
 
-      {/* MAIN TRACKING PAGE LAYOUT CONTAINER */}
+      {/* CORE LAYOUT */}
       <div style={{ maxWidth: "940px", margin: "0 auto" }}>
         <button style={styles.backLink} onClick={() => setPage("menu")}>← Return to Menu</button>
         <h1 style={styles.heading}>Track Your Order</h1>
@@ -772,7 +785,6 @@ const styles = {
   cancelDisabledBtn: { width: "100%", padding: "0.65rem", backgroundColor: "#F0ECE6", color: "#A89F95", border: "1px solid #E0D9D0", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center", cursor: "not-allowed" },
   cancelWarningTextMuted: { margin: 0, fontSize: "0.78rem", color: THEME.colors.textMuted, fontWeight: "500", textAlign: "center", lineHeight: "1.3" },
 
-  // BASIC OVERLAY WRAPPERS
   modalOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "2rem" },
   modalContent: { backgroundColor: "#FFFFFF", borderRadius: "16px", padding: "2rem", maxWidth: "380px", width: "100%", boxSizing: "border-box", textAlign: "center", position: "relative", boxShadow: "0 10px 40px rgba(0,0,0,0.12)" },
   modalCloseBtn: { position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", fontSize: "1.1rem", color: THEME.colors.textMuted, cursor: "pointer" },
