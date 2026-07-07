@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+  import React, { useState, useEffect } from "react";
 
 const THEME = {
   colors: {
@@ -112,7 +112,6 @@ export default function TrackingPage({ setPage, orderSnapshot, setSideOrderItem 
     }
   };
 
-  // Triggers checkout redirect logic
   const handleProceedToCartWithItem = (item) => {
     if (typeof setSideOrderItem === "function") {
       setSideOrderItem(item); 
@@ -368,18 +367,33 @@ export default function TrackingPage({ setPage, orderSnapshot, setSideOrderItem 
           transform: scale(1.15);
         }
         
-        /* PURE FLOATING GRID OVERLAY OVER DARKENED BG */
+        /* INVERTED TRIANGLE CARDS PATTERN SETUP */
         .pairing-modal-container {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+          display: flex;
+          flex-direction: column;
           gap: 1.5rem;
-          max-width: 960px;
+          max-width: 980px;
           width: 100%;
           max-height: 85vh;
           overflow-y: auto;
           padding: 1.5rem;
           box-sizing: border-box;
           position: relative;
+        }
+        .pairing-row-top {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1.5rem;
+          width: 100%;
+        }
+        .pairing-row-bottom {
+          display: flex;
+          justify-content: center;
+          gap: 1.5rem;
+          width: 100%;
+        }
+        .pairing-row-bottom .pairing-card-naked {
+          width: calc(33.333% - 1rem);
         }
         .pairing-card-naked {
           background: #FFFFFF;
@@ -427,36 +441,78 @@ export default function TrackingPage({ setPage, orderSnapshot, setSideOrderItem 
           box-shadow: 0 4px 12px rgba(0,0,0,0.15);
           z-index: 110;
         }
+
+        @media (max-width: 900px) {
+          .pairing-row-top {
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          }
+          .pairing-row-bottom {
+            flex-wrap: wrap;
+          }
+          .pairing-row-bottom .pairing-card-naked {
+            width: 100%;
+            max-width: 340px;
+          }
+        }
       `}</style>
 
-      {/* FLOATING CARDS SYSTEM OVER DARK BACKDROP */}
+      {/* PAIR FRESH SIDES - INVERTED TRIANGLE OVERLAY */}
       {showPairMenuOverlay && (
         <div style={styles.modalOverlay}>
           <button className="close-floating-btn" onClick={() => setShowPairMenuOverlay(false)}>✕</button>
           
           <div className="pairing-modal-container">
-            {CURATED_RECOMMENDATIONS.map((item) => (
-              <div key={item.id} className="pairing-card-naked">
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "1.25rem" }}>
-                    <span style={{ fontSize: "2.8rem", lineHeight: 1 }}>{item.icon}</span>
-                    <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.2rem" }}>
-                      ₹{item.price}
-                    </span>
+            {/* Top Row: Row of 3 Items */}
+            <div className="pairing-row-top">
+              {CURATED_RECOMMENDATIONS.slice(0, 3).map((item) => (
+                <div key={item.id} className="pairing-card-naked">
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "1.25rem" }}>
+                      <span style={{ fontSize: "2.8rem", lineHeight: 1 }}>{item.icon}</span>
+                      <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.2rem" }}>
+                        ₹{item.price}
+                      </span>
+                    </div>
+                    <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>
+                      {item.name}
+                    </h3>
+                    <p style={{ margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>
+                      {item.desc}
+                    </p>
                   </div>
-                  <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>
-                    {item.name}
-                  </h3>
-                  <p style={{ margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>
-                    {item.desc}
-                  </p>
+                  
+                  <button className="pairing-btn-naked" onClick={() => handleProceedToCartWithItem(item)}>
+                    Add & Proceed to Checkout
+                  </button>
                 </div>
-                
-                <button className="pairing-btn-naked" onClick={() => handleProceedToCartWithItem(item)}>
-                  Add & Proceed to Checkout
-                </button>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            {/* Bottom Row: Row of 2 Items Centered */}
+            <div className="pairing-row-bottom">
+              {CURATED_RECOMMENDATIONS.slice(3, 5).map((item) => (
+                <div key={item.id} className="pairing-card-naked">
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "1.25rem" }}>
+                      <span style={{ fontSize: "2.8rem", lineHeight: 1 }}>{item.icon}</span>
+                      <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.2rem" }}>
+                        ₹{item.price}
+                      </span>
+                    </div>
+                    <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>
+                      {item.name}
+                    </h3>
+                    <p style={{ margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>
+                      {item.desc}
+                    </p>
+                  </div>
+                  
+                  <button className="pairing-btn-naked" onClick={() => handleProceedToCartWithItem(item)}>
+                    Add & Proceed to Checkout
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -538,7 +594,7 @@ export default function TrackingPage({ setPage, orderSnapshot, setSideOrderItem 
         </div>
       )}
 
-      {/* MAIN TRACKING PAGE LAYOUT */}
+      {/* MAIN TRACKING PAGE LAYOUT CONTAINER */}
       <div style={{ maxWidth: "940px", margin: "0 auto" }}>
         <button style={styles.backLink} onClick={() => setPage("menu")}>← Return to Menu</button>
         <h1 style={styles.heading}>Track Your Order</h1>
@@ -716,8 +772,8 @@ const styles = {
   cancelDisabledBtn: { width: "100%", padding: "0.65rem", backgroundColor: "#F0ECE6", color: "#A89F95", border: "1px solid #E0D9D0", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center", cursor: "not-allowed" },
   cancelWarningTextMuted: { margin: 0, fontSize: "0.78rem", color: THEME.colors.textMuted, fontWeight: "500", textAlign: "center", lineHeight: "1.3" },
 
-  // DARKENED BACKGROUND LAYER SPECIFICS
-  modalOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "2rem" },
+  // BASIC OVERLAY WRAPPERS
+  modalOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "2rem" },
   modalContent: { backgroundColor: "#FFFFFF", borderRadius: "16px", padding: "2rem", maxWidth: "380px", width: "100%", boxSizing: "border-box", textAlign: "center", position: "relative", boxShadow: "0 10px 40px rgba(0,0,0,0.12)" },
   modalCloseBtn: { position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", fontSize: "1.1rem", color: THEME.colors.textMuted, cursor: "pointer" },
   modalTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.45rem", margin: "0 0 0.25rem 0", color: THEME.colors.textDark },
