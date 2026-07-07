@@ -102,23 +102,26 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
 
   // HELPER FUNCTION TO EXTRACT CALCULATIONS RELIABLY
   const getCalculatedFees = () => {
-    const subtotal = orderSnapshot?.calculations?.subtotal ?? orderSnapshot?.subtotal ?? 0;
-    const calculatedTax = orderSnapshot?.calculations?.tax ?? orderSnapshot?.tax ?? 0; 
-    const discount = orderSnapshot?.calculations?.discount ?? orderSnapshot?.discount ?? 0;
+  const subtotal = orderSnapshot?.calculations?.subtotal ?? orderSnapshot?.subtotal ?? 0;
+  const calculatedTax = orderSnapshot?.calculations?.tax ?? orderSnapshot?.tax ?? 0; 
+  const discount = orderSnapshot?.calculations?.discount ?? orderSnapshot?.discount ?? 0;
 
-    // Fortified Fallbacks for Delivery Fees and COD Surcharges
-    const deliveryFee = orderSnapshot?.calculations?.deliveryFee ?? 
-                        orderSnapshot?.calculations?.delivery ?? 
-                        orderSnapshot?.deliveryFee ?? 
-                        orderSnapshot?.delivery ?? 0;
+  // Added orderSnapshot?.calculations?.delivery and .cod to match your checkout memo!
+  const deliveryFee = orderSnapshot?.calculations?.deliveryFee ?? 
+                      orderSnapshot?.calculations?.delivery ?? 
+                      orderSnapshot?.deliveryFee ?? 
+                      orderSnapshot?.delivery ?? 0;
 
-    const codSurcharge = orderSnapshot?.calculations?.codSurcharge ?? 
-                         orderSnapshot?.calculations?.codCharge ?? 
-                         orderSnapshot?.codSurcharge ?? 
-                         orderSnapshot?.codCharge ?? 0;
+  const codSurcharge = orderSnapshot?.calculations?.codSurcharge ?? 
+                       orderSnapshot?.calculations?.cod ??            // <--- Added this line
+                       orderSnapshot?.calculations?.codCharge ?? 
+                       orderSnapshot?.codSurcharge ?? 
+                       orderSnapshot?.cod ??                   // <--- Added this line
+                       orderSnapshot?.codCharge ?? 0;
 
-    return { subtotal, calculatedTax, deliveryFee, codSurcharge, discount };
-  };
+  return { subtotal, calculatedTax, deliveryFee, codSurcharge, discount };
+};
+
 
   // PREMIUM AUTOMATED PDF RECEIPT GENERATION
   const handleDownloadReceipt = () => {
