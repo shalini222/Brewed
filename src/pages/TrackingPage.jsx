@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+  import React, { useState, useEffect } from "react";
 import { jsPDF } from "jspdf"; 
 import { useCart } from "../context/CartContext"; 
 
@@ -100,6 +100,26 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const rawId = orderSnapshot?.id ? orderSnapshot.id.toString() : "938402";
   const displayId = rawId.startsWith("BRW-") ? rawId : `#BRW-${rawId.slice(-6)}`;
 
+  // HELPER FUNCTION TO EXTRACT CALCULATIONS RELIABLY
+  const getCalculatedFees = () => {
+    const subtotal = orderSnapshot?.calculations?.subtotal ?? orderSnapshot?.subtotal ?? 0;
+    const calculatedTax = orderSnapshot?.calculations?.tax ?? orderSnapshot?.tax ?? 0; 
+    const discount = orderSnapshot?.calculations?.discount ?? orderSnapshot?.discount ?? 0;
+
+    // Fortified Fallbacks for Delivery Fees and COD Surcharges
+    const deliveryFee = orderSnapshot?.calculations?.deliveryFee ?? 
+                        orderSnapshot?.calculations?.delivery ?? 
+                        orderSnapshot?.deliveryFee ?? 
+                        orderSnapshot?.delivery ?? 0;
+
+    const codSurcharge = orderSnapshot?.calculations?.codSurcharge ?? 
+                         orderSnapshot?.calculations?.codCharge ?? 
+                         orderSnapshot?.codSurcharge ?? 
+                         orderSnapshot?.codCharge ?? 0;
+
+    return { subtotal, calculatedTax, deliveryFee, codSurcharge, discount };
+  };
+
   // PREMIUM AUTOMATED PDF RECEIPT GENERATION
   const handleDownloadReceipt = () => {
     const doc = new jsPDF({
@@ -108,14 +128,10 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
       format: "a6"
     });
 
-    const subtotal = orderSnapshot?.calculations?.subtotal || 0;
-    const calculatedTax = orderSnapshot?.calculations?.tax || 0; 
-    const deliveryFee = orderSnapshot?.calculations?.deliveryFee || 0;
-    const codSurcharge = orderSnapshot?.calculations?.codSurcharge || 0;
-    const discount = orderSnapshot?.calculations?.discount || 0;
+    const { subtotal, calculatedTax, deliveryFee, codSurcharge, discount } = getCalculatedFees();
     const driverTip = selectedTip || 0;
-
     const grandTotal = subtotal + calculatedTax + deliveryFee + codSurcharge + driverTip - discount;
+    
     const paymentMode = orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online";
     const dateString = new Date().toLocaleDateString("en-IN", {
       year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit"
@@ -155,7 +171,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     
     doc.setFont("Helvetica", "normal");
     doc.setTextColor(112, 100, 92);
-    doc.text("Payment Method:", 10, 52); // Fixed from Payment Strategy
+    doc.text("Payment Method:", 10, 52); 
     doc.setTextColor(26, 11, 5);
     doc.text(`${paymentMode}`, 95, 52, { align: "right" });
 
@@ -176,17 +192,15 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     doc.text(`INR ${subtotal}.00`, 95, currentY, { align: "right" });
     currentY += 5;
 
-    doc.text("Estimated Café GST (5%)", 10, currentY);
+    doc.text("Estimated Café GST", 10, currentY);
     doc.text(`INR ${calculatedTax}.00`, 95, currentY, { align: "right" });
     currentY += 5;
 
-    // Delivery Fee Added
     doc.text("Delivery Fee", 10, currentY);
     doc.text(`INR ${deliveryFee}.00`, 95, currentY, { align: "right" });
     currentY += 5;
 
-    // COD Surcharge Added (Conditional on payment method)
-    if (orderSnapshot?.method === "cod") {
+    if (orderSnapshot?.method === "cod" || codSurcharge > 0) {
       doc.text("COD Surcharge", 10, currentY);
       doc.text(`INR ${codSurcharge}.00`, 95, currentY, { align: "right" });
       currentY += 5;
@@ -198,7 +212,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
       currentY += 5;
     }
 
-    // Discounts Added
     if (discount > 0) {
       doc.setTextColor(186, 60, 60); 
       doc.text("Discount Applied", 10, currentY);
@@ -276,11 +289,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   };
 
   const OrderInformationCard = () => {
-    const subtotal = orderSnapshot?.calculations?.subtotal || 0;
-    const calculatedTax = orderSnapshot?.calculations?.tax || 0; 
-    const deliveryFee = orderSnapshot?.calculations?.deliveryFee || 0;
-    const codSurcharge = orderSnapshot?.method === "cod" ? (orderSnapshot?.calculations?.codSurcharge || 0) : 0;
-    const discount = orderSnapshot?.calculations?.discount || 0;
+    const { subtotal, calculatedTax, deliveryFee, codSurcharge, discount } = getCalculatedFees();
     const driverTip = selectedTip || 0;
     const grandTotal = subtotal + calculatedTax + deliveryFee + codSurcharge + driverTip - discount;
 
