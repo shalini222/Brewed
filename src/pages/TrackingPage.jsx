@@ -42,8 +42,10 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const [copied, setCopied] = useState(false);
   const [selectedTip, setSelectedTip] = useState(null);
   
-  // New Feedback State
+  // Feedback states
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState(0);
   const [selectedTags, setSelectedTags] = useState([]);
   const [typedReview, setTypedReview] = useState("");
 
@@ -106,7 +108,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   };
 
   const submitFeedback = () => {
-    alert("Thank you for your review!");
+    alert(`Thank you for your ${rating}-star review!`);
     setShowFeedbackModal(false);
   };
 
@@ -314,7 +316,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           gap: 0.5rem;
         }
         .feedback-chip {
-          padding: 0.45rem 0.75rem;
+          padding: 0.4rem 0.75rem;
           border: 1px solid ${THEME.colors.cardBorder};
           background-color: ${THEME.colors.accentLight};
           color: ${THEME.colors.textDark};
@@ -325,22 +327,63 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           transition: all 0.15s ease;
         }
         .feedback-chip.active {
-          background-color: ${THEME.colors.headerBg};
-          border-color: ${THEME.colors.headerBg};
+          background-color: ${THEME.colors.primary};
+          border-color: ${THEME.colors.primary};
           color: #FFF;
+        }
+        .star-palette-btn {
+          background: none;
+          border: none;
+          padding: 0.2rem;
+          cursor: pointer;
+          transition: transform 0.1s ease;
+        }
+        .star-palette-btn:hover {
+          transform: scale(1.15);
         }
       `}</style>
 
-      {/* RE-ARCHITECTED FEEDBACK MODAL */}
+      {/* RE-ARCHITECTED PALETTE BRANDED FEEDBACK MODAL */}
       {showFeedbackModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
             <button style={styles.modalCloseBtn} onClick={() => setShowFeedbackModal(false)}>✕</button>
             <h2 style={styles.modalTitle}>Share Your Experience</h2>
-            <p style={styles.modalText}>What went well with your order today?</p>
+            <p style={styles.modalText}>How was your experience with Brewed today?</p>
             
+            {/* The Branded Star Rating Row */}
+            <div style={{ display: "flex", gap: "0.35rem", justifyContent: "center", margin: "0.75rem 0" }}>
+              {[1, 2, 3, 4, 5].map((index) => {
+                const isSelected = index <= (hoveredRating || rating);
+                return (
+                  <button
+                    key={index}
+                    className="star-palette-btn"
+                    onMouseEnter={() => setHoveredRating(index)}
+                    onMouseLeave={() => setHoveredRating(0)}
+                    onClick={() => setRating(index)}
+                    aria-label={`Rate ${index} out of 5 stars`}
+                  >
+                    <svg width="28" height="28" viewBox="0 0 24 24" style={{ transition: "fill 0.15s, stroke 0.15s" }}>
+                      <path
+                        d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+                        fill={isSelected ? THEME.colors.primary : "transparent"}
+                        stroke={isSelected ? THEME.colors.primary : THEME.colors.cardBorder}
+                        strokeWidth="2"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                );
+              })}
+            </div>
+
+            <p style={{ ...styles.modalText, fontSize: "0.8rem", margin: "0.25rem 0 1rem" }}>
+              What went exceptionally well?
+            </p>
+
             {/* Tag Selection Row */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", justifyContent: "center", margin: "1rem 0" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", justifyContent: "center", marginBottom: "1rem" }}>
               {FEEDBACK_OPTIONS.map((tag) => (
                 <button 
                   key={tag} 
@@ -352,7 +395,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               ))}
             </div>
 
-            {/* Custom Review Input Box */}
+            {/* Custom Review Text Box */}
             <textarea 
               placeholder="Tell us more about your order (optional)..."
               value={typedReview}
@@ -366,11 +409,11 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               </button>
               <button 
                 onClick={submitFeedback} 
-                disabled={selectedTags.length === 0 && !typedReview.trim()}
+                disabled={rating === 0 && selectedTags.length === 0 && !typedReview.trim()}
                 style={{ 
                   ...styles.modalSubmitActionBtn, 
-                  opacity: (selectedTags.length === 0 && !typedReview.trim()) ? 0.5 : 1, 
-                  cursor: (selectedTags.length === 0 && !typedReview.trim()) ? "not-allowed" : "pointer" 
+                  opacity: (rating === 0 && selectedTags.length === 0 && !typedReview.trim()) ? 0.5 : 1, 
+                  cursor: (rating === 0 && selectedTags.length === 0 && !typedReview.trim()) ? "not-allowed" : "pointer" 
                 }}
               >
                 Submit
@@ -555,7 +598,6 @@ const styles = {
   cancelDisabledBtn: { width: "100%", padding: "0.65rem", backgroundColor: "#F0ECE6", color: "#A89F95", border: "1px solid #E0D9D0", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center", cursor: "not-allowed" },
   cancelWarningText: { margin: 0, fontSize: "0.75rem", color: THEME.colors.error, textAlign: "center", lineHeight: "1.3" },
 
-  // Updated Modal Styles without elements that conflict with the color scheme
   modalOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(26, 11, 5, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "1rem" },
   modalContent: { backgroundColor: "#FFFFFF", borderRadius: "16px", padding: "2rem", maxWidth: "380px", width: "100%", boxSizing: "border-box", textAlign: "center", position: "relative", boxShadow: "0 10px 40px rgba(0,0,0,0.12)" },
   modalCloseBtn: { position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", fontSize: "1.1rem", color: THEME.colors.textMuted, cursor: "pointer" },
