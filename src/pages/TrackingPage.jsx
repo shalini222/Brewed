@@ -169,14 +169,20 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                   </button>
                 </>
               ) : (
-                <button className="btn-action" style={styles.reorderFullBtn} onClick={() => setPage("menu")}>
-                  <span className="reorder-btn-inner">
-                    Order Something Else
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-                    </svg>
-                  </span>
-                </button>
+                <div style={{ width: "100%", textAlign: "center" }}>
+                  <p style={styles.curatedPromptText}>
+                    Want the perfect pairing while you wait?
+                  </p>
+                  <button className="btn-action" style={styles.reorderFullBtn} onClick={() => setPage("menu")}>
+                    <span className="reorder-btn-inner">
+                      Pair
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                    </span>
+                  </button>
+                </div>
               )}
             </div>
 
@@ -590,8 +596,9 @@ const styles = {
   failureMessage: { margin: "0 0 1.25rem 0", fontSize: "0.95rem", color: THEME.colors.textDark, lineHeight: "1.5" },
   tryAgainBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textAlign: "center" },
   supportBtn: { width: "100%", padding: "0.8rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "center" },
-  reorderFullBtn: { width: "100%", padding: "0.75rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" },
+  reorderFullBtn: { width: "100%", padding: "0.75rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em" },
   reorderHalfBtn: { flex: 1, padding: "0.75rem 0.5rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" },
+  curatedPromptText: { margin: "0 0 0.5rem 0", fontSize: "0.8rem", color: THEME.colors.textMuted, fontStyle: "italic", lineHeight: "1.4" },
   
   cancelActiveBtn: { width: "100%", padding: "0.65rem", backgroundColor: "transparent", color: THEME.colors.error, border: `1px solid ${THEME.colors.error}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center" },
   cancelDisabledWrapper: { display: "flex", flexDirection: "column", gap: "0.25rem" },
