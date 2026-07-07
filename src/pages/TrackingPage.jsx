@@ -172,7 +172,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     doc.text("CHARGES BREAKDOWN", 10, 65);
 
     doc.setFont("Helvetica", "normal");
-    doc.setTextColor(70, 64, 5C); // Muted Dark
+    doc.setTextColor(112, 100, 92); // Fixed Line 175 Error here
     doc.text("Items Subtotal", 10, 71);
     doc.text(`₹ ${subtotal}.00`, 95, 71, { align: "right" });
 
