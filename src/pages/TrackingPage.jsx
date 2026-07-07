@@ -53,6 +53,9 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const [copied, setCopied] = useState(false);
   const [selectedTip, setSelectedTip] = useState(null);
   
+  // Tracks which item is currently being added to trigger the state change
+  const [addingItemId, setAddingItemId] = useState(null);
+
   // Controls overlay for pairing menu
   const [showPairMenuOverlay, setShowPairMenuOverlay] = useState(false);
 
@@ -116,6 +119,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   };
 
   const handleProceedToCartWithItem = (item) => {
+    setAddingItemId(item.id);
     addToCart({
       id: item.id,
       name: item.name,
@@ -129,7 +133,12 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
       sweetness: 0,
       instructions: "Side item pairing"
     });
-    setPage("cart"); 
+
+    // Short delay before navigation to showcase the "Added" change
+    setTimeout(() => {
+      setPage("cart");
+      setAddingItemId(null);
+    }, 600);
   };
 
   const toggleFeedbackTag = (tag) => {
@@ -422,18 +431,15 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         .pairing-btn-naked {
           width: 100%;
           padding: 0.85rem;
-          background-color: #1A0B05;
           color: #FFFFFF;
           border: none;
           border-radius: 8px;
           font-weight: 700;
-          font-size: 0.85rem;
+          font-size: 0.95rem;
+          letter-spacing: 0.02em;
           margin-top: 1.5rem;
           cursor: pointer;
           transition: background-color 0.2s;
-        }
-        .pairing-btn-naked:hover {
-          background-color: #2E150B;
         }
         .close-floating-btn {
           position: fixed;
@@ -477,54 +483,70 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           <div className="pairing-modal-container">
             {/* Top Row: Row of 3 Items */}
             <div className="pairing-row-top">
-              {CURATED_RECOMMENDATIONS.slice(0, 3).map((item) => (
-                <div key={item.id} className="pairing-card-naked">
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "1.25rem" }}>
-                      <span style={{ fontSize: "2.8rem", lineHeight: 1 }}>{item.icon}</span>
-                      <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.2rem" }}>
-                        ₹{item.price}
-                      </span>
+              {CURATED_RECOMMENDATIONS.slice(0, 3).map((item) => {
+                const isAdding = addingItemId === item.id;
+                return (
+                  <div key={item.id} className="pairing-card-naked">
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "1.25rem" }}>
+                        <span style={{ fontSize: "2.8rem", lineHeight: 1 }}>{item.icon}</span>
+                        <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.2rem" }}>
+                          ₹{item.price}
+                        </span>
+                      </div>
+                      <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>
+                        {item.name}
+                      </h3>
+                      <p style={{ margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>
+                        {item.desc}
+                      </p>
                     </div>
-                    <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>
-                      {item.name}
-                    </h3>
-                    <p style={{ margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>
-                      {item.desc}
-                    </p>
+                    
+                    <button 
+                      className="pairing-btn-naked" 
+                      style={{ backgroundColor: isAdding ? THEME.colors.success : "#1A0B05" }}
+                      onClick={() => handleProceedToCartWithItem(item)}
+                      disabled={addingItemId !== null}
+                    >
+                      {isAdding ? "Added ✓" : "Added"}
+                    </button>
                   </div>
-                  
-                  <button className="pairing-btn-naked" onClick={() => handleProceedToCartWithItem(item)}>
-                    Add & Proceed to Checkout
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Bottom Row: Row of 2 Items Centered */}
             <div className="pairing-row-bottom">
-              {CURATED_RECOMMENDATIONS.slice(3, 5).map((item) => (
-                <div key={item.id} className="pairing-card-naked">
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "1.25rem" }}>
-                      <span style={{ fontSize: "2.8rem", lineHeight: 1 }}>{item.icon}</span>
-                      <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.2rem" }}>
-                        ₹{item.price}
-                      </span>
+              {CURATED_RECOMMENDATIONS.slice(3, 5).map((item) => {
+                const isAdding = addingItemId === item.id;
+                return (
+                  <div key={item.id} className="pairing-card-naked">
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "1.25rem" }}>
+                        <span style={{ fontSize: "2.8rem", lineHeight: 1 }}>{item.icon}</span>
+                        <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.2rem" }}>
+                          ₹{item.price}
+                        </span>
+                      </div>
+                      <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>
+                        {item.name}
+                      </h3>
+                      <p style={{ margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>
+                        {item.desc}
+                      </p>
                     </div>
-                    <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>
-                      {item.name}
-                    </h3>
-                    <p style={{ margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>
-                      {item.desc}
-                    </p>
+                    
+                    <button 
+                      className="pairing-btn-naked" 
+                      style={{ backgroundColor: isAdding ? THEME.colors.success : "#1A0B05" }}
+                      onClick={() => handleProceedToCartWithItem(item)}
+                      disabled={addingItemId !== null}
+                    >
+                      {isAdding ? "Added ✓" : "Added"}
+                    </button>
                   </div>
-                  
-                  <button className="pairing-btn-naked" onClick={() => handleProceedToCartWithItem(item)}>
-                    Add & Proceed to Checkout
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
