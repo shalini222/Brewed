@@ -33,6 +33,10 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1100);
   const [copied, setCopied] = useState(false);
   const [selectedTip, setSelectedTip] = useState(null);
+  
+  // Feedback popup state
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [rating, setRating] = useState(0);
 
   useEffect(() => {
     if (!orderSnapshot) {
@@ -47,11 +51,17 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   }, []);
 
   useEffect(() => {
-    if (!orderSnapshot || currentStep >= 4) return; // Stop auto-advancing at Delivered (Step 4)
+    if (!orderSnapshot || currentStep >= 4) return;
     const interval = setInterval(() => {
       setCurrentStep((prev) => {
+        const nextStep = prev + 1;
         setEstimatedTime((time) => Math.max(0, time - 8));
-        return prev + 1;
+        
+        // Trigger the feedback popup right when status turns to Delivered (Step 4)
+        if (nextStep === 4) {
+          setShowFeedbackModal(true);
+        }
+        return nextStep;
       });
     }, 15000);
 
@@ -72,17 +82,18 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownloadReceipt = () => {
-    alert("Downloading your receipt...");
+  const handleCancelOrder = () => {
+    if (currentStep === 1) {
+      if (confirm("Are you sure you want to cancel your order?")) {
+        alert("Order canceled successfully. Refund initialized.");
+        setPage("menu");
+      }
+    }
   };
 
-  const handleReorder = () => {
-    setPage("menu");
-  };
-
-  const handleTryAgain = () => {
-    alert("Applying 10% discount and redirecting to checkout...");
-    setPage("menu");
+  const submitFeedback = () => {
+    alert(`Thank you for your ${rating}-star feedback!`);
+    setShowFeedbackModal(false);
   };
 
   // Helper component for the Order Information card layout
@@ -135,7 +146,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                     <span style={styles.successStatusDot} />
                     Delivered
                   </div>
-                  <button className="btn-action" style={styles.reorderHalfBtn} onClick={handleReorder}>
+                  <button className="btn-action" style={styles.reorderHalfBtn} onClick={() => setPage("menu")}>
                     <span className="reorder-btn-inner">
                       Reorder
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -145,7 +156,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                   </button>
                 </>
               ) : (
-                <button className="btn-action" style={styles.reorderFullBtn} onClick={handleReorder}>
+                <button className="btn-action" style={styles.reorderFullBtn} onClick={() => setPage("menu")}>
                   <span className="reorder-btn-inner">
                     Order Something Else
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -156,7 +167,25 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               )}
             </div>
 
-            <button className="receipt-link" onClick={handleDownloadReceipt}>
+            {/* Smart Cancel Order Segment */}
+            {!isDelivered && (
+              <div style={{ width: "100%" }}>
+                {currentStep === 1 ? (
+                  <button onClick={handleCancelOrder} className="btn-action" style={styles.cancelActiveBtn}>
+                    Cancel Order
+                  </button>
+                ) : (
+                  <div style={styles.cancelDisabledWrapper}>
+                    <button disabled style={styles.cancelDisabledBtn}>
+                      Cancel Order
+                    </button>
+                    <p style={styles.cancelWarningText}>Cannot cancel once brewing begins. Full amount charged.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button className="receipt-link" onClick={() => alert("Downloading your receipt...")}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
@@ -277,7 +306,54 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           justify-content: center;
           gap: 0.5rem;
         }
+        .star-rating-btn {
+          background: none;
+          border: none;
+          font-size: 1.75rem;
+          cursor: pointer;
+          transition: transform 0.1s;
+        }
+        .star-rating-btn:hover {
+          transform: scale(1.15);
+        }
       `}</style>
+
+      {/* FEEDBACK MODAL POPUP */}
+      {showFeedbackModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <button style={styles.modalCloseBtn} onClick={() => setShowFeedbackModal(false)}>✕</button>
+            <span style={{ fontSize: "2.5rem" }}>🎉</span>
+            <h2 style={styles.modalTitle}>Order Delivered!</h2>
+            <p style={styles.modalText}>How was your experience with Brewed today?</p>
+            
+            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", margin: "1rem 0" }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button 
+                  key={star} 
+                  className="star-rating-btn" 
+                  onClick={() => setRating(star)}
+                >
+                  {star <= rating ? "⭐" : "☆"}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
+              <button onClick={() => setShowFeedbackModal(false)} style={styles.modalCancelActionBtn}>
+                Close
+              </button>
+              <button 
+                onClick={submitFeedback} 
+                disabled={rating === 0}
+                style={{ ...styles.modalSubmitActionBtn, opacity: rating === 0 ? 0.5 : 1, cursor: rating === 0 ? "not-allowed" : "pointer" }}
+              >
+                Submit Feedback
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ maxWidth: "940px", margin: "0 auto" }}>
         <button style={styles.backLink} onClick={() => setPage("menu")}>← Return to Menu</button>
@@ -355,8 +431,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
 
           {/* Sidebar Panel */}
           <div className="side-panel">
-            
-            {/* CONDITIONAL ROUTING LAYER */}
             {isFailed ? (
               <>
                 <OrderInformationCard />
@@ -364,7 +438,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                   <h3 style={styles.apologyHeading}>We Are Sorry</h3>
                   <p style={styles.failureMessage}>Your order ran into an issue. We're on it.</p>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.25rem" }}>
-                    <button className="btn-action" style={styles.tryAgainBtn} onClick={handleTryAgain}>
+                    <button className="btn-action" style={styles.tryAgainBtn} onClick={() => setPage("menu")}>
                       Try Again: 10% Off
                     </button>
                     <button className="btn-action" style={styles.supportBtn} onClick={() => alert("Connecting you with support...")}>
@@ -414,7 +488,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                 <OrderInformationCard />
               </>
             )}
-
           </div>
         </div>
       </div>
@@ -438,28 +511,35 @@ const styles = {
   stepTitle: { margin: 0, fontSize: "1rem", fontFamily: THEME.fonts.sans },
   stepDesc: { margin: "0.2rem 0 0 0", fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.4" },
   sectionTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.15rem", margin: "0 0 1rem 0", color: THEME.colors.textDark, fontWeight: "normal" },
-  
   apologyHeading: { fontFamily: THEME.fonts.serif, fontSize: "1.45rem", margin: "0 0 0.8rem 0", color: THEME.colors.textDark, fontWeight: "700" },
-  
   riderProfile: { display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.25rem" },
   avatar: { width: "42px", height: "42px", borderRadius: "50%", backgroundColor: THEME.colors.accentLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", border: `1px solid ${THEME.colors.cardBorder}` },
   commsBtn: { flex: 1, display: "block", textAlign: "center", padding: "0.65rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textDecoration: "none", boxSizing: "border-box", border: "none" },
   orderId: { margin: 0, fontSize: "0.9rem", fontWeight: "700", color: THEME.colors.textDark, letterSpacing: "0.02em" },
   summarySummary: { display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: THEME.colors.textMuted, marginTop: "0.5rem" },
-  
   actionSplitRow: { display: "flex", width: "100%", gap: "0.5rem", alignItems: "center" },
-  
   failedStatusIndicatorFull: { display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: "0.6rem", padding: "0.75rem", backgroundColor: "rgba(186, 60, 60, 0.08)", color: THEME.colors.error, border: `1px solid rgba(186, 60, 60, 0.15)`, borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", boxSizing: "border-box" },
   failedStatusDot: { width: "8px", height: "8px", borderRadius: "50%", backgroundColor: THEME.colors.error },
-
   successStatusIndicatorHalf: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem 0.5rem", backgroundColor: "rgba(74, 122, 91, 0.08)", color: THEME.colors.success, border: `1px solid rgba(74, 122, 91, 0.15)`, borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", boxSizing: "border-box" },
   successStatusDot: { width: "7px", height: "7px", borderRadius: "50%", backgroundColor: THEME.colors.success },
-
   failureMessage: { margin: "0 0 1.25rem 0", fontSize: "0.95rem", color: THEME.colors.textDark, lineHeight: "1.5" },
-  
   tryAgainBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textAlign: "center" },
   supportBtn: { width: "100%", padding: "0.8rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "center" },
-  
   reorderFullBtn: { width: "100%", padding: "0.75rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" },
-  reorderHalfBtn: { flex: 1, padding: "0.75rem 0.5rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" }
+  reorderHalfBtn: { flex: 1, padding: "0.75rem 0.5rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" },
+  
+  // New Cancel Button Styles
+  cancelActiveBtn: { width: "100%", padding: "0.65rem", backgroundColor: "transparent", color: THEME.colors.error, border: `1px solid ${THEME.colors.error}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center" },
+  cancelDisabledWrapper: { display: "flex", flexDirection: "column", gap: "0.25rem" },
+  cancelDisabledBtn: { width: "100%", padding: "0.65rem", backgroundColor: "#F0ECE6", color: "#A89F95", border: "1px solid #E0D9D0", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center", cursor: "not-allowed" },
+  cancelWarningText: { margin: 0, fontSize: "0.75rem", color: THEME.colors.error, textAlign: "center", lineHeight: "1.3" },
+
+  // New Modal Styles
+  modalOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(26, 11, 5, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "1rem" },
+  modalContent: { backgroundColor: "#FFFFFF", borderRadius: "16px", padding: "2rem", maxWidth: "360px", width: "100%", boxSizing: "border-box", textAlign: "center", position: "relative", boxShadow: "0 10px 40px rgba(0,0,0,0.12)" },
+  modalCloseBtn: { position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", fontSize: "1.1rem", color: THEME.colors.textMuted, cursor: "pointer" },
+  modalTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.5rem", margin: "0.75rem 0 0.25rem 0", color: THEME.colors.textDark },
+  modalText: { margin: "0 0 1rem 0", fontSize: "0.9rem", color: THEME.colors.textMuted },
+  modalCancelActionBtn: { flex: 1, padding: "0.75rem", backgroundColor: "transparent", border: `1px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", color: THEME.colors.textDark, cursor: "pointer" },
+  modalSubmitActionBtn: { flex: 2, padding: "0.75rem", backgroundColor: THEME.colors.headerBg, border: "none", borderRadius: "8px", fontWeight: "600", color: "#FFF" }
 };
