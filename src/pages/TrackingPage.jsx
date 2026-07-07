@@ -35,22 +35,24 @@ const FEEDBACK_OPTIONS = [
   "Good Packaging"
 ];
 
-// Mock curated items for inline recommendations
-const CURATED_RECOMMENDATIONS = [
-  { id: "p1", name: "Almond Croissant", price: 140, icon: "🥐", pairReason: "Complements Bitter Roasts" },
-  { id: "p2", name: "Choco Chip Cookie", price: 90, icon: "🍪", pairReason: "Best with Espresso" },
-  { id: "p3", name: "Blueberry Muffin", price: 120, icon: "🧁", pairReason: "Sweetens Dark Brews" }
+// Expanded list of 4-5 beautifully curated menu pairings across the screen
+const CURATED_PAIRS = [
+  { id: "p1", name: "Almond Croissant", price: 140, icon: "🥐", desc: "Flaky, buttery layers filled with rich sweet almond paste." },
+  { id: "p2", name: "Choco Chip Cookie", price: 90, icon: "🍪", desc: "Warm, gooey core baked with fine dark Belgian chocolate chunks." },
+  { id: "p3", name: "Blueberry Muffin", price: 120, icon: "🧁", desc: "Bursting with fresh blueberries and topped with a sugar crumble." },
+  { id: "p4", name: "Fudgy Walnut Brownie", price: 150, icon: "🍫", desc: "Dense, intensely rich chocolate cake slice embedded with crunchy walnuts." },
+  { id: "p5", name: "Classic French Macarons", price: 180, icon: "🍬", desc: "An elegant trio of salted caramel, vanilla, and pistachio shells." }
 ];
 
 export default function TrackingPage({ setPage, orderSnapshot }) {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(2); // Set to 2 to demo the disabled/red cancel state
   const [estimatedTime, setEstimatedTime] = useState(25);
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1100);
   const [copied, setCopied] = useState(false);
   const [selectedTip, setSelectedTip] = useState(null);
   
-  // Custom curated section state
-  const [showPairMenu, setShowPairMenu] = useState(false);
+  // Full-screen micro menu overlay state
+  const [showPairOverlay, setShowPairOverlay] = useState(false);
 
   // Feedback states
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -93,7 +95,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const isMobile = windowWidth <= 880;
   const isDelivered = currentStep === 4;
   const isFailed = currentStep === 5;
-  const rawId = orderSnapshot?.id ? orderSnapshot.id.toString() : "938402";
+  const rawId = orderSnapshot?.id ? orderSnapshot.id.toString() : "288473";
   const displayId = rawId.startsWith("BRW-") ? rawId : `#BRW-${rawId.slice(-6)}`;
 
   const handleCopy = () => {
@@ -111,8 +113,9 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     }
   };
 
-  const handleAddPairItem = (itemName) => {
-    alert(`Successfully added ${itemName} as a curated recommendation side-order!`);
+  const handleSelectRecommendation = (item) => {
+    alert(`Added ${item.name} to checkout stack!`);
+    setPage("cart"); // Directly routes to the cart page as requested
   };
 
   const toggleFeedbackTag = (tag) => {
@@ -157,12 +160,12 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           
           <div style={styles.summarySummary}>
             <span>Payment Mode:</span>
-            <span style={{ fontWeight: "600" }}>{orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online"}</span>
+            <span style={{ fontWeight: "600" }}>{orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "COD (Cash/QR)"}</span>
           </div>
           
           <div style={styles.summarySummary}>
             <span>Amount Paid:</span>
-            <span style={{ fontWeight: "600" }}>₹{(orderSnapshot?.calculations?.grandTotal || 0) + (selectedTip || 0)}</span>
+            <span style={{ fontWeight: "600" }}>₹{(orderSnapshot?.calculations?.grandTotal || 405) + (selectedTip || 0)}</span>
           </div>
 
           <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -188,47 +191,22 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                     Want the perfect pairing while you wait?
                   </p>
                   
-                  {/* SOLID HIGH REVENUE CONVERSION BUTTON */}
-                  <button className="btn-action" style={styles.pairSolidBtn} onClick={() => setShowPairMenu(!showPairMenu)}>
+                  {/* SOLID ULTRA-PREMIUM CONVERSION DRIVER */}
+                  <button className="btn-action" style={styles.pairSolidBtn} onClick={() => setShowPairOverlay(true)}>
                     <span className="reorder-btn-inner" style={{ color: "#FFFFFF" }}>
-                      {showPairMenu ? "Hide Options" : "Pair"}
-                      {!showPairMenu && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="12" y1="5" x2="12" y2="19"></line>
-                          <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                      )}
+                      Pair
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
                     </span>
                   </button>
-
-                  {/* SAME-PAGE CURATED MICRO RECOMMANDATION BOX */}
-                  {showPairMenu && (
-                    <div style={styles.curatedMenuBox}>
-                      <p style={styles.curatedMenuHeader}>Chef Recommended Pairings</p>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                        {CURATED_RECOMMENDATIONS.map((item) => (
-                          <div key={item.id} style={styles.curatedItemRow}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                              <span style={{ fontSize: "1.2rem" }}>{item.icon}</span>
-                              <div style={{ textAlign: "left" }}>
-                                <div style={styles.curatedItemName}>{item.name}</div>
-                                <div style={styles.curatedItemTag}>{item.pairReason}</div>
-                              </div>
-                            </div>
-                            <button onClick={() => handleAddPairItem(item.name)} style={styles.curatedAddBtn}>
-                              + ₹{item.price}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
 
             {!isDelivered && (
-              <div style={{ width: "100%", marginTop: "0.25rem" }}>
+              <div style={{ width: "100%", marginTop: "0.15rem" }}>
                 {currentStep === 1 ? (
                   <button onClick={handleCancelOrder} className="btn-action" style={styles.cancelActiveBtn}>
                     Cancel Order
@@ -238,7 +216,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                     <button disabled style={styles.cancelDisabledBtn}>
                       Cancel Order
                     </button>
-                    {/* CRITICAL BRAND ERROR COLOR STYLING WARNING */}
+                    {/* ACCENT COLOR CRITICAL ERROR STYLING */}
                     <p style={styles.cancelWarningTextRed}>Cannot cancel once brewing begins. Full amount charged.</p>
                   </div>
                 )}
@@ -363,6 +341,32 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           justify-content: center;
           gap: 0.5rem;
         }
+        .menu-grid-overlay {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 1.5rem;
+          width: 100%;
+          max-width: 1100px;
+          padding: 0 1rem;
+          box-sizing: border-box;
+        }
+        .curated-menu-card {
+          background: #FFFFFF;
+          border: 1px solid ${THEME.colors.cardBorder};
+          border-radius: 16px;
+          padding: 1.5rem;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          text-align: left;
+          box-shadow: 0 10px 30px rgba(26, 11, 5, 0.05);
+          transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .curated-menu-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 15px 35px rgba(26, 11, 5, 0.1);
+          border-color: ${THEME.colors.primary};
+        }
         .feedback-chip {
           padding: 0.4rem 0.75rem;
           border: 1px solid ${THEME.colors.cardBorder};
@@ -390,6 +394,37 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           transform: scale(1.15);
         }
       `}</style>
+
+      {/* FULL-PAGE IMMERSIVE REVENUE INTERACTION OVERLAY */}
+      {showPairOverlay && (
+        <div style={styles.overlayContainer}>
+          <div style={styles.overlayHeader}>
+            <button style={styles.overlayBackLink} onClick={() => setShowPairOverlay(false)}>
+              ← Back to Tracking Timeline
+            </button>
+            <h2 style={styles.overlayTitle}>Perfect Fresh Pairings</h2>
+            <p style={styles.overlaySubtitle}>Handpicked by our roasting masters to elevate your current order.</p>
+          </div>
+
+          <div className="menu-grid-overlay">
+            {CURATED_PAIRS.map((item) => (
+              <div key={item.id} className="curated-menu-card">
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
+                    <span style={{ fontSize: "2.5rem" }}>{item.icon}</span>
+                    <span style={styles.menuCardPrice}>₹{item.price}</span>
+                  </div>
+                  <h4 style={styles.menuCardName}>{item.name}</h4>
+                  <p style={styles.menuCardDesc}>{item.desc}</p>
+                </div>
+                <button onClick={() => handleSelectRecommendation(item)} className="btn-action" style={styles.menuCardAddBtn}>
+                  Add & Proceed to Checkout
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* RE-ARCHITECTED PALETTE BRANDED FEEDBACK MODAL */}
       {showFeedbackModal && (
@@ -609,7 +644,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
 }
 
 const styles = {
-  page: { minHeight: "85vh", boxSizing: "border-box", fontFamily: THEME.fonts.sans, color: THEME.colors.textDark },
+  page: { minHeight: "85vh", boxSizing: "border-box", fontFamily: THEME.fonts.sans, color: THEME.colors.textDark, position: "relative" },
   backLink: { background: "none", border: "none", color: THEME.colors.textMuted, cursor: "pointer", fontSize: "0.9rem", padding: 0, marginBottom: "0.5rem" },
   heading: { fontFamily: THEME.fonts.serif, fontSize: "2.2rem", color: THEME.colors.textDark, margin: "0 0 2rem 0", fontWeight: "normal" },
   etaHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", borderBottom: `1px solid ${THEME.colors.cardBorder}`, paddingBottom: "1.25rem" },
@@ -618,7 +653,7 @@ const styles = {
   timeline: { display: "flex", flexDirection: "column" },
   stepRow: { display: "flex", gap: "1.25rem", minHeight: "75px" },
   iconColumn: { display: "flex", flexDirection: "column", alignItems: "center" },
-  dot: { width: "16px", height: "16px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContext: "center", zIndex: 2, boxSizing: "border-box" },
+  dot: { width: "16px", height: "16px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2, boxSizing: "border-box" },
   connector: { width: "2px", flex: 1, margin: "4px 0", zIndex: 1 },
   stepContent: { paddingTop: "0rem", paddingBottom: "1.25rem" },
   stepTitle: { margin: 0, fontSize: "1rem", fontFamily: THEME.fonts.sans },
@@ -646,14 +681,22 @@ const styles = {
   cancelActiveBtn: { width: "100%", padding: "0.65rem", backgroundColor: "transparent", color: THEME.colors.error, border: `1px solid ${THEME.colors.error}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center" },
   cancelDisabledWrapper: { display: "flex", flexDirection: "column", gap: "0.35rem" },
   cancelDisabledBtn: { width: "100%", padding: "0.65rem", backgroundColor: "#F0ECE6", color: "#A89F95", border: "1px solid #E0D9D0", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center", cursor: "not-allowed" },
+  
+  // FIXED WARNING LINE -> PROMINENT CRISP PALETTE RED
   cancelWarningTextRed: { margin: 0, fontSize: "0.78rem", color: THEME.colors.error, fontWeight: "600", textAlign: "center", lineHeight: "1.3" },
 
-  curatedMenuBox: { marginTop: "1rem", backgroundColor: "#FFFFFF", border: `1px solid ${THEME.colors.cardBorder}`, borderRadius: "10px", padding: "0.75rem", boxSizing: "border-box" },
-  curatedMenuHeader: { margin: "0 0 0.6rem 0", fontSize: "0.8rem", color: THEME.colors.textDark, fontWeight: "700", textAlign: "left", letterSpacing: "0.02em" },
-  curatedItemRow: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.4rem 0", borderBottom: `1px dashed ${THEME.colors.cardBorder}` },
-  curatedItemName: { fontSize: "0.82rem", fontWeight: "600", color: THEME.colors.textDark },
-  curatedItemTag: { fontSize: "0.7rem", color: THEME.colors.primary, fontWeight: "500" },
-  curatedAddBtn: { backgroundColor: THEME.colors.accentLight, border: `1px solid ${THEME.colors.cardBorder}`, borderRadius: "6px", padding: "0.25rem 0.5rem", fontSize: "0.75rem", fontWeight: "700", color: THEME.colors.textDark, cursor: "pointer", transition: "all 0.1s" },
+  // INTERACTIVE OVERLAY PANEL
+  overlayContainer: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(242, 237, 228, 0.95)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "2rem" },
+  overlayHeader: { textAlign: "center", marginBottom: "2.5rem", maxWidth: "600px" },
+  overlayBackLink: { background: "none", border: "none", color: THEME.colors.textMuted, fontSize: "0.95rem", fontWeight: "600", cursor: "pointer", marginBottom: "1rem", textDecoration: "underline" },
+  overlayTitle: { fontFamily: THEME.fonts.serif, fontSize: "2.2rem", color: THEME.colors.textDark, margin: "0 0 0.5rem 0" },
+  overlaySubtitle: { fontSize: "0.95rem", color: THEME.colors.textMuted, margin: 0, lineHeight: "1.4" },
+  
+  // MULTI-CARD INTERNALS
+  menuCardPrice: { fontSize: "1.1rem", fontWeight: "700", color: THEME.colors.primary },
+  menuCardName: { fontSize: "1.1rem", fontWeight: "700", color: THEME.colors.textDark, margin: "0 0 0.4rem 0" },
+  menuCardDesc: { fontSize: "0.82rem", color: THEME.colors.textMuted, margin: "0 0 1.5rem 0", lineHeight: "1.4" },
+  menuCardAddBtn: { width: "100%", padding: "0.7rem", backgroundColor: THEME.colors.headerBg, color: "#FFFFFF", border: "none", borderRadius: "8px", fontWeight: "600", fontSize: "0.82rem", textAlign: "center" },
 
   modalOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(26, 11, 5, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "1rem" },
   modalContent: { backgroundColor: "#FFFFFF", borderRadius: "16px", padding: "2rem", maxWidth: "380px", width: "100%", boxSizing: "border-box", textAlign: "center", position: "relative", boxShadow: "0 10px 40px rgba(0,0,0,0.12)" },
