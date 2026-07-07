@@ -26,8 +26,8 @@ export default function App() {
   const navigateTo = (nextPage, orderSnapshot = null) => {
     if (orderSnapshot) {
       setActiveOrder(orderSnapshot);
-    } else if (nextPage === "menu" || nextPage === "cart") {
-      // Clear snapshot when returning to the shopping flow
+    } else if (nextPage === "menu") {
+      // Clear snapshot only when fully resetting back to home/menu base line
       setActiveOrder(null);
     }
     setPage(nextPage);
@@ -97,7 +97,8 @@ export default function App() {
         {page === "tracking" && (
           <TrackingPage 
             setPage={navigateTo} 
-            orderSnapshot={activeOrder} 
+            orderSnapshot={activeOrder}
+            setSideOrderItem={setActiveOrder} // Use this hook context to update active state safely
           />
         )}
 
