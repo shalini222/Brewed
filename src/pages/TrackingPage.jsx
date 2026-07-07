@@ -112,11 +112,16 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
       format: "a6" // Standard compact retail receipt format
     });
 
+    // Safely parse numbers out of the checkout calculations snapshot
     const subtotal = orderSnapshot?.calculations?.subtotal || 0;
+    const calculatedTax = orderSnapshot?.calculations?.tax || Math.round(subtotal * 0.05); 
+    const deliveryFee = orderSnapshot?.calculations?.deliveryFee || 0;
+    const codSurcharge = orderSnapshot?.method === "cod" ? (orderSnapshot?.calculations?.codSurcharge || 0) : 0;
+    const discount = orderSnapshot?.calculations?.discount || 0;
     const driverTip = selectedTip || 0;
-    // Calculate an assumed tax layer (e.g., 5% GST) if not explicitly present, rounded gracefully
-    const calculatedTax = Math.round(subtotal * 0.05); 
-    const grandTotal = subtotal + driverTip + calculatedTax;
+
+    // Recalculate dynamic grand total including any added tip post-checkout
+    const grandTotal = subtotal + calculatedTax + deliveryFee + codSurcharge + driverTip - discount;
 
     const paymentMode = orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online";
     const dateString = new Date().toLocaleDateString("en-IN", {
@@ -157,7 +162,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     
     doc.setFont("Helvetica", "normal");
     doc.setTextColor(112, 100, 92);
-    doc.text("Payment Strategy:", 10, 52);
+    doc.text("Payment Method:", 10, 52);
     doc.setTextColor(26, 11, 5);
     doc.text(`${paymentMode}`, 95, 52, { align: "right" });
 
@@ -171,37 +176,66 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     doc.setFontSize(9);
     doc.text("CHARGES BREAKDOWN", 10, 65);
 
+    let currentY = 71;
     doc.setFont("Helvetica", "normal");
     doc.setTextColor(112, 100, 92); 
-    doc.text("Items Subtotal", 10, 71);
-    doc.text(`INR ${subtotal}.00`, 95, 71, { align: "right" });
 
-    doc.text("Estimated Café GST (5%)", 10, 76);
-    doc.text(`INR ${calculatedTax}.00`, 95, 76, { align: "right" });
+    // Items Subtotal
+    doc.text("Items Subtotal", 10, currentY);
+    doc.text(`INR ${subtotal}.00`, 95, currentY, { align: "right" });
+    currentY += 5;
 
+    // GST
+    doc.text("Estimated Café GST (5%)", 10, currentY);
+    doc.text(`INR ${calculatedTax}.00`, 95, currentY, { align: "right" });
+    currentY += 5;
+
+    // Delivery Fee
+    doc.text("Delivery Fee", 10, currentY);
+    doc.text(`INR ${deliveryFee}.00`, 95, currentY, { align: "right" });
+    currentY += 5;
+
+    // COD Surcharge (Conditional)
+    if (orderSnapshot?.method === "cod" && codSurcharge > 0) {
+      doc.text("COD Surcharge", 10, currentY);
+      doc.text(`INR ${codSurcharge}.00`, 95, currentY, { align: "right" });
+      currentY += 5;
+    }
+
+    // Driver Tip (Conditional)
     if (driverTip > 0) {
-      doc.text("Driver / Partner Tip", 10, 81);
-      doc.text(`INR ${driverTip}.00`, 95, 81, { align: "right" });
+      doc.text("Driver / Partner Tip", 10, currentY);
+      doc.text(`INR ${driverTip}.00`, 95, currentY, { align: "right" });
+      currentY += 5;
+    }
+
+    // Promo Discounts (Conditional)
+    if (discount > 0) {
+      doc.setTextColor(186, 60, 60); // Accentuate discounts using Theme Error/Red (#BA3C3C)
+      doc.text("Discount Applied", 10, currentY);
+      doc.text(`-INR ${discount}.00`, 95, currentY, { align: "right" });
+      doc.setTextColor(112, 100, 92); // Revert to muted ash
+      currentY += 5;
     }
 
     // --- HIGHLIGHTED TOTAL AREA ---
-    // Background Frame Block Box
-    doc.setFillColor(26, 11, 5); // Solid deep theme background (#1A0B05)
-    doc.rect(10, 87, 85, 13, "F");
+    // Dynamic Frame Block Placement Box
+    doc.setFillColor(26, 11, 5); 
+    doc.rect(10, currentY + 1, 85, 13, "F");
     
-    doc.setTextColor(255, 255, 255); // White primary contrast
+    doc.setTextColor(255, 255, 255); 
     doc.setFont("Helvetica", "bold");
     doc.setFontSize(10);
-    doc.text("TOTAL PAID", 15, 95);
+    doc.text("TOTAL PAID", 15, currentY + 9);
     
-    doc.setTextColor(196, 149, 106); // Theme Gold contrast alignment (#C4956A)
-    doc.text(`INR ${grandTotal}.00`, 90, 95, { align: "right" });
+    doc.setTextColor(196, 149, 106); 
+    doc.text(`INR ${grandTotal}.00`, 90, currentY + 9, { align: "right" });
 
     // --- FOOTER BRAND NOTES ---
     doc.setTextColor(112, 100, 92);
     doc.setFont("Helvetica", "italic");
     doc.setFontSize(8);
-    doc.text("Thank you for choosing Brewed! Cheers!", 52.5, 111, { align: "center" });
+    doc.text("Thank you for choosing Brewed! Cheers!", 52.5, currentY + 25, { align: "center" });
 
     // Instantly download saved generated file stream
     doc.save(`Receipt-${displayId.replace("#", "")}.pdf`);
@@ -255,107 +289,117 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     setShowFeedbackModal(false);
   };
 
-  const OrderInformationCard = () => (
-    <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
-      <h3 style={{ ...styles.sectionTitle, marginBottom: "0.5rem" }}>Order Information</h3>
-      <div style={{ display: "flex", alignItems: "center", marginBottom: "0.75rem" }}>
-        <p style={styles.orderId}>ID: {displayId}</p>
-        
-        <button onClick={handleCopy} className="copy-btn" title="Copy Order ID">
-          {copied ? (
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: THEME.colors.success }}>
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-          ) : (
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-          )}
-        </button>
-      </div>
+  const OrderInformationCard = () => {
+    const subtotal = orderSnapshot?.calculations?.subtotal || 0;
+    const calculatedTax = orderSnapshot?.calculations?.tax || Math.round(subtotal * 0.05); 
+    const deliveryFee = orderSnapshot?.calculations?.deliveryFee || 0;
+    const codSurcharge = orderSnapshot?.method === "cod" ? (orderSnapshot?.calculations?.codSurcharge || 0) : 0;
+    const discount = orderSnapshot?.calculations?.discount || 0;
+    const driverTip = selectedTip || 0;
+    const grandTotal = subtotal + calculatedTax + deliveryFee + codSurcharge + driverTip - discount;
 
-      {isFailed ? (
-        <div style={styles.failedStatusIndicatorFull}>
-          <span style={styles.failedStatusDot} />
-          Delivery Failed
+    return (
+      <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
+        <h3 style={{ ...styles.sectionTitle, marginBottom: "0.5rem" }}>Order Information</h3>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: "0.75rem" }}>
+          <p style={styles.orderId}>ID: {displayId}</p>
+          
+          <button onClick={handleCopy} className="copy-btn" title="Copy Order ID">
+            {copied ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: THEME.colors.success }}>
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            )}
+          </button>
         </div>
-      ) : (
-        <>
-          <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
-          
-          <div style={styles.summarySummary}>
-            <span>Payment Mode:</span>
-            <span style={{ fontWeight: "600" }}>{orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online"}</span>
-          </div>
-          
-          <div style={styles.summarySummary}>
-            <span>Amount Paid:</span>
-            <span style={{ fontWeight: "600" }}>₹{(orderSnapshot?.calculations?.grandTotal || 0) + (selectedTip || 0)}</span>
-          </div>
 
-          <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <div style={styles.actionSplitRow}>
-              {isDelivered ? (
-                <>
-                  <div style={styles.successStatusIndicatorHalf}>
-                    <span style={styles.successStatusDot} />
-                    Delivered
-                  </div>
-                  <button className="btn-action" style={styles.reorderHalfBtn} onClick={() => setPage("menu")}>
-                    <span className="reorder-btn-inner">
-                      Reorder
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-                      </svg>
-                    </span>
-                  </button>
-                </>
-              ) : (
-                <div style={{ width: "100%", textAlign: "center" }}>
-                  <p style={styles.curatedPromptText}>
-                    Want the perfect pairing while you wait?
-                  </p>
-                  
-                  <button className="btn-action" style={styles.pairSolidBtn} onClick={() => setShowPairMenuOverlay(true)}>
-                    <span className="reorder-btn-inner" style={{ color: "#FFFFFF" }}>
-                      Pair+
-                    </span>
-                  </button>
-                </div>
-              )}
+        {isFailed ? (
+          <div style={styles.failedStatusIndicatorFull}>
+            <span style={styles.failedStatusDot} />
+            Delivery Failed
+          </div>
+        ) : (
+          <>
+            <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
+            
+            <div style={styles.summarySummary}>
+              <span>Payment Method:</span>
+              <span style={{ fontWeight: "600" }}>{orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online"}</span>
+            </div>
+            
+            <div style={styles.summarySummary}>
+              <span>Amount Paid:</span>
+              <span style={{ fontWeight: "600" }}>₹{grandTotal}</span>
             </div>
 
-            {!isDelivered && (
-              <div style={{ width: "100%", marginTop: "0.25rem" }}>
-                {currentStep === 1 ? (
-                  <button onClick={handleCancelOrder} className="btn-action" style={styles.cancelActiveBtn}>
-                    Cancel Order
-                  </button>
-                ) : (
-                  <div style={styles.cancelDisabledWrapper}>
-                    <button disabled style={styles.cancelDisabledBtn}>
-                      Cancel Order
+            <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <div style={styles.actionSplitRow}>
+                {isDelivered ? (
+                  <>
+                    <div style={styles.successStatusIndicatorHalf}>
+                      <span style={styles.successStatusDot} />
+                      Delivered
+                    </div>
+                    <button className="btn-action" style={styles.reorderHalfBtn} onClick={() => setPage("menu")}>
+                      <span className="reorder-btn-inner">
+                        Reorder
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                        </svg>
+                      </span>
                     </button>
-                    <p style={styles.cancelWarningTextMuted}>Cannot cancel once brewing begins.</p>
+                  </>
+                ) : (
+                  <div style={{ width: "100%", textAlign: "center" }}>
+                    <p style={styles.curatedPromptText}>
+                      Want the perfect pairing while you wait?
+                    </p>
+                    
+                    <button className="btn-action" style={styles.pairSolidBtn} onClick={() => setShowPairMenuOverlay(true)}>
+                      <span className="reorder-btn-inner" style={{ color: "#FFFFFF" }}>
+                        Pair+
+                      </span>
+                    </button>
                   </div>
                 )}
               </div>
-            )}
 
-            <button className="receipt-link" onClick={handleDownloadReceipt}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              Download Receipt
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
+              {!isDelivered && (
+                <div style={{ width: "100%", marginTop: "0.25rem" }}>
+                  {currentStep === 1 ? (
+                    <button onClick={handleCancelOrder} className="btn-action" style={styles.cancelActiveBtn}>
+                      Cancel Order
+                    </button>
+                  ) : (
+                    <div style={styles.cancelDisabledWrapper}>
+                      <button disabled style={styles.cancelDisabledBtn}>
+                        Cancel Order
+                      </button>
+                      <p style={styles.cancelWarningTextMuted}>Cannot cancel once brewing begins.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button className="receipt-link" onClick={handleDownloadReceipt}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download Receipt
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={{ ...styles.page, backgroundColor: THEME.colors.bgPage, padding: isMobile ? "1.5rem 1rem" : "3rem 0" }}>
