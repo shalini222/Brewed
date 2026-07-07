@@ -35,6 +35,13 @@ const FEEDBACK_OPTIONS = [
   "Good Packaging"
 ];
 
+// Mock curated items for inline recommendations
+const CURATED_RECOMMENDATIONS = [
+  { id: "p1", name: "Almond Croissant", price: 140, icon: "🥐", pairReason: "Complements Bitter Roasts" },
+  { id: "p2", name: "Choco Chip Cookie", price: 90, icon: "🍪", pairReason: "Best with Espresso" },
+  { id: "p3", name: "Blueberry Muffin", price: 120, icon: "🧁", pairReason: "Sweetens Dark Brews" }
+];
+
 export default function TrackingPage({ setPage, orderSnapshot }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [estimatedTime, setEstimatedTime] = useState(25);
@@ -42,6 +49,9 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const [copied, setCopied] = useState(false);
   const [selectedTip, setSelectedTip] = useState(null);
   
+  // Custom curated section state
+  const [showPairMenu, setShowPairMenu] = useState(false);
+
   // Feedback states
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [rating, setRating] = useState(0);
@@ -99,6 +109,10 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         setPage("menu");
       }
     }
+  };
+
+  const handleAddPairItem = (itemName) => {
+    alert(`Successfully added ${itemName} as a curated recommendation side-order!`);
   };
 
   const toggleFeedbackTag = (tag) => {
@@ -173,21 +187,48 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                   <p style={styles.curatedPromptText}>
                     Want the perfect pairing while you wait?
                   </p>
-                  <button className="btn-action" style={styles.reorderFullBtn} onClick={() => setPage("menu")}>
-                    <span className="reorder-btn-inner">
-                      Pair
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                      </svg>
+                  
+                  {/* SOLID HIGH REVENUE CONVERSION BUTTON */}
+                  <button className="btn-action" style={styles.pairSolidBtn} onClick={() => setShowPairMenu(!showPairMenu)}>
+                    <span className="reorder-btn-inner" style={{ color: "#FFFFFF" }}>
+                      {showPairMenu ? "Hide Options" : "Pair"}
+                      {!showPairMenu && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="12" y1="5" x2="12" y2="19"></line>
+                          <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                      )}
                     </span>
                   </button>
+
+                  {/* SAME-PAGE CURATED MICRO RECOMMANDATION BOX */}
+                  {showPairMenu && (
+                    <div style={styles.curatedMenuBox}>
+                      <p style={styles.curatedMenuHeader}>Chef Recommended Pairings</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                        {CURATED_RECOMMENDATIONS.map((item) => (
+                          <div key={item.id} style={styles.curatedItemRow}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                              <span style={{ fontSize: "1.2rem" }}>{item.icon}</span>
+                              <div style={{ textAlign: "left" }}>
+                                <div style={styles.curatedItemName}>{item.name}</div>
+                                <div style={styles.curatedItemTag}>{item.pairReason}</div>
+                              </div>
+                            </div>
+                            <button onClick={() => handleAddPairItem(item.name)} style={styles.curatedAddBtn}>
+                              + ₹{item.price}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
             {!isDelivered && (
-              <div style={{ width: "100%" }}>
+              <div style={{ width: "100%", marginTop: "0.25rem" }}>
                 {currentStep === 1 ? (
                   <button onClick={handleCancelOrder} className="btn-action" style={styles.cancelActiveBtn}>
                     Cancel Order
@@ -197,7 +238,8 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                     <button disabled style={styles.cancelDisabledBtn}>
                       Cancel Order
                     </button>
-                    <p style={styles.cancelWarningText}>Cannot cancel once brewing begins. Full amount charged.</p>
+                    {/* CRITICAL BRAND ERROR COLOR STYLING WARNING */}
+                    <p style={styles.cancelWarningTextRed}>Cannot cancel once brewing begins. Full amount charged.</p>
                   </div>
                 )}
               </div>
@@ -257,7 +299,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         }
         .btn-action:hover {
           transform: translateY(-2px);
-          opacity: 0.9;
+          opacity: 0.95;
         }
         .copy-btn {
           background: none;
@@ -576,7 +618,7 @@ const styles = {
   timeline: { display: "flex", flexDirection: "column" },
   stepRow: { display: "flex", gap: "1.25rem", minHeight: "75px" },
   iconColumn: { display: "flex", flexDirection: "column", alignItems: "center" },
-  dot: { width: "16px", height: "16px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2, boxSizing: "border-box" },
+  dot: { width: "16px", height: "16px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContext: "center", zIndex: 2, boxSizing: "border-box" },
   connector: { width: "2px", flex: 1, margin: "4px 0", zIndex: 1 },
   stepContent: { paddingTop: "0rem", paddingBottom: "1.25rem" },
   stepTitle: { margin: 0, fontSize: "1rem", fontFamily: THEME.fonts.sans },
@@ -596,14 +638,22 @@ const styles = {
   failureMessage: { margin: "0 0 1.25rem 0", fontSize: "0.95rem", color: THEME.colors.textDark, lineHeight: "1.5" },
   tryAgainBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textAlign: "center" },
   supportBtn: { width: "100%", padding: "0.8rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "center" },
-  reorderFullBtn: { width: "100%", padding: "0.75rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "700", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em" },
+  
+  pairSolidBtn: { width: "100%", padding: "0.85rem", backgroundColor: THEME.colors.headerBg, color: "#FFFFFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.06em", boxShadow: "0 4px 12px rgba(26, 11, 5, 0.15)" },
   reorderHalfBtn: { flex: 1, padding: "0.75rem 0.5rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" },
-  curatedPromptText: { margin: "0 0 0.5rem 0", fontSize: "0.8rem", color: THEME.colors.textMuted, fontStyle: "italic", lineHeight: "1.4" },
+  curatedPromptText: { margin: "0 0 0.6rem 0", fontSize: "0.8rem", color: THEME.colors.textMuted, fontStyle: "italic", lineHeight: "1.4" },
   
   cancelActiveBtn: { width: "100%", padding: "0.65rem", backgroundColor: "transparent", color: THEME.colors.error, border: `1px solid ${THEME.colors.error}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center" },
-  cancelDisabledWrapper: { display: "flex", flexDirection: "column", gap: "0.25rem" },
+  cancelDisabledWrapper: { display: "flex", flexDirection: "column", gap: "0.35rem" },
   cancelDisabledBtn: { width: "100%", padding: "0.65rem", backgroundColor: "#F0ECE6", color: "#A89F95", border: "1px solid #E0D9D0", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center", cursor: "not-allowed" },
-  cancelWarningText: { margin: 0, fontSize: "0.75rem", color: THEME.colors.error, textAlign: "center", lineHeight: "1.3" },
+  cancelWarningTextRed: { margin: 0, fontSize: "0.78rem", color: THEME.colors.error, fontWeight: "600", textAlign: "center", lineHeight: "1.3" },
+
+  curatedMenuBox: { marginTop: "1rem", backgroundColor: "#FFFFFF", border: `1px solid ${THEME.colors.cardBorder}`, borderRadius: "10px", padding: "0.75rem", boxSizing: "border-box" },
+  curatedMenuHeader: { margin: "0 0 0.6rem 0", fontSize: "0.8rem", color: THEME.colors.textDark, fontWeight: "700", textAlign: "left", letterSpacing: "0.02em" },
+  curatedItemRow: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.4rem 0", borderBottom: `1px dashed ${THEME.colors.cardBorder}` },
+  curatedItemName: { fontSize: "0.82rem", fontWeight: "600", color: THEME.colors.textDark },
+  curatedItemTag: { fontSize: "0.7rem", color: THEME.colors.primary, fontWeight: "500" },
+  curatedAddBtn: { backgroundColor: THEME.colors.accentLight, border: `1px solid ${THEME.colors.cardBorder}`, borderRadius: "6px", padding: "0.25rem 0.5rem", fontSize: "0.75rem", fontWeight: "700", color: THEME.colors.textDark, cursor: "pointer", transition: "all 0.1s" },
 
   modalOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(26, 11, 5, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "1rem" },
   modalContent: { backgroundColor: "#FFFFFF", borderRadius: "16px", padding: "2rem", maxWidth: "380px", width: "100%", boxSizing: "border-box", textAlign: "center", position: "relative", boxShadow: "0 10px 40px rgba(0,0,0,0.12)" },
