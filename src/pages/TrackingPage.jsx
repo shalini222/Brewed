@@ -8,7 +8,7 @@ const THEME = {
     cardBorder: "#E6DFD5",   
     primary: "#C4956A",      
     textDark: "#1A0B05",     
-    textMuted: "#70645C", // Your muted gray color   
+    textMuted: "#70645C",    
     success: "#4A7A5B",
     error: "#BA3C3C", 
     accentLight: "#FAF9F6"
@@ -35,7 +35,6 @@ const FEEDBACK_OPTIONS = [
   "Good Packaging"
 ];
 
-// Mock curated items for inline recommendations
 const CURATED_RECOMMENDATIONS = [
   { id: "p1", name: "Almond Croissant", price: 140, icon: "🥐", pairReason: "Complements Bitter Roasts" },
   { id: "p2", name: "Choco Chip Cookie", price: 90, icon: "🍪", pairReason: "Best with Espresso" },
@@ -48,8 +47,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1100);
   const [copied, setCopied] = useState(false);
   const [selectedTip, setSelectedTip] = useState(null);
-  
-  // Custom curated section state
   const [showPairMenu, setShowPairMenu] = useState(false);
 
   // Feedback states
@@ -188,7 +185,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                     Want the perfect pairing while you wait?
                   </p>
                   
-                  {/* SOLID HIGH REVENUE CONVERSION BUTTON */}
                   <button className="btn-action" style={styles.pairSolidBtn} onClick={() => setShowPairMenu(!showPairMenu)}>
                     <span className="reorder-btn-inner" style={{ color: "#FFFFFF" }}>
                       {showPairMenu ? "Hide Options" : "Pair"}
@@ -201,7 +197,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                     </span>
                   </button>
 
-                  {/* SAME-PAGE CURATED MICRO RECOMMENDATION BOX */}
                   {showPairMenu && (
                     <div style={styles.curatedMenuBox}>
                       <p style={styles.curatedMenuHeader}>Chef Recommended Pairings</p>
@@ -238,8 +233,8 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                     <button disabled style={styles.cancelDisabledBtn}>
                       Cancel Order
                     </button>
-                    {/* MUTED GRAY WARNING STYLING */}
-                    <p style={styles.cancelWarningTextMuted}>Cannot cancel once brewing begins. Full amount charged.</p>
+                    {/* OMITTED SECOND LINE, CLEAN MUTED GRAPHICS */}
+                    <p style={styles.cancelWarningTextMuted}>Cannot cancel once brewing begins.</p>
                   </div>
                 )}
               </div>
@@ -391,7 +386,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         }
       `}</style>
 
-      {/* BRANDED FEEDBACK MODAL */}
+      {/* POP-UP FEEDBACK MODAL (PERFECTLY CENTERED IN WINDOW OVERLAY) */}
       {showFeedbackModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
@@ -644,7 +639,7 @@ const styles = {
   cancelDisabledWrapper: { display: "flex", flexDirection: "column", gap: "0.35rem" },
   cancelDisabledBtn: { width: "100%", padding: "0.65rem", backgroundColor: "#F0ECE6", color: "#A89F95", border: "1px solid #E0D9D0", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center", cursor: "not-allowed" },
   
-  // CORRECTED: Warnings are now styled cleanly as muted grey
+  // FIXED WARNING LINE: Omitted second phrase, kept clean muted color
   cancelWarningTextMuted: { margin: 0, fontSize: "0.78rem", color: THEME.colors.textMuted, fontWeight: "500", textAlign: "center", lineHeight: "1.3" },
 
   curatedMenuBox: { marginTop: "1rem", backgroundColor: "#FFFFFF", border: `1px solid ${THEME.colors.cardBorder}`, borderRadius: "10px", padding: "0.75rem", boxSizing: "border-box" },
@@ -654,7 +649,8 @@ const styles = {
   curatedItemTag: { fontSize: "0.7rem", color: THEME.colors.primary, fontWeight: "500" },
   curatedAddBtn: { backgroundColor: THEME.colors.accentLight, border: `1px solid ${THEME.colors.cardBorder}`, borderRadius: "6px", padding: "0.25rem 0.5rem", fontSize: "0.75rem", fontWeight: "700", color: THEME.colors.textDark, cursor: "pointer", transition: "all 0.1s" },
 
-  modalOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(26, 11, 5, 0.4)", display: "flex", alignItems: "center", justifyContext: "center", zIndex: 100, padding: "1rem" },
+  // FIXED OVERLAY & CONTENT: Centered popup cleanly with absolute viewport centering
+  modalOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(26, 11, 5, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "1rem" },
   modalContent: { backgroundColor: "#FFFFFF", borderRadius: "16px", padding: "2rem", maxWidth: "380px", width: "100%", boxSizing: "border-box", textAlign: "center", position: "relative", boxShadow: "0 10px 40px rgba(0,0,0,0.12)" },
   modalCloseBtn: { position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", fontSize: "1.1rem", color: THEME.colors.textMuted, cursor: "pointer" },
   modalTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.45rem", margin: "0 0 0.25rem 0", color: THEME.colors.textDark },
