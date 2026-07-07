@@ -172,16 +172,16 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     doc.text("CHARGES BREAKDOWN", 10, 65);
 
     doc.setFont("Helvetica", "normal");
-    doc.setTextColor(112, 100, 92); // Fixed Line 175 Error here
+    doc.setTextColor(112, 100, 92); 
     doc.text("Items Subtotal", 10, 71);
-    doc.text(`₹ ${subtotal}.00`, 95, 71, { align: "right" });
+    doc.text(`INR ${subtotal}.00`, 95, 71, { align: "right" });
 
     doc.text("Estimated Café GST (5%)", 10, 76);
-    doc.text(`₹ ${calculatedTax}.00`, 95, 76, { align: "right" });
+    doc.text(`INR ${calculatedTax}.00`, 95, 76, { align: "right" });
 
     if (driverTip > 0) {
       doc.text("Driver / Partner Tip", 10, 81);
-      doc.text(`₹ ${driverTip}.00`, 95, 81, { align: "right" });
+      doc.text(`INR ${driverTip}.00`, 95, 81, { align: "right" });
     }
 
     // --- HIGHLIGHTED TOTAL AREA ---
@@ -195,7 +195,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     doc.text("TOTAL PAID", 15, 95);
     
     doc.setTextColor(196, 149, 106); // Theme Gold contrast alignment (#C4956A)
-    doc.text(`₹ ${grandTotal}.00`, 90, 95, { align: "right" });
+    doc.text(`INR ${grandTotal}.00`, 90, 95, { align: "right" });
 
     // --- FOOTER BRAND NOTES ---
     doc.setTextColor(112, 100, 92);
