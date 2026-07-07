@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { jsPDF } from "jspdf"; // Import jsPDF for handling actual PDF generation
+import { jsPDF } from "jspdf"; 
 import { useCart } from "../context/CartContext"; 
 
 const THEME = {
@@ -53,11 +53,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1100);
   const [copied, setCopied] = useState(false);
   const [selectedTip, setSelectedTip] = useState(null);
-  
-  // Tracks which item is currently being added to trigger state animation
   const [addingItemId, setAddingItemId] = useState(null);
-
-  // Controls overlay for pairing menu
   const [showPairMenuOverlay, setShowPairMenuOverlay] = useState(false);
 
   // Feedback states
@@ -109,45 +105,42 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "mm",
-      format: "a6" // Standard compact retail receipt format
+      format: "a6"
     });
 
-    // Safely parse numbers out of the checkout calculations snapshot
     const subtotal = orderSnapshot?.calculations?.subtotal || 0;
-    const calculatedTax = orderSnapshot?.calculations?.tax || Math.round(subtotal * 0.05); 
+    const calculatedTax = orderSnapshot?.calculations?.tax || 0; 
     const deliveryFee = orderSnapshot?.calculations?.deliveryFee || 0;
-    const codSurcharge = orderSnapshot?.method === "cod" ? (orderSnapshot?.calculations?.codSurcharge || 0) : 0;
+    const codSurcharge = orderSnapshot?.calculations?.codSurcharge || 0;
     const discount = orderSnapshot?.calculations?.discount || 0;
     const driverTip = selectedTip || 0;
 
-    // Recalculate dynamic grand total including any added tip post-checkout
     const grandTotal = subtotal + calculatedTax + deliveryFee + codSurcharge + driverTip - discount;
-
     const paymentMode = orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online";
     const dateString = new Date().toLocaleDateString("en-IN", {
       year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit"
     });
 
-    // --- BRAND HEADER BLOCK ---
+    // Header Block
     doc.setFont("Helvetica", "bold");
     doc.setFontSize(22);
-    doc.setTextColor(26, 11, 5); // Deep Dark (#1A0B05)
+    doc.setTextColor(26, 11, 5); 
     doc.text("B R E W E D .", 52.5, 18, { align: "center" });
     
     doc.setFont("Helvetica", "normal");
     doc.setFontSize(8);
-    doc.setTextColor(112, 100, 92); // Ash Muted (#70645C)
+    doc.setTextColor(112, 100, 92); 
     doc.text("Your Freshly Brewed Coffee Experience", 52.5, 23, { align: "center" });
     doc.text(`Issued on: ${dateString}`, 52.5, 27, { align: "center" });
 
-    // Premium Double-Border Separation Line
-    doc.setDrawColor(196, 149, 106); // Theme Gold/Primary (#C4956A)
+    // Premium Border Lines
+    doc.setDrawColor(196, 149, 106); 
     doc.setLineWidth(0.4);
     doc.line(10, 31, 95, 31);
     doc.setLineWidth(0.15);
     doc.line(10, 32.5, 95, 32.5);
 
-    // --- METADATA SECTION ---
+    // Metadata Section
     doc.setTextColor(26, 11, 5);
     doc.setFont("Helvetica", "bold");
     doc.setFontSize(9);
@@ -162,16 +155,15 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     
     doc.setFont("Helvetica", "normal");
     doc.setTextColor(112, 100, 92);
-    doc.text("Payment Method:", 10, 52);
+    doc.text("Payment Method:", 10, 52); // Fixed from Payment Strategy
     doc.setTextColor(26, 11, 5);
     doc.text(`${paymentMode}`, 95, 52, { align: "right" });
 
-    // Thin elegant layout card border line
-    doc.setDrawColor(230, 223, 213); // Card Border (#E6DFD5)
+    doc.setDrawColor(230, 223, 213); 
     doc.setLineWidth(0.2);
     doc.line(10, 57, 95, 57);
 
-    // --- DETAILED CHARGES BILLING BREAKDOWN ---
+    // Charges Breakdown
     doc.setFont("Helvetica", "bold");
     doc.setFontSize(9);
     doc.text("CHARGES BREAKDOWN", 10, 65);
@@ -180,46 +172,42 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     doc.setFont("Helvetica", "normal");
     doc.setTextColor(112, 100, 92); 
 
-    // Items Subtotal
     doc.text("Items Subtotal", 10, currentY);
     doc.text(`INR ${subtotal}.00`, 95, currentY, { align: "right" });
     currentY += 5;
 
-    // GST
     doc.text("Estimated Café GST (5%)", 10, currentY);
     doc.text(`INR ${calculatedTax}.00`, 95, currentY, { align: "right" });
     currentY += 5;
 
-    // Delivery Fee
+    // Delivery Fee Added
     doc.text("Delivery Fee", 10, currentY);
     doc.text(`INR ${deliveryFee}.00`, 95, currentY, { align: "right" });
     currentY += 5;
 
-    // COD Surcharge (Conditional)
-    if (orderSnapshot?.method === "cod" && codSurcharge > 0) {
+    // COD Surcharge Added (Conditional on payment method)
+    if (orderSnapshot?.method === "cod") {
       doc.text("COD Surcharge", 10, currentY);
       doc.text(`INR ${codSurcharge}.00`, 95, currentY, { align: "right" });
       currentY += 5;
     }
 
-    // Driver Tip (Conditional)
     if (driverTip > 0) {
       doc.text("Driver / Partner Tip", 10, currentY);
       doc.text(`INR ${driverTip}.00`, 95, currentY, { align: "right" });
       currentY += 5;
     }
 
-    // Promo Discounts (Conditional)
+    // Discounts Added
     if (discount > 0) {
-      doc.setTextColor(186, 60, 60); // Accentuate discounts using Theme Error/Red (#BA3C3C)
+      doc.setTextColor(186, 60, 60); 
       doc.text("Discount Applied", 10, currentY);
       doc.text(`-INR ${discount}.00`, 95, currentY, { align: "right" });
-      doc.setTextColor(112, 100, 92); // Revert to muted ash
+      doc.setTextColor(112, 100, 92); 
       currentY += 5;
     }
 
-    // --- HIGHLIGHTED TOTAL AREA ---
-    // Dynamic Frame Block Placement Box
+    // Highlighted Grand Total Box
     doc.setFillColor(26, 11, 5); 
     doc.rect(10, currentY + 1, 85, 13, "F");
     
@@ -231,13 +219,11 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     doc.setTextColor(196, 149, 106); 
     doc.text(`INR ${grandTotal}.00`, 90, currentY + 9, { align: "right" });
 
-    // --- FOOTER BRAND NOTES ---
     doc.setTextColor(112, 100, 92);
     doc.setFont("Helvetica", "italic");
     doc.setFontSize(8);
     doc.text("Thank you for choosing Brewed! Cheers!", 52.5, currentY + 25, { align: "center" });
 
-    // Instantly download saved generated file stream
     doc.save(`Receipt-${displayId.replace("#", "")}.pdf`);
   };
 
@@ -291,7 +277,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
 
   const OrderInformationCard = () => {
     const subtotal = orderSnapshot?.calculations?.subtotal || 0;
-    const calculatedTax = orderSnapshot?.calculations?.tax || Math.round(subtotal * 0.05); 
+    const calculatedTax = orderSnapshot?.calculations?.tax || 0; 
     const deliveryFee = orderSnapshot?.calculations?.deliveryFee || 0;
     const codSurcharge = orderSnapshot?.method === "cod" ? (orderSnapshot?.calculations?.codSurcharge || 0) : 0;
     const discount = orderSnapshot?.calculations?.discount || 0;
@@ -359,11 +345,8 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                     <p style={styles.curatedPromptText}>
                       Want the perfect pairing while you wait?
                     </p>
-                    
                     <button className="btn-action" style={styles.pairSolidBtn} onClick={() => setShowPairMenuOverlay(true)}>
-                      <span className="reorder-btn-inner" style={{ color: "#FFFFFF" }}>
-                        Pair+
-                      </span>
+                      <span className="reorder-btn-inner" style={{ color: "#FFFFFF" }}>Pair+</span>
                     </button>
                   </div>
                 )}
@@ -531,7 +514,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         .star-palette-btn:hover {
           transform: scale(1.15);
         }
-        
         .pairing-modal-container {
           display: flex;
           flex-direction: column;
@@ -603,18 +585,10 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           box-shadow: 0 4px 12px rgba(0,0,0,0.15);
           z-index: 110;
         }
-
         @media (max-width: 900px) {
-          .pairing-row-top {
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-          }
-          .pairing-row-bottom {
-            flex-wrap: wrap;
-          }
-          .pairing-row-bottom .pairing-card-naked {
-            width: 100%;
-            max-width: 340px;
-          }
+          .pairing-row-top { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+          .pairing-row-bottom { flex-wrap: wrap; }
+          .pairing-row-bottom .pairing-card-naked { width: 100%; max-width: 340px; }
         }
       `}</style>
 
@@ -622,7 +596,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
       {showPairMenuOverlay && (
         <div style={styles.modalOverlay}>
           <button className="close-floating-btn" onClick={() => setShowPairMenuOverlay(false)}>✕</button>
-          
           <div className="pairing-modal-container">
             <div className="pairing-row-top">
               {CURATED_RECOMMENDATIONS.slice(0, 3).map((item) => {
@@ -632,18 +605,11 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "1.25rem" }}>
                         <span style={{ fontSize: "2.8rem", lineHeight: 1 }}>{item.icon}</span>
-                        <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.2rem" }}>
-                          ₹{item.price}
-                        </span>
+                        <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.2rem" }}>₹{item.price}</span>
                       </div>
-                      <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>
-                        {item.name}
-                      </h3>
-                      <p style={{ margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>
-                        {item.desc}
-                      </p>
+                      <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>{item.name}</h3>
+                      <p style={{ margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>{item.desc}</p>
                     </div>
-                    
                     <button 
                       className="pairing-btn-naked" 
                       style={{ backgroundColor: isAdding ? THEME.colors.success : "#1A0B05" }}
@@ -665,18 +631,11 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "1.25rem" }}>
                         <span style={{ fontSize: "2.8rem", lineHeight: 1 }}>{item.icon}</span>
-                        <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.2rem" }}>
-                          ₹{item.price}
-                        </span>
+                        <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.2rem" }}>₹{item.price}</span>
                       </div>
-                      <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>
-                        {item.name}
-                      </h3>
-                      <p style={{ margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>
-                        {item.desc}
-                      </p>
+                      <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>{item.name}</h3>
+                      <p style={{ margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>{item.desc}</p>
                     </div>
-                    
                     <button 
                       className="pairing-btn-naked" 
                       style={{ backgroundColor: isAdding ? THEME.colors.success : "#1A0B05" }}
@@ -727,9 +686,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               })}
             </div>
 
-            <p style={{ ...styles.modalText, fontSize: "0.8rem", margin: "0.25rem 0 1rem" }}>
-              What went exceptionally well?
-            </p>
+            <p style={{ ...styles.modalText, fontSize: "0.8rem", margin: "0.25rem 0 1rem" }}>What went exceptionally well?</p>
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", justifyContent: "center", marginBottom: "1rem" }}>
               {FEEDBACK_OPTIONS.map((tag) => (
@@ -751,9 +708,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             />
 
             <div style={{ display: "flex", gap: "0.5rem", marginTop: "1.25rem" }}>
-              <button onClick={() => setShowFeedbackModal(false)} style={styles.modalCancelActionBtn}>
-                Close
-              </button>
+              <button onClick={() => setShowFeedbackModal(false)} style={styles.modalCancelActionBtn}>Close</button>
               <button 
                 onClick={submitFeedback} 
                 disabled={rating === 0 && selectedTags.length === 0 && !typedReview.trim()}
@@ -790,9 +745,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                 </div>
                 <div className="pulse-container" style={{ width: 50, height: 50 }}>
                   {(!isFailed && !isDelivered) && <div className="pulse-ring" />}
-                  <span style={{ fontSize: "2rem", zIndex: 2 }}>
-                    {STEPS[currentStep - 1]?.icon || "☕"}
-                  </span>
+                  <span style={{ fontSize: "2rem", zIndex: 2 }}>{STEPS[currentStep - 1]?.icon || "☕"}</span>
                 </div>
               </div>
 
@@ -851,12 +804,8 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                   <h3 style={styles.apologyHeading}>We Are Sorry</h3>
                   <p style={styles.failureMessage}>Your order ran into an issue. We're on it.</p>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.25rem" }}>
-                    <button className="btn-action" style={styles.tryAgainBtn} onClick={() => setPage("menu")}>
-                      Try Again: 10% Off
-                    </button>
-                    <button className="btn-action" style={styles.supportBtn} onClick={() => alert("Connecting you with support...")}>
-                      Contact Support
-                    </button>
+                    <button className="btn-action" style={styles.tryAgainBtn} onClick={() => setPage("menu")}>Try Again: 10% Off</button>
+                    <button className="btn-action" style={styles.supportBtn} onClick={() => alert("Connecting you with support...")}>Contact Support</button>
                   </div>
                 </div>
               </>
@@ -938,16 +887,13 @@ const styles = {
   failureMessage: { margin: "0 0 1.25rem 0", fontSize: "0.95rem", color: THEME.colors.textDark, lineHeight: "1.5" },
   tryAgainBtn: { width: "100%", padding: "0.8rem", backgroundColor: THEME.colors.headerBg, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textAlign: "center" },
   supportBtn: { width: "100%", padding: "0.8rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.9rem", textAlign: "center" },
-  
   pairSolidBtn: { width: "100%", padding: "0.85rem", backgroundColor: THEME.colors.headerBg, color: "#FFFFFF", border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.06em", boxShadow: "0 4px 12px rgba(26, 11, 5, 0.15)" },
   reorderHalfBtn: { flex: 1, padding: "0.75rem 0.5rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" },
   curatedPromptText: { margin: "0 0 0.6rem 0", fontSize: "0.8rem", color: THEME.colors.textMuted, fontStyle: "italic", lineHeight: "1.4" },
-  
   cancelActiveBtn: { width: "100%", padding: "0.65rem", backgroundColor: "transparent", color: THEME.colors.error, border: `1px solid ${THEME.colors.error}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center" },
   cancelDisabledWrapper: { display: "flex", flexDirection: "column", gap: "0.35rem" },
   cancelDisabledBtn: { width: "100%", padding: "0.65rem", backgroundColor: "#F0ECE6", color: "#A89F95", border: "1px solid #E0D9D0", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center", cursor: "not-allowed" },
   cancelWarningTextMuted: { margin: 0, fontSize: "0.78rem", color: THEME.colors.textMuted, fontWeight: "500", textAlign: "center", lineHeight: "1.3" },
-
   modalOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "2rem" },
   modalContent: { backgroundColor: "#FFFFFF", borderRadius: "16px", padding: "2rem", maxWidth: "380px", width: "100%", boxSizing: "border-box", textAlign: "center", position: "relative", boxShadow: "0 10px 40px rgba(0,0,0,0.12)" },
   modalCloseBtn: { position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", fontSize: "1.1rem", color: THEME.colors.textMuted, cursor: "pointer" },
