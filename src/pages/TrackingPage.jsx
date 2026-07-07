@@ -50,7 +50,7 @@ export default function TrackingPage({ setPage, orderSnapshot, setSideOrderItem 
   const [copied, setCopied] = useState(false);
   const [selectedTip, setSelectedTip] = useState(null);
   
-  // Controls full-page darken overlay for pairing menu
+  // Controls overlay for pairing menu
   const [showPairMenuOverlay, setShowPairMenuOverlay] = useState(false);
 
   // Feedback states
@@ -112,12 +112,12 @@ export default function TrackingPage({ setPage, orderSnapshot, setSideOrderItem 
     }
   };
 
-  // Navigates and sends data directly into CartPage.jsx flow
+  // Triggers checkout redirect logic
   const handleProceedToCartWithItem = (item) => {
     if (typeof setSideOrderItem === "function") {
       setSideOrderItem(item); 
     }
-    setPage("cart"); // Redirect to CartPage.jsx
+    setPage("cart"); 
   };
 
   const toggleFeedbackTag = (tag) => {
@@ -368,26 +368,20 @@ export default function TrackingPage({ setPage, orderSnapshot, setSideOrderItem 
           transform: scale(1.15);
         }
         
-        /* NEW BEAUTIFULLY STYLED CARDS IN FULL OVERLAY MODE */
-        .overlay-menu-box {
-          background-color: #FAF6F0;
-          border-radius: 24px;
-          padding: 2.5rem 2rem;
-          max-width: 1040px;
+        /* PURE FLOATING GRID OVERLAY OVER DARKENED BG */
+        .pairing-modal-container {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+          gap: 1.5rem;
+          max-width: 960px;
           width: 100%;
           max-height: 85vh;
           overflow-y: auto;
+          padding: 1.5rem;
           box-sizing: border-box;
           position: relative;
-          box-shadow: 0 20px 50px rgba(26,11,5,0.25);
         }
-        .pairing-grid-overlay {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 1.5rem;
-          margin-top: 2rem;
-        }
-        .pairing-card-overlay {
+        .pairing-card-naked {
           background: #FFFFFF;
           border: 1px solid ${THEME.colors.cardBorder};
           border-radius: 18px;
@@ -395,75 +389,79 @@ export default function TrackingPage({ setPage, orderSnapshot, setSideOrderItem 
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          box-shadow: 0 4px 16px rgba(26,11,5,0.02);
-          transition: transform 0.2s;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+          box-sizing: border-box;
         }
-        .pairing-card-overlay:hover {
-          transform: translateY(-4px);
-        }
-        .pairing-btn-overlay {
+        .pairing-btn-naked {
           width: 100%;
           padding: 0.85rem;
-          background-color: ${THEME.colors.headerBg};
+          background-color: #1A0B05;
           color: #FFFFFF;
           border: none;
           border-radius: 8px;
           font-weight: 700;
-          font-size: 0.9rem;
+          font-size: 0.85rem;
           margin-top: 1.5rem;
           cursor: pointer;
-          transition: opacity 0.2s;
+          transition: background-color 0.2s;
         }
-        .pairing-btn-overlay:hover {
-          opacity: 0.9;
+        .pairing-btn-naked:hover {
+          background-color: #2E150B;
+        }
+        .close-floating-btn {
+          position: fixed;
+          top: 1.5rem;
+          right: 2rem;
+          background: rgba(255, 255, 255, 0.9);
+          border: none;
+          border-radius: 50%;
+          width: 38px;
+          height: 38px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.2rem;
+          font-weight: bold;
+          cursor: pointer;
+          color: ${THEME.colors.textDark};
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          z-index: 110;
         }
       `}</style>
 
-      {/* 1. NEW FULL-SCREEN PAIRINGS OVERLAY (DARKENED BG) */}
+      {/* FLOATING CARDS SYSTEM OVER DARK BACKDROP */}
       {showPairMenuOverlay && (
         <div style={styles.modalOverlay}>
-          <div className="overlay-menu-box">
-            <button style={styles.modalCloseBtn} onClick={() => setShowPairMenuOverlay(false)}>✕</button>
-            
-            <div style={{ textAlign: "center", marginBottom: "1rem" }}>
-              <h2 style={{ fontFamily: THEME.fonts.serif, fontSize: "2.4rem", color: THEME.colors.textDark, margin: "0 0 0.5rem 0" }}>
-                Perfect Fresh Pairings
-              </h2>
-              <p style={{ margin: 0, fontSize: "1rem", color: THEME.colors.textMuted }}>
-                Handpicked by our roasting masters to elevate your current order.
-              </p>
-            </div>
-
-            <div className="pairing-grid-overlay">
-              {CURATED_RECOMMENDATIONS.map((item) => (
-                <div key={item.id} className="pairing-card-overlay">
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "1.25rem" }}>
-                      <span style={{ fontSize: "3rem", lineHeight: 1 }}>{item.icon}</span>
-                      <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.25rem" }}>
-                        ₹{item.price}
-                      </span>
-                    </div>
-                    <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>
-                      {item.name}
-                    </h3>
-                    <p style={{ margin: 0, fontSize: "0.88rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>
-                      {item.desc}
-                    </p>
+          <button className="close-floating-btn" onClick={() => setShowPairMenuOverlay(false)}>✕</button>
+          
+          <div className="pairing-modal-container">
+            {CURATED_RECOMMENDATIONS.map((item) => (
+              <div key={item.id} className="pairing-card-naked">
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "1.25rem" }}>
+                    <span style={{ fontSize: "2.8rem", lineHeight: 1 }}>{item.icon}</span>
+                    <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.2rem" }}>
+                      ₹{item.price}
+                    </span>
                   </div>
-                  
-                  {/* DIRECTLY CONNECTED TO CARTPAGE FLOW */}
-                  <button className="pairing-btn-overlay" onClick={() => handleProceedToCartWithItem(item)}>
-                    Add & Proceed to Checkout
-                  </button>
+                  <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>
+                    {item.name}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>
+                    {item.desc}
+                  </p>
                 </div>
-              ))}
-            </div>
+                
+                <button className="pairing-btn-naked" onClick={() => handleProceedToCartWithItem(item)}>
+                  Add & Proceed to Checkout
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* 2. CENTERED FEEDBACK MODAL */}
+      {/* FEEDBACK MODAL */}
       {showFeedbackModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
@@ -540,7 +538,7 @@ export default function TrackingPage({ setPage, orderSnapshot, setSideOrderItem 
         </div>
       )}
 
-      {/* TRACKING APP CONTENT */}
+      {/* MAIN TRACKING PAGE LAYOUT */}
       <div style={{ maxWidth: "940px", margin: "0 auto" }}>
         <button style={styles.backLink} onClick={() => setPage("menu")}>← Return to Menu</button>
         <h1 style={styles.heading}>Track Your Order</h1>
@@ -718,10 +716,10 @@ const styles = {
   cancelDisabledBtn: { width: "100%", padding: "0.65rem", backgroundColor: "#F0ECE6", color: "#A89F95", border: "1px solid #E0D9D0", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center", cursor: "not-allowed" },
   cancelWarningTextMuted: { margin: 0, fontSize: "0.78rem", color: THEME.colors.textMuted, fontWeight: "500", textAlign: "center", lineHeight: "1.3" },
 
-  // FULL OVERLAY DARK BACKGROUND SCREEN
-  modalOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(26, 11, 5, 0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "1.5rem" },
+  // DARKENED BACKGROUND LAYER SPECIFICS
+  modalOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "2rem" },
   modalContent: { backgroundColor: "#FFFFFF", borderRadius: "16px", padding: "2rem", maxWidth: "380px", width: "100%", boxSizing: "border-box", textAlign: "center", position: "relative", boxShadow: "0 10px 40px rgba(0,0,0,0.12)" },
-  modalCloseBtn: { position: "absolute", top: "1.25rem", right: "1.25rem", background: "none", border: "none", fontSize: "1.3rem", color: THEME.colors.textMuted, cursor: "pointer", fontWeight: "bold", padding: "0.25rem" },
+  modalCloseBtn: { position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", fontSize: "1.1rem", color: THEME.colors.textMuted, cursor: "pointer" },
   modalTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.45rem", margin: "0 0 0.25rem 0", color: THEME.colors.textDark },
   modalText: { margin: "0 0 1rem 0", fontSize: "0.9rem", color: THEME.colors.textMuted },
   modalTextArea: { width: "100%", height: "80px", padding: "0.6rem", border: `1px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", backgroundColor: "#FAF9F6", fontFamily: THEME.fonts.sans, fontSize: "0.85rem", resize: "none", boxSizing: "border-box", color: THEME.colors.textDark, outline: "none", marginTop: "0.5rem" },
