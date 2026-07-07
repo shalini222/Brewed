@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { jsPDF } from "jspdf"; // Import jsPDF for handling actual PDF generation
 import { useCart } from "../context/CartContext"; 
 
 const THEME = {
@@ -118,6 +119,80 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     }
   };
 
+  // AUTOMATED PDF RECEIPT GENERATION
+  const handleDownloadReceipt = () => {
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a6" // A6 size fits perfectly for retail/coffee shop receipts
+    });
+
+    const totalAmount = (orderSnapshot?.calculations?.grandTotal || 0) + (selectedTip || 0);
+    const paymentMode = orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online";
+    const dateString = new Date().toLocaleDateString("en-IN", {
+      year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit"
+    });
+
+    // Styling configurations
+    doc.setTextColor(26, 11, 5); // Brand Dark text color (#1A0B05)
+    
+    // Header
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("BREWED.", 10, 15);
+    
+    doc.setFont("Helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(112, 100, 92); // Muted color (#70645C)
+    doc.text("Your Freshly Brewed Coffee Experience", 10, 20);
+    doc.text(dateString, 10, 24);
+
+    // Divider line
+    doc.setDrawColor(230, 223, 213); // Card Border (#E6DFD5)
+    doc.line(10, 28, 95, 28);
+
+    // Order Meta Info
+    doc.setTextColor(26, 11, 5);
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text(`Order ID: ${displayId}`, 10, 35);
+    
+    doc.setFont("Helvetica", "normal");
+    doc.text(`Payment Mode: ${paymentMode}`, 10, 41);
+
+    // Divider line
+    doc.line(10, 46, 95, 46);
+
+    // Summary Calculations
+    doc.setFont("Helvetica", "normal");
+    doc.text("Items Subtotal:", 10, 54);
+    doc.text(`INR ${orderSnapshot?.calculations?.subtotal || 0}`, 70, 54);
+
+    if (selectedTip && selectedTip > 0) {
+      doc.text("Driver Tip:", 10, 60);
+      doc.text(`INR ${selectedTip}`, 70, 60);
+    }
+
+    // Grand Total Highlight box
+    doc.setFillColor(250, 249, 246); // Accent light background (#FAF9F6)
+    doc.rect(10, 66, 85, 12, "F");
+    
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("Amount Paid:", 14, 73);
+    doc.setTextColor(196, 149, 106); // Primary theme accent color (#C4956A)
+    doc.text(`INR ${totalAmount}`, 70, 73);
+
+    // Footer note
+    doc.setTextColor(112, 100, 92);
+    doc.setFont("Helvetica", "italic");
+    doc.setFontSize(8);
+    doc.text("Thank you for choosing Brewed! Cheers!", 52, 90, { align: "center" });
+
+    // Download file
+    doc.save(`Receipt-${displayId.replace("#", "")}.pdf`);
+  };
+
   const handleProceedToCartWithItem = (item) => {
     setAddingItemId(item.id);
     addToCart({
@@ -134,7 +209,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
       instructions: "Side item pairing"
     });
 
-    // Short delay before navigation to showcase the successful "Added ✓" state
     setTimeout(() => {
       setPage("cart");
       setAddingItemId(null);
@@ -240,7 +314,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               </div>
             )}
 
-            <button className="receipt-link" onClick={() => alert("Downloading your receipt...")}>
+            <button className="receipt-link" onClick={handleDownloadReceipt}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
@@ -397,6 +471,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           padding: 1.5rem;
           box-sizing: border-box;
           position: relative;
+          align-items: center;
         }
         .pairing-row-top {
           display: grid;
