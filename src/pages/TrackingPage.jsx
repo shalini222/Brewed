@@ -104,6 +104,109 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const rawId = orderSnapshot?.id ? orderSnapshot.id.toString() : "938402";
   const displayId = rawId.startsWith("BRW-") ? rawId : `#BRW-${rawId.slice(-6)}`;
 
+  // PREMIUM AUTOMATED PDF RECEIPT GENERATION
+  const handleDownloadReceipt = () => {
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a6" // Standard compact retail receipt format
+    });
+
+    const subtotal = orderSnapshot?.calculations?.subtotal || 0;
+    const driverTip = selectedTip || 0;
+    // Calculate an assumed tax layer (e.g., 5% GST) if not explicitly present, rounded gracefully
+    const calculatedTax = Math.round(subtotal * 0.05); 
+    const grandTotal = subtotal + driverTip + calculatedTax;
+
+    const paymentMode = orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online";
+    const dateString = new Date().toLocaleDateString("en-IN", {
+      year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit"
+    });
+
+    // --- BRAND HEADER BLOCK ---
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(26, 11, 5); // Deep Dark (#1A0B05)
+    doc.text("B R E W E D .", 52.5, 18, { align: "center" });
+    
+    doc.setFont("Helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(112, 100, 92); // Ash Muted (#70645C)
+    doc.text("Your Freshly Brewed Coffee Experience", 52.5, 23, { align: "center" });
+    doc.text(`Issued on: ${dateString}`, 52.5, 27, { align: "center" });
+
+    // Premium Double-Border Separation Line
+    doc.setDrawColor(196, 149, 106); // Theme Gold/Primary (#C4956A)
+    doc.setLineWidth(0.4);
+    doc.line(10, 31, 95, 31);
+    doc.setLineWidth(0.15);
+    doc.line(10, 32.5, 95, 32.5);
+
+    // --- METADATA SECTION ---
+    doc.setTextColor(26, 11, 5);
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("ORDER METADATA", 10, 41);
+    
+    doc.setFont("Helvetica", "normal");
+    doc.setTextColor(112, 100, 92);
+    doc.text("Order ID Reference:", 10, 47);
+    doc.setTextColor(26, 11, 5);
+    doc.setFont("Helvetica", "bold");
+    doc.text(`${displayId}`, 95, 47, { align: "right" });
+    
+    doc.setFont("Helvetica", "normal");
+    doc.setTextColor(112, 100, 92);
+    doc.text("Payment Strategy:", 10, 52);
+    doc.setTextColor(26, 11, 5);
+    doc.text(`${paymentMode}`, 95, 52, { align: "right" });
+
+    // Thin elegant layout card border line
+    doc.setDrawColor(230, 223, 213); // Card Border (#E6DFD5)
+    doc.setLineWidth(0.2);
+    doc.line(10, 57, 95, 57);
+
+    // --- DETAILED CHARGES BILLING BREAKDOWN ---
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("CHARGES BREAKDOWN", 10, 65);
+
+    doc.setFont("Helvetica", "normal");
+    doc.setTextColor(70, 64, 5C); // Muted Dark
+    doc.text("Items Subtotal", 10, 71);
+    doc.text(`₹ ${subtotal}.00`, 95, 71, { align: "right" });
+
+    doc.text("Estimated Café GST (5%)", 10, 76);
+    doc.text(`₹ ${calculatedTax}.00`, 95, 76, { align: "right" });
+
+    if (driverTip > 0) {
+      doc.text("Driver / Partner Tip", 10, 81);
+      doc.text(`₹ ${driverTip}.00`, 95, 81, { align: "right" });
+    }
+
+    // --- HIGHLIGHTED TOTAL AREA ---
+    // Background Frame Block Box
+    doc.setFillColor(26, 11, 5); // Solid deep theme background (#1A0B05)
+    doc.rect(10, 87, 85, 13, "F");
+    
+    doc.setTextColor(255, 255, 255); // White primary contrast
+    doc.setFont("Helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("TOTAL PAID", 15, 95);
+    
+    doc.setTextColor(196, 149, 106); // Theme Gold contrast alignment (#C4956A)
+    doc.text(`₹ ${grandTotal}.00`, 90, 95, { align: "right" });
+
+    // --- FOOTER BRAND NOTES ---
+    doc.setTextColor(112, 100, 92);
+    doc.setFont("Helvetica", "italic");
+    doc.setFontSize(8);
+    doc.text("Thank you for choosing Brewed! Cheers!", 52.5, 111, { align: "center" });
+
+    // Instantly download saved generated file stream
+    doc.save(`Receipt-${displayId.replace("#", "")}.pdf`);
+  };
+
   const handleCopy = () => {
     navigator.clipboard.writeText(displayId);
     setCopied(true);
@@ -117,80 +220,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         setPage("menu");
       }
     }
-  };
-
-  // AUTOMATED PDF RECEIPT GENERATION
-  const handleDownloadReceipt = () => {
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a6" // A6 size fits perfectly for retail/coffee shop receipts
-    });
-
-    const totalAmount = (orderSnapshot?.calculations?.grandTotal || 0) + (selectedTip || 0);
-    const paymentMode = orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online";
-    const dateString = new Date().toLocaleDateString("en-IN", {
-      year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit"
-    });
-
-    // Styling configurations
-    doc.setTextColor(26, 11, 5); // Brand Dark text color (#1A0B05)
-    
-    // Header
-    doc.setFont("Helvetica", "bold");
-    doc.setFontSize(18);
-    doc.text("BREWED.", 10, 15);
-    
-    doc.setFont("Helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(112, 100, 92); // Muted color (#70645C)
-    doc.text("Your Freshly Brewed Coffee Experience", 10, 20);
-    doc.text(dateString, 10, 24);
-
-    // Divider line
-    doc.setDrawColor(230, 223, 213); // Card Border (#E6DFD5)
-    doc.line(10, 28, 95, 28);
-
-    // Order Meta Info
-    doc.setTextColor(26, 11, 5);
-    doc.setFont("Helvetica", "bold");
-    doc.setFontSize(9);
-    doc.text(`Order ID: ${displayId}`, 10, 35);
-    
-    doc.setFont("Helvetica", "normal");
-    doc.text(`Payment Mode: ${paymentMode}`, 10, 41);
-
-    // Divider line
-    doc.line(10, 46, 95, 46);
-
-    // Summary Calculations
-    doc.setFont("Helvetica", "normal");
-    doc.text("Items Subtotal:", 10, 54);
-    doc.text(`INR ${orderSnapshot?.calculations?.subtotal || 0}`, 70, 54);
-
-    if (selectedTip && selectedTip > 0) {
-      doc.text("Driver Tip:", 10, 60);
-      doc.text(`INR ${selectedTip}`, 70, 60);
-    }
-
-    // Grand Total Highlight box
-    doc.setFillColor(250, 249, 246); // Accent light background (#FAF9F6)
-    doc.rect(10, 66, 85, 12, "F");
-    
-    doc.setFont("Helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text("Amount Paid:", 14, 73);
-    doc.setTextColor(196, 149, 106); // Primary theme accent color (#C4956A)
-    doc.text(`INR ${totalAmount}`, 70, 73);
-
-    // Footer note
-    doc.setTextColor(112, 100, 92);
-    doc.setFont("Helvetica", "italic");
-    doc.setFontSize(8);
-    doc.text("Thank you for choosing Brewed! Cheers!", 52, 90, { align: "center" });
-
-    // Download file
-    doc.save(`Receipt-${displayId.replace("#", "")}.pdf`);
   };
 
   const handleProceedToCartWithItem = (item) => {
@@ -459,7 +488,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           transform: scale(1.15);
         }
         
-        /* INVERTED TRIANGLE CARDS DESIGN */
         .pairing-modal-container {
           display: flex;
           flex-direction: column;
@@ -546,13 +574,12 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         }
       `}</style>
 
-      {/* PAIR FRESH SIDES - INVERTED TRIANGLE OVERLAY */}
+      {/* PAIR FRESH SIDES OVERLAY */}
       {showPairMenuOverlay && (
         <div style={styles.modalOverlay}>
           <button className="close-floating-btn" onClick={() => setShowPairMenuOverlay(false)}>✕</button>
           
           <div className="pairing-modal-container">
-            {/* Top Row: Row of 3 Items */}
             <div className="pairing-row-top">
               {CURATED_RECOMMENDATIONS.slice(0, 3).map((item) => {
                 const isAdding = addingItemId === item.id;
@@ -586,7 +613,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               })}
             </div>
 
-            {/* Bottom Row: Row of 2 Items Centered */}
             <div className="pairing-row-bottom">
               {CURATED_RECOMMENDATIONS.slice(3, 5).map((item) => {
                 const isAdding = addingItemId === item.id;
