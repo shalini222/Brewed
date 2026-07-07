@@ -53,7 +53,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const [copied, setCopied] = useState(false);
   const [selectedTip, setSelectedTip] = useState(null);
   
-  // Tracks which item is currently being added to trigger the state change
+  // Tracks which item is currently being added to trigger state animation
   const [addingItemId, setAddingItemId] = useState(null);
 
   // Controls overlay for pairing menu
@@ -134,7 +134,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
       instructions: "Side item pairing"
     });
 
-    // Short delay before navigation to showcase the "Added" change
+    // Short delay before navigation to showcase the successful "Added ✓" state
     setTimeout(() => {
       setPage("cart");
       setAddingItemId(null);
@@ -216,7 +216,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                   
                   <button className="btn-action" style={styles.pairSolidBtn} onClick={() => setShowPairMenuOverlay(true)}>
                     <span className="reorder-btn-inner" style={{ color: "#FFFFFF" }}>
-                      Pair Fresh Sides
+                      Pair+
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="12" y1="5" x2="12" y2="19"></line>
                         <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -508,7 +508,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                       onClick={() => handleProceedToCartWithItem(item)}
                       disabled={addingItemId !== null}
                     >
-                      {isAdding ? "Added ✓" : "Added"}
+                      {isAdding ? "Added ✓" : "Add"}
                     </button>
                   </div>
                 );
@@ -542,7 +542,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                       onClick={() => handleProceedToCartWithItem(item)}
                       disabled={addingItemId !== null}
                     >
-                      {isAdding ? "Added ✓" : "Added"}
+                      {isAdding ? "Added ✓" : "Add"}
                     </button>
                   </div>
                 );
