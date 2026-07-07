@@ -27,6 +27,14 @@ const STEPS = [
   { id: 5, label: "Delivery Failed", desc: "We encountered an issue with your delivery.", icon: "❌" }
 ];
 
+const FEEDBACK_OPTIONS = [
+  "Fast Delivery",
+  "Great Coffee",
+  "Friendly Rider",
+  "Perfect Temp",
+  "Good Packaging"
+];
+
 export default function TrackingPage({ setPage, orderSnapshot }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [estimatedTime, setEstimatedTime] = useState(25);
@@ -34,9 +42,10 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const [copied, setCopied] = useState(false);
   const [selectedTip, setSelectedTip] = useState(null);
   
-  // Feedback popup state
+  // New Feedback State
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [rating, setRating] = useState(0);
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [typedReview, setTypedReview] = useState("");
 
   useEffect(() => {
     if (!orderSnapshot) {
@@ -57,7 +66,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         const nextStep = prev + 1;
         setEstimatedTime((time) => Math.max(0, time - 8));
         
-        // Trigger the feedback popup right when status turns to Delivered (Step 4)
         if (nextStep === 4) {
           setShowFeedbackModal(true);
         }
@@ -91,12 +99,17 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     }
   };
 
+  const toggleFeedbackTag = (tag) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
+
   const submitFeedback = () => {
-    alert(`Thank you for your ${rating}-star feedback!`);
+    alert("Thank you for your review!");
     setShowFeedbackModal(false);
   };
 
-  // Helper component for the Order Information card layout
   const OrderInformationCard = () => (
     <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
       <h3 style={{ ...styles.sectionTitle, marginBottom: "0.5rem" }}>Order Information</h3>
@@ -137,8 +150,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           </div>
 
           <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            
-            {/* Horizontal Split Layout for Actions */}
             <div style={styles.actionSplitRow}>
               {isDelivered ? (
                 <>
@@ -167,7 +178,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               )}
             </div>
 
-            {/* Smart Cancel Order Segment */}
             {!isDelivered && (
               <div style={{ width: "100%" }}>
                 {currentStep === 1 ? (
@@ -256,9 +266,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         .copy-btn:hover {
           color: ${THEME.colors.primary};
         }
-        .copy-btn:active {
-          transform: scale(0.9);
-        }
         .tip-pill {
           flex: 1;
           padding: 0.5rem;
@@ -306,49 +313,67 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           justify-content: center;
           gap: 0.5rem;
         }
-        .star-rating-btn {
-          background: none;
-          border: none;
-          font-size: 1.75rem;
+        .feedback-chip {
+          padding: 0.45rem 0.75rem;
+          border: 1px solid ${THEME.colors.cardBorder};
+          background-color: ${THEME.colors.accentLight};
+          color: ${THEME.colors.textDark};
+          border-radius: 20px;
+          font-size: 0.8rem;
+          font-weight: 500;
           cursor: pointer;
-          transition: transform 0.1s;
+          transition: all 0.15s ease;
         }
-        .star-rating-btn:hover {
-          transform: scale(1.15);
+        .feedback-chip.active {
+          background-color: ${THEME.colors.headerBg};
+          border-color: ${THEME.colors.headerBg};
+          color: #FFF;
         }
       `}</style>
 
-      {/* FEEDBACK MODAL POPUP */}
+      {/* RE-ARCHITECTED FEEDBACK MODAL */}
       {showFeedbackModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
             <button style={styles.modalCloseBtn} onClick={() => setShowFeedbackModal(false)}>✕</button>
-            <span style={{ fontSize: "2.5rem" }}>🎉</span>
-            <h2 style={styles.modalTitle}>Order Delivered!</h2>
-            <p style={styles.modalText}>How was your experience with Brewed today?</p>
+            <h2 style={styles.modalTitle}>Share Your Experience</h2>
+            <p style={styles.modalText}>What went well with your order today?</p>
             
-            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", margin: "1rem 0" }}>
-              {[1, 2, 3, 4, 5].map((star) => (
+            {/* Tag Selection Row */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", justifyContent: "center", margin: "1rem 0" }}>
+              {FEEDBACK_OPTIONS.map((tag) => (
                 <button 
-                  key={star} 
-                  className="star-rating-btn" 
-                  onClick={() => setRating(star)}
+                  key={tag} 
+                  onClick={() => toggleFeedbackTag(tag)}
+                  className={`feedback-chip ${selectedTags.includes(tag) ? "active" : ""}`}
                 >
-                  {star <= rating ? "⭐" : "☆"}
+                  {tag}
                 </button>
               ))}
             </div>
 
-            <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
+            {/* Custom Review Input Box */}
+            <textarea 
+              placeholder="Tell us more about your order (optional)..."
+              value={typedReview}
+              onChange={(e) => setTypedReview(e.target.value)}
+              style={styles.modalTextArea}
+            />
+
+            <div style={{ display: "flex", gap: "0.5rem", marginTop: "1.25rem" }}>
               <button onClick={() => setShowFeedbackModal(false)} style={styles.modalCancelActionBtn}>
                 Close
               </button>
               <button 
                 onClick={submitFeedback} 
-                disabled={rating === 0}
-                style={{ ...styles.modalSubmitActionBtn, opacity: rating === 0 ? 0.5 : 1, cursor: rating === 0 ? "not-allowed" : "pointer" }}
+                disabled={selectedTags.length === 0 && !typedReview.trim()}
+                style={{ 
+                  ...styles.modalSubmitActionBtn, 
+                  opacity: (selectedTags.length === 0 && !typedReview.trim()) ? 0.5 : 1, 
+                  cursor: (selectedTags.length === 0 && !typedReview.trim()) ? "not-allowed" : "pointer" 
+                }}
               >
-                Submit Feedback
+                Submit
               </button>
             </div>
           </div>
@@ -360,7 +385,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         <h1 style={styles.heading}>Track Your Order</h1>
 
         <div className="layout-grid">
-          {/* Main Status Panel */}
           <div className="main-panel">
             <div className="interactive-card">
               <div style={styles.etaHeader}>
@@ -381,7 +405,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                 </div>
               </div>
 
-              {/* Progress Line Tracker */}
               <div style={styles.timeline}>
                 {STEPS.map((step, index) => {
                   if (step.id === 5 && isDelivered) return null;
@@ -429,7 +452,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             </div>
           </div>
 
-          {/* Sidebar Panel */}
           <div className="side-panel">
             {isFailed ? (
               <>
@@ -528,18 +550,18 @@ const styles = {
   reorderFullBtn: { width: "100%", padding: "0.75rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" },
   reorderHalfBtn: { flex: 1, padding: "0.75rem 0.5rem", backgroundColor: "transparent", color: THEME.colors.textDark, border: `1.5px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem" },
   
-  // New Cancel Button Styles
   cancelActiveBtn: { width: "100%", padding: "0.65rem", backgroundColor: "transparent", color: THEME.colors.error, border: `1px solid ${THEME.colors.error}`, borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center" },
   cancelDisabledWrapper: { display: "flex", flexDirection: "column", gap: "0.25rem" },
   cancelDisabledBtn: { width: "100%", padding: "0.65rem", backgroundColor: "#F0ECE6", color: "#A89F95", border: "1px solid #E0D9D0", borderRadius: "8px", fontWeight: "600", fontSize: "0.85rem", textAlign: "center", cursor: "not-allowed" },
   cancelWarningText: { margin: 0, fontSize: "0.75rem", color: THEME.colors.error, textAlign: "center", lineHeight: "1.3" },
 
-  // New Modal Styles
+  // Updated Modal Styles without elements that conflict with the color scheme
   modalOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(26, 11, 5, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "1rem" },
-  modalContent: { backgroundColor: "#FFFFFF", borderRadius: "16px", padding: "2rem", maxWidth: "360px", width: "100%", boxSizing: "border-box", textAlign: "center", position: "relative", boxShadow: "0 10px 40px rgba(0,0,0,0.12)" },
+  modalContent: { backgroundColor: "#FFFFFF", borderRadius: "16px", padding: "2rem", maxWidth: "380px", width: "100%", boxSizing: "border-box", textAlign: "center", position: "relative", boxShadow: "0 10px 40px rgba(0,0,0,0.12)" },
   modalCloseBtn: { position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", fontSize: "1.1rem", color: THEME.colors.textMuted, cursor: "pointer" },
-  modalTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.5rem", margin: "0.75rem 0 0.25rem 0", color: THEME.colors.textDark },
+  modalTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.45rem", margin: "0 0 0.25rem 0", color: THEME.colors.textDark },
   modalText: { margin: "0 0 1rem 0", fontSize: "0.9rem", color: THEME.colors.textMuted },
+  modalTextArea: { width: "100%", height: "80px", padding: "0.6rem", border: `1px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", backgroundColor: "#FAF9F6", fontFamily: THEME.fonts.sans, fontSize: "0.85rem", resize: "none", boxSizing: "border-box", color: THEME.colors.textDark, outline: "none", marginTop: "0.5rem" },
   modalCancelActionBtn: { flex: 1, padding: "0.75rem", backgroundColor: "transparent", border: `1px solid ${THEME.colors.cardBorder}`, borderRadius: "8px", fontWeight: "600", color: THEME.colors.textDark, cursor: "pointer" },
   modalSubmitActionBtn: { flex: 2, padding: "0.75rem", backgroundColor: THEME.colors.headerBg, border: "none", borderRadius: "8px", fontWeight: "600", color: "#FFF" }
 };
