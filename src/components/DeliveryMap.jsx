@@ -11,11 +11,11 @@ export default function DeliveryMap({ currentStep = 1 }) {
 
   const animationRef = useRef(null);
 
-  // Core anchor locations based on your screenshots
+  // Core anchor locations
   const cafeCoords = [12.9716, 77.5946];
   const destinationCoords = [12.9830, 77.6030];
 
-  // FIXED: Road-snapped street grid routing that avoids cutting through the park!
+  // Road-snapped street grid routing
   const fullRoadPath = [
     // --- STAGE 1: Order Confirmed ---
     [12.9650, 77.5850],
@@ -24,7 +24,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     // --- STAGE 2: Brewing (Directly at the Cafe) ---
     [12.9716, 77.5946], 
     
-    // --- STAGE 3: Out for Delivery (Navigating around the roads smoothly) ---
+    // --- STAGE 3: Out for Delivery ---
     [12.9730, 77.5955],
     [12.9755, 77.5970],
     [12.9775, 77.5990],
@@ -95,21 +95,21 @@ export default function DeliveryMap({ currentStep = 1 }) {
       }
     ).addTo(map);
 
-    // DARK COFFEE PATH LINE
     routeLineRef.current = window.L.polyline(fullRoadPath, {
       color: "#4A3525", 
       weight: 5,
       opacity: 0.95,
     }).addTo(map);
 
-    // FIXED: High-quality, unbreakable Inline Cafe SVG Map Marker Pin
-    const elegantCafePin = `
+    // UPGRADED COFFEE MARKER: Artisanal Coffee Roast Bag Pin
+    const coffeeRoastPin = `
       <div class="large-building-asset">
         <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M32 2C19.84 2 10 11.84 10 24C10 39.5 32 62 32 62C32 62 54 39.5 54 24C54 11.84 44.16 2 32 2Z" fill="#7D5A44" stroke="#4A3525" stroke-width="2"/>
           <circle cx="32" cy="24" r="14" fill="#FFFFFF" />
-          <path d="M26 26C26 21.58 29.58 18 34 18" stroke="#4A3525" stroke-width="3" stroke-linecap="round"/>
-          <path d="M38 22C38 26.42 34.42 30 30 30" stroke="#4A3525" stroke-width="3" stroke-linecap="round"/>
+          <path d="M25 18H39L37 31H27L25 18Z" fill="#D7CCC8" stroke="#4A3525" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M25 18L32 21L39 18" stroke="#4A3525" stroke-width="1.5"/>
+          <circle cx="32" cy="25" r="2.5" fill="#4A3525" />
         </svg>
       </div>
     `;
@@ -119,12 +119,12 @@ export default function DeliveryMap({ currentStep = 1 }) {
     }).addTo(map);
 
     cafeMarkerRef.current
-      .bindTooltip(elegantCafePin, {
+      .bindTooltip(coffeeRoastPin, {
         permanent: true, direction: "center", className: "completely-empty-tooltip"
       })
       .openTooltip();
 
-    // FIXED: High-quality, unbreakable Inline House SVG Map Marker Pin
+    // CUSTOMER HOUSE PIN (Kept exactly as you requested)
     const elegantHomePin = `
       <div class="large-building-asset">
         <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -182,7 +182,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     setMapInstance(map);
   }, [isLeafletReady]);
 
-  // 2. SMOOTH ROTATION ENGINE
+  // SMOOTH ROTATION ENGINE
   useEffect(() => {
     if (!mapInstance || !window.L || !scooterMarkerRef.current) return;
 
@@ -255,7 +255,6 @@ export default function DeliveryMap({ currentStep = 1 }) {
         .leaflet-tooltip-right.completely-empty-tooltip::before {
           display: none !important;
         }
-        /* Scale: Buildings look comparatively larger than the tiny bike */
         .large-building-asset {
           display: flex;
           align-items: center;
