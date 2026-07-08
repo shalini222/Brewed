@@ -45,15 +45,16 @@ export default function DeliveryMap({ currentStep }) {
       attribution: "© OpenStreetMap contributors",
     }).addTo(mapInstance.current);
 
-    // Using a fully native div wrapper inside the HTML block to prevent standard styling leaks
-    const flippedScooterIcon = window.L.divIcon({
-      html: `<div class="bike-emoji-wrapper">🛵</div>`,
+    // THE ULTIMATE FIX: Pass a completely transparent tiny PNG data URI to L.icon.
+    // This tricks Leaflet into rendering a zero-border frame, and we append the emoji via pure CSS.
+    const cleanScooterIcon = window.L.icon({
+      iconUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
       iconSize: [36, 36],
       iconAnchor: [18, 18],
-      className: "unstyle-leaflet-marker"
+      className: "rendered-bike-marker"
     });
 
-    markerRef.current = window.L.marker(initialCoords, { icon: flippedScooterIcon }).addTo(mapInstance.current);
+    markerRef.current = window.L.marker(initialCoords, { icon: cleanScooterIcon }).addTo(mapInstance.current);
   }, [isLeafletReady]);
 
   useEffect(() => {
@@ -68,25 +69,22 @@ export default function DeliveryMap({ currentStep }) {
 
   return (
     <div style={{ width: "100%" }}>
-      {/* Absolute Override Style block targeting both the library class and container */}
+      {/* CSS pseudo-element injection: Forces the scooter emoji inside the clean transparent icon */}
       <style>{`
-        .unstyle-leaflet-marker, 
-        .leaflet-marker-icon.unstyle-leaflet-marker,
-        .leaflet-div-icon.unstyle-leaflet-marker {
+        .rendered-bike-marker {
           background: transparent !important;
-          background-color: transparent !important;
           border: none !important;
-          outline: none !important;
           box-shadow: none !important;
         }
-        .bike-emoji-wrapper {
-          font-size: 34px !important;
-          transform: scaleX(-1) !important;
-          display: block !important;
-          line-height: 1 !important;
-          width: 36px !important;
-          height: 36px !important;
-          background: transparent !important;
+        .rendered-bike-marker::after {
+          content: "🛵";
+          font-size: 34px;
+          position: absolute;
+          top: -6px;
+          left: 0;
+          display: block;
+          transform: scaleX(-1); /* Flips scooter forward */
+          line-height: 1;
         }
       `}</style>
       
