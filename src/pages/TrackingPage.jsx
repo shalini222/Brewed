@@ -735,14 +735,25 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         </div>
       )}
 
-      {/* CORE LAYOUT */}
+          {/* CORE LAYOUT */}
       <div style={{ maxWidth: "940px", margin: "0 auto" }}>
         <button style={styles.backLink} onClick={() => setPage("menu")}>← Return to Menu</button>
         <h1 style={styles.heading}>Track Your Order</h1>
 
+        {/* FULL-WIDTH TOP MAP BANNER */}
+        {!isFailed && (
+          <div style={{ marginBottom: "2rem", width: "100%" }}>
+            <div className="interactive-card" style={{ padding: "1rem" }}>
+              <h3 style={{ ...styles.sectionTitle, marginBottom: "0.75rem" }}>Live Delivery Route</h3>
+              <DeliveryMap currentStep={currentStep} />
+            </div>
+          </div>
+        )}
+
         <div className="layout-grid">
+          {/* LEFT PANEL: TIMELINE */}
           <div className="main-panel">
-            <div className="interactive-card">
+            <div className="interactive-card" style={{ height: "100%" }}>
               <div style={styles.etaHeader}>
                 <div>
                   <p style={styles.etaLabel}>Status Update</p>
@@ -806,6 +817,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             </div>
           </div>
 
+          {/* RIGHT PANEL: PARTNER INFO & BREAKDOWN */}
           <div className="side-panel">
             {isFailed ? (
               <>
@@ -823,9 +835,6 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
               <>
                 <div className="interactive-card">
                   <h3 style={styles.sectionTitle}>Delivery Partner</h3>
-                  
-                  {/* Mounted DeliveryMap here dynamically tracking currentStep state */}
-                  <DeliveryMap currentStep={currentStep} />
 
                   <div style={styles.riderProfile}>
                     <div style={styles.avatar}>🛵</div>
@@ -867,6 +876,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           </div>
         </div>
       </div>
+
     </div>
   );
 }
