@@ -1,4 +1,4 @@
-    import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export default function DeliveryMap({ currentStep }) {
   const mapRef = useRef(null);
@@ -45,12 +45,12 @@ export default function DeliveryMap({ currentStep }) {
       attribution: "© OpenStreetMap contributors",
     }).addTo(mapInstance.current);
 
-    // KILL THE BACKGROUND: Assign a unique className and handle style resets
+    // Using a fully native div wrapper inside the HTML block to prevent standard styling leaks
     const flippedScooterIcon = window.L.divIcon({
-      html: `<div style="font-size: 32px; transform: scaleX(-1); display: inline-block; line-height: 1;">🛵</div>`,
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-      className: "transparent-bike-icon"
+      html: `<div class="bike-emoji-wrapper">🛵</div>`,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18],
+      className: "unstyle-leaflet-marker"
     });
 
     markerRef.current = window.L.marker(initialCoords, { icon: flippedScooterIcon }).addTo(mapInstance.current);
@@ -68,14 +68,28 @@ export default function DeliveryMap({ currentStep }) {
 
   return (
     <div style={{ width: "100%" }}>
-      {/* Global override targeting only our specific custom marker class */}
+      {/* Absolute Override Style block targeting both the library class and container */}
       <style>{`
-        .transparent-bike-icon {
+        .unstyle-leaflet-marker, 
+        .leaflet-marker-icon.unstyle-leaflet-marker,
+        .leaflet-div-icon.unstyle-leaflet-marker {
           background: transparent !important;
+          background-color: transparent !important;
           border: none !important;
+          outline: none !important;
           box-shadow: none !important;
         }
+        .bike-emoji-wrapper {
+          font-size: 34px !important;
+          transform: scaleX(-1) !important;
+          display: block !important;
+          line-height: 1 !important;
+          width: 36px !important;
+          height: 36px !important;
+          background: transparent !important;
+        }
       `}</style>
+      
       <div 
         ref={mapRef} 
         style={{ 
