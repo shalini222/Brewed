@@ -77,21 +77,27 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // 1. SYSTEM TRANSITION TIMER (INCREMENTS STEPS ONLY)
   useEffect(() => {
     if (!orderSnapshot || currentStep >= 4) return;
     const interval = setInterval(() => {
       setCurrentStep((prev) => {
-        const nextStep = prev + 1;
         setEstimatedTime((time) => Math.max(0, time - 8));
-        
-        if (nextStep === 4) {
-          setShowFeedbackModal(true);
-        }
-        return nextStep;
+        return prev + 1;
       });
     }, 15000);
     return () => clearInterval(interval);
   }, [currentStep, orderSnapshot]);
+
+  // 2. NEW DELIVERED STATUS WATCHER (POPS UP REVIEW AFTER MAP ARREST)
+  useEffect(() => {
+    if (currentStep === 4) {
+      const modalTimeout = setTimeout(() => {
+        setShowFeedbackModal(true);
+      }, 1500); // 1.5 second buffer allowing bike marker positioning to hit target home flawlessly
+      return () => clearTimeout(modalTimeout);
+    }
+  }, [currentStep]);
 
   if (!orderSnapshot) return null;
 
@@ -398,7 +404,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           height: 45px;
           border: 2px solid ${THEME.colors.primary};
           border-radius: 50%;
-          animation: pulseExpand 2s infinite ease-out;
+          animation: pulseExpand 2.7s infinite cubic-bezier(0.16, 1, 0.3, 1);
           opacity: 0;
         }
         @keyframes pulseExpand {
@@ -833,11 +839,11 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                 <div className="interactive-card">
                   <h3 style={styles.sectionTitle}>Delivery Partner</h3>
 
-                  {/* --- POP-UP ARRIVAL NOTIFICATION BUBBLE --- */}
+                  {/* POP-UP ARRIVAL NOTIFICATION BUBBLE */}
                   {partnerMessage && (
                     <div 
                       style={{
-                        backgroundColor: "#1A1A2E",
+                        backgroundColor: "#1A0B05",
                         color: "#FFFFFF",
                         padding: "12px 16px",
                         borderRadius: "12px",
@@ -846,11 +852,11 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                         lineHeight: "1.4",
                         marginBottom: "16px",
                         position: "relative",
-                        boxShadow: "0 4px 12px rgba(26, 26, 46, 0.15)",
+                        boxShadow: "0 4px 12px rgba(26, 11, 5, 0.15)",
                         animation: "fadeIn 0.3s ease-out forwards"
                       }}
                     >
-                      <p style={{ margin: 0 }}> {partnerMessage}</p>
+                      <p style={{ margin: 0 }}>💬 {partnerMessage}</p>
                       <div 
                         style={{
                           position: "absolute",
@@ -860,7 +866,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                           height: "0",
                           borderLeft: "6px solid transparent",
                           borderRight: "6px solid transparent",
-                          borderTop: "6px solid #1A1A2E"
+                          borderTop: "6px solid #1A0B05"
                         }}
                       />
                     </div>
