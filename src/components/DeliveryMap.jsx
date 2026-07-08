@@ -288,7 +288,7 @@ export default function DeliveryMap({ currentStep = 1, onPartnerMessageUpdate })
         }
         
         /* Centered Caramel Radar Pulsate Engine */
-        .caramel-glow-radar {
+          .caramel-glow-radar {
   width: 20px;
   height: 20px;
   background: rgba(217, 119, 6, 0.12);
@@ -299,12 +299,12 @@ export default function DeliveryMap({ currentStep = 1, onPartnerMessageUpdate })
   top: 50%;
   margin-left: -10px;
   margin-top: -10px;
-  /* Updated duration to exactly 2.3s */
-  animation: caramelPulsate 2.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  /* Updated duration to exactly 1.9s */
+  animation: caramelPulsate 1.9s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
   pointer-events: none;
   transform-origin: center center;
   z-index: -1; 
-  will-change: transform, opacity; /* GPU acceleration hint */
+  will-change: transform, opacity;
 }
 
 @keyframes caramelPulsate {
@@ -316,6 +316,8 @@ export default function DeliveryMap({ currentStep = 1, onPartnerMessageUpdate })
     transform: scale(4.8);
     opacity: 0;
   }
+}
+
 }
         
         #live-scooter-container {
