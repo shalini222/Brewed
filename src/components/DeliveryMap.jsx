@@ -11,42 +11,35 @@ export default function DeliveryMap({ currentStep = 1 }) {
 
   const animationRef = useRef(null);
 
-  // Core anchor positions for the buildings
+  // Core landmarks
   const cafeCoords = [12.9716, 77.5946];
   const destinationCoords = [12.9830, 77.6030];
 
-  // COMPLETE ROAD PATHWAY
-  // Index 2 is the exact roadside spot for the Café.
-  // Index 7 (the final index) is the exact spot for the House.
+  // CONVENIENT ROAD PATHWAY
   const fullRoadPath = [
-    // --- STAGE 1: Order Confirmed (Starts far away) ---
+    // --- STAGE 1: Order Confirmed ---
     [12.9610, 77.5840],
     [12.9635, 77.5870],
-    
-    // --- STAGE 2: Brewing (Stops exactly 2 road nodes back from the Café) ---
-    [12.9665, 77.5900], 
-    
-    // Intermediate path nodes passing the café
+    [12.9665, 77.5900],
     [12.9692, 77.5925],
-    [12.9716, 77.5946], // Exact Café Node
     
-    // --- STAGE 3: Out for Delivery (Moving through the shortest road grid) ---
+    // --- STAGE 2: Brewing (Reaches the Café) ---
+    [12.9716, 77.5946], 
+    
+    // --- STAGE 3: Out for Delivery ---
     [12.9735, 77.5958],
-    
-    // --- STAGE 4: Delivered (Stops exactly 2 road nodes back from the Customer House) ---
     [12.9760, 77.5978], 
-    
-    // Final destination approach nodes leading up to the house
     [12.9790, 77.6000], 
-    [12.9830, 77.6030]  // Exact House Node
+    
+    // --- STAGE 4: Delivered (Reaches the House) ---
+    [12.9830, 77.6030]
   ];
 
-  // Helper targeting function keeping the bike exactly 2 steps away from landmarks
   const getTargetCoords = (step) => {
     if (step <= 1) return fullRoadPath[0];
-    if (step === 2) return fullRoadPath[2]; // 2 steps back from Café node (index 4)
-    if (step === 3) return fullRoadPath[5]; // Midpoint transit
-    return fullRoadPath[6]; // Step 4+: 2 steps back from House node (index 8)
+    if (step === 2) return fullRoadPath[4]; 
+    if (step === 3) return fullRoadPath[6]; 
+    return fullRoadPath[fullRoadPath.length - 1]; 
   };
 
   const calculateRemainingPath = (currentLatLng) => {
@@ -104,65 +97,41 @@ export default function DeliveryMap({ currentStep = 1 }) {
       }
     ).addTo(map);
 
-    // COFFEE DARK BROWN ROUTE LINE
+    // DARK COFFEE PATH LINE
     routeLineRef.current = window.L.polyline(fullRoadPath, {
       color: "#4A3525", 
       weight: 5,
       opacity: 0.95,
     }).addTo(map);
 
-    // DYNAMIC CAFE SVG MARKER (Comparatively large, cozy aesthetic coffee shop)
-    const premiumCafeSvg = `
-      <div class="building-container">
-        <svg width="58" height="58" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="8" y="24" width="48" height="34" rx="3" fill="#D7CCC8" stroke="#5D4037" stroke-width="2"/>
-          <path d="M6 14H58L52 24H12L6 14Z" fill="#8D6E63" />
-          <path d="M12 14L16 24M23 14L24 24M34 14L32 24M45 14L43 24" stroke="#5D4037" stroke-width="2"/>
-          <rect x="26" y="38" width="12" height="20" rx="1" fill="#BBDEFB" stroke="#5D4037" stroke-width="2"/>
-          <rect x="42" y="34" width="10" height="12" rx="1" fill="#BBDEFB" stroke="#5D4037" stroke-width="1.5"/>
-          <circle cx="47" cy="40" r="2" fill="#6D4C41"/>
-          <path d="M18 8Q20 5 18 2" stroke="#A1887F" stroke-width="1.5" stroke-linecap="round"/>
-          <rect x="12" y="8" width="12" height="10" rx="2" fill="#6D4C41" stroke="#5D4037" stroke-width="1.5"/>
-          <path d="M24 11H26V15H24" stroke="#5D4037" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </div>
-    `;
-
+    // EXTRA LARGE CAFE EMOJI MARKER
     cafeMarkerRef.current = window.L.circleMarker(cafeCoords, {
       radius: 0, opacity: 0, fillOpacity: 0
     }).addTo(map);
 
     cafeMarkerRef.current
-      .bindTooltip(premiumCafeSvg, { permanent: true, direction: "center", className: "completely-empty-tooltip" })
+      .bindTooltip(`<div class="large-building-emoji">☕</div>`, {
+        permanent: true, direction: "center", className: "completely-empty-tooltip"
+      })
       .openTooltip();
 
-    // DYNAMIC HOME SVG MARKER (Comparatively large residential townhouse)
-    const premiumHomeSvg = `
-      <div class="building-container">
-        <svg width="58" height="58" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="12" y="26" width="40" height="32" rx="2" fill="#FFF9C4" stroke="#F57F17" stroke-width="2"/>
-          <path d="M8 28L32 6L56 28H8Z" fill="#E53935" stroke="#B71C1C" stroke-width="2" stroke-linejoin="round"/>
-          <rect x="42" y="10" width="6" height="10" fill="#B71C1C" />
-          <rect x="28" y="42" width="10" height="16" fill="#8D6E63" stroke="#5D4037" stroke-width="1.5"/>
-          <circle cx="31" cy="50" r="1" fill="#FFD54F"/>
-          <circle cx="32" cy="20" r="4" fill="#E0F7FA" stroke="#006064" stroke-width="1.5"/>
-        </svg>
-      </div>
-    `;
-
+    // EXTRA LARGE HOUSE EMOJI MARKER
     homeMarkerRef.current = window.L.circleMarker(destinationCoords, {
       radius: 0, opacity: 0, fillOpacity: 0
     }).addTo(map);
 
     homeMarkerRef.current
-      .bindTooltip(premiumHomeSvg, { permanent: true, direction: "center", className: "completely-empty-tooltip" })
+      .bindTooltip(`<div class="large-building-emoji">🏠</div>`, {
+        permanent: true, direction: "center", className: "completely-empty-tooltip"
+      })
       .openTooltip();
 
-    // TEENY TINY BIKE MARKER CONTAINER
+    // TEENY TINY LIVE RIDER MARKER CONTAINER
     scooterMarkerRef.current = window.L.circleMarker(startPos, {
       radius: 0, opacity: 0, fillOpacity: 0
     }).addTo(map);
 
+    // Premium birds-eye vector pointing North ($0^\circ$) by default
     const topDownRiderAndBikeSvg = `
       <div id="live-scooter-container">
         <svg width="34" height="34" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -195,13 +164,15 @@ export default function DeliveryMap({ currentStep = 1 }) {
     `;
 
     scooterMarkerRef.current
-      .bindTooltip(topDownRiderAndBikeSvg, { permanent: true, direction: "center", className: "completely-empty-tooltip" })
+      .bindTooltip(topDownRiderAndBikeSvg, {
+        permanent: true, direction: "center", className: "completely-empty-tooltip"
+      })
       .openTooltip();
 
     setMapInstance(map);
   }, [isLeafletReady]);
 
-  // 2. MOVEMENT INTERPOLATION & HEADING ROTATION MOTOR
+  // 2. SMOOTH TURN-TRACKING ROTATION MOTOR
   useEffect(() => {
     if (!mapInstance || !window.L || !scooterMarkerRef.current) return;
 
@@ -219,7 +190,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
       const currentLng = startCoords.lng + (targetCoords[1] - startCoords.lng) * progress;
       const animatedPoint = { lat: currentLat, lng: currentLng };
 
-      // ORIENTATION HEADING CALCULATOR
+      // TRUE TOP-DOWN ROTATION CALCULATION
       const dLat = targetCoords[0] - startCoords.lat;
       const dLng = targetCoords[1] - startCoords.lng;
       
@@ -229,6 +200,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
 
         const el = document.getElementById("live-scooter-container");
         if (el) {
+          // Pure directional assignment perfectly maps to the top-down asset
           el.style.transform = `rotate(${angleDeg}deg)`;
         }
       }
@@ -275,21 +247,20 @@ export default function DeliveryMap({ currentStep = 1 }) {
         .leaflet-tooltip-right.completely-empty-tooltip::before {
           display: none !important;
         }
-        .building-container {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.15));
+        /* Buildings made extra big dynamically */
+        .large-building-emoji {
+          font-size: 46px !important;
+          display: block !important;
+          line-height: 1 !important;
         }
+        /* Bike kept tiny and compact */
         #live-scooter-container {
           transform-origin: center center;
           display: flex;
           align-items: center;
           justify-content: center;
-          /* Bike set to teeny-tiny scale proportions relative to building landmarks */
           width: 34px;
           height: 34px;
-          filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.2));
           transition: transform 0.08s linear;
         }
       `}</style>
