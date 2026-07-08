@@ -299,8 +299,8 @@ export default function DeliveryMap({ currentStep = 1, onPartnerMessageUpdate })
   top: 50%;
   margin-left: -10px;
   margin-top: -10px;
-  /* Updated duration to exactly 1.9s */
-  animation: caramelPulsate 1.9s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  /* Updated duration to exactly 0.5s */
+  animation: caramelPulsate 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
   pointer-events: none;
   transform-origin: center center;
   z-index: -1; 
@@ -316,8 +316,6 @@ export default function DeliveryMap({ currentStep = 1, onPartnerMessageUpdate })
     transform: scale(4.8);
     opacity: 0;
   }
-}
-
 }
         
         #live-scooter-container {
