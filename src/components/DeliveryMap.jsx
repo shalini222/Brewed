@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
-export default function DeliveryMap({ currentStep = 1 }) {
+export default function DeliveryMap({ currentStep = 1, onPartnerMessageUpdate }) {
   const mapRef = useRef(null);
   const [mapInstance, setMapInstance] = useState(null);
   const scooterMarkerRef = useRef(null);
@@ -9,7 +9,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
   const glowRingMarkerRef = useRef(null);
   const routeLineRef = useRef(null);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
-  const [isPulseDelayed, setIsPulseDelayed] = useState(true); // Tracks the arrival delay state
+  const [isPulseDelayed, setIsPulseDelayed] = useState(true);
 
   const animationRef = useRef(null);
 
@@ -185,26 +185,33 @@ export default function DeliveryMap({ currentStep = 1 }) {
     setMapInstance(map);
   }, [isLeafletReady]);
 
-  // MANAGE 3-SECOND DELAY FOR RADAR ARRIVAL PULSE
+  // MANAGE 3-SECOND DELAY & TEXT ARRIVAL MESSAGE
   useEffect(() => {
     if (currentStep === 4) {
       const timer = setTimeout(() => {
         setIsPulseDelayed(false);
-      }, 3000); // Trigger pulsation exactly 3 seconds late
+        // Expose the arrival text confirmation to parent layout hook
+        if (onPartnerMessageUpdate) {
+          onPartnerMessageUpdate("I have arrived at Your location and will be at door steep soon.");
+        }
+      }, 3000); 
       return () => clearTimeout(timer);
     } else {
       setIsPulseDelayed(true);
+      if (onPartnerMessageUpdate) {
+        onPartnerMessageUpdate(""); // Clear or revert to original tracking updates
+      }
     }
-  }, [currentStep]);
+  }, [currentStep, onPartnerMessageUpdate]);
 
   // ACTIVATE/MOUNT CARAMEL RADAR DYNAMICS
   useEffect(() => {
     if (!mapInstance || !glowRingMarkerRef.current) return;
 
     if (currentStep === 4 && !isPulseDelayed) {
-      glowRingMarkerRef.current.addTo(mapInstance);
+      mapInstance.addLayer(glowRingMarkerRef.current);
     } else {
-      glowRingMarkerRef.current.remove();
+      mapInstance.removeLayer(glowRingMarkerRef.current);
     }
   }, [currentStep, isPulseDelayed, mapInstance]);
 
