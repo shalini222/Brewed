@@ -21,7 +21,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     [12.9650, 77.5850],
     [12.9680, 77.5900],
     
-    // --- STAGE 2: Brewing (At the Premium Coffee Shop) ---
+    // --- STAGE 2: Brewing ---
     [12.9716, 77.5946], 
     
     // --- STAGE 3: Out for Delivery ---
@@ -30,7 +30,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     [12.9775, 77.5990],
     [12.9800, 77.6010],
     
-    // --- STAGE 4: Delivered (At the Customer House) ---
+    // --- STAGE 4: Delivered ---
     [12.9830, 77.6030]
   ];
 
@@ -96,21 +96,19 @@ export default function DeliveryMap({ currentStep = 1 }) {
     ).addTo(map);
 
     routeLineRef.current = window.L.polyline(fullRoadPath, {
-      color: "#1A1A2E", // Elegant ultra-dark path line
+      color: "#1A1A2E", 
       weight: 4,
       opacity: 0.9,
     }).addTo(map);
 
-    // 1. PREMIUM MINIMALIST COFFEE SHOP FRONT
-    const premiumCoffeeShopSvg = `
-      <div class="premium-map-token cafe-token">
+    // 1. PREMIUM COFFEE SHOP LOCATION PIN
+    const premiumCafePin = `
+      <div class="premium-pin-wrapper cafe-pin">
         <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="8" y="24" width="48" height="32" rx="4" fill="#FFFFFF" stroke="#1A1A2E" stroke-width="2.5"/>
-          <path d="M4 14H60L54 24H10L4 14Z" fill="#1A1A2E" stroke="#1A1A2E" stroke-width="2.5" stroke-linejoin="round"/>
-          <rect x="16" y="34" width="12" height="22" stroke="#1A1A2E" stroke-width="2"/>
-          <rect x="36" y="34" width="12" height="14" stroke="#1A1A2E" stroke-width="2"/>
-          <path d="M26 6H34V10H26V6Z" fill="#FFFFFF" stroke="#1A1A2E" stroke-width="2" stroke-linejoin="round"/>
-          <path d="M34 7H36C37 7 37 9 36 9H34" stroke="#1A1A2E" stroke-width="1.5"/>
+          <path d="M32 2C19.8 2 10 11.8 10 24C10 39.5 32 62 32 62C32 62 54 39.5 54 24C54 11.8 44.2 2 32 2Z" fill="#1A1A2E" stroke="#FFFFFF" stroke-width="2"/>
+          <circle cx="32" cy="24" r="13" fill="#FFFFFF" />
+          <path d="M25 21H37V26C37 29.3 34.3 32 31 32H29C25.7 32 23 29.3 23 26V21H25Z" fill="#1A1A2E" />
+          <path d="M37 22H39C40.1 22 41 22.9 41 24C41 25.1 40.1 26 39 26H37" stroke="#1A1A2E" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </div>
     `;
@@ -120,20 +118,18 @@ export default function DeliveryMap({ currentStep = 1 }) {
     }).addTo(map);
 
     cafeMarkerRef.current
-      .bindTooltip(premiumCoffeeShopSvg, {
+      .bindTooltip(premiumCafePin, {
         permanent: true, direction: "center", className: "completely-empty-tooltip"
       })
       .openTooltip();
 
-    // 2. PREMIUM MINIMALIST CUSTOMER RESIDENCE
-    const premiumHouseSvg = `
-      <div class="premium-map-token home-token">
+    // 2. PREMIUM CUSTOMER HOUSE LOCATION PIN
+    const premiumHomePin = `
+      <div class="premium-pin-wrapper home-pin">
         <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="12" y="28" width="40" height="28" rx="4" fill="#FFFFFF" stroke="#D97706" stroke-width="2.5"/>
-          <path d="M6 28L32 6L58 28" stroke="#D97706" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-          <rect x="27" y="42" width="10" height="14" rx="1" fill="#D97706" stroke="#D97706" stroke-width="1"/>
-          <rect x="19" y="34" width="6" height="6" rx="1" stroke="#D97706" stroke-width="2"/>
-          <rect x="39" y="34" width="6" height="6" rx="1" stroke="#D97706" stroke-width="2"/>
+          <path d="M32 2C19.8 2 10 11.8 10 24C10 39.5 32 62 32 62C32 62 54 39.5 54 24C54 11.8 44.2 2 32 2Z" fill="#D97706" stroke="#FFFFFF" stroke-width="2"/>
+          <circle cx="32" cy="24" r="13" fill="#FFFFFF" />
+          <path d="M24 27V34H40V27M32 16L21 24H43L32 16Z" fill="#D97706" stroke="#D97706" stroke-width="1.5" stroke-linejoin="round"/>
         </svg>
       </div>
     `;
@@ -143,12 +139,12 @@ export default function DeliveryMap({ currentStep = 1 }) {
     }).addTo(map);
 
     homeMarkerRef.current
-      .bindTooltip(premiumHouseSvg, {
+      .bindTooltip(premiumHomePin, {
         permanent: true, direction: "center", className: "completely-empty-tooltip"
       })
       .openTooltip();
 
-    // 3. MATTE-FINISH BIRDS-EYE VEHICLE ASSET
+    // 3. MATTE BIRD-EYE BIKE MARKER
     scooterMarkerRef.current = window.L.circleMarker(startPos, {
       radius: 0, opacity: 0, fillOpacity: 0
     }).addTo(map);
@@ -258,22 +254,20 @@ export default function DeliveryMap({ currentStep = 1 }) {
           display: none !important;
         }
         
-        /* Premium Token Styles */
-        .premium-map-token {
+        /* Modern Floating Pins styling */
+        .premium-pin-wrapper {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #FFFFFF;
-          border-radius: 50%;
-          width: 56px;
-          height: 56px;
-          transition: all 0.3s ease;
+          width: 48px;
+          height: 48px;
+          transform: translateY(-20px); /* Centers the pin point precisely on coordinates */
         }
-        .cafe-token {
-          filter: drop-shadow(0px 6px 14px rgba(26, 26, 46, 0.24));
+        .cafe-pin {
+          filter: drop-shadow(0px 4px 10px rgba(26, 26, 46, 0.35));
         }
-        .home-token {
-          filter: drop-shadow(0px 6px 14px rgba(217, 119, 6, 0.24));
+        .home-pin {
+          filter: drop-shadow(0px 4px 10px rgba(217, 119, 6, 0.35));
         }
         
         /* Scaled Bike Engine Container */
