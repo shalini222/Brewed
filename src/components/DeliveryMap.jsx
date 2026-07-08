@@ -11,36 +11,36 @@ export default function DeliveryMap({ currentStep = 1 }) {
 
   const animationRef = useRef(null);
 
-  // Exact landmark locations
+  // Landmarks
   const cafeCoords = [12.9716, 77.5946];
   const destinationCoords = [12.9830, 77.6030];
 
-  // EXTENDED ROAD TRAJECTORY: Started much further back south-west to maximize travel distance
+  // EXTENDED REAL ROAD PATHWAY
   const fullRoadPath = [
-    // --- STAGE 1: Order Confirmed (Rider starts far away, driving slowly toward the café) ---
-    [12.9645, 77.5880], 
-    [12.9668, 77.5905],
-    [12.9688, 77.5924],
-    [12.9702, 77.5935],
+    // --- STAGE 1: Order Confirmed (Rider starts far away down the avenue) ---
+    [12.9630, 77.5860],
+    [12.9652, 77.5885],
+    [12.9675, 77.5910],
+    [12.9698, 77.5930],
     
-    // --- STAGE 2: Brewing (Rider reaches the road near the café entrance) ---
+    // --- STAGE 2: Brewing (Rider arrives directly at the café roadside) ---
     [12.9716, 77.5946], 
     
-    // --- STAGE 3: Out for Delivery (Rider moves along roads to destination) ---
-    [12.9732, 77.5955],
-    [12.9750, 77.5972], 
-    [12.9782, 77.5985], 
-    [12.9801, 77.6008], 
+    // --- STAGE 3: Out for Delivery (Rider takes turns along the street grid) ---
+    [12.9735, 77.5958],
+    [12.9755, 77.5975], 
+    [12.9785, 77.5990], 
+    [12.9805, 77.6012], 
     
-    // --- STAGE 4: Delivered (Arrives perfectly at the house) ---
+    // --- STAGE 4: Delivered (Arrives smoothly at the house) ---
     [12.9830, 77.6030]
   ];
 
   const getTargetCoords = (step) => {
     if (step <= 1) return fullRoadPath[0];
-    if (step === 2) return fullRoadPath[4]; // Café location index
-    if (step === 3) return fullRoadPath[7]; // Midpoint path
-    return fullRoadPath[fullRoadPath.length - 1]; // House location
+    if (step === 2) return fullRoadPath[4]; 
+    if (step === 3) return fullRoadPath[7]; 
+    return fullRoadPath[fullRoadPath.length - 1]; 
   };
 
   const calculateRemainingPath = (currentLatLng) => {
@@ -79,7 +79,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     document.body.appendChild(script);
   }, []);
 
-  // 1. INITIALIZE MAP LAYERS
+  // 1. INITIALIZE STATIC MAP LAYERS
   useEffect(() => {
     if (!isLeafletReady || !window.L || mapInstance) return;
 
@@ -104,7 +104,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
       opacity: 0.9,
     }).addTo(map);
 
-    // CAFETERIA STORE MARKER (Sleek Store Icon)
+    // CAFETERIA MARKER
     cafeMarkerRef.current = window.L.circleMarker(cafeCoords, {
       radius: 0,
       opacity: 0,
@@ -119,7 +119,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
       })
       .openTooltip();
 
-    // CUSTOMER HOUSE MARKER
+    // HOUSE MARKER
     homeMarkerRef.current = window.L.circleMarker(destinationCoords, {
       radius: 0,
       opacity: 0,
@@ -134,7 +134,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
       })
       .openTooltip();
 
-    // LIVE DRIVER MARKER (Starts without structural transforms)
+    // LIVE RIDER MARKER CONTAINER
     scooterMarkerRef.current = window.L.circleMarker(startPos, {
       radius: 0,
       opacity: 0,
@@ -152,7 +152,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     setMapInstance(map);
   }, [isLeafletReady]);
 
-  // 2. SMOOTH REAL-TIME ROTATIONAL INTERPOLATION ENGINE
+  // 2. DELAYED DRIVING VELOCITY & DIRECTIONAL HEAD-FIRST STEERING ENGINE
   useEffect(() => {
     if (!mapInstance || !window.L || !scooterMarkerRef.current) return;
 
@@ -160,46 +160,44 @@ export default function DeliveryMap({ currentStep = 1 }) {
     const startCoords = scooterMarkerRef.current.getLatLng();
     
     const startTime = performance.now();
-    // CRUISE SPEED: Increased to 2500ms (2.5 seconds) so the bike drives slowly and realistically
-    const duration = 2500; 
+    // PACE TUNER: Set to 3500ms (3.5 seconds) to create a relaxed, natural, slow cruise speed
+    const duration = 3500; 
 
     const animateMovement = (currentTime) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
       
-      // Linear transition for steady, consistent driving velocity
+      // Steady speed cruise
       const currentLat = startCoords.lat + (targetCoords[0] - startCoords.lat) * progress;
       const currentLng = startCoords.lng + (targetCoords[1] - startCoords.lng) * progress;
       const animatedPoint = { lat: currentLat, lng: currentLng };
 
-      // TRUE DIRECTION CALCULATOR
+      // CALCULATING THE EXACT HEAD-FIRST FACING ANGLE
       const dLat = targetCoords[0] - startCoords.lat;
       const dLng = targetCoords[1] - startCoords.lng;
       
       if (Math.abs(dLat) > 0.00001 || Math.abs(dLng) > 0.00001) {
-        // Calculate the raw mathematical angle of the street line
+        // Calculate raw mathematical angle of vector
         const angleRad = Math.atan2(dLng, dLat);
         let angleDeg = angleRad * (180 / Math.PI);
 
-        // PERFECT ALIGNMENT CORRECTION: 
-        // Emojis face left by default. To make it head-first, we map the rotation directly
-        // and toggle scale mirror properties contextually depending on whether moving left or right.
         const el = document.getElementById("live-scooter-container");
         if (el) {
+          // Leaflet coordinate space is flipped relative to screen space pixels.
+          // By default, the emoji faces LEFT. 
+          // If heading east (right side of map), mirror it and rotate. If heading west, preserve base facing.
           if (dLng >= 0) {
-            // Heading Eastwards (Right side of map view) -> Flip horizontally + add angle offset
             el.style.transform = `scaleX(-1) rotate(${angleDeg - 90}deg)`;
           } else {
-            // Heading Westwards (Left side of map view) -> Standard scale + opposite tracking offset
-            el.style.transform = `scaleX(1) rotate(${-angleDeg - 90}deg)`;
+            el.style.transform = `scaleX(1) rotate(${-angleDeg + 90}deg)`;
           }
         }
       }
 
-      // Update position coordinates frame-by-frame
+      // Update location
       scooterMarkerRef.current.setLatLng([animatedPoint.lat, animatedPoint.lng]);
 
-      // Erase trailing paths behind the vehicle in real-time
+      // Remove passed paths in real-time
       if (routeLineRef.current) {
         if (currentStep === 4 && progress > 0.98) {
           routeLineRef.current.setLatLngs([]);
@@ -209,7 +207,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
         routeLineRef.current.redraw();
       }
 
-      // Keep map view focus centered on the driver
+      // Track camera viewport focus onto rider smoothly
       mapInstance.setView([animatedPoint.lat, animatedPoint.lng], 15, { animate: false });
 
       if (progress < 1) {
@@ -250,6 +248,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
         #live-scooter-container {
           transform-origin: center center;
           display: inline-block;
+          transition: transform 0.05s linear; /* Smooths out sudden snapping rotation changes */
         }
       `}</style>
 
@@ -266,5 +265,3 @@ export default function DeliveryMap({ currentStep = 1 }) {
     </div>
   );
 }
-
-      
