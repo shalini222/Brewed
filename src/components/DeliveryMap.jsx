@@ -9,7 +9,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
   const glowRingMarkerRef = useRef(null);
   const routeLineRef = useRef(null);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
-  const [isPulseDelayed, setIsPulseDelayed] = useState(true); // Manages the 1s pulse delay
+  const [isPulseDelayed, setIsPulseDelayed] = useState(true); // Tracks the arrival delay state
 
   const animationRef = useRef(null);
 
@@ -185,12 +185,12 @@ export default function DeliveryMap({ currentStep = 1 }) {
     setMapInstance(map);
   }, [isLeafletReady]);
 
-  // MANAGE 1-SECOND DELAY FOR RADAR ARRIVAL PULSE
+  // MANAGE 3-SECOND DELAY FOR RADAR ARRIVAL PULSE
   useEffect(() => {
     if (currentStep === 4) {
       const timer = setTimeout(() => {
         setIsPulseDelayed(false);
-      }, 1000); // 1-second timeout before starting animation
+      }, 3000); // Trigger pulsation exactly 3 seconds late
       return () => clearTimeout(timer);
     } else {
       setIsPulseDelayed(true);
