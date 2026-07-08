@@ -11,17 +11,17 @@ export default function DeliveryMap({ currentStep = 1 }) {
 
   const animationRef = useRef(null);
 
-  // Core anchor locations
+  // Core landmarks
   const cafeCoords = [12.9716, 77.5946];
   const destinationCoords = [12.9830, 77.6030];
 
-  // Road-snapped street grid routing
+  // Road-snapped street grid path
   const fullRoadPath = [
     // --- STAGE 1: Order Confirmed ---
     [12.9650, 77.5850],
     [12.9680, 77.5900],
     
-    // --- STAGE 2: Brewing (Directly at the Cafe) ---
+    // --- STAGE 2: Brewing (At the Coffee Shop) ---
     [12.9716, 77.5946], 
     
     // --- STAGE 3: Out for Delivery ---
@@ -30,7 +30,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     [12.9775, 77.5990],
     [12.9800, 77.6010],
     
-    // --- STAGE 4: Delivered (Arrives directly at the House) ---
+    // --- STAGE 4: Delivered (At the House) ---
     [12.9830, 77.6030]
   ];
 
@@ -101,15 +101,18 @@ export default function DeliveryMap({ currentStep = 1 }) {
       opacity: 0.95,
     }).addTo(map);
 
-    // UPGRADED COFFEE MARKER: Artisanal Coffee Roast Bag Pin
-    const coffeeRoastPin = `
+    // COFFEE SHOP FRONT VECTOR ASSET
+    const coffeeShopSvg = `
       <div class="large-building-asset">
-        <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M32 2C19.84 2 10 11.84 10 24C10 39.5 32 62 32 62C32 62 54 39.5 54 24C54 11.84 44.16 2 32 2Z" fill="#7D5A44" stroke="#4A3525" stroke-width="2"/>
-          <circle cx="32" cy="24" r="14" fill="#FFFFFF" />
-          <path d="M25 18H39L37 31H27L25 18Z" fill="#D7CCC8" stroke="#4A3525" stroke-width="1.5" stroke-linejoin="round"/>
-          <path d="M25 18L32 21L39 18" stroke="#4A3525" stroke-width="1.5"/>
-          <circle cx="32" cy="25" r="2.5" fill="#4A3525" />
+        <svg width="52" height="52" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="8" y="22" width="48" height="36" rx="2" fill="#EFEBE9" stroke="#4A3525" stroke-width="2"/>
+          <path d="M6 12H58L52 22H12L6 12Z" fill="#7D5A44" stroke="#4A3525" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M14 12V22M23 12V22M32 12V22M41 12V22M50 12V22" stroke="#4A3525" stroke-width="1.5"/>
+          <rect x="16" y="36" width="14" height="22" rx="1" fill="#E0F7FA" stroke="#4A3525" stroke-width="2"/>
+          <line x1="26" y1="47" x2="28" y2="47" stroke="#4A3525" stroke-width="2"/>
+          <rect x="36" y="36" width="16" height="14" rx="1" fill="#E0F7FA" stroke="#4A3525" stroke-width="2"/>
+          <rect x="26" y="4" width="12" height="8" rx="2" fill="#7D5A44" stroke="#4A3525" stroke-width="1.5"/>
+          <path d="M38 6H40V10H38" stroke="#4A3525" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
       </div>
     `;
@@ -119,18 +122,22 @@ export default function DeliveryMap({ currentStep = 1 }) {
     }).addTo(map);
 
     cafeMarkerRef.current
-      .bindTooltip(coffeeRoastPin, {
+      .bindTooltip(coffeeShopSvg, {
         permanent: true, direction: "center", className: "completely-empty-tooltip"
       })
       .openTooltip();
 
-    // CUSTOMER HOUSE PIN (Kept exactly as you requested)
-    const elegantHomePin = `
+    // RESIDENTIAL HOUSE FRONT VECTOR ASSET
+    const residentialHouseSvg = `
       <div class="large-building-asset">
-        <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M32 2C19.84 2 10 11.84 10 24C10 39.5 32 62 32 62C32 62 54 39.5 54 24C54 11.84 44.16 2 32 2Z" fill="#E28743" stroke="#A64B2A" stroke-width="2"/>
-          <circle cx="32" cy="24" r="14" fill="#FFFFFF" />
-          <path d="M25 26V31H39V26M32 17L23 24H41L32 17Z" fill="#A64B2A" stroke="#A64B2A" stroke-width="1"/>
+        <svg width="52" height="52" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="12" y="26" width="40" height="32" rx="2" fill="#FFF9C4" stroke="#E28743" stroke-width="2"/>
+          <path d="M8 28L32 6L56 28H8Z" fill="#E28743" stroke="#A64B2A" stroke-width="2" stroke-linejoin="round"/>
+          <rect x="42" y="11" width="6" height="9" fill="#A64B2A" stroke="#A64B2A" stroke-width="1" />
+          <rect x="27" y="42" width="10" height="16" rx="1" fill="#7D5A44" stroke="#4A3525" stroke-width="1.5"/>
+          <circle cx="30" cy="50" r="1" fill="#FFD54F"/>
+          <rect x="18" y="32" width="8" height="8" rx="1" fill="#E0F7FA" stroke="#E28743" stroke-width="1.5"/>
+          <rect x="38" y="32" width="8" height="8" rx="1" fill="#E0F7FA" stroke="#E28743" stroke-width="1.5"/>
         </svg>
       </div>
     `;
@@ -140,7 +147,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     }).addTo(map);
 
     homeMarkerRef.current
-      .bindTooltip(elegantHomePin, {
+      .bindTooltip(residentialHouseSvg, {
         permanent: true, direction: "center", className: "completely-empty-tooltip"
       })
       .openTooltip();
@@ -255,11 +262,12 @@ export default function DeliveryMap({ currentStep = 1 }) {
         .leaflet-tooltip-right.completely-empty-tooltip::before {
           display: none !important;
         }
+        /* Buildings have clean vector drop-shadows and look comfortably larger */
         .large-building-asset {
           display: flex;
           align-items: center;
           justify-content: center;
-          filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.16));
+          filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.12));
         }
         #live-scooter-container {
           transform-origin: center center;
@@ -268,7 +276,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
           justify-content: center;
           width: 32px;
           height: 32px;
-          filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.2));
+          filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.18));
           transition: transform 0.08s linear;
         }
       `}</style>
