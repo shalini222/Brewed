@@ -1,4 +1,4 @@
-     import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export default function DeliveryMap({ currentStep = 1 }) {
   const mapRef = useRef(null);
@@ -11,13 +11,13 @@ export default function DeliveryMap({ currentStep = 1 }) {
 
   const animationRef = useRef(null);
 
-  // Core landmarks
+  // Core landmarks (Bengaluru grid context)
   const cafeCoords = [12.9716, 77.5946];
   const destinationCoords = [12.9830, 77.6030];
 
-  // LONGER ROAD TRAJECTORY: Extended far out so the rider drives slowly through multiple street turns
+  // CONVENIENT SHORTEST ROAD-SNAPPED PATHWAY
   const fullRoadPath = [
-    // --- STAGE 1: Order Confirmed (Starts at a clear distance away from the cafe) ---
+    // --- STAGE 1: Order Confirmed (Rider starts at a distance away from the cafe) ---
     [12.9610, 77.5840],
     [12.9635, 77.5870],
     [12.9665, 77.5900],
@@ -26,20 +26,19 @@ export default function DeliveryMap({ currentStep = 1 }) {
     // --- STAGE 2: Brewing (Rider arrives at the road outside the cafeteria) ---
     [12.9716, 77.5946], 
     
-    // --- STAGE 3: Out for Delivery (Navigating road intersections) ---
+    // --- STAGE 3: Out for Delivery (Shortest, most convenient connecting road grid cuts) ---
     [12.9735, 77.5958],
-    [12.9755, 77.5975], 
-    [12.9785, 77.5990], 
-    [12.9805, 77.6012], 
+    [12.9760, 77.5978], 
+    [12.9790, 77.6000], 
     
-    // --- STAGE 4: Delivered (Arrives exactly at customer's house) ---
+    // --- STAGE 4: Delivered (Arrives perfectly at customer's house) ---
     [12.9830, 77.6030]
   ];
 
   const getTargetCoords = (step) => {
     if (step <= 1) return fullRoadPath[0];
     if (step === 2) return fullRoadPath[4]; 
-    if (step === 3) return fullRoadPath[7]; 
+    if (step === 3) return fullRoadPath[6]; 
     return fullRoadPath[fullRoadPath.length - 1]; 
   };
 
@@ -79,7 +78,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     document.body.appendChild(script);
   }, []);
 
-  // 1. INITIALIZE MAP LAYERS ONCE
+  // 1. INITIALIZE MAP LAYERS
   useEffect(() => {
     if (!isLeafletReady || !window.L || mapInstance) return;
 
@@ -98,13 +97,14 @@ export default function DeliveryMap({ currentStep = 1 }) {
       }
     ).addTo(map);
 
+    // RICH DARK COFFEE COLOURED VECTOR POLYLINE (#4A3525)
     routeLineRef.current = window.L.polyline(fullRoadPath, {
-      color: "#8B7355", 
-      weight: 4,
-      opacity: 0.9,
+      color: "#4A3525", 
+      weight: 5,
+      opacity: 0.95,
     }).addTo(map);
 
-    // CAFETERIA MARKER (Storefront icon)
+    // CAFETERIA MARKER
     cafeMarkerRef.current = window.L.circleMarker(cafeCoords, {
       radius: 0,
       opacity: 0,
@@ -134,26 +134,43 @@ export default function DeliveryMap({ currentStep = 1 }) {
       })
       .openTooltip();
 
-    // LIVE DRIVER MARKER (Using an embedded Top-Down vector icon layout)
+    // LIVE RIDER MARKER CONTAINER
     scooterMarkerRef.current = window.L.circleMarker(startPos, {
       radius: 0,
       opacity: 0,
       fillOpacity: 0,
     }).addTo(map);
 
-    const topDownRiderSvg = `
+    // DEDICATED TOP-DOWN BIKE DESIGN COMPONENT
+    const premiumTopDownBikeSvg = `
       <div id="live-scooter-container">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="10" y="4" width="4" height="16" rx="2" fill="#E67E22" />
-          <rect x="6" y="6" width="12" height="2" rx="1" fill="#2C3E50" />
-          <circle cx="12" cy="12" r="3.5" fill="#34495E" />
-          <rect x="8" y="15" width="8" height="5" rx="1" fill="#D35400" stroke="#FFFFFF" stroke-width="0.5" />
+        <svg width="46" height="46" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="29" y="4" width="6" height="10" rx="3" fill="#1A1A1A" />
+          
+          <rect x="16" y="12" width="32" height="4" rx="2" fill="#555555" />
+          <circle cx="16" cy="14" r="2.5" fill="#111111" />
+          <circle cx="48" cy="14" r="2.5" fill="#111111" />
+          
+          <path d="M18 12L14 7" stroke="#555555" stroke-width="2" stroke-linecap="round"/>
+          <path d="M46 12L50 7" stroke="#555555" stroke-width="2" stroke-linecap="round"/>
+          <ellipse cx="14" cy="6" rx="3" ry="1.5" fill="#777777" />
+          <ellipse cx="50" cy="6" rx="3" ry="1.5" fill="#777777" />
+
+          <path d="M24 14C24 14 20 28 22 40C23.5 49 26 52 32 52C38 52 40.5 49 42 40C44 28 40 14 40 14H24Z" fill="#F1C40F" />
+          
+          <rect x="26" y="22" width="12" height="12" rx="1" fill="#2C3E50" />
+          
+          <path d="M25 34C25 34 26 44 32 44C38 44 39 34 39 34H25Z" fill="#222222" />
+          
+          <rect x="20" y="45" width="24" height="14" rx="2" fill="#D35400" stroke="#E67E22" stroke-width="1.5" />
+          <rect x="26" y="48" width="12" height="8" rx="1" fill="#4A3525" />
+          <circle cx="32" cy="52" r="2" fill="#FFFFFF" />
         </svg>
       </div>
     `;
 
     scooterMarkerRef.current
-      .bindTooltip(topDownRiderSvg, {
+      .bindTooltip(premiumTopDownBikeSvg, {
         permanent: true,
         direction: "center",
         className: "completely-empty-tooltip",
@@ -163,7 +180,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     setMapInstance(map);
   }, [isLeafletReady]);
 
-  // 2. SLOW REAL-TIME HEAD-FIRST ROTATION MOTOR ENGINE
+  // 2. TURNING VELOCITY MOVEMENT & HEAD-FIRST STEERING ENGINE
   useEffect(() => {
     if (!mapInstance || !window.L || !scooterMarkerRef.current) return;
 
@@ -171,8 +188,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     const startCoords = scooterMarkerRef.current.getLatLng();
     
     const startTime = performance.now();
-    // DELAYED TIMING: Set to 4500ms (4.5 seconds) to make the bike move slowly and deliberately
-    const duration = 4500; 
+    const duration = 4500; // Slow, immersive cruising speed
 
     const animateMovement = (currentTime) => {
       const elapsed = currentTime - startTime;
@@ -182,27 +198,26 @@ export default function DeliveryMap({ currentStep = 1 }) {
       const currentLng = startCoords.lng + (targetCoords[1] - startCoords.lng) * progress;
       const animatedPoint = { lat: currentLat, lng: currentLng };
 
-      // MATHEMATICAL TANGENT HEAD-FIRST CALCULATION
+      // HEAD-FIRST VECTOR ORIENTATION
       const dLat = targetCoords[0] - startCoords.lat;
       const dLng = targetCoords[1] - startCoords.lng;
       
       if (Math.abs(dLat) > 0.00001 || Math.abs(dLng) > 0.00001) {
-        // Map space conversion angle
         const angleRad = Math.atan2(dLng, dLat);
         const angleDeg = angleRad * (180 / Math.PI);
 
         const el = document.getElementById("live-scooter-container");
         if (el) {
-          // Since our new top-down SVG points straight up (North), 
-          // applying the exact computed map heading matches the road direction perfectly!
+          // Since our new custom top-down vehicle vector points perfectly North by default,
+          // applying the raw angle vector cleanly locks the front wheel directly to the street path layout!
           el.style.transform = `rotate(${angleDeg}deg)`;
         }
       }
 
-      // Update bike marker coordinates
+      // Update positions
       scooterMarkerRef.current.setLatLng([animatedPoint.lat, animatedPoint.lng]);
 
-      // Dynamic path trimming logic
+      // Remove passed segments from remaining line path
       if (routeLineRef.current) {
         if (currentStep === 4 && progress > 0.98) {
           routeLineRef.current.setLatLngs([]);
@@ -255,9 +270,9 @@ export default function DeliveryMap({ currentStep = 1 }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 40px;
-          height: 40px;
-          transition: transform 0.08s linear; /* Keeps the head-first rotational street tracking beautifully smooth */
+          width: 46px;
+          height: 46px;
+          transition: transform 0.08s linear; /* Keeps the head-first path rotation highly fluid */
         }
       `}</style>
 
