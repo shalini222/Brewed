@@ -296,368 +296,88 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     const grandTotal = subtotal + calculatedTax + deliveryFee + codSurcharge + driverTip - discount;
 
     return (
-      <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
-        <h3 style={{ ...styles.sectionTitle, marginBottom: "0.5rem" }}>Order Information</h3>
-        <div style={{ display: "flex", alignItems: "center", marginBottom: "0.75rem" }}>
-          <p style={styles.orderId}>ID: {displayId}</p>
-          
-          <button onClick={handleCopy} className="copy-btn" title="Copy Order ID">
-            {copied ? (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: THEME.colors.success }}>
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-            ) : (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-            )}
-          </button>
-        </div>
-
-        {isFailed ? (
-          <div style={styles.failedStatusIndicatorFull}>
-            <span style={styles.failedStatusDot} />
-            Delivery Failed
-          </div>
-        ) : (
-          <>
-            <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
-            
-            <div style={styles.summarySummary}>
-              <span>Payment Method:</span>
-              <span style={{ fontWeight: "600" }}>{orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online"}</span>
-            </div>
-            
-            <div style={styles.summarySummary}>
-              <span>Amount Paid:</span>
-              <span style={{ fontWeight: "600" }}>₹{grandTotal}</span>
-            </div>
-
-            <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              <div style={styles.actionSplitRow}>
-                {isDelivered ? (
-                  <>
-                    <div style={styles.successStatusIndicatorHalf}>
-                      <span style={styles.successStatusDot} />
-                      Delivered
-                    </div>
-                    <button className="btn-action" style={styles.reorderHalfBtn} onClick={() => setPage("menu")}>
-                      <span className="reorder-btn-inner">
-                        Reorder
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-                        </svg>
-                      </span>
-                    </button>
-                  </>
-                ) : (
-                  <div style={{ width: "100%", textAlign: "center" }}>
-                    <p style={styles.curatedPromptText}>
-                      Want the perfect pairing while you wait?
-                    </p>
-                    <button className="btn-action" style={styles.pairSolidBtn} onClick={() => setShowPairMenuOverlay(true)}>
-                      <span className="reorder-btn-inner" style={{ color: "#FFFFFF" }}>Pair+</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {!isDelivered && (
-                <div style={{ width: "100%", marginTop: "0.25rem" }}>
-                  {currentStep === 1 ? (
-                    <button onClick={handleCancelOrder} className="btn-action" style={styles.cancelActiveBtn}>
-                      Cancel Order
-                    </button>
-                  ) : (
-                    <div style={styles.cancelDisabledWrapper}>
-                      <button disabled style={styles.cancelDisabledBtn}>
-                        Cancel Order
-                      </button>
-                      <p style={styles.cancelWarningTextMuted}>Cannot cancel once brewing begins.</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <button className="receipt-link" onClick={handleDownloadReceipt}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                Download Receipt
+                                      border: 1.5px solid ${THEME.colors.cardBorder};
+                    padding: 1.5rem;
+          === 0 && selectedTags.length === 0 && !typedReview.trim()) ? 0.5 : 1, 
+                  cursor: (rating === 0 && selectedTags.length === 0 && !typedReview.trim()) ? "not-allowed" : "pointer" 
+                }}
+              >
+                Submit
               </button>
             </div>
-          </>
-        )}
-      </div>
-    );
-  };
+          </div>
+        </div>
+      )}
 
-  return (
-    <div style={{ ...styles.page, backgroundColor: THEME.colors.bgPage, padding: isMobile ? "1.5rem 1rem" : "3rem 0" }}>
-      <style>{`
-        .pulse-container { position: relative; display: flex; align-items: center; justify-content: center; }
-        .pulse-ring {
-          position: absolute;
-          width: 45px;
-          height: 45px;
-          border: 2px solid ${THEME.colors.primary};
-          border-radius: 50%;
-          animation: pulseExpand 2s infinite ease-out;
-          opacity: 0;
-        }
-        @keyframes pulseExpand {
-          0% { transform: scale(0.6); opacity: 0.8; }
-          100% { transform: scale(1.4); opacity: 0; }
-        }
-        .layout-grid { 
-          display: flex; 
-          gap: 2rem; 
-          flex-direction: ${isMobile ? "column" : "row"}; 
-          max-width: 940px; 
-          margin: 0 auto; 
-        }
-        .main-panel { flex: 1; width: 100%; }
-        .side-panel { width: ${isMobile ? "100%" : "320px"}; display: flex; flex-direction: column; gap: 1.5rem; }
-        .interactive-card { 
-          background: ${THEME.colors.cardBg}; 
-          border-radius: 16px; 
-          padding: ${isMobile ? "1.25rem" : "1.75rem"}; 
-          border: 1px solid ${THEME.colors.cardBorder}; 
-          box-shadow: 0 4px 24px rgba(26, 11, 5, 0.02);
-          box-sizing: border-box;
-        }
-        .btn-action {
-          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s;
-          cursor: pointer;
-        }
-        .btn-action:hover {
-          transform: translateY(-2px);
-          opacity: 0.95;
-        }
-        .copy-btn {
-          background: none;
-          border: none;
-          cursor: pointer;
-          margin-left: 0.75rem; 
-          padding: 0.25rem;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          color: ${THEME.colors.textMuted};
-          transition: transform 0.1s, color 0.2s;
-        }
-        .copy-btn:hover {
-          color: ${THEME.colors.primary};
-        }
-        .tip-pill {
-          flex: 1;
-          padding: 0.5rem;
-          border: 1.5px solid ${THEME.colors.cardBorder};
-          border-radius: 8px;
-          background: transparent;
-          color: ${THEME.colors.textDark};
-          font-weight: 600;
-          font-size: 0.85rem;
-          cursor: pointer;
-          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-          text-align: center;
-        }
-        .tip-pill:hover {
-          transform: translateY(-2px);
-          border-color: ${THEME.colors.primary};
-          background-color: ${THEME.colors.accentLight};
-        }
-        .tip-pill.active {
-          background-color: ${THEME.colors.headerBg} !important;
-          border-color: ${THEME.colors.headerBg};
-          color: #FFF;
-        }
-        .receipt-link {
-          background: none;
-          border: none;
-          color: ${THEME.colors.primary};
-          font-size: 0.85rem;
-          font-weight: 600;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.4rem;
-          margin: 0.25rem auto 0 auto;
-          transition: opacity 0.2s;
-        }
-        .receipt-link:hover {
-          opacity: 0.8;
-          text-decoration: underline;
-        }
-        .reorder-btn-inner {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-        }
-        .feedback-chip {
-          padding: 0.4rem 0.75rem;
-          border: 1px solid ${THEME.colors.cardBorder};
-          background-color: ${THEME.colors.accentLight};
-          color: ${THEME.colors.textDark};
-          border-radius: 20px;
-          font-size: 0.8rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-        .feedback-chip.active {
-          background-color: ${THEME.colors.primary};
-          border-color: ${THEME.colors.primary};
-          color: #FFF;
-        }
-        .star-palette-btn {
-          background: none;
-          border: none;
-          padding: 0.2rem;
-          cursor: pointer;
-          transition: transform 0.1s ease;
-        }
-        .star-palette-btn:hover {
-          transform: scale(1.15);
-        }
-        .pairing-modal-container {
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-          max-width: 980px;
-          width: 100%;
-          max-height: 85vh;
-          overflow-y: auto;
-          padding: 1.5rem;
-          box-sizing: border-box;
-          position: relative;
-          align-items: center;
-        }
-        .pairing-row-top {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 1.5rem;
-          width: 100%;
-        }
-        .pairing-row-bottom {
-          display: flex;
-          justify-content: center;
-          gap: 1.5rem;
-          width: 100%;
-        }
-        .pairing-row-bottom .pairing-card-naked {
-          width: calc(33.333% - 1rem);
-        }
-        .pairing-card-naked {
-          background: #FFFFFF;
-          border: 1px solid ${THEME.colors.cardBorder};
-          border-radius: 18px;
-          padding: 1.75rem;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-          box-sizing: border-box;
-        }
-        .pairing-btn-naked {
-          width: 100%;
-          padding: 0.85rem;
-          color: #FFFFFF;
-          border: none;
-          border-radius: 8px;
-          font-weight: 700;
-          font-size: 0.95rem;
-          letter-spacing: 0.02em;
-          margin-top: 1.5rem;
-          cursor: pointer;
-          transition: background-color 0.2s;
-        }
-        .close-floating-btn {
-          position: fixed;
-          top: 1.5rem;
-          right: 2rem;
-          background: rgba(255, 255, 255, 0.9);
-          border: none;
-          border-radius: 50%;
-          width: 38px;
-          height: 38px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.2rem;
-          font-weight: bold;
-          cursor: pointer;
-          color: ${THEME.colors.textDark};
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          z-index: 110;
-        }
-        @media (max-width: 900px) {
-          .pairing-row-top { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
-          .pairing-row-bottom { flex-wrap: wrap; }
-          .pairing-row-bottom .pairing-card-naked { width: 100%; max-width: 340px; }
-        }
-      `}</style>
+          {/* CORE LAYOUT */}
+      <div style={{ maxWidth: "940px", margin: "0 auto" }}>
+        <button style={styles.backLink} onClick={() => setPage("menu")}>← Return to Menu</button>
+        <h1 style={styles.heading}>Track Your Order</h1>
 
-      {/* PAIR FRESH SIDES OVERLAY */}
-      {showPairMenuOverlay && (
-        <div style={styles.modalOverlay}>
-          <button className="close-floating-btn" onClick={() => setShowPairMenuOverlay(false)}>✕</button>
-          <div className="pairing-modal-container">
-            <div className="pairing-row-top">
-              {CURATED_RECOMMENDATIONS.slice(0, 3).map((item) => {
-                const isAdding = addingItemId === item.id;
-                return (
-                  <div key={item.id} className="pairing-card-naked">
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "1.25rem" }}>
-                        <span style={{ fontSize: "2.8rem", lineHeight: 1 }}>{item.icon}</span>
-                        <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.2rem" }}>₹{item.price}</span>
-                      </div>
-                      <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>{item.name}</h3>
-                      <p style={{ margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>{item.desc}</p>
-                    </div>
-                    <button 
-                      className="pairing-btn-naked" 
-                      style={{ backgroundColor: isAdding ? THEME.colors.success : "#1A0B05" }}
-                      onClick={() => handleProceedToCartWithItem(item)}
-                      disabled={addingItemId !== null}
-                    >
-                      {isAdding ? "Added ✓" : "Add"}
-                    </button>
-                  </div>
-                );
-              })}
+        {/* FULL-WIDTH TOP MAP BANNER */}
+        {!isFailed && (
+          <div style={{ marginBottom: "2rem", width: "100%" }}>
+            <div className="interactive-card" style={{ padding: "1rem" }}>
+              <h3 style={{ ...styles.sectionTitle, marginBottom: "0.75rem" }}>Live Delivery Route</h3>
+              <DeliveryMap 
+          currentStep={currentStep} 
+          onPartnerMessageUpdate={setPartnerMessage} 
+        />
             </div>
+          </div>
+        )}
 
-            <div className="pairing-row-bottom">
-              {CURATED_RECOMMENDATIONS.slice(3, 5).map((item) => {
-                const isAdding = addingItemId === item.id;
-                return (
-                  <div key={item.id} className="pairing-card-naked">
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "1.25rem" }}>
-                        <span style={{ fontSize: "2.8rem", lineHeight: 1 }}>{item.icon}</span>
-                        <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.2rem" }}>₹{item.price}</span>
+        <div className="layout-grid">
+          {/* LEFT PANEL: TIMELINE */}
+          <div className="main-panel">
+            <div className="interactive-card" style={{ height: "100%" }}>
+              <div style={styles.etaHeader}>
+                <div>
+                  <p style={styles.etaLabel}>Status Update</p>
+                  <h2 style={{
+                    ...styles.etaTime, 
+                    color: isFailed ? THEME.colors.error : (isDelivered ? THEME.colors.success : THEME.colors.textDark) 
+                  }}>
+                    {isFailed ? "Delivery Failed" : (isDelivered ? "Delivered" : `${estimatedTime} mins`)}
+                  </h2>
+                </div>
+                <div className="pulse-container" style={{ width: 50, height: 50 }}>
+                  {(!isFailed && !isDelivered) && <div className="pulse-ring" />}
+                  <span style={{ fontSize: "2rem", zIndex: 2 }}>{STEPS[currentStep - 1]?.icon || "☕"}</span>
+                </div>
+              </div>
+
+              <div style={styles.timeline}>
+                {STEPS.map((step, index) => {
+                  if (step.id === 5 && isDelivered) return null;
+
+                  const isCompleted = currentStep > step.id;
+                  const isActive = currentStep === step.id;
+                  const isFailedStep = step.id === 5 && isActive;
+                  const isDeliveredStep = step.id === 4 && (isActive || isCompleted);
+                  
+                                    return (
+                    <div key={item.id} className="pairing-card-naked">
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%", marginBottom: "1.25rem" }}>
+                          <span style={{ fontSize: "2.8rem", lineHeight: 1 }}>{item.icon}</span>
+                          <span style={{ fontWeight: "700", color: THEME.colors.primary, fontSize: "1.2rem" }}>₹{item.price}</span>
+                        </div>
+                        <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>{item.name}</h3>
+                        <p style={{ margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>{item.desc}</p>
                       </div>
-                      <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "700", color: THEME.colors.textDark }}>{item.name}</h3>
-                      <p style={{ margin: 0, fontSize: "0.85rem", color: THEME.colors.textMuted, lineHeight: "1.45" }}>{item.desc}</p>
+                      <button 
+                        className="pairing-btn-naked" 
+                        style={{ backgroundColor: isAdding ? THEME.colors.success : "#1A0B05" }}
+                        onClick={() => handleProceedToCartWithItem(item)}
+                        disabled={addingItemId !== null}
+                      >
+                        {isAdding ? "Added ✓" : "Add"}
+                      </button>
                     </div>
-                    <button 
-                      className="pairing-btn-naked" 
-                      style={{ backgroundColor: isAdding ? THEME.colors.success : "#1A0B05" }}
-                      onClick={() => handleProceedToCartWithItem(item)}
-                      disabled={addingItemId !== null}
-                    >
-                      {isAdding ? "Added ✓" : "Add"}
-                    </button>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -736,7 +456,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
         </div>
       )}
 
-          {/* CORE LAYOUT */}
+      {/* CORE LAYOUT */}
       <div style={{ maxWidth: "940px", margin: "0 auto" }}>
         <button style={styles.backLink} onClick={() => setPage("menu")}>← Return to Menu</button>
         <h1 style={styles.heading}>Track Your Order</h1>
@@ -747,14 +467,14 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             <div className="interactive-card" style={{ padding: "1rem" }}>
               <h3 style={{ ...styles.sectionTitle, marginBottom: "0.75rem" }}>Live Delivery Route</h3>
               <DeliveryMap 
-          currentStep={currentStep} 
-          onPartnerMessageUpdate={setPartnerMessage} 
-        />
+                currentStep={currentStep} 
+                onPartnerMessageUpdate={setPartnerMessage} 
+              />
             </div>
           </div>
         )}
 
-        <div className="layout-grid">
+        <div className="layout-grid" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "2rem" }}>
           {/* LEFT PANEL: TIMELINE */}
           <div className="main-panel">
             <div className="interactive-card" style={{ height: "100%" }}>
@@ -821,106 +541,103 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
             </div>
           </div>
 
-                  {/* RIGHT PANEL: PARTNER INFO & BREAKDOWN */}
-        <div className="side-panel">
-          {isFailed ? (
-            <>
-              <OrderInformationCard />
-              <div className="interactive-card">
-                <h3 style={styles.apologyHeading}>We Are Sorry</h3>
-                <p style={styles.failureMessage}>Your order ran into an issue. We're on it.</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.25rem" }}>
-                  <button className="btn-action" style={styles.tryAgainBtn} onClick={() => setPage("menu")}>Try Again: 10% Off</button>
-                  <button className="btn-action" style={styles.supportBtn} onClick={() => alert("Connecting you with support...")}>Contact Support</button>
+          {/* RIGHT PANEL: PARTNER INFO & BREAKDOWN */}
+          <div className="side-panel">
+            {isFailed ? (
+              <>
+                <OrderInformationCard />
+                <div className="interactive-card">
+                  <h3 style={styles.apologyHeading}>We Are Sorry</h3>
+                  <p style={styles.failureMessage}>Your order ran into an issue. We're on it.</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.25rem" }}>
+                    <button className="btn-action" style={styles.tryAgainBtn} onClick={() => setPage("menu")}>Try Again: 10% Off</button>
+                    <button className="btn-action" style={styles.supportBtn} onClick={() => alert("Connecting you with support...")}>Contact Support</button>
+                  </div>
                 </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="interactive-card">
-                <h3 style={styles.sectionTitle}>Delivery Partner</h3>
+              </>
+            ) : (
+              <>
+                <div className="interactive-card">
+                  <h3 style={styles.sectionTitle}>Delivery Partner</h3>
 
-                {/* --- ADDED: NEW POP-UP ARRIVAL NOTIFICATION BUBBLE --- */}
-                {partnerMessage && (
-                  <div 
-                    style={{
-                      backgroundColor: "#1A1A2E", // Dark slate matching your map pins
-                      color: "#FFFFFF",
-                      padding: "12px 16px",
-                      borderRadius: "12px",
-                      fontSize: "0.85rem",
-                      fontWeight: "500",
-                      lineHeight: "1.4",
-                      marginBottom: "16px",
-                      position: "relative",
-                      boxShadow: "0 4px 12px rgba(26, 26, 46, 0.15)",
-                      animation: "fadeIn 0.3s ease-out forwards"
-                    }}
-                  >
-                    <p style={{ margin: 0 }}>💬 {partnerMessage}</p>
-                    
-                    {/* Small decorative triangle tip pointing downwards towards the rider avatar */}
+                  {/* --- POP-UP ARRIVAL NOTIFICATION BUBBLE --- */}
+                  {partnerMessage && (
                     <div 
                       style={{
-                        position: "absolute",
-                        bottom: "-6px",
-                        left: "20px",
-                        width: "0",
-                        height: "0",
-                        borderLeft: "6px solid transparent",
-                        borderRight: "6px solid transparent",
-                        borderTop: "6px solid #1A1A2E"
+                        backgroundColor: "#1A1A2E",
+                        color: "#FFFFFF",
+                        padding: "12px 16px",
+                        borderRadius: "12px",
+                        fontSize: "0.85rem",
+                        fontWeight: "500",
+                        lineHeight: "1.4",
+                        marginBottom: "16px",
+                        position: "relative",
+                        boxShadow: "0 4px 12px rgba(26, 26, 46, 0.15)",
+                        animation: "fadeIn 0.3s ease-out forwards"
                       }}
-                    />
-                  </div>
-                )}
-
-                <div style={styles.riderProfile}>
-                  <div style={styles.avatar}>🛵</div>
-                  <div style={{ flex: 1 }}>
-                    <strong style={{ fontSize: "0.95rem" }}>Rahul Kumar</strong>
-                    <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>Brewed Delivery Partner</p>
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem" }}>
-                  <a href="tel:#" className="btn-action" style={styles.commsBtn}>📞 Call</a>
-                  <a href="sms:#" className="btn-action" style={styles.commsBtn}>💬 Text</a>
-                </div>
-
-                <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, paddingTop: "1rem" }}>
-                  <p style={{ ...styles.etaLabel, marginBottom: "0.5rem", fontWeight: "600" }}>Thank your partner with a tip</p>
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    {[20, 30, 50].map((amount) => (
-                      <button
-                        key={amount}
-                        onClick={() => setSelectedTip(selectedTip === amount ? null : amount)}
-                        className={`tip-pill ${selectedTip === amount ? "active" : ""}`}
-                      >
-                        ₹{amount}
-                      </button>
-                    ))}
-                  </div>
-                  {selectedTip && (
-                    <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: THEME.colors.success, fontWeight: "500" }}>
-                      ₹{selectedTip} will be added to your delivery partner's profile!
-                    </p>
+                    >
+                      <p style={{ margin: 0 }}>💬 {partnerMessage}</p>
+                      <div 
+                        style={{
+                          position: "absolute",
+                          bottom: "-6px",
+                          left: "20px",
+                          width: "0",
+                          height: "0",
+                          borderLeft: "6px solid transparent",
+                          borderRight: "6px solid transparent",
+                          borderTop: "6px solid #1A1A2E"
+                        }}
+                      />
+                    </div>
                   )}
-                </div>
-              </div>
-              
-              {/* Keeping Order Info nested under the active delivery pathway */}
-              <OrderInformationCard />
-            </>
-          )}
-        </div> {/* Closes .side-panel */}
 
-      </div> {/* Closes main content wrap element */}
-    </div> 
+                  <div style={styles.riderProfile}>
+                    <div style={styles.avatar}>🛵</div>
+                    <div style={{ flex: 1 }}>
+                      <strong style={{ fontSize: "0.95rem" }}>Rahul Kumar</strong>
+                      <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>Brewed Delivery Partner</p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem" }}>
+                    <a href="tel:#" className="btn-action" style={styles.commsBtn}>📞 Call</a>
+                    <a href="sms:#" className="btn-action" style={styles.commsBtn}>💬 Text</a>
+                  </div>
+
+                  <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, paddingTop: "1rem" }}>
+                    <p style={{ ...styles.etaLabel, marginBottom: "0.5rem", fontWeight: "600" }}>Thank your partner with a tip</p>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      {[20, 30, 50].map((amount) => (
+                        <button
+                          key={amount}
+                          onClick={() => setSelectedTip(selectedTip === amount ? null : amount)}
+                          className={`tip-pill ${selectedTip === amount ? "active" : ""}`}
+                        >
+                          ₹{amount}
+                        </button>
+                      ))}
+                    </div>
+                    {selectedTip && (
+                      <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: THEME.colors.success, fontWeight: "500" }}>
+                        ₹{selectedTip} will be added to your delivery partner's profile!
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                <OrderInformationCard />
+              </>
+            )}
+          </div> {/* Closes .side-panel */}
+        </div> {/* Closes .layout-grid */}
+      </div> {/* Closes core layout width container */}
+    </div> // Closes the overall TrackingPage component wrapper
   );
 }
 
-
+                    
 
 const styles = {
   page: { minHeight: "85vh", boxSizing: "border-box", fontFamily: THEME.fonts.sans, color: THEME.colors.textDark },
