@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 
-export default function DeliveryMap({ currentStep }) {
+export default function DeliveryMap({ currentStep = 1 }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markerRef = useRef(null);
-  const routeLineRef = useRef(null);
+  const fullRouteLineRef = useRef(null);
+  const traveledLineRef = useRef(null);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
 
   const coordinatesByStep = {
@@ -14,6 +15,23 @@ export default function DeliveryMap({ currentStep }) {
     4: [12.9830, 77.6030],
     5: [12.9750, 77.5960],
   };
+
+  const allSteps = Object.keys(coordinatesByStep)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  const getCoords = (step) => coordinatesByStep[step] || coordinatesByStep[1];
+
+  const getTraveledPath = (step) => {
+    const traveled = allSteps.filter((s) => s <= step).map((s) => coordinatesByStep[s]);
+    // Guarantee at least 2 points so Leaflet can draw a line even at step 1
+    if (traveled.length < 2) {
+      return [coordinatesByStep[1], coordinatesByStep[1]];
+    }
+    return traveled;
+  };
+
+  const getFullPath = () => allSteps.map((s) => coordinatesByStep[s]);
 
   useEffect(() => {
     if (window.L) {
@@ -35,7 +53,7 @@ export default function DeliveryMap({ currentStep }) {
   useEffect(() => {
     if (!isLeafletReady || !window.L || mapInstance.current) return;
 
-    const initialCoords = coordinatesByStep[currentStep] || [12.9716, 77.5946];
+    const initialCoords = getCoords(currentStep);
 
     mapInstance.current = window.L.map(mapRef.current, {
       zoomControl: false,
@@ -45,18 +63,20 @@ export default function DeliveryMap({ currentStep }) {
       attribution: "© OpenStreetMap contributors",
     }).addTo(mapInstance.current);
 
-    // Dashed trail showing the path traveled so far
-    const pathSoFar = Object.keys(coordinatesByStep)
-      .map(Number)
-      .filter((step) => step <= currentStep)
-      .sort((a, b) => a - b)
-      .map((step) => coordinatesByStep[step]);
+    // Full planned route, faint dashed line, always visible
+    fullRouteLineRef.current = window.L.polyline(getFullPath(), {
+      color: "#8B7355",
+      weight: 2,
+      dashArray: "6, 10",
+      opacity: 0.35,
+    }).addTo(mapInstance.current);
 
-    routeLineRef.current = window.L.polyline(pathSoFar, {
+    // Traveled portion, darker dashed line, on top
+    traveledLineRef.current = window.L.polyline(getTraveledPath(currentStep), {
       color: "#8B7355",
       weight: 3,
       dashArray: "8, 8",
-      opacity: 0.7,
+      opacity: 0.85,
     }).addTo(mapInstance.current);
 
     // Invisible circle marker anchoring the scooter emoji tooltip
@@ -66,7 +86,7 @@ export default function DeliveryMap({ currentStep }) {
       fillOpacity: 0,
     }).addTo(mapInstance.current);
 
-    // Scooter facing forward (no mirroring)
+    // Scooter emoji, facing its natural (unmirrored) direction
     markerRef.current
       .bindTooltip(`<div class="clean-scooter-text">🛵</div>`, {
         permanent: true,
@@ -77,23 +97,14 @@ export default function DeliveryMap({ currentStep }) {
   }, [isLeafletReady]);
 
   useEffect(() => {
-    if (mapInstance.current && markerRef.current && window.L) {
-      const newCoords = coordinatesByStep[currentStep];
-      if (newCoords) {
-        markerRef.current.setLatLng(newCoords);
-        mapInstance.current.panTo(newCoords);
+    if (!mapInstance.current || !markerRef.current || !window.L) return;
 
-        // Update the dashed trail to reflect the new step
-        const pathSoFar = Object.keys(coordinatesByStep)
-          .map(Number)
-          .filter((step) => step <= currentStep)
-          .sort((a, b) => a - b)
-          .map((step) => coordinatesByStep[step]);
+    const newCoords = getCoords(currentStep);
+    markerRef.current.setLatLng(newCoords);
+    mapInstance.current.panTo(newCoords);
 
-        if (routeLineRef.current) {
-          routeLineRef.current.setLatLngs(pathSoFar);
-        }
-      }
+    if (traveledLineRef.current) {
+      traveledLineRef.current.setLatLngs(getTraveledPath(currentStep));
     }
   }, [currentStep, isLeafletReady]);
 
