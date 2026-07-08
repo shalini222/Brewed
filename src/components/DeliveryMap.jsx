@@ -192,7 +192,7 @@ export default function DeliveryMap({ currentStep = 1, onPartnerMessageUpdate })
         setIsPulseDelayed(false);
         // Expose the arrival text confirmation to parent layout hook
         if (onPartnerMessageUpdate) {
-          onPartnerMessageUpdate("I have arrived at Your location and will be at door steep soon.");
+          onPartnerMessageUpdate("I have arrived at Your location and will be at Door Step soon.");
         }
       }, 3000); 
       return () => clearTimeout(timer);
