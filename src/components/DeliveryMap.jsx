@@ -9,6 +9,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
   const glowRingMarkerRef = useRef(null);
   const routeLineRef = useRef(null);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
+  const [isPulseDelayed, setIsPulseDelayed] = useState(true); // Manages the 1s pulse delay
 
   const animationRef = useRef(null);
 
@@ -102,7 +103,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
       opacity: 0.85,
     }).addTo(map);
 
-    // 1. PREMIUM DARK COFFEE SHOP PIN
+    // 1. PREMIUM COFFEE SHOP LOCATION PIN
     const premiumCafePinHtml = `
       <div class="premium-pin-container">
         <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -118,20 +119,20 @@ export default function DeliveryMap({ currentStep = 1 }) {
       html: premiumCafePinHtml,
       className: "custom-leaflet-div-icon",
       iconSize: [48, 48],
-      iconAnchor: [24, 48], // Tip of the pin is exactly on the coordinate position
+      iconAnchor: [24, 48],
     });
     cafeMarkerRef.current = window.L.marker(cafeCoords, { icon: cafeIcon }).addTo(map);
 
-    // 2. RADAR LAYER CONTAINER (Using absolute coordinates alignment)
+    // 2. RADAR LAYER CONTAINER
     const radarIcon = window.L.divIcon({
       html: `<div class="caramel-glow-radar"></div>`,
       className: "custom-leaflet-div-icon-radar",
       iconSize: [0, 0],
-      iconAnchor: [0, 0] // Centered perfectly on coordinates
+      iconAnchor: [0, 0]
     });
     glowRingMarkerRef.current = window.L.marker(destinationCoords, { icon: radarIcon });
 
-    // 3. PREMIUM DARK HOME LOCATION PIN (Identical profile structure to Cafe)
+    // 3. PREMIUM DARK HOME LOCATION PIN
     const premiumHomePinHtml = `
       <div class="premium-pin-container">
         <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -146,7 +147,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
       html: premiumHomePinHtml,
       className: "custom-leaflet-div-icon",
       iconSize: [48, 48],
-      iconAnchor: [24, 48], // Tip of the pin sits exactly at the target point
+      iconAnchor: [24, 48],
     });
     homeMarkerRef.current = window.L.marker(destinationCoords, { icon: homeIcon }).addTo(map);
 
@@ -177,23 +178,35 @@ export default function DeliveryMap({ currentStep = 1 }) {
       html: scooterIconHtml,
       className: "custom-leaflet-div-icon-scooter",
       iconSize: [30, 30],
-      iconAnchor: [15, 15], // Perfectly centered on vector paths
+      iconAnchor: [15, 15],
     });
     scooterMarkerRef.current = window.L.marker(startPos, { icon: scooterIcon }).addTo(map);
 
     setMapInstance(map);
   }, [isLeafletReady]);
 
-  // ACTIVATE CARAMEL RADAR DYNAMICS
+  // MANAGE 1-SECOND DELAY FOR RADAR ARRIVAL PULSE
+  useEffect(() => {
+    if (currentStep === 4) {
+      const timer = setTimeout(() => {
+        setIsPulseDelayed(false);
+      }, 1000); // 1-second timeout before starting animation
+      return () => clearTimeout(timer);
+    } else {
+      setIsPulseDelayed(true);
+    }
+  }, [currentStep]);
+
+  // ACTIVATE/MOUNT CARAMEL RADAR DYNAMICS
   useEffect(() => {
     if (!mapInstance || !glowRingMarkerRef.current) return;
 
-    if (currentStep === 4) {
+    if (currentStep === 4 && !isPulseDelayed) {
       glowRingMarkerRef.current.addTo(mapInstance);
     } else {
       glowRingMarkerRef.current.remove();
     }
-  }, [currentStep, mapInstance]);
+  }, [currentStep, isPulseDelayed, mapInstance]);
 
   // SMOOTH ROTATION ENGINE (NORMAL DRIVING SPEED)
   useEffect(() => {
@@ -203,7 +216,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     const startCoords = scooterMarkerRef.current.getLatLng();
     
     const startTime = performance.now();
-    const duration = 2400; // Normal, crisp production app transit speed
+    const duration = 2400; 
 
     const animateMovement = (currentTime) => {
       const elapsed = currentTime - startTime;
@@ -255,7 +268,6 @@ export default function DeliveryMap({ currentStep = 1 }) {
   return (
     <div style={{ width: "100%" }}>
       <style>{`
-        /* Reset any forced styles from default Leaflet divIcons */
         .custom-leaflet-div-icon,
         .custom-leaflet-div-icon-scooter,
         .custom-leaflet-div-icon-radar {
@@ -283,7 +295,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
           animation: caramelPulsate 1.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
           pointer-events: none;
           transform-origin: center center;
-          z-index: -1; /* Sits perfectly flat underneath the dark house pin point */
+          z-index: -1; 
         }
 
         @keyframes caramelPulsate {
