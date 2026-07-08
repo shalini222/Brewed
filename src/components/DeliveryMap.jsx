@@ -4,31 +4,36 @@ export default function DeliveryMap({ currentStep = 1 }) {
   const mapRef = useRef(null);
   const [mapInstance, setMapInstance] = useState(null);
   const scooterMarkerRef = useRef(null);
+  const cafeMarkerRef = useRef(null);
   const homeMarkerRef = useRef(null);
   const routeLineRef = useRef(null);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
 
-  // Core project step coordinates
+  // Exact step coordinates matching the delivery states
   const coordinatesByStep = {
-    1: [12.9716, 77.5946], // Café Location (Origin)
-    2: [12.9716, 77.5946], // Still at Café
-    3: [12.9780, 77.5990], // Out for delivery
-    4: [12.9830, 77.6030], // Customer Location (True Destination)
-    5: [12.9750, 77.5960], // Issue midpoint
+    1: [12.9716, 77.5946], // Café Location (Confirmed)
+    2: [12.9719, 77.5950], // Right outside on the road (Brewing)
+    3: [12.9780, 77.5990], // Midpoint on route (Out for Delivery)
+    4: [12.9830, 77.6030], // Customer House (Delivered)
+    5: [12.9750, 77.5960], // Midpoint fallback
   };
 
-  const originCoords = coordinatesByStep[1];
+  const cafeCoords = coordinatesByStep[1];
   const destinationCoords = coordinatesByStep[4];
 
-  const getCoords = (step) => coordinatesByStep[step] || originCoords;
+  const getCoords = (step) => coordinatesByStep[step] || cafeCoords;
 
-  // Draws a path strictly from the café up to where the rider is currently located
-  const getTraveledPath = (step) => {
+  // REMOVES PASSED LINE: Draws a solid line ONLY from the current bike position to the destination house
+  const getRemainingPath = (step) => {
     const currentDriverCoords = getCoords(step);
-    return [originCoords, currentDriverCoords];
+    
+    // If already delivered, don't show any remaining line path
+    if (step === 4) return []; 
+    
+    return [currentDriverCoords, destinationCoords];
   };
 
-  // Load CDN Script assets
+  // Load Leaflet CDN script assets cleanly
   useEffect(() => {
     if (window.L) {
       setIsLeafletReady(true);
@@ -46,13 +51,13 @@ export default function DeliveryMap({ currentStep = 1 }) {
     document.body.appendChild(script);
   }, []);
 
-  // 1. INITIALIZE THE BASE MAP ONCE
+  // 1. INITIALIZE BASE MAP LAYERS ONCE
   useEffect(() => {
     if (!isLeafletReady || !window.L || mapInstance) return;
 
     const initialCoords = getCoords(currentStep);
 
-    // Zoom bumped to 15 for a premium close-up view
+    // Initial tight zoom factor set to 15
     const map = window.L.map(mapRef.current, {
       zoomControl: false,
     }).setView(initialCoords, 15);
@@ -67,15 +72,29 @@ export default function DeliveryMap({ currentStep = 1 }) {
       }
     ).addTo(map);
 
-    // Create the polyline component instance on the map layout
-    routeLineRef.current = window.L.polyline(getTraveledPath(currentStep), {
-      color: "#8B7355",
-      weight: 4, // Slightly thicker line so it's highly visible
-      dashArray: "8, 8",
+    // SOLID BROWN PATH: Renders remaining path layout
+    routeLineRef.current = window.L.polyline(getRemainingPath(currentStep), {
+      color: "#8B7355", // Your beautiful brand theme brown color
+      weight: 4,
       opacity: 0.9,
     }).addTo(map);
 
-    // Destination marker (house) stays stationary at Step 4 coordinates
+    // CAFE MARKER (Stationary at start position)
+    cafeMarkerRef.current = window.L.circleMarker(cafeCoords, {
+      radius: 0,
+      opacity: 0,
+      fillOpacity: 0,
+    }).addTo(map);
+
+    cafeMarkerRef.current
+      .bindTooltip(`<div class="clean-icon-text">☕</div>`, {
+        permanent: true,
+        direction: "center",
+        className: "completely-empty-tooltip",
+      })
+      .openTooltip();
+
+    // HOUSE MARKER (Stationary at final delivery position)
     homeMarkerRef.current = window.L.circleMarker(destinationCoords, {
       radius: 0,
       opacity: 0,
@@ -90,7 +109,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
       })
       .openTooltip();
 
-    // Scooter marker setup using the circleMarker tooltip engine
+    // LIVE RIDER SCOOTER MARKER (Changes location dynamically)
     scooterMarkerRef.current = window.L.circleMarker(initialCoords, {
       radius: 0,
       opacity: 0,
@@ -105,29 +124,28 @@ export default function DeliveryMap({ currentStep = 1 }) {
       })
       .openTooltip();
 
-    // Save the created map instance to state so our updater effect can access it smoothly
     setMapInstance(map);
   }, [isLeafletReady]);
 
-  // 2. LIVE STATE UPDATER: Synchronizes the path and bike marker dynamically on step shifts
+  // 2. STATE HANDLER: Moves bike and updates line paths on active state step updates
   useEffect(() => {
     if (!mapInstance || !window.L) return;
 
     const newCoords = getCoords(currentStep);
 
-    // Update the rider icon coordinates
+    // Animate bike marker to new position
     if (scooterMarkerRef.current) {
       scooterMarkerRef.current.setLatLng(newCoords);
     }
 
-    // Force redraw the trail behind the moving rider
+    // Refresh path lines so passed routes clear away immediately
     if (routeLineRef.current) {
-      routeLineRef.current.setLatLngs(getTraveledPath(currentStep));
-      routeLineRef.current.redraw(); // Forces Leaflet renderer to show vector updates instantly
+      routeLineRef.current.setLatLngs(getRemainingPath(currentStep));
+      routeLineRef.current.redraw();
     }
 
-    // Center the view camera smoothly on the driver's current position
-    mapInstance.setView(newCoords, 15, { animate: true, duration: 0.5 });
+    // Camera tracks along smoothly with premium zoom perspective
+    mapInstance.setView(newCoords, 15, { animate: true, duration: 0.6 });
   }, [currentStep, mapInstance]);
 
   return (
