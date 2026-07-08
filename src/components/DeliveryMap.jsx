@@ -3,7 +3,8 @@ import React, { useEffect, useRef, useState } from "react";
 export default function DeliveryMap({ currentStep = 1 }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
-  const markerRef = useRef(null);
+  const scooterMarkerRef = useRef(null);
+  const homeMarkerRef = useRef(null);
   const routeLineRef = useRef(null);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
 
@@ -19,12 +20,15 @@ export default function DeliveryMap({ currentStep = 1 }) {
     .map(Number)
     .sort((a, b) => a - b);
 
+  const destinationCoords = coordinatesByStep[allSteps[allSteps.length - 1]];
+
   const getCoords = (step) => coordinatesByStep[step] || coordinatesByStep[1];
 
   const getTraveledPath = (step) => {
     const traveled = allSteps.filter((s) => s <= step).map((s) => coordinatesByStep[s]);
     if (traveled.length < 2) {
-      return [coordinatesByStep[1], coordinatesByStep[1]];
+      // Even at step 1, draw a line from start toward the destination
+      return [coordinatesByStep[1], destinationCoords];
     }
     return traveled;
   };
@@ -55,18 +59,17 @@ export default function DeliveryMap({ currentStep = 1 }) {
       zoomControl: false,
     }).setView(initialCoords, 14);
 
-    // Muted, cream-toned basemap (CartoDB Positron) instead of default busy OSM tiles
+    // Muted, cream-toned basemap (CartoDB Positron)
     window.L.tileLayer(
       "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
       {
-        attribution:
-          '© OpenStreetMap contributors © CARTO',
+        attribution: '© OpenStreetMap contributors © CARTO',
         subdomains: "abcd",
         maxZoom: 19,
       }
     ).addTo(mapInstance.current);
 
-    // Dashed trail line
+    // Dashed trail line from origin to destination/current position
     routeLineRef.current = window.L.polyline(getTraveledPath(currentStep), {
       color: "#8B7355",
       weight: 3,
@@ -74,16 +77,30 @@ export default function DeliveryMap({ currentStep = 1 }) {
       opacity: 0.8,
     }).addTo(mapInstance.current);
 
-    // Invisible circle marker anchoring the scooter emoji tooltip
-    markerRef.current = window.L.circleMarker(initialCoords, {
+    // Destination marker (house)
+    homeMarkerRef.current = window.L.circleMarker(destinationCoords, {
       radius: 0,
       opacity: 0,
       fillOpacity: 0,
     }).addTo(mapInstance.current);
 
-    // Scooter facing forward, no flip, no cup icon
-    markerRef.current
-      .bindTooltip(`<div class="clean-scooter-text">🛵</div>`, {
+    homeMarkerRef.current
+      .bindTooltip(`<div class="clean-icon-text">🏠</div>`, {
+        permanent: true,
+        direction: "center",
+        className: "completely-empty-tooltip",
+      })
+      .openTooltip();
+
+    // Scooter marker (current position), facing forward
+    scooterMarkerRef.current = window.L.circleMarker(initialCoords, {
+      radius: 0,
+      opacity: 0,
+      fillOpacity: 0,
+    }).addTo(mapInstance.current);
+
+    scooterMarkerRef.current
+      .bindTooltip(`<div class="clean-icon-text">🛵</div>`, {
         permanent: true,
         direction: "center",
         className: "completely-empty-tooltip",
@@ -92,10 +109,10 @@ export default function DeliveryMap({ currentStep = 1 }) {
   }, [isLeafletReady]);
 
   useEffect(() => {
-    if (!mapInstance.current || !markerRef.current || !window.L) return;
+    if (!mapInstance.current || !scooterMarkerRef.current || !window.L) return;
 
     const newCoords = getCoords(currentStep);
-    markerRef.current.setLatLng(newCoords);
+    scooterMarkerRef.current.setLatLng(newCoords);
     mapInstance.current.panTo(newCoords);
 
     if (routeLineRef.current) {
@@ -120,7 +137,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
         .leaflet-tooltip-right.completely-empty-tooltip::before {
           display: none !important;
         }
-        .clean-scooter-text {
+        .clean-icon-text {
           font-size: 34px !important;
           display: block !important;
           line-height: 1 !important;
