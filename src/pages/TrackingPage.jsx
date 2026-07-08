@@ -850,7 +850,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
                         animation: "fadeIn 0.3s ease-out forwards"
                       }}
                     >
-                      <p style={{ margin: 0 }}>💬 {partnerMessage}</p>
+                      <p style={{ margin: 0 }}> {partnerMessage}</p>
                       <div 
                         style={{
                           position: "absolute",
