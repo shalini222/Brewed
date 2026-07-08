@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+    import React, { useEffect, useRef, useState } from "react";
 
 export default function DeliveryMap({ currentStep }) {
   const mapRef = useRef(null);
@@ -45,12 +45,12 @@ export default function DeliveryMap({ currentStep }) {
       attribution: "© OpenStreetMap contributors",
     }).addTo(mapInstance.current);
 
-    // FIX: Clear Leaflet default marker styles completely and flip properly
+    // KILL THE BACKGROUND: Assign a unique className and handle style resets
     const flippedScooterIcon = window.L.divIcon({
-      html: `<div style="font-size: 32px; transform: scaleX(-1); display: block; line-height: 1; width: 32px; height: 32px; text-align: center;">🛵</div>`,
+      html: `<div style="font-size: 32px; transform: scaleX(-1); display: inline-block; line-height: 1;">🛵</div>`,
       iconSize: [32, 32],
       iconAnchor: [16, 16],
-      className: "clean-emoji-marker" // Custom class handles transparency
+      className: "transparent-bike-icon"
     });
 
     markerRef.current = window.L.marker(initialCoords, { icon: flippedScooterIcon }).addTo(mapInstance.current);
@@ -68,11 +68,12 @@ export default function DeliveryMap({ currentStep }) {
 
   return (
     <div style={{ width: "100%" }}>
-      {/* Injecting CSS injection safely to ensure Leaflet background box goes away */}
+      {/* Global override targeting only our specific custom marker class */}
       <style>{`
-        .clean-emoji-marker {
-          background: none !important;
+        .transparent-bike-icon {
+          background: transparent !important;
           border: none !important;
+          box-shadow: none !important;
         }
       `}</style>
       <div 
