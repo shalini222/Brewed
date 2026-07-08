@@ -6,6 +6,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
   const scooterMarkerRef = useRef(null);
   const cafeMarkerRef = useRef(null);
   const homeMarkerRef = useRef(null);
+  const glowRingMarkerRef = useRef(null);
   const routeLineRef = useRef(null);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
 
@@ -101,7 +102,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
       opacity: 0.9,
     }).addTo(map);
 
-    // 1. PREMIUM DARK COFFEE SHOP LOCATION PIN
+    // 1. PREMIUM COFFEE SHOP LOCATION PIN
     const premiumCafePin = `
       <div class="premium-pin-wrapper cafe-pin">
         <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -123,13 +124,18 @@ export default function DeliveryMap({ currentStep = 1 }) {
       })
       .openTooltip();
 
-    // 2. CLASSIC EMOJI-STYLE HOUSE LOCATION PIN
-    const elegantHomePin = `
+    // GLOW RING LAYER CONTAINER (Initialized hidden)
+    glowRingMarkerRef.current = window.L.circleMarker(destinationCoords, {
+      radius: 0, opacity: 0, fillOpacity: 0
+    }).addTo(map);
+
+    // 2. PREMIUM DARK HOME LOCATION PIN (Matching Dark Cafe Style)
+    const premiumHomePin = `
       <div class="premium-pin-wrapper home-pin">
         <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M32 2C19.84 2 10 11.84 10 24C10 39.5 32 62 32 62C32 62 54 39.5 54 24C54 11.84 44.16 2 32 2Z" fill="#E28743" stroke="#A64B2A" stroke-width="2"/>
-          <circle cx="32" cy="24" r="14" fill="#FFFFFF" />
-          <path d="M25 26V31H39V26M32 17L23 24H41L32 17Z" fill="#A64B2A" stroke="#A64B2A" stroke-width="1"/>
+          <path d="M32 2C19.8 2 10 11.8 10 24C10 39.5 32 62 32 62C32 62 54 39.5 54 24C54 11.8 44.2 2 32 2Z" fill="#1A1A2E" stroke="#FFFFFF" stroke-width="2"/>
+          <circle cx="32" cy="24" r="13" fill="#FFFFFF" />
+          <path d="M24 26V33H40V26M32 15L20 23H44L32 15Z" fill="#1A1A2E" stroke="#1A1A2E" stroke-width="0.5" stroke-linejoin="round"/>
         </svg>
       </div>
     `;
@@ -139,7 +145,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     }).addTo(map);
 
     homeMarkerRef.current
-      .bindTooltip(elegantHomePin, {
+      .bindTooltip(premiumHomePin, {
         permanent: true, direction: "center", className: "completely-empty-tooltip"
       })
       .openTooltip();
@@ -179,6 +185,21 @@ export default function DeliveryMap({ currentStep = 1 }) {
 
     setMapInstance(map);
   }, [isLeafletReady]);
+
+  // CONTROL RADAR GLOW DYNAMICS ON ARRIVAL
+  useEffect(() => {
+    if (!glowRingMarkerRef.current) return;
+
+    if (currentStep === 4) {
+      glowRingMarkerRef.current
+        .bindTooltip(`<div class="caramel-glow-radar"></div>`, {
+          permanent: true, direction: "center", className: "completely-empty-tooltip"
+        })
+        .openTooltip();
+    } else {
+      glowRingMarkerRef.current.unbindTooltip();
+    }
+  }, [currentStep]);
 
   // SMOOTH ROTATION ENGINE
   useEffect(() => {
@@ -254,7 +275,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
           display: none !important;
         }
         
-        /* Pin placement balancing offset */
+        /* Modern Floating Pins styling */
         .premium-pin-wrapper {
           display: flex;
           align-items: center;
@@ -262,12 +283,38 @@ export default function DeliveryMap({ currentStep = 1 }) {
           width: 48px;
           height: 48px;
           transform: translateY(-20px);
+          z-index: 100;
         }
         .cafe-pin {
           filter: drop-shadow(0px 4px 10px rgba(26, 26, 46, 0.35));
         }
         .home-pin {
-          filter: drop-shadow(0px 4px 10px rgba(166, 75, 42, 0.3));
+          filter: drop-shadow(0px 4px 10px rgba(26, 26, 46, 0.35));
+        }
+        
+        /* Premium Caramel Radar Wave Effect */
+        .caramel-glow-radar {
+          width: 24px;
+          height: 24px;
+          background: rgba(217, 119, 6, 0.15);
+          border: 2px solid #D97706;
+          border-radius: 50%;
+          position: absolute;
+          transform: translate(-12px, -12px);
+          animation: caramelPulsate 1.8s ease-out infinite;
+          pointer-events: none;
+          z-index: 10;
+        }
+
+        @keyframes caramelPulsate {
+          0% {
+            transform: scale(0.6);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(4.5);
+            opacity: 0;
+          }
         }
         
         /* Scaled Bike Engine Container */
