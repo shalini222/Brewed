@@ -4,8 +4,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markerRef = useRef(null);
-  const fullRouteLineRef = useRef(null);
-  const traveledLineRef = useRef(null);
+  const routeLineRef = useRef(null);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
 
   const coordinatesByStep = {
@@ -24,14 +23,11 @@ export default function DeliveryMap({ currentStep = 1 }) {
 
   const getTraveledPath = (step) => {
     const traveled = allSteps.filter((s) => s <= step).map((s) => coordinatesByStep[s]);
-    // Guarantee at least 2 points so Leaflet can draw a line even at step 1
     if (traveled.length < 2) {
       return [coordinatesByStep[1], coordinatesByStep[1]];
     }
     return traveled;
   };
-
-  const getFullPath = () => allSteps.map((s) => coordinatesByStep[s]);
 
   useEffect(() => {
     if (window.L) {
@@ -59,24 +55,23 @@ export default function DeliveryMap({ currentStep = 1 }) {
       zoomControl: false,
     }).setView(initialCoords, 14);
 
-    window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap contributors",
-    }).addTo(mapInstance.current);
+    // Muted, cream-toned basemap (CartoDB Positron) instead of default busy OSM tiles
+    window.L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+      {
+        attribution:
+          '© OpenStreetMap contributors © CARTO',
+        subdomains: "abcd",
+        maxZoom: 19,
+      }
+    ).addTo(mapInstance.current);
 
-    // Full planned route, faint dashed line, always visible
-    fullRouteLineRef.current = window.L.polyline(getFullPath(), {
-      color: "#8B7355",
-      weight: 2,
-      dashArray: "6, 10",
-      opacity: 0.35,
-    }).addTo(mapInstance.current);
-
-    // Traveled portion, darker dashed line, on top
-    traveledLineRef.current = window.L.polyline(getTraveledPath(currentStep), {
+    // Dashed trail line
+    routeLineRef.current = window.L.polyline(getTraveledPath(currentStep), {
       color: "#8B7355",
       weight: 3,
       dashArray: "8, 8",
-      opacity: 0.85,
+      opacity: 0.8,
     }).addTo(mapInstance.current);
 
     // Invisible circle marker anchoring the scooter emoji tooltip
@@ -86,7 +81,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
       fillOpacity: 0,
     }).addTo(mapInstance.current);
 
-    // Scooter emoji, facing its natural (unmirrored) direction
+    // Scooter facing forward, no flip, no cup icon
     markerRef.current
       .bindTooltip(`<div class="clean-scooter-text">🛵</div>`, {
         permanent: true,
@@ -103,8 +98,8 @@ export default function DeliveryMap({ currentStep = 1 }) {
     markerRef.current.setLatLng(newCoords);
     mapInstance.current.panTo(newCoords);
 
-    if (traveledLineRef.current) {
-      traveledLineRef.current.setLatLngs(getTraveledPath(currentStep));
+    if (routeLineRef.current) {
+      routeLineRef.current.setLatLngs(getTraveledPath(currentStep));
     }
   }, [currentStep, isLeafletReady]);
 
