@@ -9,13 +9,15 @@ export default function DeliveryMap({ currentStep = 1 }) {
   const routeLineRef = useRef(null);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
 
-  // Exact step coordinates matching the delivery states
+  // Animation frame tracker
+  const animationRef = useRef(null);
+
   const coordinatesByStep = {
     1: [12.9716, 77.5946], // Café Location (Confirmed)
-    2: [12.9719, 77.5950], // Right outside on the road (Brewing)
-    3: [12.9780, 77.5990], // Midpoint on route (Out for Delivery)
+    2: [12.9725, 77.5952], // Moved to the nearby road right next to café (Brewing)
+    3: [12.9780, 77.5990], // Midpoint route (Out for Delivery)
     4: [12.9830, 77.6030], // Customer House (Delivered)
-    5: [12.9750, 77.5960], // Midpoint fallback
+    5: [12.9750, 77.5960], 
   };
 
   const cafeCoords = coordinatesByStep[1];
@@ -23,14 +25,9 @@ export default function DeliveryMap({ currentStep = 1 }) {
 
   const getCoords = (step) => coordinatesByStep[step] || cafeCoords;
 
-  // REMOVES PASSED LINE: Draws a solid line ONLY from the current bike position to the destination house
-  const getRemainingPath = (step) => {
-    const currentDriverCoords = getCoords(step);
-    
-    // If already delivered, don't show any remaining line path
+  const getRemainingPath = (currentCoords, step) => {
     if (step === 4) return []; 
-    
-    return [currentDriverCoords, destinationCoords];
+    return [currentCoords, destinationCoords];
   };
 
   // Load Leaflet CDN script assets cleanly
@@ -57,12 +54,10 @@ export default function DeliveryMap({ currentStep = 1 }) {
 
     const initialCoords = getCoords(currentStep);
 
-    // Initial tight zoom factor set to 15
     const map = window.L.map(mapRef.current, {
       zoomControl: false,
     }).setView(initialCoords, 15);
 
-    // Cream-toned clean basemap
     window.L.tileLayer(
       "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
       {
@@ -72,14 +67,13 @@ export default function DeliveryMap({ currentStep = 1 }) {
       }
     ).addTo(map);
 
-    // SOLID BROWN PATH: Renders remaining path layout
-    routeLineRef.current = window.L.polyline(getRemainingPath(currentStep), {
-      color: "#8B7355", // Your beautiful brand theme brown color
+    routeLineRef.current = window.L.polyline(getRemainingPath(initialCoords, currentStep), {
+      color: "#8B7355", 
       weight: 4,
       opacity: 0.9,
     }).addTo(map);
 
-    // CAFE MARKER (Stationary at start position)
+    // CAFE MARKER - Replaced the cup with a sleek coffee bean (🫘) or roastery store icon (🏪)
     cafeMarkerRef.current = window.L.circleMarker(cafeCoords, {
       radius: 0,
       opacity: 0,
@@ -87,14 +81,14 @@ export default function DeliveryMap({ currentStep = 1 }) {
     }).addTo(map);
 
     cafeMarkerRef.current
-      .bindTooltip(`<div class="clean-icon-text">☕</div>`, {
+      .bindTooltip(`<div class="clean-icon-text">🫘</div>`, {
         permanent: true,
         direction: "center",
         className: "completely-empty-tooltip",
       })
       .openTooltip();
 
-    // HOUSE MARKER (Stationary at final delivery position)
+    // HOUSE MARKER
     homeMarkerRef.current = window.L.circleMarker(destinationCoords, {
       radius: 0,
       opacity: 0,
@@ -109,7 +103,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
       })
       .openTooltip();
 
-    // LIVE RIDER SCOOTER MARKER (Changes location dynamically)
+    // LIVE RIDER SCOOTER
     scooterMarkerRef.current = window.L.circleMarker(initialCoords, {
       radius: 0,
       opacity: 0,
@@ -127,25 +121,55 @@ export default function DeliveryMap({ currentStep = 1 }) {
     setMapInstance(map);
   }, [isLeafletReady]);
 
-  // 2. STATE HANDLER: Moves bike and updates line paths on active state step updates
+  // 2. SMOOTH LIVE INTERPOLATION ANIMATION ENGINE
   useEffect(() => {
-    if (!mapInstance || !window.L) return;
+    if (!mapInstance || !window.L || !scooterMarkerRef.current) return;
 
-    const newCoords = getCoords(currentStep);
+    const targetCoords = getCoords(currentStep);
+    const startCoords = scooterMarkerRef.current.getLatLng();
+    
+    const startTime = performance.now();
+    const duration = 800; // Animation duration in milliseconds (0.8 seconds of smooth gliding)
 
-    // Animate bike marker to new position
-    if (scooterMarkerRef.current) {
-      scooterMarkerRef.current.setLatLng(newCoords);
+    const animateMovement = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Smooth easing curve formula (easeOutQuad)
+      const easeProgress = progress * (2 - progress);
+
+      // Linearly interpolate lat and lng values step by step
+      const currentLat = startCoords.lat + (targetCoords[0] - startCoords.lat) * easeProgress;
+      const currentLng = startCoords.lng + (targetCoords[1] - startCoords.lng) * easeProgress;
+      const animatedPoint = [currentLat, currentLng];
+
+      // Move marker frame by frame
+      scooterMarkerRef.current.setLatLng(animatedPoint);
+
+      // Redraw the solid line path vanishing behind it dynamically
+      if (routeLineRef.current) {
+        routeLineRef.current.setLatLngs(getRemainingPath(animatedPoint, currentStep));
+        routeLineRef.current.redraw();
+      }
+
+      // Smoothly pan camera center frame by frame
+      mapInstance.setView(animatedPoint, 15, { animate: false });
+
+      if (progress < 1) {
+        animationRef.current = requestAnimationFrame(animateMovement);
+      }
+    };
+
+    // Cancel prior moving hooks to prevent position overlapping glides
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
     }
+    
+    animationRef.current = requestAnimationFrame(animateMovement);
 
-    // Refresh path lines so passed routes clear away immediately
-    if (routeLineRef.current) {
-      routeLineRef.current.setLatLngs(getRemainingPath(currentStep));
-      routeLineRef.current.redraw();
-    }
-
-    // Camera tracks along smoothly with premium zoom perspective
-    mapInstance.setView(newCoords, 15, { animate: true, duration: 0.6 });
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
   }, [currentStep, mapInstance]);
 
   return (
