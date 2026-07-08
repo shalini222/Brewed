@@ -21,7 +21,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     [12.9650, 77.5850],
     [12.9680, 77.5900],
     
-    // --- STAGE 2: Brewing (At the Coffee Shop) ---
+    // --- STAGE 2: Brewing (At the Premium Coffee Shop) ---
     [12.9716, 77.5946], 
     
     // --- STAGE 3: Out for Delivery ---
@@ -30,7 +30,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     [12.9775, 77.5990],
     [12.9800, 77.6010],
     
-    // --- STAGE 4: Delivered (At the House) ---
+    // --- STAGE 4: Delivered (At the Customer House) ---
     [12.9830, 77.6030]
   ];
 
@@ -96,23 +96,21 @@ export default function DeliveryMap({ currentStep = 1 }) {
     ).addTo(map);
 
     routeLineRef.current = window.L.polyline(fullRoadPath, {
-      color: "#4A3525", 
-      weight: 5,
-      opacity: 0.95,
+      color: "#1A1A2E", // Elegant ultra-dark path line
+      weight: 4,
+      opacity: 0.9,
     }).addTo(map);
 
-    // COFFEE SHOP FRONT VECTOR ASSET
-    const coffeeShopSvg = `
-      <div class="large-building-asset">
-        <svg width="52" height="52" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="8" y="22" width="48" height="36" rx="2" fill="#EFEBE9" stroke="#4A3525" stroke-width="2"/>
-          <path d="M6 12H58L52 22H12L6 12Z" fill="#7D5A44" stroke="#4A3525" stroke-width="2" stroke-linejoin="round"/>
-          <path d="M14 12V22M23 12V22M32 12V22M41 12V22M50 12V22" stroke="#4A3525" stroke-width="1.5"/>
-          <rect x="16" y="36" width="14" height="22" rx="1" fill="#E0F7FA" stroke="#4A3525" stroke-width="2"/>
-          <line x1="26" y1="47" x2="28" y2="47" stroke="#4A3525" stroke-width="2"/>
-          <rect x="36" y="36" width="16" height="14" rx="1" fill="#E0F7FA" stroke="#4A3525" stroke-width="2"/>
-          <rect x="26" y="4" width="12" height="8" rx="2" fill="#7D5A44" stroke="#4A3525" stroke-width="1.5"/>
-          <path d="M38 6H40V10H38" stroke="#4A3525" stroke-width="1.5" stroke-linecap="round"/>
+    // 1. PREMIUM MINIMALIST COFFEE SHOP FRONT
+    const premiumCoffeeShopSvg = `
+      <div class="premium-map-token cafe-token">
+        <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="8" y="24" width="48" height="32" rx="4" fill="#FFFFFF" stroke="#1A1A2E" stroke-width="2.5"/>
+          <path d="M4 14H60L54 24H10L4 14Z" fill="#1A1A2E" stroke="#1A1A2E" stroke-width="2.5" stroke-linejoin="round"/>
+          <rect x="16" y="34" width="12" height="22" stroke="#1A1A2E" stroke-width="2"/>
+          <rect x="36" y="34" width="12" height="14" stroke="#1A1A2E" stroke-width="2"/>
+          <path d="M26 6H34V10H26V6Z" fill="#FFFFFF" stroke="#1A1A2E" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M34 7H36C37 7 37 9 36 9H34" stroke="#1A1A2E" stroke-width="1.5"/>
         </svg>
       </div>
     `;
@@ -122,22 +120,20 @@ export default function DeliveryMap({ currentStep = 1 }) {
     }).addTo(map);
 
     cafeMarkerRef.current
-      .bindTooltip(coffeeShopSvg, {
+      .bindTooltip(premiumCoffeeShopSvg, {
         permanent: true, direction: "center", className: "completely-empty-tooltip"
       })
       .openTooltip();
 
-    // RESIDENTIAL HOUSE FRONT VECTOR ASSET
-    const residentialHouseSvg = `
-      <div class="large-building-asset">
-        <svg width="52" height="52" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="12" y="26" width="40" height="32" rx="2" fill="#FFF9C4" stroke="#E28743" stroke-width="2"/>
-          <path d="M8 28L32 6L56 28H8Z" fill="#E28743" stroke="#A64B2A" stroke-width="2" stroke-linejoin="round"/>
-          <rect x="42" y="11" width="6" height="9" fill="#A64B2A" stroke="#A64B2A" stroke-width="1" />
-          <rect x="27" y="42" width="10" height="16" rx="1" fill="#7D5A44" stroke="#4A3525" stroke-width="1.5"/>
-          <circle cx="30" cy="50" r="1" fill="#FFD54F"/>
-          <rect x="18" y="32" width="8" height="8" rx="1" fill="#E0F7FA" stroke="#E28743" stroke-width="1.5"/>
-          <rect x="38" y="32" width="8" height="8" rx="1" fill="#E0F7FA" stroke="#E28743" stroke-width="1.5"/>
+    // 2. PREMIUM MINIMALIST CUSTOMER RESIDENCE
+    const premiumHouseSvg = `
+      <div class="premium-map-token home-token">
+        <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="12" y="28" width="40" height="28" rx="4" fill="#FFFFFF" stroke="#D97706" stroke-width="2.5"/>
+          <path d="M6 28L32 6L58 28" stroke="#D97706" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="27" y="42" width="10" height="14" rx="1" fill="#D97706" stroke="#D97706" stroke-width="1"/>
+          <rect x="19" y="34" width="6" height="6" rx="1" stroke="#D97706" stroke-width="2"/>
+          <rect x="39" y="34" width="6" height="6" rx="1" stroke="#D97706" stroke-width="2"/>
         </svg>
       </div>
     `;
@@ -147,35 +143,34 @@ export default function DeliveryMap({ currentStep = 1 }) {
     }).addTo(map);
 
     homeMarkerRef.current
-      .bindTooltip(residentialHouseSvg, {
+      .bindTooltip(premiumHouseSvg, {
         permanent: true, direction: "center", className: "completely-empty-tooltip"
       })
       .openTooltip();
 
-    // BIRD-EYE BIKE MARKER
+    // 3. MATTE-FINISH BIRDS-EYE VEHICLE ASSET
     scooterMarkerRef.current = window.L.circleMarker(startPos, {
       radius: 0, opacity: 0, fillOpacity: 0
     }).addTo(map);
 
     const topDownRiderAndBikeSvg = `
       <div id="live-scooter-container">
-        <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="29" y="2" width="6" height="12" rx="3" fill="#1A1A1A" />
+        <svg width="30" height="30" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="29" y="2" width="6" height="12" rx="3" fill="#111111" />
           <rect x="14" y="14" width="36" height="3" rx="1.5" fill="#34495E" />
           <rect x="12" y="13" width="5" height="5" rx="1" fill="#111111" />
           <rect x="47" y="13" width="5" height="5" rx="1" fill="#111111" />
-          <path d="M25 15H39V46H25V15Z" fill="#F39C12" />
-          <path d="M19 24C19 24 16 32 18 38H25V22H19V24Z" fill="#2980B9" />
-          <path d="M45 24C45 24 48 32 46 38H39V22H45V24Z" fill="#2980B9" />
+          <path d="M25 15H39V46H25V15Z" fill="#D97706" />
+          <path d="M19 24C19 24 16 32 18 38H25V22H19V24Z" fill="#111111" />
+          <path d="M45 24C45 24 48 32 46 38H39V22H45V24Z" fill="#111111" />
           <path d="M21 22C21 20 25 18 32 18C39 18 43 20 43 22V34H21V22Z" fill="#34495E" />
           <path d="M21 22L15 16" stroke="#34495E" stroke-width="4" stroke-linecap="round" />
           <path d="M43 22L49 16" stroke="#34495E" stroke-width="4" stroke-linecap="round" />
-          <circle cx="32" cy="25" r="7" fill="#E67E22" />
-          <path d="M26 23C26 21 28 20 32 20C36 20 38 21 38 23V25H26V23Z" fill="#111111" />
-          <rect x="18" y="44" width="28" height="16" rx="2" fill="#D35400" stroke="#E67E22" stroke-width="1" />
-          <rect x="25" y="48" width="14" height="8" rx="1" fill="#4A3525" />
-          <circle cx="32" cy="52" r="1.5" fill="#FFFFFF" />
-          <rect x="29" y="54" width="6" height="8" rx="2" fill="#1A1A1A" />
+          <circle cx="32" cy="25" r="7" fill="#1A1A2E" />
+          <path d="M26 23C26 21 28 20 32 20C36 20 38 21 38 23V25H26V23Z" fill="#FFFFFF" />
+          <rect x="18" y="44" width="28" height="16" rx="2" fill="#1A1A2E" />
+          <rect x="25" y="48" width="14" height="8" rx="1" fill="#D97706" />
+          <rect x="29" y="54" width="6" height="8" rx="2" fill="#111111" />
         </svg>
       </div>
     `;
@@ -262,21 +257,34 @@ export default function DeliveryMap({ currentStep = 1 }) {
         .leaflet-tooltip-right.completely-empty-tooltip::before {
           display: none !important;
         }
-        /* Buildings have clean vector drop-shadows and look comfortably larger */
-        .large-building-asset {
+        
+        /* Premium Token Styles */
+        .premium-map-token {
           display: flex;
           align-items: center;
           justify-content: center;
-          filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.12));
+          background: #FFFFFF;
+          border-radius: 50%;
+          width: 56px;
+          height: 56px;
+          transition: all 0.3s ease;
         }
+        .cafe-token {
+          filter: drop-shadow(0px 6px 14px rgba(26, 26, 46, 0.24));
+        }
+        .home-token {
+          filter: drop-shadow(0px 6px 14px rgba(217, 119, 6, 0.24));
+        }
+        
+        /* Scaled Bike Engine Container */
         #live-scooter-container {
           transform-origin: center center;
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 32px;
-          height: 32px;
-          filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.18));
+          width: 30px;
+          height: 30px;
+          filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.16));
           transition: transform 0.08s linear;
         }
       `}</style>
