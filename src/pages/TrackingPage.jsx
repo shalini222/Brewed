@@ -89,12 +89,14 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     return () => clearInterval(interval);
   }, [currentStep, orderSnapshot]);
 
-  // 2. NEW DELIVERED STATUS WATCHER (POPS UP REVIEW AFTER MAP ARREST)
+  // 2. DELIVERED STATUS WATCHER (POPS UP REVIEW AFTER NATURAL HOVER WINDOW)
   useEffect(() => {
     if (currentStep === 4) {
+      // Changed to 8000ms (8 seconds) so the user sees the bike arrive and can
+      // process the delivery state change cleanly before being interrupted by the modal
       const modalTimeout = setTimeout(() => {
         setShowFeedbackModal(true);
-      }, 1500); // 1.5 second buffer allowing bike marker positioning to hit target home flawlessly
+      }, 8000); 
       return () => clearTimeout(modalTimeout);
     }
   }, [currentStep]);
