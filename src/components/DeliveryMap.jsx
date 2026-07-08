@@ -4,14 +4,15 @@ export default function DeliveryMap({ currentStep }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markerRef = useRef(null);
+  const routeLineRef = useRef(null);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
 
   const coordinatesByStep = {
-    1: [12.9716, 77.5946], 
-    2: [12.9716, 77.5946], 
-    3: [12.9780, 77.5990], 
-    4: [12.9830, 77.6030], 
-    5: [12.9750, 77.5960], 
+    1: [12.9716, 77.5946],
+    2: [12.9716, 77.5946],
+    3: [12.9780, 77.5990],
+    4: [12.9830, 77.6030],
+    5: [12.9750, 77.5960],
   };
 
   useEffect(() => {
@@ -19,7 +20,6 @@ export default function DeliveryMap({ currentStep }) {
       setIsLeafletReady(true);
       return;
     }
-
     const link = document.createElement("link");
     link.rel = "stylesheet";
     link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
@@ -36,32 +36,44 @@ export default function DeliveryMap({ currentStep }) {
     if (!isLeafletReady || !window.L || mapInstance.current) return;
 
     const initialCoords = coordinatesByStep[currentStep] || [12.9716, 77.5946];
-    
+
     mapInstance.current = window.L.map(mapRef.current, {
-      zoomControl: false
+      zoomControl: false,
     }).setView(initialCoords, 14);
 
     window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap contributors",
     }).addTo(mapInstance.current);
 
-    // THE FIX: Create an invisible circle marker at the location point
+    // Dashed trail showing the path traveled so far
+    const pathSoFar = Object.keys(coordinatesByStep)
+      .map(Number)
+      .filter((step) => step <= currentStep)
+      .sort((a, b) => a - b)
+      .map((step) => coordinatesByStep[step]);
+
+    routeLineRef.current = window.L.polyline(pathSoFar, {
+      color: "#8B7355",
+      weight: 3,
+      dashArray: "8, 8",
+      opacity: 0.7,
+    }).addTo(mapInstance.current);
+
+    // Invisible circle marker anchoring the scooter emoji tooltip
     markerRef.current = window.L.circleMarker(initialCoords, {
       radius: 0,
       opacity: 0,
-      fillOpacity: 0
+      fillOpacity: 0,
     }).addTo(mapInstance.current);
 
-    // Bind a permanent text layout that holds only our clean flipped emoji
-    markerRef.current.bindTooltip(
-      `<div class="clean-scooter-text">🛵</div>`, 
-      {
+    // Scooter facing forward (no mirroring)
+    markerRef.current
+      .bindTooltip(`<div class="clean-scooter-text">🛵</div>`, {
         permanent: true,
         direction: "center",
-        className: "completely-empty-tooltip"
-      }
-    ).openTooltip();
-
+        className: "completely-empty-tooltip",
+      })
+      .openTooltip();
   }, [isLeafletReady]);
 
   useEffect(() => {
@@ -70,13 +82,23 @@ export default function DeliveryMap({ currentStep }) {
       if (newCoords) {
         markerRef.current.setLatLng(newCoords);
         mapInstance.current.panTo(newCoords);
+
+        // Update the dashed trail to reflect the new step
+        const pathSoFar = Object.keys(coordinatesByStep)
+          .map(Number)
+          .filter((step) => step <= currentStep)
+          .sort((a, b) => a - b)
+          .map((step) => coordinatesByStep[step]);
+
+        if (routeLineRef.current) {
+          routeLineRef.current.setLatLngs(pathSoFar);
+        }
       }
     }
   }, [currentStep, isLeafletReady]);
 
   return (
     <div style={{ width: "100%" }}>
-      {/* Structural resets to explicitly wipe out Leaflet's built-in box layout */}
       <style>{`
         .leaflet-tooltip.completely-empty-tooltip {
           background: transparent !important;
@@ -90,25 +112,24 @@ export default function DeliveryMap({ currentStep }) {
         .leaflet-tooltip-bottom.completely-empty-tooltip::before,
         .leaflet-tooltip-left.completely-empty-tooltip::before,
         .leaflet-tooltip-right.completely-empty-tooltip::before {
-          display: none !important; /* Removes the tiny text arrow pointer */
+          display: none !important;
         }
         .clean-scooter-text {
           font-size: 34px !important;
-          transform: scaleX(-1) !important; /* Flips the scooter to face forward */
           display: block !important;
           line-height: 1 !important;
         }
       `}</style>
-      
-      <div 
-        ref={mapRef} 
-        style={{ 
-          height: "280px", 
-          width: "100%", 
-          borderRadius: "12px", 
-          backgroundColor: "#F5F3E9", 
-          zIndex: 1 
-        }} 
+
+      <div
+        ref={mapRef}
+        style={{
+          height: "280px",
+          width: "100%",
+          borderRadius: "12px",
+          backgroundColor: "#F5F3E9",
+          zIndex: 1,
+        }}
       />
     </div>
   );
