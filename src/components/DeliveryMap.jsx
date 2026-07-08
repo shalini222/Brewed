@@ -9,28 +9,62 @@ export default function DeliveryMap({ currentStep = 1 }) {
   const routeLineRef = useRef(null);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
 
-  // Animation frame tracker
   const animationRef = useRef(null);
 
-  const coordinatesByStep = {
-    1: [12.9716, 77.5946], // Café Location (Confirmed)
-    2: [12.9725, 77.5952], // Moved to the nearby road right next to café (Brewing)
-    3: [12.9780, 77.5990], // Midpoint route (Out for Delivery)
-    4: [12.9830, 77.6030], // Customer House (Delivered)
-    5: [12.9750, 77.5960], 
+  // Exact landmark locations
+  const cafeCoords = [12.9716, 77.5946];
+  const destinationCoords = [12.9830, 77.6030];
+
+  // ROAD-SNAPPED TRAJECTORY: Detailed multi-point road segments mapping actual street turns
+  const fullRoadPath = [
+    // --- STAGE 1: Order Confirmed (Rider starts down the road, heading toward the café) ---
+    [12.9695, 77.5932], 
+    [12.9705, 77.5938],
+    
+    // --- STAGE 2: Brewing (Rider arrives right outside the café entrance layout) ---
+    [12.9716, 77.5946], 
+    
+    // --- STAGE 3: Out for Delivery (Rider takes local street turns toward destination) ---
+    [12.9732, 77.5955],
+    [12.9750, 77.5972], 
+    [12.9782, 77.5985], 
+    [12.9801, 77.6008], 
+    
+    // --- STAGE 4: Delivered (Arrives exactly at customer's house) ---
+    [12.9830, 77.6030]
+  ];
+
+  // Maps your parent tracking steps to explicit index windows on our detailed road trajectory array
+  const getTargetCoords = (step) => {
+    if (step <= 1) return fullRoadPath[0];
+    if (step === 2) return fullRoadPath[2]; // Arrived at Café
+    if (step === 3) return fullRoadPath[5]; // Midpoint on delivery route
+    return fullRoadPath[fullRoadPath.length - 1]; // Step 4+ (Customer House)
   };
 
-  const cafeCoords = coordinatesByStep[1];
-  const destinationCoords = coordinatesByStep[4];
+  // Slice out the remaining path geometry starting from the driver's current position down to the house
+  const calculateRemainingPath = (currentLatLng) => {
+    // Find the closest road point index we are approaching to keep vector rendering accurate
+    let closestIdx = 0;
+    let minDist = Infinity;
+    
+    for (let i = 0; i < fullRoadPath.length; i++) {
+      const d = Math.hypot(fullRoadPath[i][0] - currentLatLng.lat, fullRoadPath[i][1] - currentLatLng.lng);
+      if (d < minDist) {
+        minDist = d;
+        closestIdx = i;
+      }
+    }
 
-  const getCoords = (step) => coordinatesByStep[step] || cafeCoords;
-
-  const getRemainingPath = (currentCoords, step) => {
-    if (step === 4) return []; 
-    return [currentCoords, destinationCoords];
+    // Build path starting at the live animated point, running through remaining road turn vertices
+    const path = [[currentLatLng.lat, currentLatLng.lng]];
+    for (let i = closestIdx + 1; i < fullRoadPath.length; i++) {
+      path.push(fullRoadPath[i]);
+    }
+    return path;
   };
 
-  // Load Leaflet CDN script assets cleanly
+  // Dynamic asset injection
   useEffect(() => {
     if (window.L) {
       setIsLeafletReady(true);
@@ -48,15 +82,15 @@ export default function DeliveryMap({ currentStep = 1 }) {
     document.body.appendChild(script);
   }, []);
 
-  // 1. INITIALIZE BASE MAP LAYERS ONCE
+  // 1. INITIALIZE STATIC BASEMAP LAYERS
   useEffect(() => {
     if (!isLeafletReady || !window.L || mapInstance) return;
 
-    const initialCoords = getCoords(currentStep);
+    const startPos = getTargetCoords(currentStep);
 
     const map = window.L.map(mapRef.current, {
       zoomControl: false,
-    }).setView(initialCoords, 15);
+    }).setView(startPos, 15);
 
     window.L.tileLayer(
       "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
@@ -67,13 +101,14 @@ export default function DeliveryMap({ currentStep = 1 }) {
       }
     ).addTo(map);
 
-    routeLineRef.current = window.L.polyline(getRemainingPath(initialCoords, currentStep), {
+    // Initial Solid Path Setup
+    routeLineRef.current = window.L.polyline(fullRoadPath, {
       color: "#8B7355", 
       weight: 4,
       opacity: 0.9,
     }).addTo(map);
 
-    // CAFE MARKER - Replaced the cup with a sleek coffee bean (🫘) or roastery store icon (🏪)
+    // CAFETERIA MARKER: Using a sleek shopfront building emoji (🏪)
     cafeMarkerRef.current = window.L.circleMarker(cafeCoords, {
       radius: 0,
       opacity: 0,
@@ -81,14 +116,14 @@ export default function DeliveryMap({ currentStep = 1 }) {
     }).addTo(map);
 
     cafeMarkerRef.current
-      .bindTooltip(`<div class="clean-icon-text">🫘</div>`, {
+      .bindTooltip(`<div class="clean-icon-text">🏪</div>`, {
         permanent: true,
         direction: "center",
         className: "completely-empty-tooltip",
       })
       .openTooltip();
 
-    // HOUSE MARKER
+    // CUSTOMER HOUSE MARKER
     homeMarkerRef.current = window.L.circleMarker(destinationCoords, {
       radius: 0,
       opacity: 0,
@@ -103,15 +138,15 @@ export default function DeliveryMap({ currentStep = 1 }) {
       })
       .openTooltip();
 
-    // LIVE RIDER SCOOTER
-    scooterMarkerRef.current = window.L.circleMarker(initialCoords, {
+    // SMOOTH BIKE CONTAINER MARKER
+    scooterMarkerRef.current = window.L.circleMarker(startPos, {
       radius: 0,
       opacity: 0,
       fillOpacity: 0,
     }).addTo(map);
 
     scooterMarkerRef.current
-      .bindTooltip(`<div class="clean-icon-text flip-bike">🛵</div>`, {
+      .bindTooltip(`<div id="live-scooter-container" class="clean-icon-text">🛵</div>`, {
         permanent: true,
         direction: "center",
         className: "completely-empty-tooltip",
@@ -121,50 +156,64 @@ export default function DeliveryMap({ currentStep = 1 }) {
     setMapInstance(map);
   }, [isLeafletReady]);
 
-  // 2. SMOOTH LIVE INTERPOLATION ANIMATION ENGINE
+  // 2. TRUE ROAD STEERING & INTERPOLATION ENGINE
   useEffect(() => {
     if (!mapInstance || !window.L || !scooterMarkerRef.current) return;
 
-    const targetCoords = getCoords(currentStep);
+    const targetCoords = getTargetCoords(currentStep);
     const startCoords = scooterMarkerRef.current.getLatLng();
     
     const startTime = performance.now();
-    const duration = 800; // Animation duration in milliseconds (0.8 seconds of smooth gliding)
+    const duration = 1200; // Eased over 1.2 seconds for fluid pacing across turn segments
 
     const animateMovement = (currentTime) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = progress * (2 - progress); // easeOutQuad
 
-      // Smooth easing curve formula (easeOutQuad)
-      const easeProgress = progress * (2 - progress);
-
-      // Linearly interpolate lat and lng values step by step
       const currentLat = startCoords.lat + (targetCoords[0] - startCoords.lat) * easeProgress;
       const currentLng = startCoords.lng + (targetCoords[1] - startCoords.lng) * easeProgress;
-      const animatedPoint = [currentLat, currentLng];
+      const animatedPoint = { lat: currentLat, lng: currentLng };
 
-      // Move marker frame by frame
-      scooterMarkerRef.current.setLatLng(animatedPoint);
+      // Calculate Bearing/Angle for true frontwards orientation matching the road heading
+      const dLat = targetCoords[0] - startCoords.lat;
+      const dLng = targetCoords[1] - startCoords.lng;
+      
+      // Calculate rotation in degrees if the bike is actively covering distance
+      if (Math.abs(dLat) > 0.0001 || Math.abs(dLng) > 0.0001) {
+        let angle = Math.atan2(dLng, dLat) * (180 / Math.PI);
+        
+        // Offset mapping to maintain proper frontwards horizontal scale balance
+        const targetRotation = angle - 90; 
+        
+        const el = document.getElementById("live-scooter-container");
+        if (el) {
+          el.style.transform = `scaleX(-1) rotate(${targetRotation}deg)`;
+        }
+      }
 
-      // Redraw the solid line path vanishing behind it dynamically
+      // Move marker location step-by-step
+      scooterMarkerRef.current.setLatLng([animatedPoint.lat, animatedPoint.lng]);
+
+      // Dynamic path trimmer: Keeps remaining distance lines perfectly up-to-date
       if (routeLineRef.current) {
-        routeLineRef.current.setLatLngs(getRemainingPath(animatedPoint, currentStep));
+        if (currentStep === 4 && progress > 0.95) {
+          routeLineRef.current.setLatLngs([]); // Disappear line completely upon formal completion
+        } else {
+          routeLineRef.current.setLatLngs(calculateRemainingPath(animatedPoint));
+        }
         routeLineRef.current.redraw();
       }
 
-      // Smoothly pan camera center frame by frame
-      mapInstance.setView(animatedPoint, 15, { animate: false });
+      // Center the tracking map dynamically
+      mapInstance.setView([animatedPoint.lat, animatedPoint.lng], 15, { animate: false });
 
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animateMovement);
       }
     };
 
-    // Cancel prior moving hooks to prevent position overlapping glides
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
-    
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
     animationRef.current = requestAnimationFrame(animateMovement);
 
     return () => {
@@ -193,9 +242,11 @@ export default function DeliveryMap({ currentStep = 1 }) {
           font-size: 34px !important;
           display: block !important;
           line-height: 1 !important;
+          transition: transform 0.1s linear; /* Keeps rotational adjustment fluid */
         }
-        .flip-bike {
-          transform: scaleX(-1) !important;
+        #live-scooter-container {
+          transform: scaleX(-1); /* Base orientation fix */
+          transform-origin: center center;
         }
       `}</style>
 
