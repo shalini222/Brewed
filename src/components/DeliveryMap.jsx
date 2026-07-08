@@ -8,29 +8,25 @@ export default function DeliveryMap({ currentStep = 1 }) {
   const routeLineRef = useRef(null);
   const [isLeafletReady, setIsLeafletReady] = useState(false);
 
+  // Core project step coordinates
   const coordinatesByStep = {
-    1: [12.9716, 77.5946],
-    2: [12.9716, 77.5946],
-    3: [12.9780, 77.5990],
-    4: [12.9830, 77.6030],
-    5: [12.9750, 77.5960],
+    1: [12.9716, 77.5946], // Café Location (Origin)
+    2: [12.9716, 77.5946], // Still at Café
+    3: [12.9780, 77.5990], // Out for delivery
+    4: [12.9830, 77.6030], // Customer Location (True Destination)
+    5: [12.9750, 77.5960], // Issue midpoint
   };
 
-  const allSteps = Object.keys(coordinatesByStep)
-    .map(Number)
-    .sort((a, b) => a - b);
+  // FIX: Explicitly lock the home destination to step 4 so it never drifts
+  const originCoords = coordinatesByStep[1];
+  const destinationCoords = coordinatesByStep[4];
 
-  const destinationCoords = coordinatesByStep[allSteps[allSteps.length - 1]];
+  const getCoords = (step) => coordinatesByStep[step] || originCoords;
 
-  const getCoords = (step) => coordinatesByStep[step] || coordinatesByStep[1];
-
+  // FIX: Create a direct line path trailing right behind the driver from start to current location
   const getTraveledPath = (step) => {
-    const traveled = allSteps.filter((s) => s <= step).map((s) => coordinatesByStep[s]);
-    if (traveled.length < 2) {
-      // Even at step 1, draw a line from start toward the destination
-      return [coordinatesByStep[1], destinationCoords];
-    }
-    return traveled;
+    const currentDriverCoords = getCoords(step);
+    return [originCoords, currentDriverCoords];
   };
 
   useEffect(() => {
@@ -55,11 +51,12 @@ export default function DeliveryMap({ currentStep = 1 }) {
 
     const initialCoords = getCoords(currentStep);
 
+    // FIX: Changed zoom factor from 14 to 15 for a closer, premium view
     mapInstance.current = window.L.map(mapRef.current, {
       zoomControl: false,
-    }).setView(initialCoords, 14);
+    }).setView(initialCoords, 15);
 
-    // Muted, cream-toned basemap (CartoDB Positron)
+    // Cream-toned clean basemap
     window.L.tileLayer(
       "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
       {
@@ -69,7 +66,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
       }
     ).addTo(mapInstance.current);
 
-    // Dashed trail line from origin to destination/current position
+    // Dashed path trailing behind the scooter marker
     routeLineRef.current = window.L.polyline(getTraveledPath(currentStep), {
       color: "#8B7355",
       weight: 3,
@@ -77,7 +74,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
       opacity: 0.8,
     }).addTo(mapInstance.current);
 
-    // Destination marker (house)
+    // Destination marker (house) stays stationary at Step 4 coordinates
     homeMarkerRef.current = window.L.circleMarker(destinationCoords, {
       radius: 0,
       opacity: 0,
@@ -92,7 +89,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
       })
       .openTooltip();
 
-    // Scooter marker (current position), facing forward
+    // Scooter marker setup using the flip utility style
     scooterMarkerRef.current = window.L.circleMarker(initialCoords, {
       radius: 0,
       opacity: 0,
@@ -100,7 +97,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     }).addTo(mapInstance.current);
 
     scooterMarkerRef.current
-      .bindTooltip(`<div class="clean-icon-text">🛵</div>`, {
+      .bindTooltip(`<div class="clean-icon-text flip-bike">🛵</div>`, {
         permanent: true,
         direction: "center",
         className: "completely-empty-tooltip",
@@ -141,6 +138,10 @@ export default function DeliveryMap({ currentStep = 1 }) {
           font-size: 34px !important;
           display: block !important;
           line-height: 1 !important;
+        }
+        /* Clean flip style execution without Leaflet overrides getting in the way */
+        .flip-bike {
+          transform: scaleX(-1) !important;
         }
       `}</style>
 
