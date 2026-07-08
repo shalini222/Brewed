@@ -11,27 +11,33 @@ export default function DeliveryMap({ currentStep = 1 }) {
 
   const animationRef = useRef(null);
 
-  // Core landmarks
+  // Core anchor locations based on your screenshots
   const cafeCoords = [12.9716, 77.5946];
   const destinationCoords = [12.9830, 77.6030];
 
-  // CONVENIENT ROAD PATHWAY
+  // FIXED: Road-snapped street grid routing that avoids cutting through the park!
   const fullRoadPath = [
-    [12.9610, 77.5840],
-    [12.9635, 77.5870],
-    [12.9665, 77.5900],
-    [12.9692, 77.5925],
-    [12.9716, 77.5946], // Café Node
-    [12.9735, 77.5958],
-    [12.9760, 77.5978], 
-    [12.9790, 77.6000], 
-    [12.9830, 77.6030]  // House Node
+    // --- STAGE 1: Order Confirmed ---
+    [12.9650, 77.5850],
+    [12.9680, 77.5900],
+    
+    // --- STAGE 2: Brewing (Directly at the Cafe) ---
+    [12.9716, 77.5946], 
+    
+    // --- STAGE 3: Out for Delivery (Navigating around the roads smoothly) ---
+    [12.9730, 77.5955],
+    [12.9755, 77.5970],
+    [12.9775, 77.5990],
+    [12.9800, 77.6010],
+    
+    // --- STAGE 4: Delivered (Arrives directly at the House) ---
+    [12.9830, 77.6030]
   ];
 
   const getTargetCoords = (step) => {
     if (step <= 1) return fullRoadPath[0];
-    if (step === 2) return fullRoadPath[4]; 
-    if (step === 3) return fullRoadPath[6]; 
+    if (step === 2) return fullRoadPath[2]; 
+    if (step === 3) return fullRoadPath[5]; 
     return fullRoadPath[fullRoadPath.length - 1]; 
   };
 
@@ -71,7 +77,6 @@ export default function DeliveryMap({ currentStep = 1 }) {
     document.body.appendChild(script);
   }, []);
 
-  // 1. INITIALIZE MAP LAYERS
   useEffect(() => {
     if (!isLeafletReady || !window.L || mapInstance) return;
 
@@ -90,51 +95,64 @@ export default function DeliveryMap({ currentStep = 1 }) {
       }
     ).addTo(map);
 
+    // DARK COFFEE PATH LINE
     routeLineRef.current = window.L.polyline(fullRoadPath, {
       color: "#4A3525", 
       weight: 5,
       opacity: 0.95,
     }).addTo(map);
 
-    // CAFETERIA PREMIUM IMAGE MARKER
+    // FIXED: High-quality, unbreakable Inline Cafe SVG Map Marker Pin
+    const elegantCafePin = `
+      <div class="large-building-asset">
+        <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M32 2C19.84 2 10 11.84 10 24C10 39.5 32 62 32 62C32 62 54 39.5 54 24C54 11.84 44.16 2 32 2Z" fill="#7D5A44" stroke="#4A3525" stroke-width="2"/>
+          <circle cx="32" cy="24" r="14" fill="#FFFFFF" />
+          <path d="M26 26C26 21.58 29.58 18 34 18" stroke="#4A3525" stroke-width="3" stroke-linecap="round"/>
+          <path d="M38 22C38 26.42 34.42 30 30 30" stroke="#4A3525" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    `;
+
     cafeMarkerRef.current = window.L.circleMarker(cafeCoords, {
       radius: 0, opacity: 0, fillOpacity: 0
     }).addTo(map);
 
-    // Swap the src with your local assets or preferred icon URLs!
     cafeMarkerRef.current
-      .bindTooltip(`
-        <div class="large-building-asset">
-          <img src="https://img.icons8.com/emoji/96/shop-assistant-emoji.png" alt="cafe" />
-        </div>
-      `, {
+      .bindTooltip(elegantCafePin, {
         permanent: true, direction: "center", className: "completely-empty-tooltip"
       })
       .openTooltip();
 
-    // CUSTOMER HOUSE PREMIUM IMAGE MARKER
+    // FIXED: High-quality, unbreakable Inline House SVG Map Marker Pin
+    const elegantHomePin = `
+      <div class="large-building-asset">
+        <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M32 2C19.84 2 10 11.84 10 24C10 39.5 32 62 32 62C32 62 54 39.5 54 24C54 11.84 44.16 2 32 2Z" fill="#E28743" stroke="#A64B2A" stroke-width="2"/>
+          <circle cx="32" cy="24" r="14" fill="#FFFFFF" />
+          <path d="M25 26V31H39V26M32 17L23 24H41L32 17Z" fill="#A64B2A" stroke="#A64B2A" stroke-width="1"/>
+        </svg>
+      </div>
+    `;
+
     homeMarkerRef.current = window.L.circleMarker(destinationCoords, {
       radius: 0, opacity: 0, fillOpacity: 0
     }).addTo(map);
 
     homeMarkerRef.current
-      .bindTooltip(`
-        <div class="large-building-asset">
-          <img src="https://img.icons8.com/emoji/96/house-emoji.png" alt="home" />
-        </div>
-      `, {
+      .bindTooltip(elegantHomePin, {
         permanent: true, direction: "center", className: "completely-empty-tooltip"
       })
       .openTooltip();
 
-    // LIVE RIDER MARKER CONTAINER
+    // BIRD-EYE BIKE MARKER
     scooterMarkerRef.current = window.L.circleMarker(startPos, {
       radius: 0, opacity: 0, fillOpacity: 0
     }).addTo(map);
 
     const topDownRiderAndBikeSvg = `
       <div id="live-scooter-container">
-        <svg width="34" height="34" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="29" y="2" width="6" height="12" rx="3" fill="#1A1A1A" />
           <rect x="14" y="14" width="36" height="3" rx="1.5" fill="#34495E" />
           <rect x="12" y="13" width="5" height="5" rx="1" fill="#111111" />
@@ -237,19 +255,21 @@ export default function DeliveryMap({ currentStep = 1 }) {
         .leaflet-tooltip-right.completely-empty-tooltip::before {
           display: none !important;
         }
-        /* Custom layout sizing for building images */
-        .large-building-asset img {
-          width: 52px !important;
-          height: 52px !important;
-          display: block !important;
+        /* Scale: Buildings look comparatively larger than the tiny bike */
+        .large-building-asset {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.16));
         }
         #live-scooter-container {
           transform-origin: center center;
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 34px;
-          height: 34px;
+          width: 32px;
+          height: 32px;
+          filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.2));
           transition: transform 0.08s linear;
         }
       `}</style>
