@@ -99,12 +99,12 @@ export default function DeliveryMap({ currentStep = 1 }) {
     routeLineRef.current = window.L.polyline(fullRoadPath, {
       color: "#1A1A2E", 
       weight: 4,
-      opacity: 0.9,
+      opacity: 0.85,
     }).addTo(map);
 
-    // 1. PREMIUM COFFEE SHOP LOCATION PIN
-    const premiumCafePin = `
-      <div class="premium-pin-wrapper cafe-pin">
+    // 1. PREMIUM DARK COFFEE SHOP PIN
+    const premiumCafePinHtml = `
+      <div class="premium-pin-container">
         <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M32 2C19.8 2 10 11.8 10 24C10 39.5 32 62 32 62C32 62 54 39.5 54 24C54 11.8 44.2 2 32 2Z" fill="#1A1A2E" stroke="#FFFFFF" stroke-width="2"/>
           <circle cx="32" cy="24" r="13" fill="#FFFFFF" />
@@ -114,24 +114,26 @@ export default function DeliveryMap({ currentStep = 1 }) {
       </div>
     `;
 
-    cafeMarkerRef.current = window.L.circleMarker(cafeCoords, {
-      radius: 0, opacity: 0, fillOpacity: 0
-    }).addTo(map);
+    const cafeIcon = window.L.divIcon({
+      html: premiumCafePinHtml,
+      className: "custom-leaflet-div-icon",
+      iconSize: [48, 48],
+      iconAnchor: [24, 48], // Tip of the pin is exactly on the coordinate position
+    });
+    cafeMarkerRef.current = window.L.marker(cafeCoords, { icon: cafeIcon }).addTo(map);
 
-    cafeMarkerRef.current
-      .bindTooltip(premiumCafePin, {
-        permanent: true, direction: "center", className: "completely-empty-tooltip"
-      })
-      .openTooltip();
+    // 2. RADAR LAYER CONTAINER (Using absolute coordinates alignment)
+    const radarIcon = window.L.divIcon({
+      html: `<div class="caramel-glow-radar"></div>`,
+      className: "custom-leaflet-div-icon-radar",
+      iconSize: [0, 0],
+      iconAnchor: [0, 0] // Centered perfectly on coordinates
+    });
+    glowRingMarkerRef.current = window.L.marker(destinationCoords, { icon: radarIcon });
 
-    // GLOW RING LAYER CONTAINER (Initialized hidden)
-    glowRingMarkerRef.current = window.L.circleMarker(destinationCoords, {
-      radius: 0, opacity: 0, fillOpacity: 0
-    }).addTo(map);
-
-    // 2. PREMIUM DARK HOME LOCATION PIN (Matching Dark Cafe Style)
-    const premiumHomePin = `
-      <div class="premium-pin-wrapper home-pin">
+    // 3. PREMIUM DARK HOME LOCATION PIN (Identical profile structure to Cafe)
+    const premiumHomePinHtml = `
+      <div class="premium-pin-container">
         <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M32 2C19.8 2 10 11.8 10 24C10 39.5 32 62 32 62C32 62 54 39.5 54 24C54 11.8 44.2 2 32 2Z" fill="#1A1A2E" stroke="#FFFFFF" stroke-width="2"/>
           <circle cx="32" cy="24" r="13" fill="#FFFFFF" />
@@ -140,22 +142,16 @@ export default function DeliveryMap({ currentStep = 1 }) {
       </div>
     `;
 
-    homeMarkerRef.current = window.L.circleMarker(destinationCoords, {
-      radius: 0, opacity: 0, fillOpacity: 0
-    }).addTo(map);
+    const homeIcon = window.L.divIcon({
+      html: premiumHomePinHtml,
+      className: "custom-leaflet-div-icon",
+      iconSize: [48, 48],
+      iconAnchor: [24, 48], // Tip of the pin sits exactly at the target point
+    });
+    homeMarkerRef.current = window.L.marker(destinationCoords, { icon: homeIcon }).addTo(map);
 
-    homeMarkerRef.current
-      .bindTooltip(premiumHomePin, {
-        permanent: true, direction: "center", className: "completely-empty-tooltip"
-      })
-      .openTooltip();
-
-    // 3. MATTE BIRD-EYE BIKE MARKER
-    scooterMarkerRef.current = window.L.circleMarker(startPos, {
-      radius: 0, opacity: 0, fillOpacity: 0
-    }).addTo(map);
-
-    const topDownRiderAndBikeSvg = `
+    // 4. BIRDS-EYE VEHICLE MARKER
+    const scooterIconHtml = `
       <div id="live-scooter-container">
         <svg width="30" height="30" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="29" y="2" width="6" height="12" rx="3" fill="#111111" />
@@ -177,31 +173,29 @@ export default function DeliveryMap({ currentStep = 1 }) {
       </div>
     `;
 
-    scooterMarkerRef.current
-      .bindTooltip(topDownRiderAndBikeSvg, {
-        permanent: true, direction: "center", className: "completely-empty-tooltip"
-      })
-      .openTooltip();
+    const scooterIcon = window.L.divIcon({
+      html: scooterIconHtml,
+      className: "custom-leaflet-div-icon-scooter",
+      iconSize: [30, 30],
+      iconAnchor: [15, 15], // Perfectly centered on vector paths
+    });
+    scooterMarkerRef.current = window.L.marker(startPos, { icon: scooterIcon }).addTo(map);
 
     setMapInstance(map);
   }, [isLeafletReady]);
 
-  // CONTROL RADAR GLOW DYNAMICS ON ARRIVAL
+  // ACTIVATE CARAMEL RADAR DYNAMICS
   useEffect(() => {
-    if (!glowRingMarkerRef.current) return;
+    if (!mapInstance || !glowRingMarkerRef.current) return;
 
     if (currentStep === 4) {
-      glowRingMarkerRef.current
-        .bindTooltip(`<div class="caramel-glow-radar"></div>`, {
-          permanent: true, direction: "center", className: "completely-empty-tooltip"
-        })
-        .openTooltip();
+      glowRingMarkerRef.current.addTo(mapInstance);
     } else {
-      glowRingMarkerRef.current.unbindTooltip();
+      glowRingMarkerRef.current.remove();
     }
-  }, [currentStep]);
+  }, [currentStep, mapInstance]);
 
-  // SMOOTH ROTATION ENGINE
+  // SMOOTH ROTATION ENGINE (NORMAL DRIVING SPEED)
   useEffect(() => {
     if (!mapInstance || !window.L || !scooterMarkerRef.current) return;
 
@@ -209,7 +203,7 @@ export default function DeliveryMap({ currentStep = 1 }) {
     const startCoords = scooterMarkerRef.current.getLatLng();
     
     const startTime = performance.now();
-    const duration = 4500; 
+    const duration = 2400; // Normal, crisp production app transit speed
 
     const animateMovement = (currentTime) => {
       const elapsed = currentTime - startTime;
@@ -261,63 +255,48 @@ export default function DeliveryMap({ currentStep = 1 }) {
   return (
     <div style={{ width: "100%" }}>
       <style>{`
-        .leaflet-tooltip.completely-empty-tooltip {
+        /* Reset any forced styles from default Leaflet divIcons */
+        .custom-leaflet-div-icon,
+        .custom-leaflet-div-icon-scooter,
+        .custom-leaflet-div-icon-radar {
           background: transparent !important;
           border: none !important;
           box-shadow: none !important;
-          padding: 0 !important;
-          margin: 0 !important;
         }
-        .leaflet-tooltip-top.completely-empty-tooltip::before,
-        .leaflet-tooltip-bottom.completely-empty-tooltip::before,
-        .leaflet-tooltip-left.completely-empty-tooltip::before,
-        .leaflet-tooltip-right.completely-empty-tooltip::before {
-          display: none !important;
+
+        .premium-pin-container {
+          filter: drop-shadow(0px 4px 8px rgba(26, 26, 46, 0.35));
         }
         
-        /* Modern Floating Pins styling */
-        .premium-pin-wrapper {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 48px;
-          height: 48px;
-          transform: translateY(-20px);
-          z-index: 100;
-        }
-        .cafe-pin {
-          filter: drop-shadow(0px 4px 10px rgba(26, 26, 46, 0.35));
-        }
-        .home-pin {
-          filter: drop-shadow(0px 4px 10px rgba(26, 26, 46, 0.35));
-        }
-        
-        /* Premium Caramel Radar Wave Effect */
+        /* Centered Caramel Radar Pulsate Engine */
         .caramel-glow-radar {
-          width: 24px;
-          height: 24px;
-          background: rgba(217, 119, 6, 0.15);
-          border: 2px solid #D97706;
+          width: 20px;
+          height: 20px;
+          background: rgba(217, 119, 6, 0.12);
+          border: 2.5px solid #D97706;
           border-radius: 50%;
           position: absolute;
-          transform: translate(-12px, -12px);
-          animation: caramelPulsate 1.8s ease-out infinite;
+          left: 50%;
+          top: 50%;
+          margin-left: -10px;
+          margin-top: -10px;
+          animation: caramelPulsate 1.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
           pointer-events: none;
-          z-index: 10;
+          transform-origin: center center;
+          z-index: -1; /* Sits perfectly flat underneath the dark house pin point */
         }
 
         @keyframes caramelPulsate {
           0% {
-            transform: scale(0.6);
+            transform: scale(0.5);
             opacity: 1;
           }
           100% {
-            transform: scale(4.5);
+            transform: scale(4.8);
             opacity: 0;
           }
         }
         
-        /* Scaled Bike Engine Container */
         #live-scooter-container {
           transform-origin: center center;
           display: flex;
@@ -325,8 +304,8 @@ export default function DeliveryMap({ currentStep = 1 }) {
           justify-content: center;
           width: 30px;
           height: 30px;
-          filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.16));
-          transition: transform 0.08s linear;
+          filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.18));
+          transition: transform 0.05s linear;
         }
       `}</style>
 
