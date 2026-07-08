@@ -914,6 +914,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
 
             
                 <OrderInformationCard />
+          </div>
               </>
             )}
           </div>
