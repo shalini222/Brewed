@@ -56,7 +56,8 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const [selectedTip, setSelectedTip] = useState(null);
   const [addingItemId, setAddingItemId] = useState(null);
   const [showPairMenuOverlay, setShowPairMenuOverlay] = useState(false);
-
+  const [partnerMessage, setPartnerMessage] = useState("");
+  
   // Feedback states
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [rating, setRating] = useState(0);
@@ -745,7 +746,10 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           <div style={{ marginBottom: "2rem", width: "100%" }}>
             <div className="interactive-card" style={{ padding: "1rem" }}>
               <h3 style={{ ...styles.sectionTitle, marginBottom: "0.75rem" }}>Live Delivery Route</h3>
-              <DeliveryMap currentStep={currentStep} />
+              <DeliveryMap 
+          currentStep={currentStep} 
+          onPartnerMessageUpdate={setPartnerMessage} 
+        />
             </div>
           </div>
         )}
@@ -818,58 +822,97 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
           </div>
 
           {/* RIGHT PANEL: PARTNER INFO & BREAKDOWN */}
-          <div className="side-panel">
-            {isFailed ? (
-              <>
-                <OrderInformationCard />
-                <div className="interactive-card">
-                  <h3 style={styles.apologyHeading}>We Are Sorry</h3>
-                  <p style={styles.failureMessage}>Your order ran into an issue. We're on it.</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.25rem" }}>
-                    <button className="btn-action" style={styles.tryAgainBtn} onClick={() => setPage("menu")}>Try Again: 10% Off</button>
-                    <button className="btn-action" style={styles.supportBtn} onClick={() => alert("Connecting you with support...")}>Contact Support</button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="interactive-card">
-                  <h3 style={styles.sectionTitle}>Delivery Partner</h3>
+<div className="side-panel">
+  {isFailed ? (
+    <>
+      <OrderInformationCard />
+      <div className="interactive-card">
+        <h3 style={styles.apologyHeading}>We Are Sorry</h3>
+        <p style={styles.failureMessage}>Your order ran into an issue. We're on it.</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.25rem" }}>
+          <button className="btn-action" style={styles.tryAgainBtn} onClick={() => setPage("menu")}>Try Again: 10% Off</button>
+          <button className="btn-action" style={styles.supportBtn} onClick={() => alert("Connecting you with support...")}>Contact Support</button>
+        </div>
+      </div>
+    </>
+  ) : (
+    <>
+      <div className="interactive-card">
+        <h3 style={styles.sectionTitle}>Delivery Partner</h3>
 
-                  <div style={styles.riderProfile}>
-                    <div style={styles.avatar}>🛵</div>
-                    <div style={{ flex: 1 }}>
-                      <strong style={{ fontSize: "0.95rem" }}>Rahul Kumar</strong>
-                      <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>Brewed Delivery Partner</p>
-                    </div>
-                  </div>
+        {/* --- ADDED: NEW POP-UP ARRIVAL NOTIFICATION BUBBLE --- */}
+        {partnerMessage && (
+          <div 
+            style={{
+              backgroundColor: "#1A1A2E", // Dark slate matching your map pins
+              color: "#FFFFFF",
+              padding: "12px 16px",
+              borderRadius: "12px",
+              fontSize: "0.85rem",
+              fontWeight: "500",
+              lineHeight: "1.4",
+              marginBottom: "16px",
+              position: "relative",
+              boxShadow: "0 4px 12px rgba(26, 26, 46, 0.15)",
+              animation: "fadeIn 0.3s ease-out forwards"
+            }}
+          >
+            <p style={{ margin: 0 }}>💬 {partnerMessage}</p>
+            
+            {/* Small decorative triangle tip pointing downwards towards the rider avatar */}
+            <div 
+              style={{
+                position: "absolute",
+                bottom: "-6px",
+                left: "20px",
+                width: "0",
+                height: "0",
+                borderLeft: "6px solid transparent",
+                borderRight: "6px solid transparent",
+                borderTop: "6px solid #1A1A2E"
+              }}
+            />
+          </div>
+        )}
 
-                  <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem" }}>
-                    <a href="tel:#" className="btn-action" style={styles.commsBtn}>📞 Call</a>
-                    <a href="sms:#" className="btn-action" style={styles.commsBtn}>💬 Text</a>
-                  </div>
+        <div style={styles.riderProfile}>
+          <div style={styles.avatar}>🛵</div>
+          <div style={{ flex: 1 }}>
+            <strong style={{ fontSize: "0.95rem" }}>Rahul Kumar</strong>
+            <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>Brewed Delivery Partner</p>
+          </div>
+        </div>
 
-                  <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, paddingTop: "1rem" }}>
-                    <p style={{ ...styles.etaLabel, marginBottom: "0.5rem", fontWeight: "600" }}>Thank your partner with a tip</p>
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
-                      {[20, 30, 50].map((amount) => (
-                        <button
-                          key={amount}
-                          onClick={() => setSelectedTip(selectedTip === amount ? null : amount)}
-                          className={`tip-pill ${selectedTip === amount ? "active" : ""}`}
-                        >
-                          ₹{amount}
-                        </button>
-                      ))}
-                    </div>
-                    {selectedTip && (
-                      <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: THEME.colors.success, fontWeight: "500" }}>
-                        ₹{selectedTip} will be added to your delivery partner's profile!
-                      </p>
-                    )}
-                  </div>
-                </div>
+        <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem" }}>
+          <a href="tel:#" className="btn-action" style={styles.commsBtn}>📞 Call</a>
+          <a href="sms:#" className="btn-action" style={styles.commsBtn}>💬 Text</a>
+        </div>
 
+        <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, paddingTop: "1rem" }}>
+          <p style={{ ...styles.etaLabel, marginBottom: "0.5rem", fontWeight: "600" }}>Thank your partner with a tip</p>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            {[20, 30, 50].map((amount) => (
+              <button
+                key={amount}
+                onClick={() => setSelectedTip(selectedTip === amount ? null : amount)}
+                className={`tip-pill ${selectedTip === amount ? "active" : ""}`}
+              >
+                ₹{amount}
+              </button>
+            ))}
+          </div>
+          {selectedTip && (
+            <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: THEME.colors.success, fontWeight: "500" }}>
+              ₹{selectedTip} will be added to your delivery partner's profile!
+            </p>
+          )}
+        </div>
+      </div>
+    </>
+  )}
+</div>
+
+            
                 <OrderInformationCard />
               </>
             )}
