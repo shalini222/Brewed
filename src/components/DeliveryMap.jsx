@@ -288,34 +288,36 @@ export default function DeliveryMap({ currentStep = 1, onPartnerMessageUpdate })
         }
         
         /* Centered Caramel Radar Pulsate Engine */
-        .caramel-glow-radar {
-          width: 20px;
-          height: 20px;
-          background: rgba(217, 119, 6, 0.12);
-          border: 2.5px solid #D97706;
-          border-radius: 50%;
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          margin-left: -10px;
-          margin-top: -10px;
-          animation: caramelPulsate 1.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
-          pointer-events: none;
-          transform-origin: center center;
-          z-index: -1; 
-        }
-
-        @keyframes caramelPulsate {
-          0% {
-            transform: scale(0.5);
-            opacity: 1;
-          }
-          100% {
-            transform: scale(4.8);
-            opacity: 0;
-          }
-        }
         
+        .caramel-glow-radar {
+  width: 20px;
+  height: 20px;
+  background: rgba(217, 119, 6, 0.12);
+  border: 2.5px solid #D97706;
+  border-radius: 50%;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: -10px;
+  margin-top: -10px;
+  /* Updated from 1.6s to 2.7s for a slower, more immersive radar wave */
+  animation: caramelPulsate 2.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  pointer-events: none;
+  transform-origin: center center;
+  z-index: -1; 
+}
+
+@keyframes caramelPulsate {
+  0% {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4.8);
+    opacity: 0;
+  }
+}
+
         #live-scooter-container {
           transform-origin: center center;
           display: flex;
