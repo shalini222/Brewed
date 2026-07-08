@@ -45,16 +45,23 @@ export default function DeliveryMap({ currentStep }) {
       attribution: "© OpenStreetMap contributors",
     }).addTo(mapInstance.current);
 
-    // THE ULTIMATE FIX: Pass a completely transparent tiny PNG data URI to L.icon.
-    // This tricks Leaflet into rendering a zero-border frame, and we append the emoji via pure CSS.
-    const cleanScooterIcon = window.L.icon({
-      iconUrl: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
-      iconSize: [36, 36],
-      iconAnchor: [18, 18],
-      className: "rendered-bike-marker"
-    });
+    // THE FIX: Create an invisible circle marker at the location point
+    markerRef.current = window.L.circleMarker(initialCoords, {
+      radius: 0,
+      opacity: 0,
+      fillOpacity: 0
+    }).addTo(mapInstance.current);
 
-    markerRef.current = window.L.marker(initialCoords, { icon: cleanScooterIcon }).addTo(mapInstance.current);
+    // Bind a permanent text layout that holds only our clean flipped emoji
+    markerRef.current.bindTooltip(
+      `<div class="clean-scooter-text">🛵</div>`, 
+      {
+        permanent: true,
+        direction: "center",
+        className: "completely-empty-tooltip"
+      }
+    ).openTooltip();
+
   }, [isLeafletReady]);
 
   useEffect(() => {
@@ -69,22 +76,27 @@ export default function DeliveryMap({ currentStep }) {
 
   return (
     <div style={{ width: "100%" }}>
-      {/* CSS pseudo-element injection: Forces the scooter emoji inside the clean transparent icon */}
+      {/* Structural resets to explicitly wipe out Leaflet's built-in box layout */}
       <style>{`
-        .rendered-bike-marker {
+        .leaflet-tooltip.completely-empty-tooltip {
           background: transparent !important;
           border: none !important;
           box-shadow: none !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          background-color: transparent !important;
         }
-        .rendered-bike-marker::after {
-          content: "🛵";
-          font-size: 34px;
-          position: absolute;
-          top: -6px;
-          left: 0;
-          display: block;
-          transform: scaleX(-1); /* Flips scooter forward */
-          line-height: 1;
+        .leaflet-tooltip-top.completely-empty-tooltip::before,
+        .leaflet-tooltip-bottom.completely-empty-tooltip::before,
+        .leaflet-tooltip-left.completely-empty-tooltip::before,
+        .leaflet-tooltip-right.completely-empty-tooltip::before {
+          display: none !important; /* Removes the tiny text arrow pointer */
+        }
+        .clean-scooter-text {
+          font-size: 34px !important;
+          transform: scaleX(-1) !important; /* Flips the scooter to face forward */
+          display: block !important;
+          line-height: 1 !important;
         }
       `}</style>
       
