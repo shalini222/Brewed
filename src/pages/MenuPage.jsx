@@ -1,4 +1,4 @@
-;import { useState, useEffect } from "react"; 
+import { useState, useEffect } from "react"; 
 import { useCart } from "../context/CartContext";
 import { db } from "../firebase"; // Ensure your firebase connection is exported here
 import { collection, getDocs } from "firebase/firestore";
