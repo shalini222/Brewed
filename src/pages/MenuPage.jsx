@@ -13,21 +13,33 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
   const categories = ["All", "Coffee", "Non-Coffee", "Food"];
 
   // Fetch data from Firestore
-  useEffect(() => {
+    useEffect(() => {
     const fetchMenu = async () => {
       try {
+        console.log("Attempting to fetch from Firestore...");
         const querySnapshot = await getDocs(collection(db, "menu"));
+        
         const items = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
+        
+        console.log("Data fetched successfully:", items);
         setMenuItems(items);
       } catch (error) {
-        console.error("Error fetching menu: ", error);
+        console.error("FATAL ERROR FETCHING MENU: ", error);
+        alert("Check the console for the error!");
       }
     };
-    fetchMenu();
+    
+    if (db) {
+      fetchMenu();
+    } else {
+      console.error("Firebase 'db' is not initialized!");
+    }
   }, []);
+
+        
 
   const itemRatingsMap = {
     1: { rating: "4.5", reviews: 142 },
