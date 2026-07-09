@@ -1,6 +1,7 @@
 {
   "name": "cafe-app",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "dependencies": {
     "@stripe/react-stripe-js": "^2.4.0",
