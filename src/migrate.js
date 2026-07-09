@@ -1,6 +1,6 @@
 import { db } from "./firebase.js";
 import { collection, addDoc } from "firebase/firestore";
-import { menuItems } from "./menu.js";
+import { menuItems } from "./menu.jsx";
 
 async function migrateData() {
   const menuCollection = collection(db, "menu");
