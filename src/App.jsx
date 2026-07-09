@@ -17,17 +17,6 @@ import FavoritesPage from "./pages/FavoritesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 
 
-
-  return (
-    <button 
-      onClick={uploadToFirebase} 
-      style={{ position: 'fixed', bottom: '20px', left: '20px', zIndex: 9999, padding: '15px', background: 'gold', cursor: 'pointer' }}
-    >
-      Upload Menu to Firebase
-    </button>
-  );
-}
-
 export default function App() {
   const [page, setPage] = useState("menu");
   const [selectedProduct, setSelectedProduct] = useState(null);
