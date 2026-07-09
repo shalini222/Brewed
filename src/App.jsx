@@ -2,11 +2,6 @@ import { useState } from "react";
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext";
 
-// Firebase imports for migration
-import { db } from './firebase';
-import { collection, addDoc } from 'firebase/firestore';
-import menuData from './menu.json';
-
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import MenuPage from "./pages/MenuPage";
@@ -21,20 +16,7 @@ import RewardsPage from "./pages/RewardsPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 
-// Temporary Migration Component
-function DataMigrationButton() {
-  const uploadToFirebase = async () => {
-    try {
-      console.log("Starting upload...");
-      for (const item of menuData) {
-        await addDoc(collection(db, "menu"), item);
-        console.log("Added: " + item.name);
-      }
-      alert("Upload Complete! Check your Firebase Console.");
-    } catch (error) {
-      console.error("Error uploading: ", error);
-    }
-  };
+
 
   return (
     <button 
