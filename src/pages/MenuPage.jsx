@@ -1,15 +1,33 @@
-import { useState } from "react"; 
+;import { useState, useEffect } from "react"; 
 import { useCart } from "../context/CartContext";
-import { menuItems, categories } from "../data/menu"; 
+import { db } from "../firebase"; // Ensure your firebase connection is exported here
+import { collection, getDocs } from "firebase/firestore";
 
-export default function MenuPage({
-  setPage,
-  setSelectedProduct,
-}) {
+export default function MenuPage({ setPage, setSelectedProduct }) {
   const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState("featured"); 
   const [added, setAdded] = useState({});
+  const [menuItems, setMenuItems] = useState([]); // Cloud-sourced data
   const { addToCart } = useCart();
+  
+  const categories = ["All", "Coffee", "Non-Coffee", "Food"];
+
+  // Fetch data from Firestore
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "menu"));
+        const items = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setMenuItems(items);
+      } catch (error) {
+        console.error("Error fetching menu: ", error);
+      }
+    };
+    fetchMenu();
+  }, []);
 
   const itemRatingsMap = {
     1: { rating: "4.5", reviews: 142 },
