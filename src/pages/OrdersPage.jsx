@@ -6,7 +6,10 @@ export default function OrdersPage({ setPage }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-    const handleReorder = (orderItems) => {
+
+  const { reorder } = useCart();
+  
+  const handleReorder = (orderItems) => {
   // If you are using a Context, call it here:
   // addToCart(orderItems); 
   
@@ -83,7 +86,7 @@ export default function OrdersPage({ setPage }) {
                   </span>
                   <button 
   className="reorder-btn" 
-  onClick={() => handleReorder(order.items)}
+  onClick={() => reorder(order.items)}
 >
   Reorder
 </button>
