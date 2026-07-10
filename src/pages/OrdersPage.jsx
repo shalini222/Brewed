@@ -1,35 +1,39 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { db } from "../firebase"; // Ensure your firebase import is correct
+import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
 
-export default function OrdersPage({ setPage }) {
-  const orders = [
-    {
-      id: "#BR1025",
-      image: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=80",
-      name: "Cappuccino",
-      items: "2x Cappuccino • 1x Croissant",
-      total: "₹780",
-      date: "3 July 2026",
-      status: "Completed"
-    },
-    {
-      id: "#BR1024",
-      image: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=400&q=80",
-      name: "Iced Latte",
-      items: "1x Iced Latte",
-      total: "₹320",
-      date: "1 July 2026",
-      status: "Preparing"
-    },
-    {
-      id: "#BR1023",
-      image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80",
-      name: "Espresso",
-      items: "2x Espresso",
-      total: "₹420",
-      date: "28 June 2026",
-      status: "Ready"
+export default function OrdersPage({ setPage, currentUser }) {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setLoading(false);
+      return;
     }
-  ];
+
+    // Query orders for this specific user
+    const q = query(
+      collection(db, "orders"),
+      where("userId", "==", currentUser.uid),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedOrders = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        // Format the date if it's a Firestore Timestamp
+        date: doc.data().createdAt?.toDate().toLocaleDateString('en-GB', {
+          day: 'numeric', month: 'long', year: 'numeric'
+        }) || "Date unavailable"
+      }));
+      setOrders(fetchedOrders);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
 
   return (
     <>
@@ -256,63 +260,60 @@ export default function OrdersPage({ setPage }) {
         }
       `}</style>
 
-      <div className="orders-page">
-        <div className="orders-container">
+        <div className="orders-page">
+      <div className="orders-container">
+        <button className="back-button" onClick={() => setPage("menu")}>
+          ← Back
+        </button>
 
-          <button className="back-button" onClick={() => setPage("menu")}>
-            ← Back
-          </button>
+        <h1 className="page-title">My Orders</h1>
+        <p className="page-subtitle">Every cup tells a story. Here's your Brewed journey.</p>
 
-          <h1 className="page-title">My Orders</h1>
-          <p className="page-subtitle">Every cup tells a story. Here's your Brewed journey.</p>
+        {loading ? (
+          <div className="empty"><p>Loading your orders...</p></div>
+        ) : orders.length === 0 ? (
+          <div className="empty">
+            <h2>No orders yet ☕</h2>
+            <p>Looks like you haven't placed your first order.</p>
+          </div>
+        ) : (
+          orders.map((order) => (
+            <div className="order-card" key={order.id}>
+              <div className="order-main">
+                <img src={order.image} className="order-image" alt={order.name} />
 
-          {orders.length === 0 ? (
-            <div className="empty">
-              <h2>No orders yet ☕</h2>
-              <p>Looks like you haven't placed your first order.</p>
-            </div>
-          ) : (
-            orders.map(function(order) {
-              return (
-                <div className="order-card" key={order.id}>
-                  <div className="order-main">
-                    
-                    <img src={order.image} className="order-image" alt={order.name} />
+                <div className="order-info">
+                  <div className="drink-name">{order.name}</div>
 
-                    <div className="order-info">
-                      <div className="drink-name">{order.name}</div>
-
-                      <div className="order-top">
-                        <div>
-                          <div className="order-id">{order.id}</div>
-                          <div className="order-date">{order.date}</div>
-                        </div>
-                        <span className={"badge " + order.status.toLowerCase()}>
-                          {order.status}
-                        </span>
-                      </div>
-
-                      <div className="order-items">{order.items}</div>
-
-                      <div className="order-bottom">
-                        <div className="order-total">{order.total}</div>
-                        <button 
-                          className="order-btn" 
-                          onClick={() => alert("Order Again feature coming soon ☕")}
-                        >
-                          Order Again
-                        </button>
-                      </div>
-
+                  <div className="order-top">
+                    <div>
+                      <div className="order-id">{order.id}</div>
+                      <div className="order-date">{order.date}</div>
                     </div>
+                    {/* Using lowercased status to match your CSS badge classes: .completed, .preparing, .ready */}
+                    <span className={"badge " + (order.status || "preparing").toLowerCase()}>
+                      {order.status || "Preparing"}
+                    </span>
+                  </div>
+
+                  <div className="order-items">{order.items}</div>
+
+                  <div className="order-bottom">
+                    <div className="order-total">{order.total}</div>
+                    <button 
+                      className="order-btn" 
+                      onClick={() => alert("Order Again feature coming soon ☕")}
+                    >
+                      Order Again
+                    </button>
                   </div>
                 </div>
-              );
-            })
-          )}
-
-        </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
+    </div>
     </>
   );
 }
