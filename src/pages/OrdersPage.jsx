@@ -260,70 +260,60 @@ export default function OrdersPage({ setPage, currentUser }) {
         }
       `}</style>
 
-        <div className="orders-page">
-      <div className="orders-container">
-        <button className="back-button" onClick={() => setPage("menu")}>
-          ← Back
-        </button>
-
-        <h1 className="page-title">My Orders</h1>
-        <p className="page-subtitle">Every cup tells a story. Here's your Brewed journey.</p>
-
-        {loading ? (
-          <div className="empty"><p>Loading your orders...</p></div>
-        ) : orders.length === 0 ? (
-          <div className="empty">
-            <h2>No orders yet ☕</h2>
-            <p>Looks like you haven't placed your first order.</p>
-          </div>
-        ) : (
-          orders.map((order) => (
-  <div className="order-card" key={order.id}>
-    <div className="order-main">
-      {/* 1. Safe Image Access: Uses the image from the first item if it exists */}
-      <img 
-        src={order.items?.[0]?.image || "default-coffee.jpg"} 
-        className="order-image" 
-        alt="Order item" 
-      />
-
-      <div className="order-info">
-        {/* 2. Safe Name Access */}
-        <div className="drink-name">{order.items?.[0]?.name || "Brewed Coffee"}</div>
-
-        <div className="order-top">
-          <div>
-            <div className="order-id">#{order.id.slice(-6).toUpperCase()}</div>
-            <div className="order-date">{order.date}</div>
-          </div>
-          <span className={"badge " + (order.status || "preparing").toLowerCase()}>
-            {order.status || "Preparing"}
-          </span>
-        </div>
-
-        {/* 3. Correctly mapping through the Array of items */}
-        <div className="order-items">
-          {order.items?.map((item, idx) => (
-            <span key={idx}>{item.name} (x{item.qty}){idx < order.items.length - 1 ? ", " : ""}</span>
-          ))}
-        </div>
-
-        <div className="order-bottom">
-          <div className="order-total">₹{order.total}</div>
-          <button 
-            className="order-btn" 
-            onClick={() => alert("Order Again feature coming soon ☕")}
-          >
-            Order Again
+<div className="orders-page">
+        <div className="orders-container">
+          <button className="back-button" onClick={() => setPage("menu")}>
+            ← Back
           </button>
+
+          <h1 className="page-title">My Orders</h1>
+          <p className="page-subtitle">Every cup tells a story. Here's your Brewed journey.</p>
+
+          {loading ? (
+            <div className="empty"><p>Loading your orders...</p></div>
+          ) : orders.length === 0 ? (
+            <div className="empty">
+              <h2>No orders yet ☕</h2>
+              <p>Looks like you haven't placed your first order.</p>
+            </div>
+          ) : (
+            orders.map((order) => (
+              <div className="order-card" key={order.id}>
+                <div className="order-main">
+                  <img 
+                    src={order.items?.[0]?.image || "default-coffee.jpg"} 
+                    className="order-image" 
+                    alt="Order item" 
+                  />
+                  <div className="order-info">
+                    <div className="drink-name">{order.items?.[0]?.name || "Brewed Coffee"}</div>
+                    <div className="order-top">
+                      <div>
+                        <div className="order-id">#{order.id.slice(-6).toUpperCase()}</div>
+                        <div className="order-date">{order.date}</div>
+                      </div>
+                      <span className={"badge " + (order.status || "preparing").toLowerCase()}>
+                        {order.status || "Preparing"}
+                      </span>
+                    </div>
+                    <div className="order-items">
+                      {order.items?.map((item, idx) => (
+                        <span key={idx}>{item.name} (x{item.qty}){idx < order.items.length - 1 ? ", " : ""}</span>
+                      ))}
+                    </div>
+                    <div className="order-bottom">
+                      <div className="order-total">₹{order.total}</div>
+                      <button className="order-btn" onClick={() => alert("Order Again feature coming soon ☕")}>
+                        Order Again
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
-    </div>
-  </div>
-))}
-
-      </div>
-    </div>
     </>
   );
 }
