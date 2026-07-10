@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { useCart } from "../context/CartContext";
+
+
 
 export default function OrdersPage({ setPage }) {
   const [orders, setOrders] = useState([]);
@@ -8,15 +11,6 @@ export default function OrdersPage({ setPage }) {
 
 
   const { reorder } = useCart();
-  
-  const handleReorder = (orderItems) => {
-  // If you are using a Context, call it here:
-  // addToCart(orderItems); 
-  
-  // Or, if you need to manually update state:
-  alert("Reordering " + orderItems.length + " items!");
-  console.log("Adding these to cart:", orderItems);
-};
   
 
   useEffect(() => {
