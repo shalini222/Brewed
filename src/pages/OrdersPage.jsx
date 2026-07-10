@@ -14,9 +14,7 @@ export default function OrdersPage({ setPage, currentUser }) {
 
   // Add the where clause to filter by the logged-in user
   const q = query(
-    collection(db, "orders"),
-    where("userId", "==", currentUser.uid), // THIS IS MANDATORY
-    orderBy("createdAt", "desc")
+    collection(db, "orders")
   );
 
   const unsubscribe = onSnapshot(q, (snapshot) => {
