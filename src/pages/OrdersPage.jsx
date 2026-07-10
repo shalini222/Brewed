@@ -8,33 +8,27 @@ export default function OrdersPage({ setPage, currentUser }) {
 
    
   useEffect(() => {
-  const fetchTest = async () => {
-    try {
-      // Import directly inside to ensure we aren't using a bad 'db' import
-      const { collection, getDocs } = require("firebase/firestore");
-      
-      console.log("TEST: Attempting to fetch from 'orders'...");
-      
-      // Use the 'db' variable from your current file scope
-      const querySnapshot = await getDocs(collection(db, "orders"));
-      
-      console.log("TEST SUCCESS! Documents found:", querySnapshot.size);
-      
-      if (querySnapshot.size > 0) {
-        const data = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        setOrders(data);
-      } else {
-        console.log("TEST: Connection is good, but collection is empty/wrong path.");
-      }
-      setLoading(false);
-    } catch (error) {
-      console.error("TEST FAILED - Error:", error);
-      setLoading(false);
-    }
-  };
-  
-  fetchTest();
-}, []);
+  // Completely removing the 'where' filter to test if ANY orders exist
+  const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    console.log("Total orders found in database:", snapshot.size);
+    
+    const fetchedOrders = snapshot.docs.map((doc) => {
+      console.log("Found order data:", doc.data());
+      return {
+        id: doc.id,
+        ...doc.data(),
+        date: doc.data().createdAt?.toDate().toLocaleDateString() || "N/A"
+      };
+    });
+    
+    setOrders(fetchedOrders);
+    setLoading(false);
+  });
+
+  return () => unsubscribe();
+}, []); // Empty dependency array
 
 
   
