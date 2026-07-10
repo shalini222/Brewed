@@ -1,4 +1,4 @@
-    import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
 
@@ -6,110 +6,88 @@ export default function OrdersPage({ setPage, currentUser }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  // Completely removing the 'where' filter to test if ANY orders exist
-  const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+  useEffect(() => {
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    console.log("Total orders found in database:", snapshot.size);
-    
-    const fetchedOrders = snapshot.docs.map((doc) => {
-      console.log("Found order data:", doc.data());
-      return {
+    // Query orders specifically for the logged-in user
+    const q = query(
+      collection(db, "orders"),
+      where("userId", "==", currentUser.uid),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedOrders = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
-        date: doc.data().createdAt?.toDate().toLocaleDateString() || "N/A"
-      };
+        // Format timestamp for display
+        date: doc.data().createdAt?.toDate().toLocaleDateString('en-GB', { 
+          day: 'numeric', month: 'long', year: 'numeric' 
+        }) || "Date unavailable"
+      }));
+      setOrders(fetchedOrders);
+      setLoading(false);
     });
-    
-    setOrders(fetchedOrders);
-    setLoading(false);
-  });
 
-  return () => unsubscribe();
-}, []);
+    return () => unsubscribe();
+  }, [currentUser]);
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap');
-        * { box-sizing: border-box; }
-        body { margin: 0; background: #FDFAF5; font-family: 'Inter', sans-serif; }
-        .orders-page { min-height: 100vh; background: #FDFAF5; padding: 110px 20px 60px; display: flex; justify-content: center; }
-        .orders-container { width: 100%; max-width: 850px; }
-        .back-button { background: none; border: none; color: #3B1A08; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 30px; transition: .3s; padding: 0; }
+        .orders-page { min-height: 100vh; background: #FDFAF5; padding: 100px 20px; display: flex; justify-content: center; }
+        .orders-container { width: 100%; max-width: 700px; }
+        .back-button { background: none; border: none; color: #5C4A3D; font-weight: 600; cursor: pointer; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
         .back-button:hover { color: #C4956A; transform: translateX(-4px); }
-        .page-title { font-family: 'Playfair Display', serif; font-size: 2.8rem; color: #3B1A08; margin-bottom: 10px; }
-        .page-subtitle { color: #7A675C; margin-bottom: 40px; }
-        .order-card { background: white; border-radius: 22px; padding: 28px; margin-bottom: 22px; box-shadow: 0 10px 35px rgba(0,0,0,.08); transition: .3s; }
-        .order-card:hover { transform: translateY(-4px); }
-        .order-main { display: flex; gap: 22px; align-items: center; }
-        .order-image { width: 120px; height: 120px; border-radius: 18px; object-fit: cover; flex-shrink: 0; }
-        .order-info { flex: 1; }
-        .drink-name { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: #3B1A08; margin-bottom: 6px; }
-        .order-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-        .order-id { font-weight: 700; color: #3B1A08; font-size: 1.1rem; }
-        .order-date { color: #8B7B70; font-size: .95rem; }
-        .order-items { color: #5F5148; margin-bottom: 18px; }
-        .order-bottom { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
-        .order-total { font-size: 1.25rem; font-weight: 700; color: #3B1A08; }
-        .badge { padding: 8px 16px; border-radius: 999px; font-size: .9rem; font-weight: 600; text-transform: capitalize; }
-        .completed { background: #E6F8EC; color: #228B45; }
-        .preparing { background: #FFF6DD; color: #B88300; }
-        .ready { background: #EAF2FF; color: #2E6AE6; }
-        .order-btn { background: #3B1A08; color: white; border: none; padding: 12px 22px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: .3s; }
-        .order-btn:hover { background: #C4956A; color: #3B1A08; }
-        .empty { background: white; padding: 70px 30px; border-radius: 24px; text-align: center; box-shadow: 0 10px 35px rgba(0,0,0,.08); }
-        .empty h2 { font-family: 'Playfair Display', serif; color: #3B1A08; margin-bottom: 10px; }
-        .empty p { color: #7A675C; }
-        @media(max-width:768px){ .orders-page { padding: 90px 18px 50px; } .order-main { flex-direction: column; align-items: flex-start; } .order-image { width: 100%; height: 210px; } .page-title { font-size: 2.2rem; } .order-top { flex-direction: column; align-items: flex-start; gap: 8px; } .order-bottom { flex-direction: column; align-items: flex-start; } .order-btn { width: 100%; } }
+        .page-title { font-family: 'Playfair Display', serif; font-size: 2.5rem; color: #2D1B0E; margin-bottom: 30px; }
+        
+        .order-card { background: #FFFFFF; border-radius: 20px; padding: 24px; margin-bottom: 20px; border: 1px solid #F0ECE6; box-shadow: 0 4px 20px rgba(0,0,0,0.03); transition: all 0.3s ease; }
+        .order-card:hover { border-color: #D4C4B7; box-shadow: 0 8px 30px rgba(0,0,0,0.06); }
+        
+        .order-main { display: flex; gap: 20px; }
+        .order-image { width: 100px; height: 100px; border-radius: 16px; object-fit: cover; flex-shrink: 0; }
+        .drink-name { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: #2D1B0E; margin-bottom: 4px; }
+        .meta-info { font-size: 0.85rem; color: #A89B93; margin-bottom: 12px; }
+        
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .status-preparing { background: #FFF7E6; color: #B88300; }
+        .status-completed { background: #E6F8EC; color: #228B45; }
+        .status-ready { background: #EAF2FF; color: #2E6AE6; }
+        
+        .order-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid #F7F4EF; }
+        .total-price { font-size: 1.1rem; font-weight: 700; color: #2D1B0E; }
+        .reorder-btn { background: #2D1B0E; color: #FDF9F5; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .reorder-btn:hover { background: #C4956A; }
       `}</style>
 
       <div className="orders-page">
         <div className="orders-container">
-          <button className="back-button" onClick={() => setPage("menu")}>← Back</button>
-          <h1 className="page-title">My Orders</h1>
-          <p className="page-subtitle">Every cup tells a story. Here's your Brewed journey.</p>
-
+          <button className="back-button" onClick={() => setPage("menu")}>← Return to Menu</button>
+          <h1 className="page-title">Brewed Journey</h1>
+          
           {loading ? (
-            <div className="empty"><p>Loading your orders...</p></div>
+            <p>Brewing your order history...</p> 
           ) : orders.length === 0 ? (
-            <div className="empty">
-              <h2>No orders yet ☕</h2>
-              <p>Looks like you haven't placed your first order.</p>
-            </div>
+            <div className="empty"><h2>No orders yet ☕</h2></div>
           ) : (
             orders.map((order) => (
               <div className="order-card" key={order.id}>
                 <div className="order-main">
-                  <img 
-                    src={order.items?.[0]?.image || "default-coffee.jpg"} 
-                    className="order-image" 
-                    alt={order.items?.[0]?.name || "Order"} 
-                  />
-                  <div className="order-info">
+                  <img src={order.items?.[0]?.image || "default-coffee.jpg"} className="order-image" alt="item" />
+                  <div style={{ flex: 1 }}>
                     <div className="drink-name">{order.items?.[0]?.name || "Brewed Order"}</div>
-                    <div className="order-top">
-                      <div>
-                        <div className="order-id">#{order.id.slice(-6).toUpperCase()}</div>
-                        <div className="order-date">{order.date}</div>
-                      </div>
-                      <span className={"badge " + (order.status || "preparing").toLowerCase()}>
-                        {order.status || "Preparing"}
-                      </span>
-                    </div>
-                    <div className="order-items">
-                      {order.items?.map((item, idx) => (
-                        <span key={idx}>
-                          {item.name} (x{item.qty}){idx < order.items.length - 1 ? ", " : ""}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="order-bottom">
-                      <div className="order-total">₹{order.total}</div>
-                      <button className="order-btn" onClick={() => alert("Order Again feature coming soon ☕")}>Order Again</button>
-                    </div>
+                    <div className="meta-info">#{order.id.slice(-6).toUpperCase()} • {order.date}</div>
+                    <span className={`badge status-${(order.status || "preparing").toLowerCase()}`}>
+                      {order.status || "Preparing"}
+                    </span>
                   </div>
+                </div>
+                <div className="order-bottom">
+                  <div className="total-price">₹{order.total}</div>
+                  <button className="reorder-btn">Reorder</button>
                 </div>
               </div>
             ))
@@ -119,4 +97,3 @@ useEffect(() => {
     </>
   );
 }
-      
