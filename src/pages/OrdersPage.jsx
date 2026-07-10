@@ -7,30 +7,31 @@ export default function OrdersPage({ setPage, currentUser }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  // Use a simple query to fetch everything, ordered by date
-  const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+  if (!currentUser) {
+    setLoading(false);
+    return;
+  }
+
+  // Add the where clause to filter by the logged-in user
+  const q = query(
+    collection(db, "orders"),
+    where("userId", "==", currentUser.uid), // THIS IS MANDATORY
+    orderBy("createdAt", "desc")
+  );
 
   const unsubscribe = onSnapshot(q, (snapshot) => {
-    console.log("Total docs in collection:", snapshot.size);
-
-    const fetchedOrders = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      // Log each order to see what's happening
-      console.log("Mapping Order:", doc.id, "UserID:", data.userId, "Items:", data.items?.length);
-      
-      return {
-        id: doc.id,
-        ...data,
-        date: data.createdAt?.toDate().toLocaleDateString('en-GB') || "Date N/A"
-      };
-    });
-
+    const fetchedOrders = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+      date: doc.data().createdAt?.toDate().toLocaleDateString('en-GB') || "Date N/A"
+    }));
+    
     setOrders(fetchedOrders);
     setLoading(false);
   });
 
   return () => unsubscribe();
-}, []);
+}, [currentUser]);
   
   return (
     <>
