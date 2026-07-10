@@ -1,4 +1,6 @@
-      import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import { db } from "../firebase"; // Ensure this points to your firebase.js
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const CartContext = createContext();
 
@@ -65,15 +67,43 @@ export function CartProvider({ children }) {
 
   const clearCart = () => setCart([]);
 
+  // 3. New: Place Order functionality
+  const placeOrder = async (customerDetails) => {
+    try {
+      const orderData = {
+        items: cart,
+        total: total,
+        customer: customerDetails, // Object: { name, phone, tableNumber }
+        status: "Pending",
+        createdAt: serverTimestamp(),
+      };
+
+      const docRef = await addDoc(collection(db, "orders"), orderData);
+      clearCart(); // Successfully submitted, clear the cart
+      return docRef.id; // Return ID for success feedback
+    } catch (error) {
+      console.error("Error placing order: ", error);
+      throw error;
+    }
+  };
+
   const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
   const count = cart.reduce((sum, i) => sum + i.qty, 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQty, clearCart, total, count }}>
+    <CartContext.Provider value={{ 
+      cart, 
+      addToCart, 
+      removeFromCart, 
+      updateQty, 
+      clearCart, 
+      total, 
+      count, 
+      placeOrder 
+    }}>
       {children}
     </CartContext.Provider>
   );
 }
 
 export const useCart = () => useContext(CartContext);
-
