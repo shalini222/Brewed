@@ -69,9 +69,13 @@ export function CartProvider({ children }) {
     return;
   }
 
-  // This appends the previous order items to the current cart
-  setCart((prev) => [...prev, ...itemsToReorder]);
-  alert("Previous items added to your cart!");
+  itemsToReorder.forEach(item => {
+    // By calling addToCart, you reuse your existing logic that 
+    // checks for duplicates and updates quantities automatically.
+    addToCart(item);
+  });
+  
+  alert("Items added to your cart!");
 };
   const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
   const count = cart.reduce((sum, i) => sum + i.qty, 0);
