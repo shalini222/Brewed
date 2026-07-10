@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useCart } from "../context/CartContext";
+import { auth } from "../firebase";
 
 const THEME = {
   colors: {
@@ -146,19 +147,28 @@ export default function CheckoutPage({ setPage }) {
 
   const handleFormSubmission = async (e) => {
   e.preventDefault();
+
+  // 1. SECURITY GATE: Block non-authenticated users immediately
+  if (!auth.currentUser) {
+    alert("Please log in to your Brewed account to place an order.");
+    setPage("login");
+    return;
+  }
+
   setStatus("processing");
 
   try {
-    // 1. Prepare the object exactly how placeOrder expects it
+    // 2. Prepare the order data
     const orderData = {
-      customer: form, // This matches your Context structure
-      paymentMethod: paymentMethod === "cod" ? "COD" : "Online"
+      customer: form,
+      paymentMethod: paymentMethod === "cod" ? "COD" : "Online",
+      userId: auth.currentUser.uid // Add the ID here so Firestore can identify the owner
     };
 
-    // 2. Await the result
+    // 3. Await the result
     const orderId = await placeOrder(orderData);
 
-    // 3. Update UI only after success
+    // 4. Update UI only after success
     setOrderSnapshot({ 
       id: orderId, 
       customer: form, 
@@ -169,6 +179,7 @@ export default function CheckoutPage({ setPage }) {
     setStatus("success");
     
   } catch (err) {
+    // This will now catch "Permission Denied" errors from Firestore
     console.error("Critical submission failure:", err);
     setStatus("failure");
   }
