@@ -10,24 +10,33 @@ export default function OrdersPage({ setPage, currentUser }) {
   useEffect(() => {
   const fetchTest = async () => {
     try {
+      // Import directly inside to ensure we aren't using a bad 'db' import
       const { collection, getDocs } = require("firebase/firestore");
-      // Use the 'db' variable from your current file
+      
+      console.log("TEST: Attempting to fetch from 'orders'...");
+      
+      // Use the 'db' variable from your current file scope
       const querySnapshot = await getDocs(collection(db, "orders"));
       
-      console.log("CRITICAL TEST - Documents found:", querySnapshot.size);
+      console.log("TEST SUCCESS! Documents found:", querySnapshot.size);
       
       if (querySnapshot.size > 0) {
         const data = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         setOrders(data);
+      } else {
+        console.log("TEST: Connection is good, but collection is empty/wrong path.");
       }
       setLoading(false);
     } catch (error) {
-      console.error("CRITICAL TEST - Error:", error);
+      console.error("TEST FAILED - Error:", error);
+      setLoading(false);
     }
   };
   
   fetchTest();
 }, []);
+
+
   
   return (
     <>
