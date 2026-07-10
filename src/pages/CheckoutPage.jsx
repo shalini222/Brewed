@@ -145,20 +145,34 @@ export default function CheckoutPage({ setPage }) {
   };
 
   const handleFormSubmission = async (e) => {
-    e.preventDefault();
-    setStatus("processing");
-    try {
-      if (paymentMethod === "cod") {
-        const orderId = await placeOrder({ ...form, paymentMethod: "COD" });
-        setOrderSnapshot({ id: orderId, customer: form, cart, calculations, method: "cod" });
-        setStatus("success");
-      } else {
-        await triggerRazorpayPayment();
-      }
-    } catch (err) {
-      setStatus("failure");
-    }
-  };
+  e.preventDefault();
+  setStatus("processing");
+
+  try {
+    // 1. Prepare the object exactly how placeOrder expects it
+    const orderData = {
+      customer: form, // This matches your Context structure
+      paymentMethod: paymentMethod === "cod" ? "COD" : "Online"
+    };
+
+    // 2. Await the result
+    const orderId = await placeOrder(orderData);
+
+    // 3. Update UI only after success
+    setOrderSnapshot({ 
+      id: orderId, 
+      customer: form, 
+      cart, 
+      calculations, 
+      method: paymentMethod 
+    });
+    setStatus("success");
+    
+  } catch (err) {
+    console.error("Critical submission failure:", err);
+    setStatus("failure");
+  }
+};
 
   // --- RENDER FALLBACK: PAYMENT FAILED PAGE ---
   if (status === "failure") {
