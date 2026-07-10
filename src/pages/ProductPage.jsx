@@ -1377,18 +1377,22 @@ body{
 
               {/* Dynamic Button: Changes label and color based on login status */}
               
-<button 
+             <button 
   className="sticky-cart-button" 
-  onClick={handleAddToCart}
+  onClick={currentUser ? handleAddToCart : () => setPage("login")} // Redirect if not logged in
   style={{ 
-    background: "#C4956A", // Use your standard brand color
+    background: currentUser ? "#C4956A" : "#6B5C53",
     opacity: 1
   }}
 >
-  <>
-    ₹{totalPrice}
-    <span>Add to Cart</span>
-  </>
+  {currentUser ? (
+    <>
+      ₹{totalPrice}
+      <span>Add to Cart</span>
+    </>
+  ) : (
+    <span>Log in to Order</span>
+  )}
 </button>
             </div>
           </div>
