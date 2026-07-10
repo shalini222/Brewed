@@ -278,38 +278,53 @@ export default function OrdersPage({ setPage, currentUser }) {
             </div>
           ) : (
             orders.map((order) => (
-              <div className="order-card" key={order.id}>
-                <div className="order-main">
-                  <img 
-                    src={order.items?.[0]?.image || "default-coffee.jpg"} 
-                    className="order-image" 
-                    alt="Order item" 
-                  />
-                  <div className="order-info">
-                    <div className="drink-name">{order.items?.[0]?.name || "Brewed Coffee"}</div>
-                    <div className="order-top">
-                      <div>
-                        <div className="order-id">#{order.id.slice(-6).toUpperCase()}</div>
-                        <div className="order-date">{order.date}</div>
-                      </div>
-                      <span className={"badge " + (order.status || "preparing").toLowerCase()}>
-                        {order.status || "Preparing"}
-                      </span>
-                    </div>
-                    <div className="order-items">
-                      {order.items?.map((item, idx) => (
-                        <span key={idx}>{item.name} (x{item.qty}){idx < order.items.length - 1 ? ", " : ""}</span>
-                      ))}
-                    </div>
-                    <div className="order-bottom">
-                      <div className="order-total">₹{order.total}</div>
-                      <button className="order-btn" onClick={() => alert("Order Again feature coming soon ☕")}>
-                        Order Again
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+  <div className="order-card" key={order.id}>
+    <div className="order-main">
+      {/* 1. Safely grab the image from the first item in the array */}
+      <img 
+        src={order.items?.[0]?.image || "default-coffee.jpg"} 
+        className="order-image" 
+        alt={order.items?.[0]?.name || "Order"} 
+      />
+
+      <div className="order-info">
+        {/* 2. Safely grab the name from the items array */}
+        <div className="drink-name">{order.items?.[0]?.name || "Brewed Order"}</div>
+
+        <div className="order-top">
+          <div>
+            <div className="order-id">#{order.id.slice(-6).toUpperCase()}</div>
+            <div className="order-date">{order.date}</div>
+          </div>
+          <span className={"badge " + (order.status || "preparing").toLowerCase()}>
+            {order.status || "Preparing"}
+          </span>
+        </div>
+
+        <div className="order-items">
+          {/* 3. Map through all items in the order */}
+          {order.items?.map((item, idx) => (
+            <span key={idx}>
+              {item.name} (x{item.qty}){idx < order.items.length - 1 ? ", " : ""}
+            </span>
+          ))}
+        </div>
+
+        <div className="order-bottom">
+          <div className="order-total">₹{order.total}</div>
+          <button 
+            className="order-btn" 
+            onClick={() => alert("Order Again feature coming soon ☕")}
+          >
+            Order Again
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+                    
+                    
+        
             ))
           )}
         </div>
