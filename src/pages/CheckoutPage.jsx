@@ -145,45 +145,50 @@ export default function CheckoutPage({ setPage }) {
     rzp.open();
   };
 
-  const handleFormSubmission = async (e) => {
-  e.preventDefault();
+  
+const handleFormSubmission = async (e) => {
+    e.preventDefault();
 
-  // 1. SECURITY GATE: Block non-authenticated users immediately
-  if (!auth.currentUser) {
-    alert("Please log in to your Brewed account to place an order.");
-    setPage("login");
-    return;
-  }
+    // 1. SECURITY GATE: Block non-authenticated users immediately
+    if (!auth.currentUser) {
+      alert("Please log in to your Brewed account to place an order.");
+      setPage("login");
+      return;
+    }
 
-  setStatus("processing");
+    setStatus("processing");
 
-  try {
-    // 2. Prepare the order data
-    const orderData = {
-      customer: form,
-      paymentMethod: paymentMethod === "cod" ? "COD" : "Online",
-      userId: auth.currentUser.uid // Add the ID here so Firestore can identify the owner
-    };
+    try {
+      // 2. Prepare the order data
+      const orderData = {
+        customer: form,
+        paymentMethod: paymentMethod === "cod" ? "COD" : "Online",
+        userId: auth.currentUser.uid, // <--- THIS IS THE FIX
+        createdAt: new Date(), // Ensure this matches what your OrdersPage expects
+        status: "Preparing",   // Initialize the status so it shows up in your badge
+        total: calculations.grandTotal, // Ensure this exists
+        items: cart.map(item => `${item.quantity}x ${item.name}`).join(" • ") // Format as your UI expects
+      };
 
-    // 3. Await the result
-    const orderId = await placeOrder(orderData);
+      // 3. Await the result
+      const orderId = await placeOrder(orderData);
 
-    // 4. Update UI only after success
-    setOrderSnapshot({ 
-      id: orderId, 
-      customer: form, 
-      cart, 
-      calculations, 
-      method: paymentMethod 
-    });
-    setStatus("success");
-    
-  } catch (err) {
-    // This will now catch "Permission Denied" errors from Firestore
-    console.error("Critical submission failure:", err);
-    setStatus("failure");
-  }
-};
+      // 4. Update UI only after success
+      setOrderSnapshot({ 
+        id: orderId, 
+        customer: form, 
+        cart, 
+        calculations, 
+        method: paymentMethod 
+      });
+      setStatus("success");
+      
+    } catch (err) {
+      console.error("Critical submission failure:", err);
+      setStatus("failure");
+    }
+  };
+  
 
   // --- RENDER FALLBACK: PAYMENT FAILED PAGE ---
   if (status === "failure") {
