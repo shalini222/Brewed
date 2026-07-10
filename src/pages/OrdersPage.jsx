@@ -7,42 +7,28 @@ export default function OrdersPage({ setPage, currentUser }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  if (!currentUser) {
-    setLoading(false);
-    return;
-  }
+  // Completely removing the 'where' filter to test if ANY orders exist
+  const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
 
-  console.log("Attempting to fetch for UID:", currentUser.uid);
-
-  const q = query(
-    collection(db, "orders"),
-    where("userId", "==", currentUser.uid),
-    orderBy("createdAt", "desc")
-  );
-
-  const unsubscribe = onSnapshot(
-    q,
-    (snapshot) => {
-      console.log("Successfully connected! Documents found:", snapshot.size);
-      const fetchedOrders = snapshot.docs.map((doc) => ({
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    console.log("Total orders found in database:", snapshot.size);
+    
+    const fetchedOrders = snapshot.docs.map((doc) => {
+      console.log("Found order data:", doc.data());
+      return {
         id: doc.id,
         ...doc.data(),
-        date: doc.data().createdAt?.toDate().toLocaleDateString('en-GB', { 
-          day: 'numeric', month: 'long', year: 'numeric' 
-        }) || "Date unavailable"
-      }));
-      setOrders(fetchedOrders);
-      setLoading(false);
-    },
-    (error) => {
-      // This is the CRITICAL part - it will show us why it's failing
-      console.error("Firestore Error:", error.code, error.message);
-      setLoading(false); 
-    }
-  );
+        date: doc.data().createdAt?.toDate().toLocaleDateString() || "N/A"
+      };
+    });
+    
+    setOrders(fetchedOrders);
+    setLoading(false);
+  });
 
   return () => unsubscribe();
-}, [currentUser]);
+}, []); // Empty dependency array
+
   
   return (
     <>
