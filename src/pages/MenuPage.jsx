@@ -399,17 +399,22 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
   style={{
     ...styles.addBtn,
     ...(added[item.id] ? styles.addedBtn : {}),
-    // Optional: Visual cue if not logged in
-    background: currentUser ? "#1A0A00" : "#6B5C53" 
   }}
   onClick={(e) => {
     e.stopPropagation();
+    
+    // THE GATEKEEPER LOGIC
+    if (!currentUser) {
+      setPage("login"); // Redirects to login
+      return;
+    }
+
+    // NORMAL ACTION
     handleAdd(item);
   }}
 >
-  {currentUser 
-    ? (added[item.id] ? "✓ Added" : "+ Add") 
-    : "Log in to Add"}
+  {/* ALWAYS SHOW NORMAL TEXT */}
+  {added[item.id] ? "✓ Added" : "+ Add"}
 </button>
     </div>
   ))}
