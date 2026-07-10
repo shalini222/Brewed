@@ -68,24 +68,30 @@ export function CartProvider({ children }) {
   const clearCart = () => setCart([]);
 
   // 3. New: Place Order functionality
-  const placeOrder = async (customerDetails) => {
-    try {
-      const orderData = {
-        items: cart,
-        total: total,
-        customer: customerDetails, // Object: { name, phone, tableNumber }
-        status: "Pending",
-        createdAt: serverTimestamp(),
-      };
+  const placeOrder = async (orderDetails) => {
+  try {
+    // We explicitly pull cart and total from context BEFORE the async write
+    const orderData = {
+      items: cart, // Using the current cart state
+      total: total,
+      customer: orderDetails.customer, // The form data from CheckoutPage
+      paymentMethod: orderDetails.paymentMethod,
+      status: "Pending",
+      createdAt: serverTimestamp(),
+    };
 
-      const docRef = await addDoc(collection(db, "orders"), orderData);
-      clearCart(); // Successfully submitted, clear the cart
-      return docRef.id; // Return ID for success feedback
-    } catch (error) {
-      console.error("Error placing order: ", error);
-      throw error;
-    }
-  };
+    const docRef = await addDoc(collection(db, "orders"), orderData);
+    
+    // Clear cart AFTER the order is confirmed
+    clearCart(); 
+    
+    return docRef.id;
+  } catch (error) {
+    console.error("Error placing order: ", error);
+    throw error;
+  }
+};
+        
 
   const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
   const count = cart.reduce((sum, i) => sum + i.qty, 0);
