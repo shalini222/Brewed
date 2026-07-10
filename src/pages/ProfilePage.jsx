@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { doc, setDoc, getDoc } to from "firebase/firestore";
+import { db } from "../firebase";
+
+
 
 export default function ProfilePage({setPage}) {
   const { currentUser } = useAuth();
@@ -10,37 +14,52 @@ export default function ProfilePage({setPage}) {
   const [memberSince, setMemberSince] = useState("");
 
   useEffect(() => {
-    if (currentUser) {
-      setFullName(
-        currentUser.displayName ||
-          currentUser.email.split("@")[0]
-      );
+  
 
-      if (currentUser.metadata?.creationTime) {
-        const joined = new Date(
-          currentUser.metadata.creationTime
-        );
-
-        setMemberSince(
-          joined.toLocaleDateString("en-US", {
-            month: "long",
-            year: "numeric",
-          })
-        );
+useEffect(() => {
+  if (currentUser) {
+    setFullName(currentUser.displayName || "");
+    
+    // Fetch profile from Firestore
+    const fetchProfile = async () => {
+      const docRef = doc(db, "users", currentUser.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setPhone(data.phone || "");
+        setBirthday(data.birthday || "");
       }
-    }
-  }, [currentUser]);
-
-  function handleSave(e) {
-    e.preventDefault();
-
-    if (!birthday) {
-      alert("Birthday is required.");
-      return;
-    }
-
-    alert("Profile saved! (Firestore integration coming next)");
+    };
+    fetchProfile();
+    // ... (rest of your memberSince logic)
   }
+}, [currentUser]);
+
+
+  const handleSave = async (e) => {
+  e.preventDefault();
+  
+  try {
+    // 1. Update Firestore
+    await setDoc(doc(db, "users", currentUser.uid), {
+      fullName,
+      phone,
+      birthday,
+      email: currentUser.email,
+    }, { merge: true });
+
+    // 2. Optionally update Firebase Auth display name
+    // (Requires importing updateProfile from firebase/auth)
+    // await updateProfile(currentUser, { displayName: fullName });
+
+    alert("Profile saved successfully!");
+  } catch (error) {
+    console.error("Error saving profile:", error);
+    alert("Failed to save profile.");
+  }
+};
+
+ 
 
   const avatar =
     currentUser?.photoURL ||
