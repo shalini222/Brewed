@@ -60,7 +60,7 @@ export default function OrdersPage({ setPage, currentUser }) {
         .reorder-btn:hover { background: #C4956A; }
       `}</style>
 
-      <div className="orders-page">
+      div className="orders-page">
         <div className="orders-container">
             {/* VISIBLE DEBUGGER: This will tell us the count without needing F12 */}
           <div style={{ background: '#3B1A08', color: '#FFF', padding: '15px', borderRadius: '10px', marginBottom: '20px' }}>
