@@ -63,9 +63,10 @@ export default function OrdersPage({ setPage, currentUser }) {
       <div className="orders-page">
         <div className="orders-container">
             {/* VISIBLE DEBUGGER: This will tell us the count without needing F12 */}
-          <div style={{ background: '#eee', padding: '10px', marginBottom: '20px', borderRadius: '8px' }}>
-            <strong>Debug Info:</strong> Found {orders.length} order(s) in database.
-          </div>
+          <div style={{ background: '#3B1A08', color: '#FFF', padding: '15px', borderRadius: '10px', marginBottom: '20px' }}>
+          <p>DEBUG: Total Orders in State: {orders.length}</p>
+          <p>IDs: {orders.map(o => o.id.slice(-4)).join(", ")}</p>
+        </div>
           <button className="back-button" onClick={() => setPage("menu")}>← Return to Menu</button>
           <h1 className="page-title">Brewed Journey</h1>
           
