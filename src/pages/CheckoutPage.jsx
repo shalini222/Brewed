@@ -30,9 +30,9 @@ const loadRazorpayScript = () =>
   });
 
 export default function CheckoutPage({ setPage }) {
-  const { cart = [], total = 0, clearCart } = useCart();
+  const { cart = [], total = 0, placeOrder } = useCart();
   
-  const [status, setStatus] = useState("idle"); // "idle" | "processing" | "success" | "failure"
+  const [status, setStatus] = useState("idle"); 
   const [paymentMethod, setPaymentMethod] = useState("online");
   const [form, setForm] = useState({ name: "", email: "", phone: "", address: "", instructions: "" });
   const [coupon, setCoupon] = useState("");
@@ -41,7 +41,6 @@ export default function CheckoutPage({ setPage }) {
   const [orderSnapshot, setOrderSnapshot] = useState(null);
 
   const canvasRef = useRef(null);
-
   const CONFIG = { taxRate: 0.08, codFee: 30, deliveryFee: 40 };
 
   const calculations = useMemo(() => {
@@ -51,62 +50,41 @@ export default function CheckoutPage({ setPage }) {
     const cod = paymentMethod === "cod" ? CONFIG.codFee : 0;
     const discount = appliedCoupon ? appliedCoupon.discount : 0;
     const grandTotal = Math.max(0, Math.round(subtotal + tax + delivery + cod - discount));
-
     return { subtotal, tax, delivery, cod, discount, grandTotal };
   }, [total, paymentMethod, appliedCoupon]);
 
-  useEffect(() => {
-    loadRazorpayScript();
-  }, []);
+  useEffect(() => { loadRazorpayScript(); }, []);
 
-  // --- Particle Simulation Effect for Success & Failure states ---
+  // --- Particle Simulation Effect ---
   useEffect(() => {
     if ((status !== "success" && status !== "failure") || !canvasRef.current) return;
-
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-    let animationFrameId;
-    let active = true;
+    let animationFrameId, active = true;
 
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
+    const resizeCanvas = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
 
     const successColors = ["#C4956A", "#4A7A5B", "#E6DFD5", "#E5B181"];
     const failureColors = ["#DE6B48", "#1A0B05", "#E6DFD5", "#70645C"];
     const colors = status === "success" ? successColors : failureColors;
-    
     const particles = [];
 
     for (let i = 0; i < 140; i++) {
       particles.push({
-        x: canvas.width / 2,
-        y: canvas.height * 0.5,
-        radius: Math.random() * 4 + 3,
+        x: canvas.width / 2, y: canvas.height * 0.5, radius: Math.random() * 4 + 3,
         color: colors[Math.floor(Math.random() * colors.length)],
-        vx: (Math.random() - 0.5) * 16,
-        vy: (Math.random() * -14) - 4,
-        gravity: 0.28,
-        rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() - 0.5) * 10,
-        opacity: 1
+        vx: (Math.random() - 0.5) * 16, vy: (Math.random() * -14) - 4,
+        gravity: 0.28, rotation: Math.random() * 360, rotationSpeed: (Math.random() - 0.5) * 10, opacity: 1
       });
     }
 
     const updateAndRender = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       particles.forEach((p) => {
-        p.vy += p.gravity;
-        p.x += p.vx;
-        p.y += p.vy;
-        p.rotation += p.rotationSpeed;
-        
+        p.vy += p.gravity; p.x += p.vx; p.y += p.vy; p.rotation += p.rotationSpeed;
         if (!active) p.opacity -= 0.02;
-
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate((p.rotation * Math.PI) / 180);
@@ -115,23 +93,11 @@ export default function CheckoutPage({ setPage }) {
         ctx.fillRect(-p.radius, -p.radius / 1.5, p.radius * 2, p.radius * 1.3);
         ctx.restore();
       });
-
-      if (active || particles.some(p => p.opacity > 0)) {
-        animationFrameId = requestAnimationFrame(updateAndRender);
-      }
+      if (active || particles.some(p => p.opacity > 0)) animationFrameId = requestAnimationFrame(updateAndRender);
     };
-
     updateAndRender();
-
-    const timer = setTimeout(() => {
-      active = false;
-    }, 5000);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      clearTimeout(timer);
-      window.removeEventListener("resize", resizeCanvas);
-    };
+    const timer = setTimeout(() => { active = false; }, 5000);
+    return () => { cancelAnimationFrame(animationFrameId); clearTimeout(timer); window.removeEventListener("resize", resizeCanvas); };
   }, [status]);
 
   const handleInputChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -140,12 +106,8 @@ export default function CheckoutPage({ setPage }) {
     e.preventDefault();
     setCouponError("");
     const sanitized = coupon.trim().toUpperCase();
-
     if (sanitized === "BREW100") {
-      if (calculations.subtotal < 200) {
-        setCouponError("Minimum spend for BREW100 is ₹200");
-        return;
-      }
+      if (calculations.subtotal < 200) { setCouponError("Minimum spend for BREW100 is ₹200"); return; }
       setAppliedCoupon({ code: "BREW100", discount: 100 });
     } else if (sanitized === "COFFEE20") {
       setAppliedCoupon({ code: "COFFEE20", discount: Math.round(calculations.subtotal * 0.20) });
@@ -157,11 +119,7 @@ export default function CheckoutPage({ setPage }) {
   const triggerRazorpayPayment = async () => {
     setStatus("processing");
     const scriptInitialized = await loadRazorpayScript();
-    if (!scriptInitialized) {
-      setStatus("idle");
-      alert("Payment gateway failed to load.");
-      return;
-    }
+    if (!scriptInitialized) { setStatus("idle"); alert("Payment gateway failed to load."); return; }
 
     const options = {
       key: "YOUR_RAZORPAY_KEY_ID",
@@ -169,41 +127,37 @@ export default function CheckoutPage({ setPage }) {
       currency: "INR",
       name: "Brewed Cafe",
       description: "Artisanal Coffee Order",
-      handler: function () {
-        const generatedId = "BRW-" + Math.floor(100000 + Math.random() * 900000);
-        setOrderSnapshot({ id: generatedId, customer: form, cart: [...cart], calculations, method: "online" });
-        clearCart();
-        setStatus("success");
+      handler: async function (response) {
+        try {
+          const orderId = await placeOrder({ ...form, paymentId: response.razorpay_payment_id, paymentMethod: "online" });
+          setOrderSnapshot({ id: orderId, customer: form, cart, calculations, method: "online" });
+          setStatus("success");
+        } catch (err) { setStatus("failure"); }
       },
       prefill: { name: form.name, email: form.email, contact: form.phone },
       theme: { color: THEME.colors.headerBg },
-      modal: { 
-        ondismiss: () => {
-          setStatus("failure");
-        } 
-      }
+      modal: { ondismiss: () => setStatus("failure") }
     };
 
     const rzp = new window.Razorpay(options);
-    rzp.on("payment.failed", () => {
-      setStatus("failure");
-    });
+    rzp.on("payment.failed", () => setStatus("failure"));
     rzp.open();
   };
 
   const handleFormSubmission = async (e) => {
     e.preventDefault();
-    if (paymentMethod === "cod") {
-      setStatus("processing");
-      setTimeout(() => {
-        const generatedId = "BRW-" + Math.floor(100000 + Math.random() * 900000);
-        setOrderSnapshot({ id: generatedId, customer: form, cart: [...cart], calculations, method: "cod" });
-        clearCart();
+    setStatus("processing");
+    try {
+      if (paymentMethod === "cod") {
+        const orderId = await placeOrder({ ...form, paymentMethod: "COD" });
+        setOrderSnapshot({ id: orderId, customer: form, cart, calculations, method: "cod" });
         setStatus("success");
-      }, 1200);
-      return;
+      } else {
+        await triggerRazorpayPayment();
+      }
+    } catch (err) {
+      setStatus("failure");
     }
-    await triggerRazorpayPayment();
   };
 
   // --- RENDER FALLBACK: PAYMENT FAILED PAGE ---
