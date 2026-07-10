@@ -6,6 +6,16 @@ export default function OrdersPage({ setPage }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+    const handleReorder = (orderItems) => {
+  // If you are using a Context, call it here:
+  // addToCart(orderItems); 
+  
+  // Or, if you need to manually update state:
+  alert("Reordering " + orderItems.length + " items!");
+  console.log("Adding these to cart:", orderItems);
+};
+  
+
   useEffect(() => {
     const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
 
@@ -71,7 +81,12 @@ export default function OrdersPage({ setPage }) {
                   <span className={`badge status-${(order.status || "preparing").toLowerCase()}`}>
                     {order.status || "Preparing"}
                   </span>
-                  <button className="reorder-btn">Reorder</button>
+                  <button 
+  className="reorder-btn" 
+  onClick={() => handleReorder(order.items)}
+>
+  Reorder
+</button>
                 </div>
               </div>
             ))
