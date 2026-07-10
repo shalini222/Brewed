@@ -63,12 +63,21 @@ export function CartProvider({ children }) {
       throw error;
     }
   };
-        
+        const reorder = (itemsToReorder) => {
+  if (!auth.currentUser) {
+    alert("Please log in to reorder.");
+    return;
+  }
+
+  // This appends the previous order items to the current cart
+  setCart((prev) => [...prev, ...itemsToReorder]);
+  alert("Previous items added to your cart!");
+};
   const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
   const count = cart.reduce((sum, i) => sum + i.qty, 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQty, clearCart, total, count, placeOrder }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQty, clearCart, total, count, placeOrder, reorder }}>
       {children}
     </CartContext.Provider>
   );
