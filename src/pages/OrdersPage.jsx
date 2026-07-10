@@ -7,9 +7,12 @@ export default function OrdersPage({ setPage, currentUser }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  if (!currentUser) return;
+  if (!currentUser) {
+    setLoading(false);
+    return;
+  }
 
-  console.log("Fetching orders for UID:", currentUser.uid);
+  console.log("Attempting to fetch for UID:", currentUser.uid);
 
   const q = query(
     collection(db, "orders"),
@@ -17,28 +20,26 @@ export default function OrdersPage({ setPage, currentUser }) {
     orderBy("createdAt", "desc")
   );
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    console.log("Snapshot size:", snapshot.size); // Does this return 0?
-    
-    if (snapshot.empty) {
-      console.log("No documents matched the query.");
-    } else {
-      snapshot.forEach((doc) => {
-        console.log("Document found:", doc.id, "Data:", doc.data());
-      });
+  const unsubscribe = onSnapshot(
+    q,
+    (snapshot) => {
+      console.log("Successfully connected! Documents found:", snapshot.size);
+      const fetchedOrders = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        date: doc.data().createdAt?.toDate().toLocaleDateString('en-GB', { 
+          day: 'numeric', month: 'long', year: 'numeric' 
+        }) || "Date unavailable"
+      }));
+      setOrders(fetchedOrders);
+      setLoading(false);
+    },
+    (error) => {
+      // This is the CRITICAL part - it will show us why it's failing
+      console.error("Firestore Error:", error.code, error.message);
+      setLoading(false); 
     }
-
-    const fetchedOrders = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      date: doc.data().createdAt?.toDate().toLocaleDateString('en-GB', { 
-        day: 'numeric', month: 'long', year: 'numeric' 
-      }) || "Date unavailable"
-    }));
-    
-    setOrders(fetchedOrders);
-    setLoading(false);
-  });
+  );
 
   return () => unsubscribe();
 }, [currentUser]);
