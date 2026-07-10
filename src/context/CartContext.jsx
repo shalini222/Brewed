@@ -1,9 +1,18 @@
-import { createContext, useContext, useState } from "react";
+      import { createContext, useContext, useState, useEffect } from "react";
 
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
-  const [cart, setCart] = useState([]);
+  // 1. Initialize from localStorage (Lazy initializer)
+  const [cart, setCart] = useState(() => {
+    const savedCart = localStorage.getItem("brewedCart");
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
+
+  // 2. Sync to localStorage whenever 'cart' changes
+  useEffect(() => {
+    localStorage.setItem("brewedCart", JSON.stringify(cart));
+  }, [cart]);
 
   const addToCart = (item) => {
     setCart((prev) => {
@@ -43,12 +52,10 @@ export function CartProvider({ children }) {
     });
   };
 
-  // FIX: Identify items by looking at their unique reference object
   const removeFromCart = (itemToRemove) => {
     setCart((prev) => prev.filter((i) => i !== itemToRemove));
   };
 
-  // FIX: Identify the exact customized item to update quantity
   const updateQty = (itemToUpdate, qty) => {
     if (qty < 1) return removeFromCart(itemToUpdate);
     setCart((prev) =>
@@ -69,3 +76,4 @@ export function CartProvider({ children }) {
 }
 
 export const useCart = () => useContext(CartContext);
+
