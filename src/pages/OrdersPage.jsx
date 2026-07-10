@@ -62,6 +62,10 @@ export default function OrdersPage({ setPage, currentUser }) {
 
       <div className="orders-page">
         <div className="orders-container">
+            {/* VISIBLE DEBUGGER: This will tell us the count without needing F12 */}
+          <div style={{ background: '#eee', padding: '10px', marginBottom: '20px', borderRadius: '8px' }}>
+            <strong>Debug Info:</strong> Found {orders.length} order(s) in database.
+          </div>
           <button className="back-button" onClick={() => setPage("menu")}>← Return to Menu</button>
           <h1 className="page-title">Brewed Journey</h1>
           
