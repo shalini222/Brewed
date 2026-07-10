@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext";
 import { db } from "../firebase"; // Ensure your firebase connection is exported here
 import { collection, getDocs } from "firebase/firestore";
+import { useAuth } from "../context/AuthContext";
 
 export default function MenuPage({ setPage, setSelectedProduct }) {
   const [activeCategory, setActiveCategory] = useState("All");
@@ -70,11 +71,14 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
     26: { rating: "4.6", reviews: 201 }
   };
 
+  const { currentUser } = useAuth(); 
+
+  
   const menuWithRatings = menuItems.map(item => {
     const data = itemRatingsMap[item.id] || { rating: "4.5", reviews: 50 };
     return { ...item, rating: data.rating, reviews: data.reviews };
   });
-
+ 
   const filtered = activeCategory === "All" 
     ? [...menuWithRatings] 
     : menuWithRatings.filter((i) => i.category === activeCategory);
@@ -86,10 +90,18 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
   });
 
   const handleAdd = (item) => {
-    addToCart(item);
-    setAdded((prev) => ({ ...prev, [item.id]: true }));
-    setTimeout(() => setAdded((prev) => ({ ...prev, [item.id]: false })), 1000);
-  };
+  // 1. GATEKEEPER: Check if logged in
+  if (!currentUser) {
+    alert("Please log in to add items to your cart.");
+    setPage("login"); // Redirect them
+    return; // Stop the action
+  }
+
+  // 2. PROCEED: If logged in, perform the original logic
+  addToCart(item);
+  setAdded((prev) => ({ ...prev, [item.id]: true }));
+  setTimeout(() => setAdded((prev) => ({ ...prev, [item.id]: false })), 1000);
+};
 
   return (
     <>
@@ -384,17 +396,21 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
       </div>
 
       <button
-        style={{
-          ...styles.addBtn,
-          ...(added[item.id] ? styles.addedBtn : {}),
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-          handleAdd(item);
-        }}
-      >
-        {added[item.id] ? "✓ Added" : "+ Add"}
-      </button>
+  style={{
+    ...styles.addBtn,
+    ...(added[item.id] ? styles.addedBtn : {}),
+    // Optional: Visual cue if not logged in
+    background: currentUser ? "#1A0A00" : "#6B5C53" 
+  }}
+  onClick={(e) => {
+    e.stopPropagation();
+    handleAdd(item);
+  }}
+>
+  {currentUser 
+    ? (added[item.id] ? "✓ Added" : "+ Add") 
+    : "Log in to Add"}
+</button>
     </div>
   ))}
   </div>
