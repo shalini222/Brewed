@@ -6,30 +6,28 @@ export default function OrdersPage({ setPage, currentUser }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+   
   useEffect(() => {
-  if (!currentUser) {
-    setLoading(false);
-    return;
-  }
-
-  // Add the where clause to filter by the logged-in user
-  const q = query(
-    collection(db, "orders")
-  );
-
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const fetchedOrders = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      date: doc.data().createdAt?.toDate().toLocaleDateString('en-GB') || "Date N/A"
-    }));
-    
-    setOrders(fetchedOrders);
-    setLoading(false);
-  });
-
-  return () => unsubscribe();
-}, [currentUser]);
+  const fetchTest = async () => {
+    try {
+      const { collection, getDocs } = require("firebase/firestore");
+      // Use the 'db' variable from your current file
+      const querySnapshot = await getDocs(collection(db, "orders"));
+      
+      console.log("CRITICAL TEST - Documents found:", querySnapshot.size);
+      
+      if (querySnapshot.size > 0) {
+        const data = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        setOrders(data);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error("CRITICAL TEST - Error:", error);
+    }
+  };
+  
+  fetchTest();
+}, []);
   
   return (
     <>
