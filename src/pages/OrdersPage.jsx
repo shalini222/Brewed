@@ -14,8 +14,7 @@ export default function OrdersPage({ setPage, currentUser }) {
 
     const q = query(
       collection(db, "orders"),
-      where("userId", "==", currentUser.uid),
-      orderBy("createdAt", "desc")
+      where("userId", "==", currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
