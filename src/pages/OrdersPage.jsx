@@ -6,31 +6,28 @@ export default function OrdersPage({ setPage, currentUser }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!currentUser) {
-      setLoading(false);
-      return;
-    }
+useEffect(() => {
+  // Completely removing the 'where' filter to test if ANY orders exist
+  const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
 
-    const q = query(
-      collection(db, "orders"),
-      where("userId", "==", currentUser.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedOrders = snapshot.docs.map((doc) => ({
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    console.log("Total orders found in database:", snapshot.size);
+    
+    const fetchedOrders = snapshot.docs.map((doc) => {
+      console.log("Found order data:", doc.data());
+      return {
         id: doc.id,
         ...doc.data(),
-        date: doc.data().createdAt?.toDate().toLocaleDateString('en-GB', {
-          day: 'numeric', month: 'long', year: 'numeric'
-        }) || "Date unavailable"
-      }));
-      setOrders(fetchedOrders);
-      setLoading(false);
+        date: doc.data().createdAt?.toDate().toLocaleDateString() || "N/A"
+      };
     });
+    
+    setOrders(fetchedOrders);
+    setLoading(false);
+  });
 
-    return () => unsubscribe();
-  }, [currentUser]);
+  return () => unsubscribe();
+}, []);
 
   return (
     <>
