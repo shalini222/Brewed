@@ -1376,23 +1376,20 @@ body{
               )}
 
               {/* Dynamic Button: Changes label and color based on login status */}
-              <button 
-                className="sticky-cart-button" 
-                onClick={handleAddToCart}
-                style={{ 
-                  background: currentUser ? "#C4956A" : "#6B5C53",
-                  opacity: 1
-                }}
-              >
-                {currentUser ? (
-                  <>
-                    ₹{totalPrice}
-                    <span>Add to Cart</span>
-                  </>
-                ) : (
-                  <span>Log in to Order</span>
-                )}
-              </button>
+              
+<button 
+  className="sticky-cart-button" 
+  onClick={handleAddToCart}
+  style={{ 
+    background: "#C4956A", // Use your standard brand color
+    opacity: 1
+  }}
+>
+  <>
+    ₹{totalPrice}
+    <span>Add to Cart</span>
+  </>
+</button>
             </div>
           </div>
 
