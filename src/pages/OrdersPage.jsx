@@ -7,34 +7,42 @@ export default function OrdersPage({ setPage, currentUser }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!currentUser) {
-      setLoading(false);
-      return;
+  if (!currentUser) return;
+
+  console.log("Fetching orders for UID:", currentUser.uid);
+
+  const q = query(
+    collection(db, "orders"),
+    where("userId", "==", currentUser.uid),
+    orderBy("createdAt", "desc")
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    console.log("Snapshot size:", snapshot.size); // Does this return 0?
+    
+    if (snapshot.empty) {
+      console.log("No documents matched the query.");
+    } else {
+      snapshot.forEach((doc) => {
+        console.log("Document found:", doc.id, "Data:", doc.data());
+      });
     }
 
-    // Query orders specifically for the logged-in user
-    const q = query(
-      collection(db, "orders"),
-      where("userId", "==", currentUser.uid),
-      orderBy("createdAt", "desc")
-    );
+    const fetchedOrders = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+      date: doc.data().createdAt?.toDate().toLocaleDateString('en-GB', { 
+        day: 'numeric', month: 'long', year: 'numeric' 
+      }) || "Date unavailable"
+    }));
+    
+    setOrders(fetchedOrders);
+    setLoading(false);
+  });
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedOrders = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        // Format timestamp for display
-        date: doc.data().createdAt?.toDate().toLocaleDateString('en-GB', { 
-          day: 'numeric', month: 'long', year: 'numeric' 
-        }) || "Date unavailable"
-      }));
-      setOrders(fetchedOrders);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [currentUser]);
-
+  return () => unsubscribe();
+}, [currentUser]);
+  
   return (
     <>
       <style>{`
