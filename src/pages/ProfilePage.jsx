@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+  import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { updateEmail } from "firebase/auth";
@@ -14,6 +14,7 @@ export default function ProfilePage({ setPage }) {
   const [memberSince, setMemberSince] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isBirthdayLocked, setIsBirthdayLocked] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -33,7 +34,10 @@ export default function ProfilePage({ setPage }) {
           if (docSnap.exists()) {
             const data = docSnap.data();
             setPhone(data.phone || "");
-            setBirthday(data.birthday || "");
+            if (data.birthday) {
+              setBirthday(data.birthday);
+              setIsBirthdayLocked(true);
+            }
             if (data.photoURL) setAvatarUrl(data.photoURL);
           }
         } catch (error) {
@@ -85,11 +89,14 @@ export default function ProfilePage({ setPage }) {
       if (email !== currentUser.email) {
         await updateEmail(currentUser, email);
       }
-      await setDoc(doc(db, "users", currentUser.uid), {
-        fullName,
-        phone,
-        birthday,
-      }, { merge: true });
+
+      const updateData = { fullName, phone };
+      if (!isBirthdayLocked && birthday) {
+        updateData.birthday = birthday;
+      }
+
+      await setDoc(doc(db, "users", currentUser.uid), updateData, { merge: true });
+      setIsBirthdayLocked(true);
       alert("Profile saved successfully!");
     } catch (error) {
       alert("Failed to save profile: " + error.message);
@@ -162,7 +169,14 @@ export default function ProfilePage({ setPage }) {
               </div>
               <div className="form-group full">
                 <label>Birthday <span style={{ color: "#C4956A" }}>*</span></label>
-                <input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} required />
+                <input 
+                    type="date" 
+                    value={birthday} 
+                    onChange={(e) => setBirthday(e.target.value)} 
+                    required 
+                    readOnly={isBirthdayLocked}
+                    style={{ backgroundColor: isBirthdayLocked ? "#F8F4EE" : "white", cursor: isBirthdayLocked ? "not-allowed" : "text" }}
+                />
               </div>
             </div>
 
