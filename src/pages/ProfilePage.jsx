@@ -41,6 +41,8 @@ export default function ProfilePage({ setPage }) {
     }
   }, [currentUser]);
 
+  const validatePhone = (p) => /^\+?[0-9]{10,15}$/.test(p);
+
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -52,17 +54,13 @@ export default function ProfilePage({ setPage }) {
       const img = new Image();
       img.src = event.target.result;
       img.onload = async () => {
-        // Create canvas to resize and compress image to fit Firestore 1MB limit
         const canvas = document.createElement("canvas");
         const MAX_WIDTH = 300;
         const scaleSize = MAX_WIDTH / img.width;
         canvas.width = MAX_WIDTH;
         canvas.height = img.height * scaleSize;
-        
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        // Convert to JPEG with 0.7 quality to keep size small
         const resizedBase64 = canvas.toDataURL("image/jpeg", 0.7);
 
         try {
@@ -80,6 +78,10 @@ export default function ProfilePage({ setPage }) {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    if (phone && !validatePhone(phone)) {
+      alert("Please enter a valid phone number (10-15 digits).");
+      return;
+    }
     try {
       await setDoc(doc(db, "users", currentUser.uid), {
         fullName,
@@ -150,7 +152,7 @@ export default function ProfilePage({ setPage }) {
               </div>
               <div className="form-group">
                 <label>Email</label>
-                <input type="email" value={currentUser?.email || ""} readOnly />
+                <input type="email" value={currentUser?.email || ""} readOnly disabled />
               </div>
               <div className="form-group">
                 <label>Phone Number</label>
