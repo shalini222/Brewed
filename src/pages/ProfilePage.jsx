@@ -66,6 +66,18 @@ export default function ProfilePage({setPage}) {
     }
   };
 
+const [avatarUrl, setAvatarUrl] = useState(currentUser?.photoURL || "");
+
+// In handleImageUpload, after getting the URL:
+setAvatarUrl(photoURL);
+
+// Change your variable to use the state:
+const avatar = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}`;
+
+
+
+
+  
   const handleImageUpload = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -90,11 +102,7 @@ export default function ProfilePage({setPage}) {
   }
 };
 
-  const avatar =
-    currentUser?.photoURL ||
-    `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(
-      fullName
-    )}`;
+  
 
   return (
     <>
@@ -319,10 +327,6 @@ height:100px;
     </button>
 
     <div className="profile-header">
-
-      
-
-       <div className="profile-header">
   <label style={{ cursor: 'pointer' }}>
     <img src={avatar} alt="Profile" className="profile-avatar" />
     <input 
@@ -332,23 +336,10 @@ height:100px;
       style={{ display: 'none' }} 
     />
   </label>
-  {/* ... title and subtitle ... */}
+  
+  <div className="profile-title">My Profile</div>
+  <div className="profile-subtitle">Manage your Brewed account.</div>
 </div>
-
-
-
-
-      
-
-      <div className="profile-title">
-        My Profile
-      </div>
-
-      <div className="profile-subtitle">
-        Manage your Brewed account.
-      </div>
-
-    </div>
 
     <form onSubmit={handleSave}>
 
