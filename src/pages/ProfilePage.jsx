@@ -12,15 +12,12 @@ export default function ProfilePage({ setPage }) {
   const [phone, setPhone] = useState("");
   const [birthday, setBirthday] = useState("");
   const [memberSince, setMemberSince] = useState("");
-  // 1. Move state inside the component
-  const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState(currentUser?.photoURL || "");
 
   useEffect(() => {
     if (currentUser) {
       setFullName(currentUser.displayName || "");
-      // Set initial avatar from Auth or Firebase profile
-      setAvatarUrl(currentUser.photoURL || "");
-
+      
       if (currentUser.metadata?.creationTime) {
         const joined = new Date(currentUser.metadata.creationTime);
         setMemberSince(
@@ -36,7 +33,6 @@ export default function ProfilePage({ setPage }) {
             const data = docSnap.data();
             setPhone(data.phone || "");
             setBirthday(data.birthday || "");
-            // If photoURL exists in Firestore, use it
             if (data.photoURL) setAvatarUrl(data.photoURL);
           }
         } catch (error) {
@@ -46,9 +42,6 @@ export default function ProfilePage({ setPage }) {
       fetchProfile();
     }
   }, [currentUser]);
-
-  // 2. avatar logic is now correctly using the state
-  const avatar = avatarUrl || `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(fullName || "User")}`;
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -61,8 +54,7 @@ export default function ProfilePage({ setPage }) {
       
       await setDoc(doc(db, "users", currentUser.uid), { photoURL }, { merge: true });
       
-      // Update local state to trigger re-render immediately
-      setAvatarUrl(photoURL);
+      setAvatarUrl(photoURL); // This now works because it's inside a function!
       alert("Profile photo updated!");
     } catch (error) {
       console.error("Upload error:", error);
@@ -85,6 +77,8 @@ export default function ProfilePage({ setPage }) {
       alert("Failed to save profile.");
     }
   };
+
+  const avatar = avatarUrl || `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(fullName || "User")}`;
 
   
 
@@ -310,20 +304,20 @@ height:100px;
       ← Back
     </button>
 
-    <div className="profile-header">
-  <label style={{ cursor: 'pointer' }}>
-    <img src={avatar} alt="Profile" className="profile-avatar" />
-    <input 
-      type="file" 
-      accept="image/*" 
-      onChange={handleImageUpload} 
-      style={{ display: 'none' }} 
-    />
-  </label>
-  
-  <div className="profile-title">My Profile</div>
-  <div className="profile-subtitle">Manage your Brewed account.</div>
-</div>
+
+    <div className="profile-page">
+        <div className="profile-card">
+          <button className="back-button" onClick={() => setPage("menu")}>← Back</button>
+          
+          <div className="profile-header">
+            <label style={{ cursor: 'pointer' }}>
+              <img src={avatar} alt="Profile" className="profile-avatar" />
+              <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+            </label>
+            <div className="profile-title">My Profile</div>
+            <div className="profile-subtitle">Manage your Brewed account.</div>
+          </div>
+
 
     <form onSubmit={handleSave}>
 
