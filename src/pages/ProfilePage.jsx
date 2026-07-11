@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { db, storage } from "../firebase"; // Ensure imports are consolidated
+import { db, storage } from "../firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function ProfilePage({ setPage }) {
@@ -12,6 +12,7 @@ export default function ProfilePage({ setPage }) {
   const [birthday, setBirthday] = useState("");
   const [memberSince, setMemberSince] = useState("");
   const [avatarUrl, setAvatarUrl] = useState(currentUser?.photoURL || "");
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -46,18 +47,21 @@ export default function ProfilePage({ setPage }) {
     const file = e.target.files[0];
     if (!file) return;
 
+    setIsUploading(true);
     try {
       const storageRef = ref(storage, `avatars/${currentUser.uid}`);
-      await uploadBytes(storageRef, file);
-      const photoURL = await getDownloadURL(storageRef);
+      const snapshot = await uploadBytes(storageRef, file);
+      const photoURL = await getDownloadURL(snapshot.ref);
       
       await setDoc(doc(db, "users", currentUser.uid), { photoURL }, { merge: true });
       
       setAvatarUrl(photoURL);
       alert("Profile photo updated!");
     } catch (error) {
-      console.error("Upload error:", error);
-      alert("Upload failed: " + error.message);
+      console.error("Detailed Upload Error:", error);
+      alert(`Upload failed: ${error.message}`);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -77,7 +81,6 @@ export default function ProfilePage({ setPage }) {
     }
   };
 
-  // Declared once
   const avatar = avatarUrl || `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(fullName || "User")}`;
 
   return (
@@ -89,7 +92,8 @@ export default function ProfilePage({ setPage }) {
         .profile-page { min-height: 100vh; background: #FDFAF5; display: flex; justify-content: center; padding: 120px 20px 60px; }
         .profile-card { width: 100%; max-width: 760px; background: white; border-radius: 24px; box-shadow: 0 15px 40px rgba(0,0,0,.08); padding: 50px; }
         .profile-header { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 45px; }
-        .profile-avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 5px solid #C4956A; cursor: pointer; }
+        .profile-avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 5px solid #C4956A; cursor: pointer; transition: opacity 0.3s; }
+        .uploading-overlay { opacity: 0.5; pointer-events: none; }
         .profile-title { font-family: 'Playfair Display', serif; font-size: 2.3rem; color: #3B1A08; margin-top: 22px; }
         .profile-subtitle { color: #7A675C; margin-top: 8px; }
         .section-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: #3B1A08; margin: 40px 0 18px; }
@@ -120,12 +124,12 @@ export default function ProfilePage({ setPage }) {
           <button className="back-button" onClick={() => setPage("menu")}>← Back</button>
           
           <div className="profile-header">
-            <label style={{ cursor: 'pointer' }}>
+            <label style={{ cursor: 'pointer' }} className={isUploading ? "uploading-overlay" : ""}>
               <img src={avatar} alt="Profile" className="profile-avatar" />
-              <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+              <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={isUploading} />
             </label>
             <div className="profile-title">My Profile</div>
-            <div className="profile-subtitle">Manage your Brewed account.</div>
+            <div className="profile-subtitle">{isUploading ? "Uploading..." : "Manage your Brewed account."}</div>
           </div>
 
           <form onSubmit={handleSave}>
