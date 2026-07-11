@@ -122,7 +122,6 @@ export default function ProfilePage({ setPage }) {
         label { margin-bottom: 8px; font-weight: 600; color: #5A453A; }
         input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #DDD; font-size: 15px; transition: .3s; }
         input:focus { outline: none; border-color: #C4956A; box-shadow: 0 0 0 3px rgba(196,149,106,.15); }
-        /* Custom Radio */
         .radio-group { display: flex; gap: 20px; margin-top: 5px; }
         .radio-option { display: flex; align-items: center; cursor: pointer; font-weight: 500; color: #5A453A; }
         .radio-circle { width: 20px; height: 20px; border: 2px solid #C4956A; border-radius: 50%; margin-right: 8px; display: flex; align-items: center; justify-content: center; }
@@ -160,6 +159,18 @@ export default function ProfilePage({ setPage }) {
             <div className="section-title">Personal Information</div>
             <div className="form-grid">
               <div className="form-group full">
+                <label>Full Name</label>
+                <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label>Email</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label>Phone Number</label>
+                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+              <div className="form-group full">
                 <label>Address Type</label>
                 <div className="radio-group">
                   {['home', 'work', 'other'].map((type) => (
@@ -174,18 +185,6 @@ export default function ProfilePage({ setPage }) {
               <div className="form-group full">
                 <label>Address</label>
                 <input type="text" placeholder="Enter your full address" value={address} onChange={(e) => setAddress(e.target.value)} />
-              </div>
-              <div className="form-group full">
-                <label>Full Name</label>
-                <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-              </div>
-              <div className="form-group">
-                <label>Email</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              </div>
-              <div className="form-group">
-                <label>Phone Number</label>
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
               <div className="form-group full">
                 <label>Birthday <span style={{ color: "#C4956A" }}>*</span></label>
