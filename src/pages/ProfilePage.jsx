@@ -43,24 +43,40 @@ export default function ProfilePage({ setPage }) {
     }
   }, [currentUser]);
 
+    // Ensure avatarUrl is updated as soon as the upload succeeds
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Optional: Log to verify function triggers
+    console.log("Starting upload for file:", file.name);
+
     try {
       const storageRef = ref(storage, `avatars/${currentUser.uid}`);
+      
+      // Upload
       await uploadBytes(storageRef, file);
+      
+      // Get URL
       const photoURL = await getDownloadURL(storageRef);
       
+      // Update Firestore
       await setDoc(doc(db, "users", currentUser.uid), { photoURL }, { merge: true });
       
-      setAvatarUrl(photoURL); // This now works because it's inside a function!
+      // Update state to trigger UI update
+      setAvatarUrl(photoURL);
+      
+      console.log("Upload complete, URL set:", photoURL);
       alert("Profile photo updated!");
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Upload failed. Check your storage rules.");
+      alert("Upload failed: " + error.message);
     }
   };
+
+  // Ensure this is inside the component body, not outside
+  const avatar = avatarUrl || `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(fullName || "User")}`;
+
 
   const handleSave = async (e) => {
     e.preventDefault();
