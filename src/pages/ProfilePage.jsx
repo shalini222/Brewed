@@ -52,18 +52,47 @@ export default function ProfilePage({ setPage }) {
     }
   }, [currentUser]);
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setIsProcessing(true);
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = async () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 300;
+        const scaleSize = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scaleSize;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const resizedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+        try {
+          await setDoc(doc(db, "users", currentUser.uid), { photoURL: resizedBase64 }, { merge: true });
+          setAvatarUrl(resizedBase64);
+          alert("Profile photo updated!");
+        } catch (error) {
+          alert("Upload failed: " + error.message);
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+    };
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     try {
       if (email !== currentUser.email) {
         await updateEmail(currentUser, email);
       }
-
       const updateData = { fullName, phone, address, addressType };
       if (!isBirthdayLocked && birthday) {
         updateData.birthday = birthday;
       }
-
       await setDoc(doc(db, "users", currentUser.uid), updateData, { merge: true });
       setIsBirthdayLocked(true);
       alert("Profile saved successfully!");
@@ -93,14 +122,13 @@ export default function ProfilePage({ setPage }) {
         label { margin-bottom: 8px; font-weight: 600; color: #5A453A; }
         input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #DDD; font-size: 15px; transition: .3s; }
         input:focus { outline: none; border-color: #C4956A; box-shadow: 0 0 0 3px rgba(196,149,106,.15); }
-        
-        /* Custom Radio Buttons */
-        .radio-group { display: flex; gap: 20px; margin-top: 10px; }
+        /* Custom Radio */
+        .radio-group { display: flex; gap: 20px; margin-top: 5px; }
         .radio-option { display: flex; align-items: center; cursor: pointer; font-weight: 500; color: #5A453A; }
         .radio-circle { width: 20px; height: 20px; border: 2px solid #C4956A; border-radius: 50%; margin-right: 8px; display: flex; align-items: center; justify-content: center; }
         .radio-dot { width: 10px; height: 10px; background: #C4956A; border-radius: 50%; display: none; }
         input[type="radio"]:checked + .radio-circle .radio-dot { display: block; }
-        
+        input[readonly]::-webkit-calendar-picker-indicator { display: none; }
         .member-box { margin-top: 25px; padding: 18px; background: #F8F4EE; border-radius: 14px; }
         .member-value { margin-top: 5px; font-size: 1.1rem; font-weight: 600; color: #3B1A08; }
         .actions { margin-top: 45px; display: flex; gap: 15px; }
@@ -119,18 +147,34 @@ export default function ProfilePage({ setPage }) {
       <div className="profile-page">
         <div className="profile-card">
           <button className="back-button" onClick={() => setPage("menu")}>← Back</button>
-          
           <div className="profile-header">
             <label style={{ cursor: 'pointer' }}>
               <img src={avatar} alt="Profile" className="profile-avatar" />
-              <input type="file" accept="image/*" onChange={(e) => { /* Reuse handleImageUpload here */ }} style={{ display: 'none' }} disabled={isProcessing} />
+              <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={isProcessing} />
             </label>
             <div className="profile-title">My Profile</div>
+            <div className="profile-subtitle">{isProcessing ? "Saving..." : "Manage your Brewed account."}</div>
           </div>
 
           <form onSubmit={handleSave}>
             <div className="section-title">Personal Information</div>
             <div className="form-grid">
+              <div className="form-group full">
+                <label>Address Type</label>
+                <div className="radio-group">
+                  {['home', 'work', 'other'].map((type) => (
+                    <label key={type} className="radio-option">
+                      <input type="radio" name="addressType" value={type} checked={addressType === type} onChange={(e) => setAddressType(e.target.value)} style={{ display: 'none' }} />
+                      <div className="radio-circle"><div className="radio-dot" /></div>
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="form-group full">
+                <label>Address</label>
+                <input type="text" placeholder="Enter your full address" value={address} onChange={(e) => setAddress(e.target.value)} />
+              </div>
               <div className="form-group full">
                 <label>Full Name</label>
                 <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
@@ -144,24 +188,18 @@ export default function ProfilePage({ setPage }) {
                 <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
               <div className="form-group full">
-                <label>Address</label>
-                <input type="text" placeholder="Enter your full address" value={address} onChange={(e) => setAddress(e.target.value)} />
-              </div>
-              <div className="form-group full">
-                <label>Address Type</label>
-                <div className="radio-group">
-                  {['home', 'work', 'other'].map((type) => (
-                    <label key={type} className="radio-option">
-                      <input type="radio" name="addressType" value={type} checked={addressType === type} onChange={(e) => setAddressType(e.target.value)} style={{ display: 'none' }} />
-                      <div className="radio-circle"><div className="radio-dot" /></div>
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </label>
-                  ))}
-                </div>
+                <label>Birthday <span style={{ color: "#C4956A" }}>*</span></label>
+                <input type={isBirthdayLocked ? "text" : "date"} value={birthday} onChange={(e) => setBirthday(e.target.value)} required readOnly={isBirthdayLocked} style={{ backgroundColor: isBirthdayLocked ? "#F8F4EE" : "white", cursor: isBirthdayLocked ? "default" : "text" }} />
               </div>
             </div>
 
+            <div className="section-title">Membership</div>
+            <div className="member-box">
+              <div className="member-value">☕ {memberSince || "Today"}</div>
+            </div>
+
             <div className="actions">
+              <button type="button" className="password-btn">Change Password</button>
               <button type="submit" className="save-btn">Save Changes</button>
             </div>
           </form>
