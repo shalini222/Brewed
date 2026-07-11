@@ -1,4 +1,4 @@
-  import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { updateEmail } from "firebase/auth";
@@ -124,6 +124,8 @@ export default function ProfilePage({ setPage }) {
         label { margin-bottom: 8px; font-weight: 600; color: #5A453A; }
         input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #DDD; font-size: 15px; transition: .3s; }
         input:focus { outline: none; border-color: #C4956A; box-shadow: 0 0 0 3px rgba(196,149,106,.15); }
+        /* Hide calendar icon when readonly */
+        input[readonly]::-webkit-calendar-picker-indicator { display: none; }
         .member-box { margin-top: 25px; padding: 18px; background: #F8F4EE; border-radius: 14px; }
         .member-value { margin-top: 5px; font-size: 1.1rem; font-weight: 600; color: #3B1A08; }
         .actions { margin-top: 45px; display: flex; gap: 15px; }
@@ -175,7 +177,10 @@ export default function ProfilePage({ setPage }) {
                     onChange={(e) => setBirthday(e.target.value)} 
                     required 
                     readOnly={isBirthdayLocked}
-                    style={{ backgroundColor: isBirthdayLocked ? "#F8F4EE" : "white", cursor: isBirthdayLocked ? "not-allowed" : "text" }}
+                    style={{ 
+                        backgroundColor: isBirthdayLocked ? "#F8F4EE" : "white", 
+                        cursor: isBirthdayLocked ? "not-allowed" : "text" 
+                    }}
                 />
               </div>
             </div>
