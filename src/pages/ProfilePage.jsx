@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, storage } from "../firebase"; // Ensure imports are consolidated
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "../firebase";
 
 export default function ProfilePage({ setPage }) {
   const { currentUser } = useAuth();
@@ -43,40 +42,24 @@ export default function ProfilePage({ setPage }) {
     }
   }, [currentUser]);
 
-    // Ensure avatarUrl is updated as soon as the upload succeeds
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Optional: Log to verify function triggers
-    console.log("Starting upload for file:", file.name);
-
     try {
       const storageRef = ref(storage, `avatars/${currentUser.uid}`);
-      
-      // Upload
       await uploadBytes(storageRef, file);
-      
-      // Get URL
       const photoURL = await getDownloadURL(storageRef);
       
-      // Update Firestore
       await setDoc(doc(db, "users", currentUser.uid), { photoURL }, { merge: true });
       
-      // Update state to trigger UI update
       setAvatarUrl(photoURL);
-      
-      console.log("Upload complete, URL set:", photoURL);
       alert("Profile photo updated!");
     } catch (error) {
       console.error("Upload error:", error);
       alert("Upload failed: " + error.message);
     }
   };
-
-  // Ensure this is inside the component body, not outside
-  const avatar = avatarUrl || `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(fullName || "User")}`;
-
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -94,6 +77,7 @@ export default function ProfilePage({ setPage }) {
     }
   };
 
+  // Declared once
   const avatar = avatarUrl || `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(fullName || "User")}`;
 
   return (
@@ -143,7 +127,6 @@ export default function ProfilePage({ setPage }) {
             <div className="profile-title">My Profile</div>
             <div className="profile-subtitle">Manage your Brewed account.</div>
           </div>
-      
 
           <form onSubmit={handleSave}>
             <div className="section-title">Personal Information</div>
@@ -168,7 +151,6 @@ export default function ProfilePage({ setPage }) {
 
             <div className="section-title">Membership</div>
             <div className="member-box">
-              <div className="member-title">Brewed Member Since</div>
               <div className="member-value">☕ {memberSince || "Today"}</div>
             </div>
 
