@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { db, storage } from "../firebase";
+import { db } from "../firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "../firebase";
 
 export default function ProfilePage({ setPage }) {
   const { currentUser } = useAuth();
@@ -53,7 +54,7 @@ export default function ProfilePage({ setPage }) {
       
       await setDoc(doc(db, "users", currentUser.uid), { photoURL }, { merge: true });
       
-      setAvatarUrl(photoURL);
+      setAvatarUrl(photoURL); // This now works because it's inside a function!
       alert("Profile photo updated!");
     } catch (error) {
       console.error("Upload error:", error);
@@ -119,13 +120,14 @@ export default function ProfilePage({ setPage }) {
           <button className="back-button" onClick={() => setPage("menu")}>← Back</button>
           
           <div className="profile-header">
-            <label>
+            <label style={{ cursor: 'pointer' }}>
               <img src={avatar} alt="Profile" className="profile-avatar" />
               <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
             </label>
             <div className="profile-title">My Profile</div>
             <div className="profile-subtitle">Manage your Brewed account.</div>
           </div>
+      
 
           <form onSubmit={handleSave}>
             <div className="section-title">Personal Information</div>
