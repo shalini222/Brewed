@@ -294,17 +294,7 @@ height:100px;
 }
 `}</style>
 
-<div className="profile-page">
-  <div className="profile-card">
-
-    <button
-      className="back-button"
-      onClick={() => setPage("menu")}
-    >
-      ← Back
-    </button>
-
-
+<>
     <div className="profile-page">
         <div className="profile-card">
           <button className="back-button" onClick={() => setPage("menu")}>← Back</button>
