@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth, db } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore"; // Use onSnapshot
 
 const AuthContext = createContext();
 
@@ -11,41 +11,39 @@ export function AuthProvider({ children }) {
   const [userData, setUserData] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let unsubscribeUser;
+    
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
-      
-      if (user) {
-        try {
-          const docRef = doc(db, "users", user.uid);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            setUserData(docSnap.data());
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-        }
-      } else {
+
+      // If user logs out, clean up the data listener
+      if (!user) {
         setUserData(null);
+        setLoading(false);
+        if (unsubscribeUser) unsubscribeUser();
+        return;
       }
-      
-      setLoading(false);
+
+      // If user logs in, set up a real-time listener for their profile
+      unsubscribeUser = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+        if (docSnap.exists()) {
+          setUserData(docSnap.data());
+        }
+        setLoading(false);
+      }, (error) => {
+        console.error("Error in onSnapshot:", error);
+        setLoading(false);
+      });
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeUser) unsubscribeUser();
+    };
   }, []);
 
-  // Helper to refresh data after profile updates
-  const refreshUserData = async () => {
-    if (currentUser) {
-      const docSnap = await getDoc(doc(db, "users", currentUser.uid));
-      if (docSnap.exists()) {
-        setUserData(docSnap.data());
-      }
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ currentUser, userData, loading, refreshUserData }}>
+    <AuthContext.Provider value={{ currentUser, userData, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );
