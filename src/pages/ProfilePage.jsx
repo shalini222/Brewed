@@ -5,32 +5,29 @@ import { db } from "../firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../firebase";
 
-
-export default function ProfilePage({setPage}) {
+export default function ProfilePage({ setPage }) {
   const { currentUser } = useAuth();
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [birthday, setBirthday] = useState("");
   const [memberSince, setMemberSince] = useState("");
+  // 1. Move state inside the component
+  const [avatarUrl, setAvatarUrl] = useState("");
 
-  
   useEffect(() => {
     if (currentUser) {
       setFullName(currentUser.displayName || "");
+      // Set initial avatar from Auth or Firebase profile
+      setAvatarUrl(currentUser.photoURL || "");
 
-      // Handle Membership Date
       if (currentUser.metadata?.creationTime) {
         const joined = new Date(currentUser.metadata.creationTime);
         setMemberSince(
-          joined.toLocaleDateString("en-US", {
-            month: "long",
-            year: "numeric",
-          })
+          joined.toLocaleDateString("en-US", { month: "long", year: "numeric" })
         );
       }
 
-      // Fetch profile from Firestore
       const fetchProfile = async () => {
         try {
           const docRef = doc(db, "users", currentUser.uid);
@@ -39,6 +36,8 @@ export default function ProfilePage({setPage}) {
             const data = docSnap.data();
             setPhone(data.phone || "");
             setBirthday(data.birthday || "");
+            // If photoURL exists in Firestore, use it
+            if (data.photoURL) setAvatarUrl(data.photoURL);
           }
         } catch (error) {
           console.error("Error fetching profile:", error);
@@ -48,6 +47,28 @@ export default function ProfilePage({setPage}) {
     }
   }, [currentUser]);
 
+  // 2. avatar logic is now correctly using the state
+  const avatar = avatarUrl || `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(fullName || "User")}`;
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const storageRef = ref(storage, `avatars/${currentUser.uid}`);
+      await uploadBytes(storageRef, file);
+      const photoURL = await getDownloadURL(storageRef);
+      
+      await setDoc(doc(db, "users", currentUser.uid), { photoURL }, { merge: true });
+      
+      // Update local state to trigger re-render immediately
+      setAvatarUrl(photoURL);
+      alert("Profile photo updated!");
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Upload failed. Check your storage rules.");
+    }
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -58,49 +79,12 @@ export default function ProfilePage({setPage}) {
         birthday,
         email: currentUser.email,
       }, { merge: true });
-
       alert("Profile saved successfully!");
     } catch (error) {
       console.error("Error saving profile:", error);
       alert("Failed to save profile.");
     }
   };
-
-const [avatarUrl, setAvatarUrl] = useState(currentUser?.photoURL || "");
-
-// In handleImageUpload, after getting the URL:
-setAvatarUrl(photoURL);
-
-// Change your variable to use the state:
-const avatar = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}`;
-
-
-
-
-  
-  const handleImageUpload = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  try {
-    // Create a reference for the user's avatar
-    const storageRef = ref(storage, `avatars/${currentUser.uid}`);
-    
-    // Upload the file
-    await uploadBytes(storageRef, file);
-    
-    // Get the new URL
-    const photoURL = await getDownloadURL(storageRef);
-    
-    // Update Firestore with the new photoURL
-    await setDoc(doc(db, "users", currentUser.uid), { photoURL }, { merge: true });
-    
-    alert("Profile photo updated!");
-  } catch (error) {
-    console.error("Upload error:", error);
-    alert("Upload failed. Please check your storage rules.");
-  }
-};
 
   
 
