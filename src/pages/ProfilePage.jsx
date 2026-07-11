@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "../firebase";
+
 
 
 
@@ -72,6 +75,26 @@ export default function ProfilePage({setPage}) {
       fullName
     )}`;
 
+const handleImageUpload = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // 1. Create a reference to the storage location
+  const storageRef = ref(storage, `avatars/${currentUser.uid}`);
+
+  // 2. Upload the file
+  await uploadBytes(storageRef, file);
+
+  // 3. Get the public URL
+  const photoURL = await getDownloadURL(storageRef);
+
+  // 4. Save this URL to Firestore (or Auth profile)
+  // ... update your user document with the new photoURL ...
+};
+
+
+
+  
   return (
     <>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap');
@@ -296,11 +319,22 @@ height:100px;
 
     <div className="profile-header">
 
-      <img
-        src={avatar}
-        alt="Profile"
-        className="profile-avatar"
-      />
+      
+
+       <label className="avatar-upload">
+  <img src={avatar} alt="Profile" className="profile-avatar" />
+  <input 
+    type="file" 
+    accept="image/*" 
+    onChange={handleImageUpload} 
+    style={{ display: 'none' }} 
+  />
+</label>
+
+
+
+
+      
 
       <div className="profile-title">
         My Profile
