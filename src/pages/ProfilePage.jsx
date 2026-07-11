@@ -3,6 +3,9 @@ import { useAuth } from "../context/AuthContext";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { updateEmail } from "firebase/auth";
 import { db } from "../firebase";
+import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
+
+
 
 export default function ProfilePage({ setPage }) {
   const { currentUser } = useAuth();
@@ -183,8 +186,23 @@ export default function ProfilePage({ setPage }) {
                 </div>
               </div>
               <div className="form-group full">
-                <label>Address</label>
-                <input type="text" placeholder="Enter your full address" value={address} onChange={(e) => setAddress(e.target.value)} />
+                <label>Address</label><GooglePlacesAutocomplete
+    apiKey="AIzaSyDdoHjxSKQVjv9imxHDonL9Hp60RfC6z3o"
+    selectProps={{
+      value: address ? { label: address, value: address } : null,
+      onChange: (selected) => setAddress(selected.label),
+      placeholder: "Start typing your address...",
+      styles: {
+        control: (provided) => ({
+          ...provided,
+          padding: '5px',
+          borderRadius: '12px',
+          borderColor: '#DDD'
+        })
+      }
+    }}
+  />
+                
               </div>
               <div className="form-group full">
                 <label>Birthday <span style={{ color: "#C4956A" }}>*</span></label>
