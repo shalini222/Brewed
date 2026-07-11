@@ -6,8 +6,6 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../firebase";
 
 
-
-
 export default function ProfilePage({setPage}) {
   const { currentUser } = useAuth();
 
@@ -68,33 +66,36 @@ export default function ProfilePage({setPage}) {
     }
   };
 
-  
+  const handleImageUpload = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  try {
+    // Create a reference for the user's avatar
+    const storageRef = ref(storage, `avatars/${currentUser.uid}`);
+    
+    // Upload the file
+    await uploadBytes(storageRef, file);
+    
+    // Get the new URL
+    const photoURL = await getDownloadURL(storageRef);
+    
+    // Update Firestore with the new photoURL
+    await setDoc(doc(db, "users", currentUser.uid), { photoURL }, { merge: true });
+    
+    alert("Profile photo updated!");
+  } catch (error) {
+    console.error("Upload error:", error);
+    alert("Upload failed. Please check your storage rules.");
+  }
+};
+
   const avatar =
     currentUser?.photoURL ||
     `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(
       fullName
     )}`;
 
-const handleImageUpload = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  // 1. Create a reference to the storage location
-  const storageRef = ref(storage, `avatars/${currentUser.uid}`);
-
-  // 2. Upload the file
-  await uploadBytes(storageRef, file);
-
-  // 3. Get the public URL
-  const photoURL = await getDownloadURL(storageRef);
-
-  // 4. Save this URL to Firestore (or Auth profile)
-  // ... update your user document with the new photoURL ...
-};
-
-
-
-  
   return (
     <>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap');
@@ -321,15 +322,18 @@ height:100px;
 
       
 
-       <label className="avatar-upload">
-  <img src={avatar} alt="Profile" className="profile-avatar" />
-  <input 
-    type="file" 
-    accept="image/*" 
-    onChange={handleImageUpload} 
-    style={{ display: 'none' }} 
-  />
-</label>
+       <div className="profile-header">
+  <label style={{ cursor: 'pointer' }}>
+    <img src={avatar} alt="Profile" className="profile-avatar" />
+    <input 
+      type="file" 
+      accept="image/*" 
+      onChange={handleImageUpload} 
+      style={{ display: 'none' }} 
+    />
+  </label>
+  {/* ... title and subtitle ... */}
+</div>
 
 
 
