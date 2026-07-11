@@ -1,12 +1,14 @@
-          import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+import { updateEmail } from "firebase/auth";
 import { db } from "../firebase";
 
 export default function ProfilePage({ setPage }) {
   const { currentUser } = useAuth();
 
   const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [birthday, setBirthday] = useState("");
   const [memberSince, setMemberSince] = useState("");
@@ -16,6 +18,7 @@ export default function ProfilePage({ setPage }) {
   useEffect(() => {
     if (currentUser) {
       setFullName(currentUser.displayName || "");
+      setEmail(currentUser.email || "");
       if (currentUser.metadata?.creationTime) {
         const joined = new Date(currentUser.metadata.creationTime);
         setMemberSince(
@@ -52,7 +55,6 @@ export default function ProfilePage({ setPage }) {
       const img = new Image();
       img.src = event.target.result;
       img.onload = async () => {
-        // Create canvas to resize and compress image to fit Firestore 1MB limit
         const canvas = document.createElement("canvas");
         const MAX_WIDTH = 300;
         const scaleSize = MAX_WIDTH / img.width;
@@ -62,7 +64,6 @@ export default function ProfilePage({ setPage }) {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         
-        // Convert to JPEG with 0.7 quality to keep size small
         const resizedBase64 = canvas.toDataURL("image/jpeg", 0.7);
 
         try {
@@ -81,6 +82,9 @@ export default function ProfilePage({ setPage }) {
   const handleSave = async (e) => {
     e.preventDefault();
     try {
+      if (email !== currentUser.email) {
+        await updateEmail(currentUser, email);
+      }
       await setDoc(doc(db, "users", currentUser.uid), {
         fullName,
         phone,
@@ -88,7 +92,7 @@ export default function ProfilePage({ setPage }) {
       }, { merge: true });
       alert("Profile saved successfully!");
     } catch (error) {
-      alert("Failed to save profile.");
+      alert("Failed to save profile: " + error.message);
     }
   };
 
@@ -150,7 +154,7 @@ export default function ProfilePage({ setPage }) {
               </div>
               <div className="form-group">
                 <label>Email</label>
-                <input type="email" value={currentUser?.email || ""} readOnly />
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
               <div className="form-group">
                 <label>Phone Number</label>
