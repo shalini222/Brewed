@@ -1,36 +1,55 @@
-import React, { useState, useEffect } from "react";
+ import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
 export default function ProfilePage({ setPage }) {
   const { currentUser } = useAuth();
+  
+  // Toggle state
   const [isEditing, setIsEditing] = useState(false);
+
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [birthday, setBirthday] = useState("");
+  const [memberSince, setMemberSince] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
       setFullName(currentUser.displayName || "");
+      if (currentUser.metadata?.creationTime) {
+        const joined = new Date(currentUser.metadata.creationTime);
+        setMemberSince(
+          joined.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+        );
+      }
+
       const fetchProfile = async () => {
-        const docSnap = await getDoc(doc(db, "users", currentUser.uid));
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setPhone(data.phone || "");
-          setBirthday(data.birthday || "");
-          if (data.photoURL) setAvatarUrl(data.photoURL);
+        try {
+          const docRef = doc(db, "users", currentUser.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setPhone(data.phone || "");
+            setBirthday(data.birthday || "");
+            if (data.photoURL) setAvatarUrl(data.photoURL);
+          }
+        } catch (error) {
+          console.error("Error fetching profile:", error);
         }
       };
       fetchProfile();
     }
   }, [currentUser]);
 
+  const validatePhone = (p) => /^\+?[0-9]{10,15}$/.test(p);
+
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     setIsProcessing(true);
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -39,26 +58,47 @@ export default function ProfilePage({ setPage }) {
       img.src = event.target.result;
       img.onload = async () => {
         const canvas = document.createElement("canvas");
-        canvas.width = 300;
-        canvas.height = (300 * img.height) / img.width;
-        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        const MAX_WIDTH = 300;
+        const scaleSize = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scaleSize;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         const resizedBase64 = canvas.toDataURL("image/jpeg", 0.7);
-        await setDoc(doc(db, "users", currentUser.uid), { photoURL: resizedBase64 }, { merge: true });
-        setAvatarUrl(resizedBase64);
-        setIsProcessing(false);
+
+        try {
+          await setDoc(doc(db, "users", currentUser.uid), { photoURL: resizedBase64 }, { merge: true });
+          setAvatarUrl(resizedBase64);
+          alert("Profile photo updated!");
+        } catch (error) {
+          alert("Upload failed: " + error.message);
+        } finally {
+          setIsProcessing(false);
+        }
       };
     };
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
+    if (phone && !validatePhone(phone)) {
+      alert("Please enter a valid phone number (10-15 digits).");
+      return;
+    }
     setIsProcessing(true);
     try {
-      await setDoc(doc(db, "users", currentUser.uid), { fullName, phone, birthday }, { merge: true });
-      alert("Profile saved!");
+      await setDoc(doc(db, "users", currentUser.uid), {
+        fullName,
+        phone,
+        birthday,
+      }, { merge: true });
+      alert("Profile saved successfully!");
       setIsEditing(false);
-    } catch (err) { alert("Error saving profile."); }
-    setIsProcessing(false);
+    } catch (error) {
+      alert("Failed to save profile.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const avatar = avatarUrl || `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(fullName || "User")}`;
@@ -66,51 +106,71 @@ export default function ProfilePage({ setPage }) {
   return (
     <>
       <style>{`
-        .profile-page { min-height: 100vh; background: #FDFAF5; display: flex; justify-content: center; padding: 60px 20px; font-family: 'Inter', sans-serif; }
-        .profile-card { width: 100%; max-width: 500px; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); padding: 40px; }
-        .back-button { background: none; border: none; font-weight: 600; cursor: pointer; color: #3B1A08; margin-bottom: 20px; padding: 0; }
-        .profile-header { text-align: center; margin-bottom: 30px; }
-        .avatar-container { position: relative; display: inline-block; cursor: ${isEditing ? 'pointer' : 'default'}; }
-        .profile-avatar { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #C4956A; }
-        .edit-icon { position: absolute; bottom: 0; right: 0; background: #3B1A08; color: white; padding: 6px; border-radius: 50%; font-size: 12px; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; font-weight: 600; color: #5A453A; margin-bottom: 8px; font-size: 0.9rem; }
-        input { width: 100%; padding: 12px; border: 1px solid #E0E0E0; border-radius: 10px; font-size: 1rem; }
-        input:disabled { background: #F8F8F8; color: #7A675C; }
-        .actions { display: flex; gap: 12px; margin-top: 30px; }
-        button { flex: 1; padding: 14px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; }
-        .save-btn { background: #3B1A08; color: white; }
-        .password-btn { background: #F8F4EE; color: #3B1A08; }
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap');
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #FDFAF5; font-family: 'Inter', sans-serif; }
+        .profile-page { min-height: 100vh; background: #FDFAF5; display: flex; justify-content: center; padding: 120px 20px 60px; }
+        .profile-card { width: 100%; max-width: 760px; background: white; border-radius: 24px; box-shadow: 0 15px 40px rgba(0,0,0,.08); padding: 50px; }
+        .profile-header { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 45px; }
+        .profile-avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 5px solid #C4956A; }
+        .profile-title { font-family: 'Playfair Display', serif; font-size: 2.3rem; color: #3B1A08; margin-top: 22px; }
+        .profile-subtitle { color: #7A675C; margin-top: 8px; }
+        .section-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: #3B1A08; margin: 40px 0 18px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group.full { grid-column: 1 / 3; }
+        label { margin-bottom: 8px; font-weight: 600; color: #5A453A; }
+        input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #DDD; font-size: 15px; transition: .3s; }
+        input:disabled { background: #F8F8F8; color: #7A675C; cursor: not-allowed; }
+        input:focus:not(:disabled) { outline: none; border-color: #C4956A; box-shadow: 0 0 0 3px rgba(196,149,106,.15); }
+        .member-box { margin-top: 25px; padding: 18px; background: #F8F4EE; border-radius: 14px; }
+        .member-value { margin-top: 5px; font-size: 1.1rem; font-weight: 600; color: #3B1A08; }
+        .actions { margin-top: 45px; display: flex; gap: 15px; }
+        .save-btn { flex: 1; padding: 15px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; background: #3B1A08; color: white; }
+        .save-btn:disabled { opacity: 0.6; cursor: wait; }
+        .password-btn { flex: 1; padding: 15px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; background: #F8F4EE; color: #3B1A08; }
+        .back-button { background: none; border: none; color: #3B1A08; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 20px; padding: 0; }
+        .edit-cue { color: #C4956A; font-size: 0.9rem; margin-top: 5px; font-weight: 500; }
+        @media(max-width: 768px) { .profile-card { padding: 30px 22px; } .form-grid { grid-template-columns: 1fr; } .form-group.full { grid-column: auto; } .actions { flex-direction: column; } }
       `}</style>
 
       <div className="profile-page">
         <div className="profile-card">
           <button className="back-button" onClick={() => setPage("menu")}>← Back</button>
+          
           <div className="profile-header">
-            <label className="avatar-container">
+            <label style={{ cursor: isEditing ? 'pointer' : 'default' }}>
               <img src={avatar} alt="Profile" className="profile-avatar" />
-              {isEditing && <div className="edit-icon">✎</div>}
-              {isEditing && <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />}
+              {isEditing && <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={isProcessing} />}
             </label>
-            <h2 style={{ color: "#3B1A08", marginTop: "15px" }}>My Profile</h2>
+            <div className="profile-title">My Profile</div>
+            {isEditing && <div className="edit-cue">Tap avatar to change photo</div>}
           </div>
 
           <form onSubmit={handleSave}>
-            <div className="form-group">
-              <label>Full Name</label>
-              <input type="text" value={fullName} disabled={!isEditing} onChange={(e) => setFullName(e.target.value)} required />
+            <div className="section-title">Personal Information</div>
+            <div className="form-grid">
+              <div className="form-group full">
+                <label>Full Name</label>
+                <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={!isEditing} required />
+              </div>
+              <div className="form-group">
+                <label>Email</label>
+                <input type="email" value={currentUser?.email || ""} disabled />
+              </div>
+              <div className="form-group">
+                <label>Phone Number</label>
+                <input type="tel" placeholder="+44..." value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!isEditing} />
+              </div>
+              <div className="form-group full">
+                <label>Birthday <span style={{ color: "#C4956A" }}>*</span></label>
+                <input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} disabled={!isEditing} required />
+              </div>
             </div>
-            <div className="form-group">
-              <label>Email</label>
-              <input type="email" value={currentUser?.email || ""} disabled />
-            </div>
-            <div className="form-group">
-              <label>Phone Number</label>
-              <input type="tel" value={phone} disabled={!isEditing} onChange={(e) => setPhone(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label>Birthday</label>
-              <input type="date" value={birthday} disabled={!isEditing} onChange={(e) => setBirthday(e.target.value)} required />
+
+            <div className="section-title">Membership</div>
+            <div className="member-box">
+              <div className="member-value">☕ {memberSince || "Today"}</div>
             </div>
 
             <div className="actions">
