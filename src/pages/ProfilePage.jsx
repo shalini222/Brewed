@@ -1,4 +1,4 @@
- import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { doc, setDoc, getDoc, updateDoc, deleteField } from "firebase/firestore";
 import { sendPasswordResetEmail } from "firebase/auth";
@@ -8,6 +8,7 @@ export default function ProfilePage({ setPage }) {
   const { currentUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [birthday, setBirthday] = useState("");
   const [address, setAddress] = useState("");
@@ -19,6 +20,7 @@ export default function ProfilePage({ setPage }) {
   useEffect(() => {
     if (currentUser) {
       setFullName(currentUser.displayName || "");
+      setEmail(currentUser.email || "");
       if (currentUser.metadata?.creationTime) {
         const joined = new Date(currentUser.metadata.creationTime);
         setMemberSince(joined.toLocaleDateString("en-US", { month: "long", year: "numeric" }));
@@ -42,7 +44,9 @@ export default function ProfilePage({ setPage }) {
     try {
       await sendPasswordResetEmail(auth, currentUser.email);
       alert("Password reset email sent!");
-    } catch (e) { alert("Error: " + e.message); }
+    } catch (e) {
+      alert("Error: " + e.message);
+    }
   };
 
   const handleImageUpload = (e) => {
@@ -56,7 +60,8 @@ export default function ProfilePage({ setPage }) {
       img.src = event.target.result;
       img.onload = async () => {
         const canvas = document.createElement("canvas");
-        canvas.width = 300; canvas.height = (300 * img.height) / img.width;
+        canvas.width = 300;
+        canvas.height = (300 * img.height) / img.width;
         canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
         const resizedBase64 = canvas.toDataURL("image/jpeg", 0.7);
         await setDoc(doc(db, "users", currentUser.uid), { photoURL: resizedBase64 }, { merge: true });
@@ -76,12 +81,23 @@ export default function ProfilePage({ setPage }) {
   const handleSave = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
-    await setDoc(doc(db, "users", currentUser.uid), { fullName, phone, birthday, address, addressType }, { merge: true });
+    // Note: updating `email` here only writes it to Firestore.
+    // Changing the actual Firebase Auth email requires a separate
+    // call (e.g. verifyBeforeUpdateEmail) since it needs re-authentication.
+    await setDoc(
+      doc(db, "users", currentUser.uid),
+      { fullName, email, phone, address, addressType },
+      { merge: true }
+    );
     setIsEditing(false);
     setIsProcessing(false);
   };
 
-  const avatar = avatarUrl || `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(currentUser?.email?.charAt(0) || "U")}`;
+  const avatar =
+    avatarUrl ||
+    `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(
+      currentUser?.email?.charAt(0) || "U"
+    )}`;
 
   return (
     <>
@@ -107,7 +123,7 @@ export default function ProfilePage({ setPage }) {
         .save-btn { flex: 1; padding: 15px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; background: #3B1A08; color: white; }
         .password-btn { flex: 1; padding: 15px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; background: #F8F4EE; color: #3B1A08; }
         .back-button { background: none; border: none; color: #3B1A08; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 20px; padding: 0; }
-        .addr-opts { display: flex; gap: 20px; margin-top: 10px; }
+        .addr-opts { display: flex; gap: 20px; margin-bottom: 10px; }
         .circle { width: 20px; height: 20px; border: 2px solid #3B1A08; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .dot { width: 8px; height: 8px; background: #C4956A; border-radius: 50%; }
         @media(max-width: 768px) { .profile-card { padding: 30px 22px; } .form-grid { grid-template-columns: 1fr; } .form-group.full { grid-column: auto; } }
@@ -116,40 +132,91 @@ export default function ProfilePage({ setPage }) {
       <div className="profile-page">
         <div className="profile-card">
           <button className="back-button" onClick={() => setPage("menu")}>← Back</button>
-          
+
           <div className="profile-header">
             {isProcessing ? <div>Uploading...</div> : <img src={avatar} className="profile-avatar" />}
-            {isEditing && <><input type="file" onChange={handleImageUpload} /><div onClick={handleRemovePhoto} style={{cursor:'pointer', color:'#C4956A'}}>Remove</div></>}
+            {isEditing && (
+              <>
+                <input type="file" onChange={handleImageUpload} />
+                <div onClick={handleRemovePhoto} style={{ cursor: "pointer", color: "#C4956A", marginTop: "5px" }}>
+                  Remove
+                </div>
+              </>
+            )}
             <div className="profile-title">My Profile</div>
           </div>
 
           <form onSubmit={handleSave}>
             <div className="section-title">Personal Information</div>
             <div className="form-grid">
-              <div className="form-group full"><label>Full Name</label><input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={!isEditing} /></div>
-              <div className="form-group"><label>Email</label><input type="email" value={currentUser?.email || ""} disabled /></div>
-              <div className="form-group"><label>Phone Number</label><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!isEditing} /></div>
-              <div className="form-group full"><label>Address</label><input placeholder="Street address..." value={address} onChange={(e) => setAddress(e.target.value)} disabled={!isEditing} />
+              <div className="form-group full">
+                <label>Full Name</label>
+                <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={!isEditing} />
+              </div>
+
+              <div className="form-group">
+                <label>Email</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={!isEditing} />
+              </div>
+
+              <div className="form-group">
+                <label>Phone Number</label>
+                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!isEditing} />
+              </div>
+
+              <div className="form-group full">
+                <label>Address</label>
                 <div className="addr-opts">
-                  {['Home', 'Work', 'Other'].map(type => (
-                    <div key={type} onClick={() => isEditing && setAddressType(type)} style={{display:'flex', alignItems:'center', gap:'5px', cursor:'pointer'}}>
+                  {["Home", "Work", "Other"].map((type) => (
+                    <div
+                      key={type}
+                      onClick={() => isEditing && setAddressType(type)}
+                      style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer" }}
+                    >
                       <div className="circle">{addressType === type && <div className="dot" />}</div>
                       <span>{type}</span>
                     </div>
                   ))}
                 </div>
+                <input
+                  placeholder="Street address..."
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  disabled={!isEditing}
+                />
               </div>
-              <div className="form-group full"><label>Birthday</label><input type="date" value={birthday} disabled /></div>
+
+              <div className="form-group full">
+                <label>Birthday</label>
+                <input type="date" value={birthday} disabled />
+              </div>
             </div>
 
             <div className="section-title">Membership</div>
-            <div className="member-box"><div className="member-value">☕ Member since {memberSince || "today"}</div></div>
+            <div className="member-box">
+              <div className="member-value">☕ Member since {memberSince || "today"}</div>
+            </div>
 
             <div className="actions">
-              {!isEditing ? 
-                <><button type="button" className="password-btn" onClick={handlePasswordReset}>Change Password</button><button type="button" className="save-btn" onClick={() => setIsEditing(true)}>Edit</button></> :
-                <><button type="button" className="password-btn" onClick={() => setIsEditing(false)}>Cancel</button><button type="submit" className="save-btn">Save</button></>
-              }
+              {!isEditing ? (
+                <>
+                  <button type="button" className="password-btn" onClick={handlePasswordReset}>
+                    Change Password
+                  </button>
+                  <button type="button" className="save-btn" onClick={() => setIsEditing(true)}>
+                    Edit
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button type="button" className="password-btn" onClick={() => setIsEditing(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="save-btn">
+                    Save
+                  </button>
+                </>
+              )}
             </div>
           </form>
         </div>
