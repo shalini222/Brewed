@@ -18,6 +18,7 @@ import FavoritesPage from "./pages/FavoritesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsPage from "./pages/TermsPage";
 
 
 
@@ -45,6 +46,7 @@ export default function App() {
     "tracking", 
     "settings",
     "privacy",
+    "terms",
   ];
 
   return (
@@ -133,6 +135,11 @@ export default function App() {
         )}
         {page === "privacy" && (
   <PrivacyPolicyPage
+    setPage={setPage}
+  />
+)}
+        {page === "terms" && (
+  <TermsPage
     setPage={setPage}
   />
 )}
