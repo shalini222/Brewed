@@ -17,6 +17,7 @@ import RewardsPage from "./pages/RewardsPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 
 
 
@@ -43,6 +44,7 @@ export default function App() {
     "notifications",
     "tracking", 
     "settings",
+    "privacy",
   ];
 
   return (
@@ -129,6 +131,11 @@ export default function App() {
         {page === "settings" && (
           <SettingsPage setPage={navigateTo} />
         )}
+        {page === "privacy" && (
+  <PrivacyPolicyPage
+    setPage={setPage}
+  />
+)}
 
         <Footer />
       </AuthProvider>
