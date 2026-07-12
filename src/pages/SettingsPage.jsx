@@ -209,31 +209,17 @@ export default function SettingsPage({ setPage }) {
           color:#B42318;
         }
 
-        .save-btn{
-          width:100%;
-          background:#1A0A00;
-          color:#FDFAF5;
-          border:none;
-          padding:16px;
-          border-radius:14px;
-          font-size:1rem;
-          font-weight:600;
-          cursor:pointer;
-          margin-top:18px;
-          transition:.25s;
-        }
+        .button-row{
+  display:flex;
+  gap:14px;
+  margin-top:24px;
+}
 
-        .save-btn:hover{
-          background:#3B1A08;
-        }
-        .reset-btn{
-  width:100%;
-  margin-top:12px;
-  padding:14px;
-  background:transparent;
-  border:1px solid rgba(196,149,106,.25);
+.save-btn,
+.reset-btn{
+  flex:1;
+  padding:15px;
   border-radius:14px;
-  color:#7A6658;
   font-family:'Inter',sans-serif;
   font-size:.95rem;
   font-weight:600;
@@ -241,10 +227,39 @@ export default function SettingsPage({ setPage }) {
   transition:all .25s ease;
 }
 
+.save-btn{
+  background:#1A0A00;
+  color:#FDFAF5;
+  border:none;
+}
+
+.save-btn:hover{
+  background:#3B1A08;
+}
+
+.reset-btn{
+  background:#fff;
+  color:#7A6658;
+  border:1px solid rgba(196,149,106,.25);
+}
+
 .reset-btn:hover{
   background:#FCF8F2;
   color:#1A0A00;
   border-color:#C4956A;
+}
+
+@media (max-width:600px){
+
+  .button-row{
+    flex-direction:column;
+  }
+
+  .save-btn,
+  .reset-btn{
+    width:100%;
+  }
+
 }
 
       `}</style>
@@ -413,20 +428,23 @@ export default function SettingsPage({ setPage }) {
             </div>
 
           </div>
-          <div>
-          <button
-  className="reset-btn"
-  onClick={resetSettings}
->
-  Reset to Defaults
-</button>
-          <button
-            className="save-btn"
-            onClick={saveSettings}
-          >
-            Save Changes
-          </button>
-          </div>
+  <div className="button-row">
+
+  <button
+    className="reset-btn"
+    onClick={resetSettings}
+  >
+    Reset to Defaults
+  </button>
+
+  <button
+    className="save-btn"
+    onClick={saveSettings}
+  >
+    Save Changes
+  </button>
+
+</div>
           
         </div>
       </div>
