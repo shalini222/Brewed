@@ -16,6 +16,9 @@ import OrdersPage from "./pages/OrdersPage";
 import RewardsPage from "./pages/RewardsPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import SettingsPage from "./pages/SettingsPage";
+
+
 
 export default function App() {
   const [page, setPage] = useState("menu");
@@ -39,6 +42,7 @@ export default function App() {
     "rewards",
     "notifications",
     "tracking", 
+    "settings",
   ];
 
   return (
@@ -121,6 +125,9 @@ export default function App() {
 
         {page === "notifications" && (
           <NotificationsPage setPage={navigateTo} />
+        )}
+        {page === "settings" && (
+          <SettingsPage setPage={navigateTo} />
         )}
 
         <Footer />
