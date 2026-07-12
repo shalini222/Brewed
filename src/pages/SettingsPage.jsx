@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { getDoc } from "firebase/firestore";
 import {
   ArrowLeft,
   Bell,
@@ -20,6 +21,62 @@ export default function SettingsPage({ setPage }) {
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
+
+
+const [savedNotifications, setSavedNotifications] = useState(true);
+const [savedDarkMode, setSavedDarkMode] = useState(false);
+const [savedReduceMotion, setSavedReduceMotion] = useState(false);
+
+  const [toast, setToast] = useState({
+  show: false,
+  message: "",
+});
+ 
+  const showToast = (message) => {
+  setToast({
+    show: true,
+    message,
+  });
+
+  clearTimeout(window.toastTimer);
+
+  window.toastTimer = setTimeout(() => {
+    setToast({
+      show: false,
+      message: "",
+    });
+  }, 2000);
+};
+
+  useEffect(() => {
+  if (!currentUser) return;
+
+  const loadSettings = async () => {
+    try {
+      const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+
+      if (userDoc.exists()) {
+        const settings = userDoc.data().settings;
+
+        if (settings) {
+          setNotifications(settings.notifications ?? true);
+          setDarkMode(settings.darkMode ?? false);
+          setReduceMotion(settings.reduceMotion ?? false);
+
+          setSavedNotifications(settings.notifications ?? true);
+          setSavedDarkMode(settings.darkMode ?? false);
+          setSavedReduceMotion(settings.reduceMotion ?? false);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load settings:", error);
+    }
+  };
+
+  loadSettings();
+}, [currentUser]);
+  
+  
   const resetSettings = () => {
   const confirmReset = window.confirm(
     "Reset all settings to their default values?"
@@ -32,6 +89,14 @@ export default function SettingsPage({ setPage }) {
   setReduceMotion(false);
 };
 
+
+  const hasChanges =
+  notifications !== savedNotifications ||
+  darkMode !== savedDarkMode ||
+  reduceMotion !== savedReduceMotion;
+
+  
+  
   const saveSettings = async () => {
     try {
       await updateDoc(doc(db, "users", currentUser.uid), {
@@ -41,11 +106,14 @@ export default function SettingsPage({ setPage }) {
           reduceMotion,
         },
       });
-
-      alert("Settings saved successfully.");
+      setSavedNotifications(notifications);
+      setSavedDarkMode(darkMode);
+      setSavedReduceMotion(reduceMotion);
+      
+      showToast("Settings saved successfully.");
     } catch (error) {
       console.error(error);
-      alert("Couldn't save settings.");
+      showToast("Couldn't save settings.");
     }
   };
 
@@ -63,6 +131,10 @@ export default function SettingsPage({ setPage }) {
           max-width:720px;
           margin:auto;
         }
+
+        .settings-container{
+    animation:fadeUp .45s ease;
+}
 
         .back-btn{
           display:flex;
@@ -183,6 +255,35 @@ export default function SettingsPage({ setPage }) {
   min-width:0;
 }
 
+.toast{
+  position:fixed;
+  bottom:28px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#1A0A00;
+  color:#FDFAF5;
+  padding:14px 22px;
+  border-radius:14px;
+  font-family:'Inter',sans-serif;
+  font-size:.92rem;
+  box-shadow:0 12px 30px rgba(0,0,0,.18);
+  animation:toastIn .25s ease;
+  z-index:9999;
+}
+
+@keyframes toastIn{
+  from{
+    opacity:0;
+    transform:translate(-50%,20px);
+  }
+
+  to{
+    opacity:1;
+    transform:translate(-50%,0);
+  }
+}
+
+
 .link-right{
   color:#A39081;
   transition:all .25s ease;
@@ -217,9 +318,9 @@ export default function SettingsPage({ setPage }) {
           border-bottom:none;
         }
 
-        .danger{
-          color:#B42318;
-        }
+        .danger .setting-icon{
+  color:#B42318;
+}
 
         .button-row{
   display:flex;
@@ -262,7 +363,27 @@ export default function SettingsPage({ setPage }) {
   color:#1A0A00;
   border-color:#C4956A;
 }
+.save-btn:disabled{
+  background:#D8D2CC;
+  color:#8E8278;
+  cursor:not-allowed;
+  opacity:.8;
+}
 
+.save-btn:disabled:hover{
+  background:#D8D2CC;
+}
+@keyframes fadeUp{
+  from{
+    opacity:0;
+    transform:translateY(18px);
+  }
+
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
 
 @media (max-width:600px){
 
@@ -306,6 +427,8 @@ export default function SettingsPage({ setPage }) {
   }
 }
 
+
+
       `}</style>
 
       <div className="settings-page">
@@ -313,7 +436,7 @@ export default function SettingsPage({ setPage }) {
 
           <button
             className="back-btn"
-            onClick={() => setPage("profile")}
+            onClick={() => setPage("menu")}
           >
             <ArrowLeft size={18}/>
             Back
@@ -440,7 +563,7 @@ export default function SettingsPage({ setPage }) {
 
   <div className="link-row danger">
     <div className="link-left">
-      <Trash2 size={18} />
+      <Trash2 size={18} className="setting-icon" />
       <span>Delete Account</span>
     </div>
 
@@ -483,6 +606,7 @@ export default function SettingsPage({ setPage }) {
 
   <button
     className="save-btn"
+    disabled={!hasChanges}
     onClick={saveSettings}
   >
     Save Changes
@@ -492,6 +616,12 @@ export default function SettingsPage({ setPage }) {
           
         </div>
       </div>
+
+      {toast.show && (
+  <div className="toast">
+    {toast.message}
+  </div>
+)}
     </>
   );
 }
