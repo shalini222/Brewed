@@ -528,7 +528,7 @@ const [savedReduceMotion, setSavedReduceMotion] = useState(false);
     <ChevronRight size={18} className="link-right" />
   </div>
 
-  <div className="link-row">
+  <div className="link-row" onClick={() => setPage("terms")}>
     <div className="link-left">
       <FileText size={18} className="setting-icon" />
       <span>Terms & Conditions</span>
