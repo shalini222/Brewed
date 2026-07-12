@@ -27,6 +27,15 @@ const [savedNotifications, setSavedNotifications] = useState(true);
 const [savedDarkMode, setSavedDarkMode] = useState(false);
 const [savedReduceMotion, setSavedReduceMotion] = useState(false);
 
+const [confirmOpen, setConfirmOpen] = useState(false);
+
+const [confirmData, setConfirmData] = useState({
+  title: "",
+  message: "",
+  onConfirm: null,
+});
+
+
   const [toast, setToast] = useState({
   show: false,
   message: "",
@@ -95,7 +104,23 @@ const [savedReduceMotion, setSavedReduceMotion] = useState(false);
   darkMode !== savedDarkMode ||
   reduceMotion !== savedReduceMotion;
 
-  
+  const clearCache = () => {
+  setConfirmData({
+    title: "Clear Cache",
+    message:
+      "This will remove temporary cached data stored on this device. Your account, orders and rewards won't be affected.",
+    onConfirm: () => {
+      localStorage.clear();
+      sessionStorage.clear();
+
+      showToast("Cache cleared successfully.");
+
+      setConfirmOpen(false);
+    },
+  });
+
+  setConfirmOpen(true);
+};
   
   const saveSettings = async () => {
     try {
@@ -181,7 +206,7 @@ const [savedReduceMotion, setSavedReduceMotion] = useState(false);
           margin-bottom:18px;
           font-size:1.2rem;
         }
-
+        
         .setting-row{
           display:flex;
           justify-content:space-between;
@@ -373,6 +398,73 @@ const [savedReduceMotion, setSavedReduceMotion] = useState(false);
 .save-btn:disabled:hover{
   background:#D8D2CC;
 }
+
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.35);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:20px;
+  z-index:9999;
+}
+
+.modal{
+  width:100%;
+  max-width:420px;
+  background:#fff;
+  border-radius:22px;
+  padding:26px;
+  animation:fadeUp .25s ease;
+}
+
+.modal-title{
+  font-family:'Playfair Display',serif;
+  color:#1A0A00;
+  font-size:1.5rem;
+  margin-bottom:10px;
+}
+
+.modal-text{
+  color:#7A6658;
+  line-height:1.7;
+  margin-bottom:24px;
+}
+
+.modal-buttons{
+  display:flex;
+  gap:12px;
+}
+
+.modal-btn{
+  flex:1;
+  border:none;
+  padding:14px;
+  border-radius:14px;
+  cursor:pointer;
+  font-weight:600;
+  font-family:'Inter',sans-serif;
+}
+
+.cancel-btn{
+  background:#F5EFE8;
+  color:#1A0A00;
+}
+
+.confirm-btn{
+  background:#1A0A00;
+  color:#FDFAF5;
+}
+
+@media(max-width:600px){
+
+.modal-buttons{
+flex-direction:column;
+}
+
+}
+
 @keyframes fadeUp{
   from{
     opacity:0;
@@ -537,7 +629,7 @@ const [savedReduceMotion, setSavedReduceMotion] = useState(false);
     <ChevronRight size={18} className="link-right" />
   </div>
 
-  <div className="link-row">
+  <div className="link-row" onClick={clearCache}>
     <div className="link-left">
       <Trash2 size={18} className="setting-icon" />
       <span>Clear Cache</span>
@@ -617,7 +709,41 @@ const [savedReduceMotion, setSavedReduceMotion] = useState(false);
           
         </div>
       </div>
+       {confirmOpen && (
+  <div className="modal-overlay">
 
+    <div className="modal">
+
+      <h2 className="modal-title">
+        {confirmData.title}
+      </h2>
+
+      <p className="modal-text">
+        {confirmData.message}
+      </p>
+
+      <div className="modal-buttons">
+
+        <button
+          className="modal-btn cancel-btn"
+          onClick={() => setConfirmOpen(false)}
+        >
+          Cancel
+        </button>
+
+        <button
+          className="modal-btn confirm-btn"
+          onClick={confirmData.onConfirm}
+        >
+          Confirm
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+)}
       {toast.show && (
   <div className="toast">
     {toast.message}
