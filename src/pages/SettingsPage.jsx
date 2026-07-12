@@ -121,16 +121,19 @@ export default function SettingsPage({ setPage }) {
         .setting-row:last-child{
           border-bottom:none;
         }
-
-        .setting-left{
-          display:flex;
-          gap:14px;
-          align-items:flex-start;
-        }
+.setting-left{
+  display:flex;
+  align-items:center;   /* changed from flex-start */
+  gap:16px;
+  flex:1;
+}
+        
 
         .setting-icon{
-          color:#C4956A;
-        }
+  color:#C4956A;
+  flex-shrink:0;
+  transform:translateY(2px);
+}
 
         .setting-title{
           color:#1A0A00;
