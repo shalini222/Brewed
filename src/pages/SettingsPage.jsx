@@ -6,11 +6,12 @@ import {
   ArrowLeft,
   Bell,
   Moon,
- Shield,
+  Shield,
   FileText,
   Trash2,
   KeyRound,
-  Info
+  Info,
+  ChevronRight
 } from "lucide-react";
 
 export default function SettingsPage({ setPage }) {
@@ -19,6 +20,17 @@ export default function SettingsPage({ setPage }) {
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
+  const resetSettings = () => {
+  const confirmReset = window.confirm(
+    "Reset all settings to their default values?"
+  );
+
+  if (!confirmReset) return;
+
+  setNotifications(true);
+  setDarkMode(false);
+  setReduceMotion(false);
+};
 
   const saveSettings = async () => {
     try {
@@ -154,7 +166,30 @@ export default function SettingsPage({ setPage }) {
         .switch.active::after{
           left:25px;
         }
+  .link-left{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
 
+.link-right{
+  color:#A39081;
+  transition:all .25s ease;
+}
+
+.link-row:hover{
+  background:#FCF8F2;
+  border-radius:12px;
+}
+
+.link-row:hover .link-right{
+  color:#C4956A;
+  transform:translateX(4px);
+}
+
+.link-row:hover .setting-icon{
+  color:#B9835A;
+}
         .link-row{
           display:flex;
           justify-content:space-between;
@@ -191,6 +226,26 @@ export default function SettingsPage({ setPage }) {
         .save-btn:hover{
           background:#3B1A08;
         }
+        .reset-btn{
+  width:100%;
+  margin-top:12px;
+  padding:14px;
+  background:transparent;
+  border:1px solid rgba(196,149,106,.25);
+  border-radius:14px;
+  color:#7A6658;
+  font-family:'Inter',sans-serif;
+  font-size:.95rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.reset-btn:hover{
+  background:#FCF8F2;
+  color:#1A0A00;
+  border-color:#C4956A;
+}
 
       `}</style>
 
@@ -277,45 +332,63 @@ export default function SettingsPage({ setPage }) {
 
           {/* Privacy */}
 
-          <div className="card">
+<div className="card">
 
-            <h2 className="section-title">Privacy</h2>
+  <h2 className="section-title">Privacy</h2>
 
-            <div className="link-row">
-              <span><Shield size={18}/> Privacy Policy</span>
-              →
-            </div>
+  <div className="link-row">
+    <div className="link-left">
+      <Shield size={18} className="setting-icon" />
+      <span>Privacy Policy</span>
+    </div>
 
-            <div className="link-row">
-              <span><FileText size={18}/> Terms & Conditions</span>
-              →
-            </div>
+    <ChevronRight size={18} className="link-right" />
+  </div>
 
-            <div className="link-row">
-              <span><Trash2 size={18}/> Clear Cache</span>
-              →
-            </div>
+  <div className="link-row">
+    <div className="link-left">
+      <FileText size={18} className="setting-icon" />
+      <span>Terms & Conditions</span>
+    </div>
 
-          </div>
+    <ChevronRight size={18} className="link-right" />
+  </div>
 
+  <div className="link-row">
+    <div className="link-left">
+      <Trash2 size={18} className="setting-icon" />
+      <span>Clear Cache</span>
+    </div>
+
+    <ChevronRight size={18} className="link-right" />
+  </div>
+
+</div>
           {/* Account */}
 
           <div className="card">
 
-            <h2 className="section-title">Account</h2>
+  <h2 className="section-title">Account</h2>
 
-            <div className="link-row">
-              <span><KeyRound size={18}/> Change Password</span>
-              →
-            </div>
+  <div className="link-row">
+    <div className="link-left">
+      <KeyRound size={18} className="setting-icon" />
+      <span>Change Password</span>
+    </div>
 
-            <div className="link-row danger">
-              <span><Trash2 size={18}/> Delete Account</span>
-              →
-            </div>
+    <ChevronRight size={18} className="link-right" />
+  </div>
 
-          </div>
+  <div className="link-row danger">
+    <div className="link-left">
+      <Trash2 size={18} />
+      <span>Delete Account</span>
+    </div>
 
+    <ChevronRight size={18} className="link-right" />
+  </div>
+
+</div>
           {/* About */}
 
           <div className="card">
@@ -340,14 +413,19 @@ export default function SettingsPage({ setPage }) {
             </div>
 
           </div>
-
+          <button
+  className="reset-btn"
+  onClick={resetSettings}
+>
+  Reset to Defaults
+</button>
           <button
             className="save-btn"
             onClick={saveSettings}
           >
             Save Changes
           </button>
-
+          
         </div>
       </div>
     </>
