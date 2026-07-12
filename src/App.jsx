@@ -19,6 +19,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsPage from "./pages/TermsPage";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
 
 
 
@@ -142,6 +143,9 @@ export default function App() {
   <TermsPage
     setPage={setPage}
   />
+)}
+        {page === "change-password" && (
+  <ChangePasswordPage setPage={setPage} />
 )}
 
         <Footer />
