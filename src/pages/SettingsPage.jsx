@@ -645,7 +645,7 @@ flex-direction:column;
 
   <h2 className="section-title">Account</h2>
 
-  <div className="link-row">
+  <div className="link-row" onClick={() => setPage("change-password")}>
     <div className="link-left">
       <KeyRound size={18} className="setting-icon" />
       <span>Change Password</span>
