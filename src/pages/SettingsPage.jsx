@@ -413,6 +413,7 @@ export default function SettingsPage({ setPage }) {
             </div>
 
           </div>
+          <div>
           <button
   className="reset-btn"
   onClick={resetSettings}
@@ -425,6 +426,7 @@ export default function SettingsPage({ setPage }) {
           >
             Save Changes
           </button>
+          </div>
           
         </div>
       </div>
