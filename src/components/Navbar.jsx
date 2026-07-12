@@ -300,7 +300,6 @@ export default function HeadlessNavbar({ currentPage, setPage }) {
               >
                 ⭐ Rewards
               </button>
-              <hr />
               <button
                 onClick={() => {
                   setShowMenu(false);
@@ -309,6 +308,9 @@ export default function HeadlessNavbar({ currentPage, setPage }) {
               >
                 ⚙️ Settings
               </button>
+              
+              <hr />
+              
 
               <button onClick={handleLogout}>
                 🚪 Logout
