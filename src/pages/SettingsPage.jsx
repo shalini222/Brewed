@@ -90,12 +90,18 @@ export default function SettingsPage({ setPage }) {
         }
 
         .card{
-          background:#fff;
-          border:1px solid rgba(196,149,106,.15);
-          border-radius:22px;
-          padding:22px;
-          margin-bottom:22px;
-        }
+  background:#fff;
+  border:1px solid rgba(196,149,106,.15);
+  border-radius:22px;
+  padding:22px;
+  margin-bottom:22px;
+  transition:transform .25s ease, box-shadow .25s ease;
+}
+
+.card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 10px 30px rgba(26,10,0,.06);
+}
 
         .section-title{
           font-family:'Playfair Display',serif;
@@ -170,6 +176,8 @@ export default function SettingsPage({ setPage }) {
   display:flex;
   align-items:center;
   gap:14px;
+  flex:1;
+  min-width:0;
 }
 
 .link-right{
@@ -191,15 +199,16 @@ export default function SettingsPage({ setPage }) {
   color:#B9835A;
 }
         .link-row{
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          padding:16px 0;
-          cursor:pointer;
-          border-bottom:1px solid rgba(196,149,106,.12);
-          color:#1A0A00;
-          font-weight:500;
-        }
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:16px 0;
+  cursor:pointer;
+  border-bottom:1px solid rgba(196,149,106,.12);
+  color:#1A0A00;
+  font-weight:500;
+}
 
         .link-row:last-child{
           border-bottom:none;
@@ -218,6 +227,8 @@ export default function SettingsPage({ setPage }) {
 .save-btn,
 .reset-btn{
   flex:1;
+  min-width:0;
+  white-space:nowrap;
   padding:15px;
   border-radius:14px;
   font-family:'Inter',sans-serif;
@@ -249,6 +260,7 @@ export default function SettingsPage({ setPage }) {
   border-color:#C4956A;
 }
 
+
 @media (max-width:600px){
 
   .button-row{
@@ -260,6 +272,35 @@ export default function SettingsPage({ setPage }) {
     width:100%;
   }
 
+  .settings-page{
+    padding:24px 14px 100px;
+  }
+
+  .card{
+    padding:18px;
+    border-radius:18px;
+  }
+
+  .title{
+    font-size:2rem;
+  }
+
+  .setting-row,
+  .link-row{
+    padding:14px 0;
+  }
+
+  .setting-title{
+    font-size:.95rem;
+  }
+
+  .setting-sub{
+    font-size:.82rem;
+  }
+
+  .section-title{
+    font-size:1.1rem;
+  }
 }
 
       `}</style>
