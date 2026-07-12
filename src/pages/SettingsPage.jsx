@@ -132,7 +132,7 @@ export default function SettingsPage({ setPage }) {
         .setting-icon{
   color:#C4956A;
   flex-shrink:0;
-  transform:translateY(2px);
+  margin-top:2px;
 }
 
         .setting-title{
