@@ -518,7 +518,8 @@ const [savedReduceMotion, setSavedReduceMotion] = useState(false);
 
   <h2 className="section-title">Privacy</h2>
 
-  <div className="link-row">
+  <div className="link-row" onClick={() => setPage("privacy")}
+>
     <div className="link-left">
       <Shield size={18} className="setting-icon" />
       <span>Privacy Policy</span>
