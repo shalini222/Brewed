@@ -3,11 +3,17 @@ import { useCart } from "../context/CartContext";
 import { db } from "../firebase"; // Ensure your firebase connection is exported here
 import { collection, getDocs } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
+import { Heart } from "lucide-react";
+
+
+
+
 
 export default function MenuPage({ setPage, setSelectedProduct }) {
   const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState("featured"); 
   const [added, setAdded] = useState({});
+  const [favorites, setFavorites] = useState([]);
   const [menuItems, setMenuItems] = useState([]); // Cloud-sourced data
   const { addToCart } = useCart();
   
@@ -357,19 +363,56 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
         </div>
 
         {/* Clean Menu Card Grid */}
-         
-<div className="menu-grid">
+         <div className="menu-grid">
   {sortedAndFiltered.map((item) => (
     <div
       key={item.id}
       className="menu-card"
-      style={{ cursor: "pointer" }}
+      style={{
+        cursor: "pointer",
+        position: "relative",
+      }}
       onClick={() => {
         setSelectedProduct(item);
         setPage("product");
       }}
     >
-      <div style={styles.cardEmoji}>{item.emoji}</div>
+      {/* Favourite Heart */}
+      <div
+        style={{
+          position: "absolute",
+          top: 16,
+          right: 16,
+          zIndex: 2,
+        }}
+      >
+        <Heart
+          size={22}
+          strokeWidth={2}
+          color="#C4956A"
+          fill={favorites.includes(item.id) ? "#C4956A" : "none"}
+          style={{
+            cursor: "pointer",
+            transition: "all .25s ease",
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+
+            if (favorites.includes(item.id)) {
+              setFavorites(
+                favorites.filter((id) => id !== item.id)
+              );
+            } else {
+              setFavorites([
+                ...favorites,
+                item.id,
+              ]);
+            }
+          }}
+        />
+      </div>
+
+      <div style={styles.cardEmoji}>
 
       <div style={styles.cardBody}>
         <div style={styles.cardTop}>
