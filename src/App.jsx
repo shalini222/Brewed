@@ -49,6 +49,7 @@ export default function App() {
     "settings",
     "privacy",
     "terms",
+    "change-password",
     "deleteAccount",
   ];
 
@@ -150,8 +151,9 @@ export default function App() {
   <ChangePasswordPage setPage={setPage} />
 )}
 
-        {page === "settings" && (
-  <SettingsPage setPage={setPage} />
+    
+        {page === "deleteAccount" && (
+  <DeleteAccountPage setPage={setPage} />
 )}
 
         <Footer />
