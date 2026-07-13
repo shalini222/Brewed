@@ -14,12 +14,11 @@ doc,
 deleteDoc,
 } from "firebase/firestore";
 
-import { auth, db } from "../firebase";
+import {  db } from "../firebase";
 
 import {
 ArrowLeft,
-TriangleAlert,
-Trash2,
+Lock,
 Eye,
 EyeOff,
 } from "lucide-react";
@@ -32,7 +31,8 @@ const isGoogleUser = currentUser?.providerData?.some(
 );
 
 const [password, setPassword] = useState("");
-const [confirmText, setConfirmText] = useState("");
+const [confirmDelete, setConfirmDelete] = useState("");
+  
 
 const [showPassword, setShowPassword] = useState(false);
 
@@ -155,7 +155,7 @@ line-height:1.6;
 margin-bottom:30px;
 }
 
-.warning-card{
+.danger-card{
 background:#FFF4F2;
 border:1px solid rgba(180,35,24,.18);
 border-radius:22px;
@@ -163,7 +163,7 @@ padding:24px;
 margin-bottom:28px;
 }
 
-.warning-title{
+.danger-title{
 display:flex;
 align-items:center;
 gap:10px;
@@ -173,12 +173,12 @@ font-size:1.05rem;
 margin-bottom:14px;
 }
 
-.warning-text{
+.danger-text{
 color:#7A6658;
 line-height:1.7;
 }
 
-.warning-list{
+.danger-list{
 margin-top:16px;
 padding-left:20px;
 color:#7A6658;
@@ -306,6 +306,30 @@ color:#fff;
 border:none;
 }
 
+.google-warning{
+  margin-top:18px;
+  padding:16px;
+  background:#F6ECE1;
+  color:#7A6658;
+  border:1px solid rgba(196,149,106,.25);
+  border-radius:14px;
+  line-height:1.6;
+}
+
+.delete-input{
+  width:100%;
+  padding:15px;
+  border:1px solid rgba(196,149,106,.25);
+  border-radius:14px;
+  font-size:.95rem;
+  outline:none;
+  transition:.25s;
+}
+
+.delete-input:focus{
+  border-color:#B42318;
+  box-shadow:0 0 0 4px rgba(180,35,24,.12);
+}
 .delete-btn:hover{
 background:#921F16;
 }
@@ -385,7 +409,8 @@ font-size:.92rem;
 }
 `}</style>
 
-<div className="change-password-page">  
+<div className="delete-account-page">
+  <div className="delete-account-container">
   <button className="back-btn" onClick={() => setPage("settings")}>
 
   <ArrowLeft size={18} />  
@@ -461,7 +486,9 @@ You'll be asked to verify with Google before deleting your account.
 </button>
 
   </div>  
-</div>  </div>  
+</div>  
+</div>  
+</div>
 
   {toast.show && <div className="toast">{toast.message}</div>}  
 </>
