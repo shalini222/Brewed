@@ -19,20 +19,19 @@ import {
 export default function SettingsPage({ setPage }) {
   const { currentUser } = useAuth();
 
-  const [notifications, setNotifications] = useState(true);
+  
 
   
   const { darkMode, setDarkMode } = useTheme();
 
-
-  
-  const [reduceMotion, setReduceMotion] = useState(false);
-
+const [notifications, setNotifications] = useState(true);
+const [reduceMotion, setReduceMotion] = useState(false);
 
 const [savedNotifications, setSavedNotifications] = useState(true);
-  const [savedDarkMode, setSavedDarkMode] = useState(false);
-
+const [savedDarkMode, setSavedDarkMode] = useState(false);
 const [savedReduceMotion, setSavedReduceMotion] = useState(false);
+  
+
 
 const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -64,7 +63,10 @@ const [confirmData, setConfirmData] = useState({
   }, 2000);
 };
 
-  useEffect(() => {
+
+
+
+useEffect(() => {
   if (!currentUser) return;
 
   const loadSettings = async () => {
@@ -72,30 +74,48 @@ const [confirmData, setConfirmData] = useState({
       const userDoc = await getDoc(doc(db, "users", currentUser.uid));
 
       if (userDoc.exists()) {
-        const settings = userDoc.data().settings;
+        const settings = userDoc.data().settings || {};
 
-        if (settings) {
-          setNotifications(settings.notifications ?? true);
-          const dark = settings.darkMode ?? false;
+        // Default values
+        const notificationsValue = settings.notifications ?? true;
+        const darkModeValue = settings.darkMode ?? false;
+        const reduceMotionValue = settings.reduceMotion ?? false;
 
-setDarkMode(dark);
-          setReduceMotion(settings.reduceMotion ?? false);
+        // Apply settings
+        setNotifications(notificationsValue);
+        setDarkMode(darkModeValue);
+        setReduceMotion(reduceMotionValue);
 
-          setSavedNotifications(settings.notifications ?? true);
-          setSavedDarkMode(settings.darkMode ?? false);
-          setSavedReduceMotion(settings.reduceMotion ?? false);
-        }
+        // Save current values for comparison
+        setSavedNotifications(notificationsValue);
+        setSavedDarkMode(darkModeValue);
+        setSavedReduceMotion(reduceMotionValue);
+      } else {
+        // New user defaults
+        setNotifications(true);
+        setDarkMode(false);
+        setReduceMotion(false);
+
+        setSavedNotifications(true);
+        setSavedDarkMode(false);
+        setSavedReduceMotion(false);
       }
     } catch (error) {
       console.error("Failed to load settings:", error);
+
+      // Fallback defaults
+      setNotifications(true);
+      setDarkMode(false);
+      setReduceMotion(false);
     }
   };
 
   loadSettings();
-}, [currentUser]);
-  
-  
-  
+}, [currentUser, setDarkMode]);
+
+
+
+
 
 
   
