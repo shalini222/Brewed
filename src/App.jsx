@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeProvider";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -54,6 +55,7 @@ export default function App() {
   ];
 
   return (
+    <ThemeProvider>
     <CartProvider>
       <AuthProvider>
         <style>{`
@@ -159,5 +161,6 @@ export default function App() {
         <Footer />
       </AuthProvider>
     </CartProvider>
+      </ThemeProvider>
   );
 }
