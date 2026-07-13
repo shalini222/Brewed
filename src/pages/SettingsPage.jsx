@@ -66,55 +66,63 @@ const [confirmData, setConfirmData] = useState({
 
 
 
-useEffect(() => {
-  if (!currentUser) return;
+//useEffect(() => {
+//  if (!currentUser) return;
 
-  const loadSettings = async () => {
-    try {
-      const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+//  const loadSettings = async () => {
+ //   try {
+ //     const userDoc = await getDoc(doc(db, "users", currentUser.uid));
 
-      if (userDoc.exists()) {
-        const settings = userDoc.data().settings || {};
+  //    if (userDoc.exists()) {
+    //    const settings = userDoc.data().settings || {};
 
         // Default values
-        const notificationsValue = settings.notifications ?? true;
-        const darkModeValue = settings.darkMode ?? false;
-        const reduceMotionValue = settings.reduceMotion ?? false;
+    //    const notificationsValue = settings.notifications ?? true;
+    //    const darkModeValue = settings.darkMode ?? false;
+ //       const reduceMotionValue = settings.reduceMotion ?? false;
 
         // Apply settings
-        setNotifications(notificationsValue);
-        setDarkMode(darkModeValue);
-        setReduceMotion(reduceMotionValue);
-
+    //    setNotifications(notificationsValue);
+ //       setDarkMode(darkModeValue);
+  //      setReduceMotion(reduceMotionValue);
+//
         // Save current values for comparison
-        setSavedNotifications(notificationsValue);
-        setSavedDarkMode(darkModeValue);
-        setSavedReduceMotion(reduceMotionValue);
-      } else {
+      //  setSavedNotifications(notificationsValue);
+  //      setSavedDarkMode(darkModeValue);
+   //     setSavedReduceMotion(reduceMotionValue);
+//      } else {
         // New user defaults
-        setNotifications(true);
-        setDarkMode(false);
-        setReduceMotion(false);
-
-        setSavedNotifications(true);
-        setSavedDarkMode(false);
-        setSavedReduceMotion(false);
-      }
-    } catch (error) {
-      console.error("Failed to load settings:", error);
+//        setNotifications(true);
+   //     setDarkMode(false);
+ //       setReduceMotion(false);
+//
+    //    setSavedNotifications(true);
+    //    setSavedDarkMode(false);
+  //      setSavedReduceMotion(false);
+  //    }
+//    } catch (error) {
+  //    console.error("Failed to load settings:", error);
 
       // Fallback defaults
-      setNotifications(true);
-      setDarkMode(false);
-      setReduceMotion(false);
-    }
-  };
+  //    setNotifications(true);
+//      setDarkMode(false);
+ //     setReduceMotion(false);
+//    }
+//  };
 
 //  loadSettings();
-}, [currentUser, setDarkMode]);
+//}, [currentUser, setDarkMode]);
 
 
+useEffect(() => {
+  setNotifications(true);
+  setDarkMode(false);
+  setReduceMotion(false);
 
+  setSavedNotifications(true);
+  setSavedDarkMode(false);
+  setSavedReduceMotion(false);
+}, []);
 
 
 
