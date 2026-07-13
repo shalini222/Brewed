@@ -19,12 +19,20 @@ export default function SettingsPage({ setPage }) {
   const { currentUser } = useAuth();
 
   const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+
+  
+  const [darkMode, setDarkMode] = useState(
+  localStorage.getItem("darkMode") === "true"
+);
+
+
+  
   const [reduceMotion, setReduceMotion] = useState(false);
 
 
 const [savedNotifications, setSavedNotifications] = useState(true);
-const [savedDarkMode, setSavedDarkMode] = useState(false);
+  const [savedDarkMode, setSavedDarkMode] = useState(false);
+
 const [savedReduceMotion, setSavedReduceMotion] = useState(false);
 
 const [confirmOpen, setConfirmOpen] = useState(false);
@@ -69,7 +77,9 @@ const [confirmData, setConfirmData] = useState({
 
         if (settings) {
           setNotifications(settings.notifications ?? true);
-          setDarkMode(settings.darkMode ?? false);
+          const dark = settings.darkMode ?? false;
+
+setDarkMode(dark);
           setReduceMotion(settings.reduceMotion ?? false);
 
           setSavedNotifications(settings.notifications ?? true);
@@ -85,6 +95,16 @@ const [confirmData, setConfirmData] = useState({
   loadSettings();
 }, [currentUser]);
   
+  useEffect(() => {
+  document.body.classList.toggle("dark", darkMode);
+  localStorage.setItem("darkMode", String(darkMode));
+
+  return () => {
+    document.body.classList.remove("dark");
+  };
+}, [darkMode]);
+
+
   
   const resetSettings = () => {
   const confirmReset = window.confirm(
@@ -96,6 +116,9 @@ const [confirmData, setConfirmData] = useState({
   setNotifications(true);
   setDarkMode(false);
   setReduceMotion(false);
+
+  document.body.classList.remove("dark");
+  localStorage.setItem("darkMode", "false");
 };
 
 
@@ -457,6 +480,46 @@ const [confirmData, setConfirmData] = useState({
   color:#FDFAF5;
 }
 
+
+body.dark{
+  background:#121212;
+  color:#F5F5F5;
+}
+
+body.dark .settings-page{
+  background:#121212;
+}
+
+body.dark .card{
+  background:#1E1E1E;
+  border-color:#333;
+}
+
+body.dark .title,
+body.dark .section-title,
+body.dark .setting-title{
+  color:#F5F5F5;
+}
+
+body.dark .subtitle,
+body.dark .setting-sub,
+body.dark .back-btn{
+  color:#B8B8B8;
+}
+
+body.dark .modal{
+  background:#1E1E1E;
+}
+
+body.dark .modal-title,
+body.dark .modal-text{
+  color:#F5F5F5;
+}
+
+
+
+
+
 @media(max-width:600px){
 
 .modal-buttons{
@@ -464,6 +527,8 @@ flex-direction:column;
 }
 
 }
+
+
 
 @keyframes fadeUp{
   from{
