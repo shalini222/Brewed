@@ -97,7 +97,7 @@ await deleteUser(currentUser);
 showToast("Your account has been permanently deleted.");  
 
 setTimeout(() => {  
-  setPage("login");  
+  window.location.reload();
 }, 1800);
 
 } catch (error) {
