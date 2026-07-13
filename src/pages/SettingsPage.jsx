@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { getDoc } from "firebase/firestore";
@@ -21,9 +22,7 @@ export default function SettingsPage({ setPage }) {
   const [notifications, setNotifications] = useState(true);
 
   
-  const [darkMode, setDarkMode] = useState(
-  localStorage.getItem("darkMode") === "true"
-);
+  const { darkMode, setDarkMode } = useTheme();
 
 
   
@@ -95,14 +94,8 @@ setDarkMode(dark);
   loadSettings();
 }, [currentUser]);
   
-  useEffect(() => {
-  document.body.classList.toggle("dark", darkMode);
-  localStorage.setItem("darkMode", String(darkMode));
-
-  return () => {
-    document.body.classList.remove("dark");
-  };
-}, [darkMode]);
+  
+  
 
 
   
