@@ -1,34 +1,68 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
 
 export default function RewardsPage({ setPage }) {
 
-  const user = {
-    name: "Sarah",
-    beans: 180,
-    tier: "Bronze",
-    nextTier: "Silver",
-    birthday: "18 August"
+  const { currentUser } = useAuth();
+
+const [user, setUser] = useState({
+  name: "",
+  beans: 0,
+  tier: "Bronze",
+  nextTier: "Silver",
+  birthday: "",
+});
+
+  useEffect(() => {
+  if (!currentUser) return;
+
+  const loadRewards = async () => {
+    try {
+      const snap = await getDoc(doc(db, "users", currentUser.uid));
+
+      if (!snap.exists()) return;
+
+      const data = snap.data();
+
+      const beans = data.rewards?.beans ?? 0;
+
+      let tier = "Bronze";
+      let nextTier = "Silver";
+
+      if (beans >= 1000) {
+        tier = "Gold";
+        nextTier = "Max";
+      } else if (beans >= 250) {
+        tier = "Silver";
+        nextTier = "Gold";
+      }
+
+      setUser({
+        name: data.name || currentUser.displayName || "Guest",
+        beans,
+        tier,
+        nextTier,
+        birthday: data.birthday || "",
+      });
+
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const history = [
-    {
-      title: "Caramel Latte",
-      beans: "+25 Beans",
-      date: "3 July 2026"
-    },
-    {
-      title: "Cold Brew",
-      beans: "+18 Beans",
-      date: "1 July 2026"
-    },
-    {
-      title: "Blueberry Muffin",
-      beans: "+12 Beans",
-      date: "30 June 2026"
-    }
-  ];
+  loadRewards();
+}, [currentUser]);
 
-  const progress = (user.beans / 250) * 100;
+  const target =
+  user.tier === "Bronze"
+    ? 250
+    : user.tier === "Silver"
+    ? 1000
+    : 1000;
+
+const progress = (user.beans / target) * 100;
 
   return (
     <>
