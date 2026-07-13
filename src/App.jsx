@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext";
-import { ThemeProvider } from "./context/ThemeProvider";
+import { ThemeProvider } from "./context/ThemeContext";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
