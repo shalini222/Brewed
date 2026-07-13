@@ -49,6 +49,7 @@ export default function App() {
     "settings",
     "privacy",
     "terms",
+    "deleteAccount",
   ];
 
   return (
