@@ -61,19 +61,20 @@ export default function App() {
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
-          *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-          }
+  *{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+  }
 
-          body{
-            background:#FDFAF5;
-          }
+  body{
+    background:var(--bg);
+    color:var(--text);
+  }
 
-          button:hover{
-            opacity:.88;
-          }
+  button:hover{
+    opacity:.88;
+  }
         `}</style>
 
         {!hideNavbarPages.includes(page) && (
