@@ -1,6 +1,13 @@
 Check my code :import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
+
+import {
+  doc,
+  deleteDoc,
+} from "firebase/firestore";
+
+
 import {
 EmailAuthProvider,
 GoogleAuthProvider,
@@ -9,10 +16,7 @@ reauthenticateWithPopup,
 deleteUser,
 } from "firebase/auth";
 
-import {
-doc,
-deleteDoc,
-} from "firebase/firestore";
+
 
 import {  db } from "../firebase";
 
@@ -31,7 +35,7 @@ const isGoogleUser = currentUser?.providerData?.some(
 );
 
 const [password, setPassword] = useState("");
-const [confirmDelete, setConfirmDelete] = useState("");
+const [confirmText, setConfirmText] = useState("");
   
 
 const [showPassword, setShowPassword] = useState(false);
@@ -384,7 +388,7 @@ padding:24px 14px 100px;
 }
 
 .card,
-.warning-card{
+.danger-card{
 padding:18px;
 border-radius:18px;
 }
@@ -464,12 +468,15 @@ You'll be asked to verify with Google before deleting your account.
   <div className="input-group">  
     <label>  
       Type <strong>DELETE</strong> to confirm  
-    </label>  <input  
-  className="delete-input"  
-  value={confirmDelete}  
-  onChange={(e) => setConfirmDelete(e.target.value)}  
-  placeholder="DELETE"  
+    </label> 
+    
+    <input
+  className="delete-input"
+  value={confirmText}
+  onChange={(e) => setConfirmText(e.target.value)}
+  placeholder="DELETE"
 />
+
 
   </div>    <div className="button-row">  
     <button  
