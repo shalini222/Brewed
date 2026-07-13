@@ -300,7 +300,7 @@ setDarkMode(dark);
 
 
 .switch.active {
-  background: #C4956A !important;
+  background: var(--accent);
 }
 
 .switch::after {
