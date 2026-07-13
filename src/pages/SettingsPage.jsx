@@ -654,7 +654,7 @@ flex-direction:column;
     <ChevronRight size={18} className="link-right" />
   </div>
 
-  <div className="link-row danger">
+  <div className="link-row danger" onClick={() => setPage("deleteAccount")} >
     <div className="link-left">
       <Trash2 size={18} className="setting-icon" />
       <span>Delete Account</span>
