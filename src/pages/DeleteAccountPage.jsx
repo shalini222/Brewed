@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 
 import {
   doc,
-  deleteDoc,
+  deleteDoc
 } from "firebase/firestore";
 
 
