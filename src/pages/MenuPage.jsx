@@ -413,6 +413,8 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
       </div>
 
       <div style={styles.cardEmoji}>
+        {item.Emoji}
+        </div>
 
       <div style={styles.cardBody}>
         <div style={styles.cardTop}>
