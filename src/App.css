@@ -249,3 +249,88 @@ body {
   font-size: 0.75rem;
   cursor: pointer;
 }
+body.dark{
+  background:#121212;
+  color:#F5F5F5;
+}
+body.dark{
+  transition: background .3s ease, color .3s ease;
+}
+
+body.dark a{
+  color:#F5F5F5;
+}
+
+body.dark input,
+body.dark textarea,
+body.dark select{
+  background:#1E1E1E;
+  color:#F5F5F5;
+  border:1px solid #333;
+}
+
+body.dark input::placeholder,
+body.dark textarea::placeholder{
+  color:#999;
+}
+/* Global backgrounds */
+body.dark .navbar,
+body.dark .checkout-sidebar,
+body.dark .settings-page{
+  background:#121212;
+}
+body.dark .logo,
+body.dark .tagline,
+body.dark .cart-indicator-btn{
+  color:#F5F5F5;
+}
+
+body.dark .cart-indicator-btn{
+  border-bottom:1px solid #F5F5F5;
+}
+/* Cards */
+body.dark .card,
+body.dark .menu-card{
+  background:#1E1E1E;
+  border-color:#333;
+}
+
+/* Text */
+body.dark h1,
+body.dark h2,
+body.dark h3,
+body.dark h4,
+body.dark p,
+body.dark span,
+body.dark .title,
+body.dark .section-title,
+body.dark .setting-title{
+  color:#F5F5F5;
+}
+
+/* Secondary text */
+body.dark .subtitle,
+body.dark .setting-sub,
+body.dark .back-btn,
+body.dark .menu-desc{
+  color:#B8B8B8;
+}
+
+/* Buttons */
+body.dark .add-to-order-btn,
+body.dark .pay-gateway-btn,
+body.dark .save-btn,
+body.dark .confirm-btn{
+  background:#F5F5F5;
+  color:#121212;
+}
+
+/* Modal */
+body.dark .modal{
+  background:#1E1E1E;
+}
+
+body.dark .modal-title,
+body.dark .modal-text{
+  color:#F5F5F5;
+}
