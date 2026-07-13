@@ -87,6 +87,32 @@ html.dark {
   --button-text:#121212;
   --accent:#D6A878;
 }
+
+html.dark,
+html.dark body {
+  background: #121212 !important;
+  color: #f5f5f5 !important;
+}
+
+html.dark * {
+  color: inherit;
+}
+
+html.dark div,
+html.dark section,
+html.dark article,
+html.dark main,
+html.dark nav,
+html.dark header,
+html.dark footer {
+  background-color: transparent;
+}
+
+
+
+
+
+
   *{
     margin:0;
     padding:0;
