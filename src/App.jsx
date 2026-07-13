@@ -20,6 +20,7 @@ import SettingsPage from "./pages/SettingsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsPage from "./pages/TermsPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
+import DeleteAccountPage from "./pages/DeleteAccountPage";
 
 
 
@@ -146,6 +147,10 @@ export default function App() {
 )}
         {page === "change-password" && (
   <ChangePasswordPage setPage={setPage} />
+)}
+
+        {page === "settings" && (
+  <SettingsPage setPage={setPage} />
 )}
 
         <Footer />
