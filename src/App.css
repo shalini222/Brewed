@@ -752,8 +752,6 @@ a:hover {
 *,
 *::before,
 *::after {
-  transition:
-    background-color 0.25s ease,
-    color 0.25s ease,
-    border-color 0.25s ease;
+  transition: background .25s ease, color .25s ease;
+
 }
