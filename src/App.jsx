@@ -73,7 +73,7 @@ export default function App() {
     box-sizing:border-box;
   }
 
-  body{
+  html,body{
     background:var(--bg);
     color:var(--text);
   }
