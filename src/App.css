@@ -744,14 +744,4 @@ a:hover {
 
 
 
-/* =========================
-   SMOOTH THEME TRANSITION
-========================= */
 
-
-*,
-*::before,
-*::after {
-  transition: background .25s ease, color .25s ease;
-
-}
