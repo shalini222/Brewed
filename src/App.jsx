@@ -1,4 +1,10 @@
 import { useState } from "react";
+
+
+
+
+import "./app.css";
+
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
