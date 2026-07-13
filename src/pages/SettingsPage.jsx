@@ -110,7 +110,7 @@ useEffect(() => {
     }
   };
 
-  loadSettings();
+//  loadSettings();
 }, [currentUser, setDarkMode]);
 
 
