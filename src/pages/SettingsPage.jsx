@@ -291,30 +291,29 @@ setDarkMode(dark);
   width: 50px;
   height: 28px;
   border-radius: 999px;
-  background: var(--border);
+  background: #cfc6bc; /* darker cream/grey */
   position: relative;
   cursor: pointer;
   transition: .25s;
+  flex-shrink: 0;
 }
-
 
 .switch.active {
   background: var(--accent);
 }
 
-
 .switch::after {
   content: "";
   width: 22px;
   height: 22px;
-  background: white;
+  background: #ffffff;
   border-radius: 50%;
   position: absolute;
   top: 3px;
   left: 3px;
   transition: .25s;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2);
 }
-
 
 .switch.active::after {
   left: 25px;
