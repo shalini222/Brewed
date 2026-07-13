@@ -5,7 +5,8 @@ import {
   signInWithPopup,
   sendPasswordResetEmail,
 } from "firebase/auth";
-import { auth, googleProvider } from "../firebase";
+import { auth, googleProvider, db } from "../firebase";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export default function Login({setPage}) {
   const [isLogin, setIsLogin] = useState(true);
@@ -53,6 +54,37 @@ export default function Login({setPage}) {
 
     const user = userCredential.user;
 
+
+    const userRef = doc(db, "users", user.uid);
+
+const userSnap = await getDoc(userRef);
+
+if (!userSnap.exists()) {
+  await setDoc(userRef, {
+    name: name || user.displayName || email.split("@")[0],
+    email: user.email,
+    birthday: "",
+    photoURL: user.photoURL || "",
+
+    settings: {
+      notifications: true,
+      darkMode: false,
+      reduceMotion: false,
+    },
+
+    rewards: {
+      beans: 0,
+      lifetimeBeans: 0,
+      tier: "Bronze",
+      memberSince: serverTimestamp(),
+      birthdayRewardClaimed: false,
+    },
+  });
+}
+
+
+    
+
     const displayName =
       user.displayName ||
       email.split("@")[0];
@@ -80,6 +112,33 @@ async function handleGoogleLogin() {
     );
 
     const user = result.user;
+
+    const userRef = doc(db, "users", user.uid);
+
+const userSnap = await getDoc(userRef);
+
+if (!userSnap.exists()) {
+  await setDoc(userRef, {
+    name: name || user.displayName || email.split("@")[0],
+    email: user.email,
+    birthday: "",
+    photoURL: user.photoURL || "",
+
+    settings: {
+      notifications: true,
+      darkMode: false,
+      reduceMotion: false,
+    },
+
+    rewards: {
+      beans: 0,
+      lifetimeBeans: 0,
+      tier: "Bronze",
+      memberSince: serverTimestamp(),
+      birthdayRewardClaimed: false,
+    },
+  });
+}
 
     setUserName(user.displayName);
     setShowGreeting(true);
