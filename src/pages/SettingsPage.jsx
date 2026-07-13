@@ -115,17 +115,53 @@ const [confirmData, setConfirmData] = useState({
 
 
 useEffect(() => {
-  setNotifications(true);
-  setDarkMode(false);
-  setReduceMotion(false);
+  if (!currentUser) return;
 
-  setSavedNotifications(true);
-  setSavedDarkMode(false);
-  setSavedReduceMotion(false);
-}, []);
+  const loadSettings = async () => {
+    try {
+      const userDoc = await getDoc(doc(db, "users", currentUser.uid));
 
+      if (userDoc.exists()) {
+        const settings = userDoc.data().settings || {};
 
+        const notificationsValue =
+          typeof settings.notifications === "boolean"
+            ? settings.notifications
+            : true;
 
+        const darkModeValue =
+          typeof settings.darkMode === "boolean"
+            ? settings.darkMode
+            : false;
+
+        const reduceMotionValue =
+          typeof settings.reduceMotion === "boolean"
+            ? settings.reduceMotion
+            : false;
+
+        setNotifications(notificationsValue);
+        setDarkMode(darkModeValue);
+        setReduceMotion(reduceMotionValue);
+
+        setSavedNotifications(notificationsValue);
+        setSavedDarkMode(darkModeValue);
+        setSavedReduceMotion(reduceMotionValue);
+      } else {
+        setNotifications(true);
+        setDarkMode(false);
+        setReduceMotion(false);
+
+        setSavedNotifications(true);
+        setSavedDarkMode(false);
+        setSavedReduceMotion(false);
+      }
+    } catch (error) {
+      console.error("Failed to load settings:", error);
+    }
+  };
+
+  loadSettings();
+}, [currentUser, setDarkMode]);
   
   const resetSettings = () => {
   const confirmReset = window.confirm(
