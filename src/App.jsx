@@ -66,7 +66,27 @@ export default function App() {
       <AuthProvider>
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
+:root {
+  --bg:#fcfcfc;
+  --surface:#ffffff;
+  --text:#1a1a1a;
+  --muted:#8a8a8a;
+  --border:#eeeeee;
+  --button-bg:#1a1a1a;
+  --button-text:#ffffff;
+  --accent:#C4956A;
+}
 
+html.dark {
+  --bg:#121212;
+  --surface:#1e1e1e;
+  --text:#f5f5f5;
+  --muted:#b8b8b8;
+  --border:#333333;
+  --button-bg:#f5f5f5;
+  --button-text:#121212;
+  --accent:#D6A878;
+}
   *{
     margin:0;
     padding:0;
