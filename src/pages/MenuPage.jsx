@@ -385,7 +385,8 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
         </div>
 
         {/* Clean Menu Card Grid */}
-         <div className="menu-grid">
+
+          <div className="menu-grid">
   {sortedAndFiltered.map((item) => (
     <div
       key={item.id}
@@ -394,40 +395,10 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
         cursor: "pointer",
         position: "relative",
       }}
-      onClick={async (e) => {
-  e.stopPropagation();
-
-  if (!currentUser) {
-    setPage("login");
-    return;
-  }
-
-  const favRef = doc(
-    db,
-    "users",
-    currentUser.uid,
-    "favorites",
-    String(item.id)
-  );
-
-  if (favorites.includes(item.id)) {
-    await deleteDoc(favRef);
-
-    setFavorites(
-      favorites.filter((id) => id !== item.id)
-    );
-  } else {
-    await setDoc(favRef, {
-      ...item,
-      savedAt: Date.now(),
-    });
-
-    setFavorites([
-      ...favorites,
-      item.id,
-    ]);
-  }
-}}
+      onClick={() => {
+        setSelectedProduct(item);
+        setPage("product");
+      }}
     >
       {/* Favourite Heart */}
       <div
@@ -447,14 +418,34 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
             cursor: "pointer",
             transition: "all .25s ease",
           }}
-          onClick={(e) => {
+          onClick={async (e) => {
             e.stopPropagation();
 
+            if (!currentUser) {
+              setPage("login");
+              return;
+            }
+
+            const favRef = doc(
+              db,
+              "users",
+              currentUser.uid,
+              "favorites",
+              String(item.id)
+            );
+
             if (favorites.includes(item.id)) {
+              await deleteDoc(favRef);
+
               setFavorites(
                 favorites.filter((id) => id !== item.id)
               );
             } else {
+              await setDoc(favRef, {
+                ...item,
+                savedAt: Date.now(),
+              });
+
               setFavorites([
                 ...favorites,
                 item.id,
@@ -463,6 +454,7 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
           }}
         />
       </div>
+          
 
       <div style={styles.cardEmoji}>
         {item.emoji}
