@@ -25,6 +25,7 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
   const [favorites, setFavorites] = useState([]);
   const [menuItems, setMenuItems] = useState([]); // Cloud-sourced data
   const { addToCart } = useCart();
+  const { currentUser } = useAuth(); 
   
   const categories = ["All", "Coffee", "Non-Coffee", "Food"];
 
@@ -99,7 +100,7 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
     26: { rating: "4.6", reviews: 201 }
   };
 
-  const { currentUser } = useAuth(); 
+  
 
   
   const menuWithRatings = menuItems.map(item => {
