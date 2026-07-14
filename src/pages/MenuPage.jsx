@@ -1,7 +1,16 @@
 import { useState, useEffect } from "react"; 
 import { useCart } from "../context/CartContext";
 import { db } from "../firebase"; // Ensure your firebase connection is exported here
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  setDoc,
+  deleteDoc,
+  getDocs as getFavoriteDocs,
+} from "firebase/firestore";
+
+
 import { useAuth } from "../context/AuthContext";
 import { Heart } from "lucide-react";
 
@@ -46,7 +55,20 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
     }
   }, []);
 
-        
+  useEffect(() => {
+  if (!currentUser) return;
+
+  const loadFavorites = async () => {
+    const snapshot = await getFavoriteDocs(
+      collection(db, "users", currentUser.uid, "favorites")
+    );
+
+    const ids = snapshot.docs.map((doc) => doc.id);
+    setFavorites(ids);
+  };
+
+  loadFavorites();
+}, [currentUser]);
 
   const itemRatingsMap = {
     1: { rating: "4.5", reviews: 142 },
@@ -372,10 +394,40 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
         cursor: "pointer",
         position: "relative",
       }}
-      onClick={() => {
-        setSelectedProduct(item);
-        setPage("product");
-      }}
+      onClick={async (e) => {
+  e.stopPropagation();
+
+  if (!currentUser) {
+    setPage("login");
+    return;
+  }
+
+  const favRef = doc(
+    db,
+    "users",
+    currentUser.uid,
+    "favorites",
+    String(item.id)
+  );
+
+  if (favorites.includes(item.id)) {
+    await deleteDoc(favRef);
+
+    setFavorites(
+      favorites.filter((id) => id !== item.id)
+    );
+  } else {
+    await setDoc(favRef, {
+      ...item,
+      savedAt: Date.now(),
+    });
+
+    setFavorites([
+      ...favorites,
+      item.id,
+    ]);
+  }
+}}
     >
       {/* Favourite Heart */}
       <div
