@@ -26,12 +26,19 @@ useEffect(() => {
         collection(db, "users", currentUser.uid, "favorites")
       );
 
-      const items = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const items = snapshot.docs.map((doc) => {
+  console.log(doc.data());
+  return {
+    id: doc.id,
+    ...doc.data(),
+  };
+});
 
-      setFavorites(items);
+console.log(items);
+
+setFavorites(items);
+
+     
     } catch (error) {
       console.error(error);
     }
@@ -273,11 +280,18 @@ align-items:flex-start;
             key={item.id}
           >
 
-            <img
-              src={item.image}
-              alt={item.name}
-              className="favorite-image"
-            />
+        <div
+  className="favorite-image"
+  style={{
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "80px",
+    background: "#F6ECE1",
+  }}
+>
+  {item.emoji}
+</div>
 
             <div className="favorite-content">
 
@@ -286,7 +300,7 @@ align-items:flex-start;
               </div>
 
               <div className="favorite-description">
-                {item.description}
+                {item.desc}
               </div>
 
               <div className="favorite-footer">
