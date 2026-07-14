@@ -157,9 +157,9 @@ html.dark {
           <RewardsPage setPage={navigateTo} />
         )}
 
-        {page === "favourites" && (
-          <FavouritesPage setPage={navigateTo} />
-        )}
+        {page === "favorites" && (
+  <FavoritesPage setPage={navigateTo} />
+)}
         
 
         {page === "notifications" && (
