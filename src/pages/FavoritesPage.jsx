@@ -3,7 +3,8 @@ import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
 
-
+import { doc, deleteDoc } from "firebase/firestore";
+import { Heart } from "lucide-react";
 
 
 export default function FavoritesPage({ setPage }) {
@@ -275,12 +276,54 @@ align-items:flex-start;
 
         {favorites.map((item)=>(
 
-          <div
-            className="favorite-card"
-            key={item.id}
-          >
-
         <div
+  className="favorite-card"
+  key={item.id}
+  style={{
+    position: "relative",
+  }}
+>
+
+      <div
+  style={{
+    position: "absolute",
+    top: 18,
+    right: 18,
+    zIndex: 5,
+  }}
+>
+  <Heart
+    size={22}
+    color="#C4956A"
+    fill="#C4956A"
+    style={{
+      cursor: "pointer",
+      transition: "0.25s",
+    }}
+    onClick={async () => {
+      try {
+        await deleteDoc(
+          doc(
+            db,
+            "users",
+            currentUser.uid,
+            "favorites",
+            String(item.id)
+          )
+        );
+
+        setFavorites((prev) =>
+          prev.filter((fav) => fav.id !== item.id)
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    }}
+  />
+</div>
+           
+           
+           <div
   className="favorite-image"
   style={{
     display: "flex",
