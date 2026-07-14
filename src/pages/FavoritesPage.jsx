@@ -1,32 +1,51 @@
 import React from "react";
+import React, { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { db } from "../firebase";
+import { collection, getDocs } from "firebase/firestore";
+
+
+
 
 export default function FavoritesPage({ setPage }) {
 
-  const favorites = [
-    {
-      id: 1,
-      name: "Caramel Latte",
-      price: "₹320",
-      image: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&q=80",
-      description: "Espresso with steamed milk and caramel."
-    },
+ const { currentUser } = useAuth();
 
-    {
-      id: 2,
-      name: "Cappuccino",
-      price: "₹280",
-      image: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=600&q=80",
-      description: "Rich espresso finished with velvety foam."
-    },
+const [favorites, setFavorites] = useState([]);
+const [loading, setLoading] = useState(true);
 
-    {
-      id: 3,
-      name: "Blueberry Muffin",
-      price: "₹190",
-      image: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?auto=format&fit=crop&w=600&q=80",
-      description: "Freshly baked muffin with juicy blueberries."
+
+useEffect(() => {
+  if (!currentUser) {
+    setLoading(false);
+    return;
+  }
+
+  const loadFavorites = async () => {
+    try {
+      const snapshot = await getDocs(
+        collection(db, "users", currentUser.uid, "favorites")
+      );
+
+      const items = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setFavorites(items);
+    } catch (error) {
+      console.error(error);
     }
-  ];
+
+    setLoading(false);
+  };
+
+  loadFavorites();
+}, [currentUser]);
+
+  
+  
+
 
   return (
     <>
@@ -196,6 +215,23 @@ align-items:flex-start;
 }
 
 }`}</style>
+
+
+      if (loading) {
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        fontSize: "20px",
+      }}
+    >
+      Loading...
+    </div>
+  );
+      }
       <div className="favorites-page">
 
   <div className="favorites-container">
