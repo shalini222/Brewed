@@ -1,5 +1,4 @@
-import React from "react";
-import  { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
@@ -43,7 +42,21 @@ useEffect(() => {
   loadFavorites();
 }, [currentUser]);
 
-  
+  if (loading) {
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        fontSize: "20px",
+      }}
+    >
+      Loading...
+    </div>
+  );
+  }
   
 
 
@@ -215,23 +228,7 @@ align-items:flex-start;
 }
 
 }`}</style>
-
-
-      if (loading) {
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        fontSize: "20px",
-      }}
-    >
-      Loading...
-    </div>
-  );
-      }
+     
       <div className="favorites-page">
 
   <div className="favorites-container">
