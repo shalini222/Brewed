@@ -438,19 +438,14 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
             if (favorites.includes(item.id)) {
               await deleteDoc(favRef);
 
-              setFavorites(
-                favorites.filter((id) => id !== item.id)
-              );
+              setFavorites(prev => prev.filter(id => id !== item.id));
             } else {
               await setDoc(favRef, {
                 ...item,
                 savedAt: Date.now(),
               });
 
-              setFavorites([
-                ...favorites,
-                item.id,
-              ]);
+              setFavorites(prev => [...prev, item.id]);
             }
           }}
         />
