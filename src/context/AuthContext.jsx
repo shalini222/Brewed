@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth, db } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore"; // Use onSnapshot
+import { doc, onSnapshot } from "firebase/firestore";
 
 const AuthContext = createContext();
 
@@ -12,28 +12,34 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let unsubscribeUser;
-    
+
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
 
-      // If user logs out, clean up the data listener
       if (!user) {
         setUserData(null);
         setLoading(false);
+
         if (unsubscribeUser) unsubscribeUser();
         return;
       }
 
-      // If user logs in, set up a real-time listener for their profile
-      unsubscribeUser = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
-        if (docSnap.exists()) {
-          setUserData(docSnap.data());
+      unsubscribeUser = onSnapshot(
+        doc(db, "users", user.uid),
+        (docSnap) => {
+          if (docSnap.exists()) {
+            setUserData(docSnap.data());
+          } else {
+            setUserData(null);
+          }
+
+          setLoading(false);
+        },
+        (error) => {
+          console.error(error);
+          setLoading(false);
         }
-        setLoading(false);
-      }, (error) => {
-        console.error("Error in onSnapshot:", error);
-        setLoading(false);
-      });
+      );
     });
 
     return () => {
@@ -42,8 +48,25 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  const role = userData?.role || "customer";
+
+  const isOwner = role === "owner";
+
+  const isAdmin =
+    role === "owner" ||
+    role === "admin";
+
   return (
-    <AuthContext.Provider value={{ currentUser, userData, loading }}>
+    <AuthContext.Provider
+      value={{
+        currentUser,
+        userData,
+        loading,
+        role,
+        isOwner,
+        isAdmin,
+      }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );
