@@ -316,9 +316,8 @@ export default function HeadlessNavbar({ currentPage, setPage }) {
               <hr />
               {isAdmin && (
   <button
-    className="dropdown-item"
     onClick={() => {
-      setDropdownOpen(false);
+      setShowMenu(false);
       setPage("admin");
     }}
   >
