@@ -190,17 +190,7 @@ export default function HeadlessNavbar({ currentPage, setPage }) {
           background:#F5EFE7;
         }
       `}</style>
-      {isAdmin && (
-  <button
-    className="dropdown-item"
-    onClick={() => {
-      setDropdownOpen(false);
-      setPage("admin");
-    }}
-  >
-    🛠 Admin Panel
-  </button>
-)}
+    
 
       <header className="headless-header">
         <div className="brand-logo" onClick={() => setPage("menu")}>
@@ -324,7 +314,19 @@ export default function HeadlessNavbar({ currentPage, setPage }) {
               </button>
               
               <hr />
-              
+              {isAdmin && (
+  <button
+    className="dropdown-item"
+    onClick={() => {
+      setDropdownOpen(false);
+      setPage("admin");
+    }}
+  >
+    🛠 Admin Panel
+  </button>
+)}
+
+          <hr />    
 
               <button onClick={handleLogout}>
                 🚪 Logout
