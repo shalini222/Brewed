@@ -6,8 +6,11 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext"; 
 import { Bell } from "lucide-react";
 
+
+
+
 export default function HeadlessNavbar({ currentPage, setPage }) {
-  const { currentUser } = useAuth();
+  const { currentUser, isAdmin } = useAuth();
   const { count } = useCart(); 
   const [showMenu, setShowMenu] = useState(false);
 
@@ -187,6 +190,17 @@ export default function HeadlessNavbar({ currentPage, setPage }) {
           background:#F5EFE7;
         }
       `}</style>
+      {isAdmin && (
+  <button
+    className="dropdown-item"
+    onClick={() => {
+      setDropdownOpen(false);
+      setPage("admin");
+    }}
+  >
+    🛠 Admin Panel
+  </button>
+)}
 
       <header className="headless-header">
         <div className="brand-logo" onClick={() => setPage("menu")}>
