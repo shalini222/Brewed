@@ -333,7 +333,7 @@ align-items:flex-start;
     background: "#F6ECE1",
   }}
 >
-  {item.emoji}
+  {item.image}
 </div>
 
             <div className="favorite-content">
