@@ -28,6 +28,7 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsPage from "./pages/TermsPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import DeleteAccountPage from "./pages/DeleteAccountPage";
+import AdminPage from "./pages/AdminPage";
 
 
 
@@ -58,6 +59,7 @@ export default function App() {
     "terms",
     "change-password",
     "deleteAccount",
+    "admin",
   ];
 
   return (
@@ -185,8 +187,15 @@ html.dark {
     
         {page === "deleteAccount" && (
   <DeleteAccountPage setPage={setPage} />
+      
 )}
 
+{page === "admin" && (
+  <AdminPage setPage={navigateTo} />
+)}
+
+
+        
         <Footer />
       </AuthProvider>
     </CartProvider>
