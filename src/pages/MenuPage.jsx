@@ -453,7 +453,20 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
           
 
       <div style={styles.cardEmoji}>
-        {item.emoji}
+        {item.image ? (
+    <img
+      src={item.image}
+      alt={item.name}
+      style={{
+        width: "110px",
+        height: "110px",
+        objectFit: "cover",
+        borderRadius: "16px",
+      }}
+    />
+  ) : (
+    item.emoji
+  )}
         </div>
 
       <div style={styles.cardBody}>
