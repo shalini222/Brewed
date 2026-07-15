@@ -323,18 +323,29 @@ align-items:flex-start;
 </div>
            
            
-           <div
-  className="favorite-image"
-  style={{
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "80px",
-    background: "#F6ECE1",
-  }}
->
-  {item.image}
-</div>
+           {item.image ? (
+  <img
+    src={item.image}
+    alt={item.name}
+    className="favorite-image"
+    onError={(e) => {
+      e.target.style.display = "none";
+    }}
+  />
+) : (
+  <div
+    className="favorite-image"
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "80px",
+      background: "#F6ECE1",
+    }}
+  >
+    {item.emoji}
+  </div>
+)}
 
             <div className="favorite-content">
 
@@ -349,7 +360,7 @@ align-items:flex-start;
               <div className="favorite-footer">
 
                 <div className="favorite-price">
-                  {item.price}
+                  ₹{item.price}
                 </div>
 
                 <button
