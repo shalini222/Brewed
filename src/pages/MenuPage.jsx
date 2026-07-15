@@ -462,6 +462,8 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
       height: "220px",
       objectFit: "cover",
       display: "block",
+      borderTopLeftRadius: "16px",
+      borderTopRightRadius: "16px",
     }}
   />
 ) : (
