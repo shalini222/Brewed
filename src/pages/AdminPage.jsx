@@ -117,10 +117,10 @@ async function deleteProduct(id) {
     setEditing(null);
     await loadMenu();
   } catch (error) {
-    console.error(error);
-    alert(error.message);
+  alert(error.code);
+  alert(error.message);
   }
-  }
+  
 
   
   return (
