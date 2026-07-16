@@ -14,6 +14,7 @@ export default function AdminPage({ setPage }) {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("All");
 
 const [newItem, setNewItem] = useState({
   name: "",
@@ -179,6 +180,36 @@ async function deleteProduct(id) {
     background: "#fff",
   }}
 />
+
+
+      <div
+  style={{
+    display: "flex",
+    gap: 10,
+    marginBottom: 30,
+    flexWrap: "wrap",
+  }}
+>
+  {["All", "Coffee", "Non-Coffee", "Food"].map((cat) => (
+    <button
+      key={cat}
+      onClick={() => setCategoryFilter(cat)}
+      style={{
+        padding: "10px 18px",
+        borderRadius: 999,
+        border: "none",
+        cursor: "pointer",
+        background:
+          categoryFilter === cat ? "#3B1A08" : "#F2ECE5",
+        color:
+          categoryFilter === cat ? "#fff" : "#3B1A08",
+        fontWeight: 600,
+      }}
+    >
+      {cat}
+    </button>
+  ))}
+</div>
       {showAdd && (
   <div
     style={{
@@ -391,12 +422,18 @@ async function deleteProduct(id) {
       
       
       
-      {menu
-  .filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase()) ||
-    item.category.toLowerCase().includes(search.toLowerCase())
-  )
-  .map((item) => (
+{menu
+  .filter((item) => {
+    const matchesSearch =
+      item.name.toLowerCase().includes(search.toLowerCase()) ||
+      item.category.toLowerCase().includes(search.toLowerCase());
+
+    const matchesCategory =
+      categoryFilter === "All" ||
+      item.category === categoryFilter;
+
+    return matchesSearch && matchesCategory;
+  }).map((item) => (
         <div
           key={item.forestoreId}
           style={{
