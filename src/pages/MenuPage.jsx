@@ -42,9 +42,7 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
         }));
         
         console.log("Data fetched successfully:", items);
-        setMenuItems(
-  items.filter((item) => item.available !== false)
-);
+        setMenuItems(items);
       } catch (error) {
         console.error("FATAL ERROR FETCHING MENU: ", error);
         alert("Check the console for the error!");
@@ -474,7 +472,24 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
   </div>
 )}
         </div>
-
+     {item.available === false && (
+  <div
+    style={{
+      position: "absolute",
+      top: 12,
+      left: 12,
+      background: "#B3261E",
+      color: "#fff",
+      padding: "6px 12px",
+      borderRadius: "999px",
+      fontSize: 12,
+      fontWeight: 600,
+      zIndex: 3,
+    }}
+  >
+    Out of Stock
+  </div>
+)}
       <div style={styles.cardBody}>
         <div style={styles.cardTop}>
           <div style={{ flex: 1 }}>
@@ -500,25 +515,31 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
       </div>
 
       <button
+  disabled={item.available === false}
   style={{
     ...styles.addBtn,
     ...(added[item.id] ? styles.addedBtn : {}),
+    opacity: item.available === false ? 0.5 : 1,
+    cursor: item.available === false ? "not-allowed" : "pointer",
   }}
   onClick={(e) => {
     e.stopPropagation();
-    
-    // THE GATEKEEPER LOGIC
+
+    if (item.available === false) return;
+
     if (!currentUser) {
-      setPage("login"); // Redirects to login
+      setPage("login");
       return;
     }
 
-    // NORMAL ACTION
     handleAdd(item);
   }}
 >
-  {/* ALWAYS SHOW NORMAL TEXT */}
-  {added[item.id] ? "✓ Added" : "+ Add"}
+  {item.available === false
+    ? "Out of Stock"
+    : added[item.id]
+    ? "✓ Added"
+    : "+ Add"}
 </button>
     </div>
   ))}
