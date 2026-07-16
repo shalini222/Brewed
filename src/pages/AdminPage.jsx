@@ -40,9 +40,8 @@ const [editItem, setEditItem] = useState({
 });
 
   useEffect(() => {
-    loadMenu();
-  }, []);
-  
+  loadMenu();
+
   const unsubscribe = onSnapshot(
     collection(db, "orders"),
     (snapshot) => {
