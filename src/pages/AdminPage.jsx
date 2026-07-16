@@ -40,6 +40,7 @@ const [orderLoading, setOrderLoading] = useState(true);
 const [range, setRange] = useState(7);
   const [topProducts, setTopProducts] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 const lastOrderId = useRef(null);
 
 
@@ -364,21 +365,22 @@ const todayOrders = orders.filter(
   }}
 >
   <button
-    style={{
-      border: "none",
-      background: "#fff",
-      borderRadius: 999,
-      padding: "12px 18px",
-      fontSize: 18,
-      cursor: "pointer",
-      boxShadow: "0 8px 20px rgba(0,0,0,.08)",
-    }}
-  >
-    🔔 {notifications.length}
-  </button>
+  onClick={() => setShowNotifications(!showNotifications)}
+  style={{
+    border: "none",
+    background: "#fff",
+    borderRadius: 999,
+    padding: "12px 18px",
+    fontSize: 18,
+    cursor: "pointer",
+    boxShadow: "0 8px 20px rgba(0,0,0,.08)",
+  }}
+>
+  🔔 {notifications.length}
+</button>
 </div>
 
-{notifications.length > 0 && (
+{showNotifications && notifications.length > 0 && (
   <div
     style={{
       background: "#fff",
