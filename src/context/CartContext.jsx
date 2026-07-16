@@ -51,7 +51,7 @@ export function CartProvider({ children }) {
         customer: orderDetails.customer,
         paymentMethod: orderDetails.paymentMethod,
         userId: auth.currentUser.uid, // 4. Link order to user ID
-        status: "Pending",
+        status: orderData.status || "New",
         createdAt: serverTimestamp(),
       };
 
