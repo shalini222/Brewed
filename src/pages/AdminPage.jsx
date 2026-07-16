@@ -240,7 +240,9 @@ async function deleteProduct(id) {
     </button>
   </div>
 )}
-     
+     <h2>
+  Editing: {editing ? editing.name : "Nothing"}
+</h2>
       {editing && (
   <div
     style={{
