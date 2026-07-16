@@ -158,6 +158,15 @@ async function toggleAvailability(item) {
   }
 
 async function updateOrderStatus(id, status) {
+
+  if (status === "Cancelled") {
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel this order?"
+    );
+
+    if (!confirmed) return;
+  }
+
   await updateDoc(
     doc(db, "orders", id),
     {
@@ -582,7 +591,7 @@ fontFamily:"Playfair Display"
   }}
 >
 
-{["All","New","Preparing","Ready","Delivered"].map((status)=>(
+{["All","New","Preparing","Ready","Delivered","Cancelled"].map((status)=>(
   
 <button
   key={status}
@@ -717,7 +726,19 @@ style={{
 ✅ Accept Order
 </button>
 
-  
+  <button
+onClick={()=>updateOrderStatus(order.id,"Cancelled")}
+style={{
+background:"#DE6B48",
+color:"white",
+border:"none",
+padding:"10px 16px",
+borderRadius:10,
+cursor:"pointer"
+}}
+>
+❌ Cancel
+</button>
 
 <button
 onClick={()=>updateOrderStatus(order.id,"Ready")}
