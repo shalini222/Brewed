@@ -693,6 +693,58 @@ gap:30
       </div>
     ))}
 </div>  
+      <h2
+  style={{
+    marginTop: 40,
+    marginBottom: 20,
+    fontFamily: "Playfair Display",
+  }}
+>
+  ⚠️ Low Stock / Out of Stock
+</h2>
+
+<div
+  style={{
+    background: "#fff",
+    borderRadius: 20,
+    padding: 20,
+    boxShadow: "0 10px 30px rgba(0,0,0,.08)",
+  }}
+>
+  {menu.filter(item => item.available === false).length === 0 ? (
+    <p style={{ color: "#2E7D32", fontWeight: 600 }}>
+      ✅ All products are currently available.
+    </p>
+  ) : (
+    menu
+      .filter(item => item.available === false)
+      .map(item => (
+        <div
+          key={item.firestoreId}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "12px 0",
+            borderBottom: "1px solid #eee",
+          }}
+        >
+          <span>{item.name}</span>
+
+          <span
+            style={{
+              color: "#D32F2F",
+              fontWeight: 700,
+            }}
+          >
+            Out of Stock
+          </span>
+        </div>
+      ))
+  )}
+</div>
+
+
+
       
      <button
   onClick={() => setShowAdd(true)}
