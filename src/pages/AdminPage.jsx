@@ -582,7 +582,7 @@ fontFamily:"Playfair Display"
   }}
 >
 
-{["All","Preparing","Ready","Delivered"].map((status)=>(
+{["All","New","Preparing","Ready","Delivered"].map((status)=>(
   
 <button
   key={status}
