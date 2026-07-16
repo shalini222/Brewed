@@ -99,18 +99,30 @@ async function deleteProduct(id) {
   async function updateProduct() {
   if (!editing) return;
 
-  await updateDoc(
-    doc(db, "menu", editing.id),
-    {
-      ...editItem,
-      price: Number(editItem.price),
-    }
-  );
+  try {
+    await updateDoc(
+      doc(db, "menu", editing.id),
+      {
+        name: editItem.name,
+        category: editItem.category,
+        price: Number(editItem.price),
+        desc: editItem.desc,
+        emoji: editItem.emoji,
+        img: editItem.img,
+      }
+    );
 
-  setEditing(null);
+    alert("Product updated successfully!");
 
-  loadMenu();
+    setEditing(null);
+    await loadMenu();
+  } catch (error) {
+    console.error(error);
+    alert(error.message);
   }
+  }
+
+  
   return (
     <div
       style={{
