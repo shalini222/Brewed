@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useCart } from "../context/CartContext";
 import { auth } from "../firebase";
+import { serverTimestamp } from "firebase/firestore";
 
 const THEME = {
   colors: {
@@ -176,7 +177,7 @@ const handleFormSubmission = async (e) => {
 
   status: "Preparing",
 
-  createdAt: new Date(),
+  createdAt: serverTimestamp(),
 };
 
 
