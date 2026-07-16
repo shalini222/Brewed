@@ -384,6 +384,8 @@ async function deleteProduct(id) {
           >
             <button
   onClick={() => {
+    alert("Edit clicked!");
+
     setEditing(item);
 
     setEditItem({
