@@ -175,7 +175,7 @@ const handleFormSubmission = async (e) => {
 
   paymentMethod: paymentMethod === "cod" ? "COD" : "Online",
 
-  status: "Preparing",
+  status: "New",
 
   createdAt: serverTimestamp(),
 };
