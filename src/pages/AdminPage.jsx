@@ -77,7 +77,16 @@ const [editItem, setEditItem] = useState({
       }));
 
       setOrders(data);
-      setOrderLoading(false);
+setOrderLoading(false);
+
+setNotifications(
+  data
+    .filter(order => order.status === "New")
+    .map(order => ({
+      id: order.id,
+      text: `🛎️ New order from ${order.customer?.name}`,
+    }))
+);
       if (data.length > 0) {
   const newest = data.sort(
     (a, b) =>
