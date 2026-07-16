@@ -70,6 +70,7 @@ async function addProduct() {
   await addDoc(collection(db, "menu"), {
     ...newItem,
     price: Number(newItem.price),
+    available: true,
   });
 
   setNewItem({
@@ -98,6 +99,17 @@ async function deleteProduct(id) {
   loadMenu();
 }
 
+async function toggleAvailability(item) {
+  await updateDoc(
+    doc(db, "menu", item.firestoreId),
+    {
+      available: item.available === false ? true : false,
+    }
+  );
+
+  loadMenu();
+}
+  
   async function updateProduct() {
   if (!editing) return;
 
@@ -500,6 +512,19 @@ async function deleteProduct(id) {
   }}
 >
   🗑 Delete
+</button>
+            <button
+  onClick={() => toggleAvailability(item)}
+  style={{
+    background: item.available === false ? "#777" : "#2E7D32",
+    color: "#fff",
+    border: "none",
+    padding: "10px 16px",
+    borderRadius: 10,
+    cursor: "pointer",
+  }}
+>
+  {item.available === false ? "🚫 Out of Stock" : "✅ In Stock"}
 </button>
           </div>
         </div>
