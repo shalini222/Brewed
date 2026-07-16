@@ -9,6 +9,22 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  BarChart,
+  Bar,
+} from "recharts";
+
+
+
+
+
 
 export default function AdminPage({ setPage }) {
   const [menu, setMenu] = useState([]);
@@ -20,6 +36,8 @@ export default function AdminPage({ setPage }) {
 const [orderLoading, setOrderLoading] = useState(true);
   const [orderSearch, setOrderSearch] = useState("");
   const [orderFilter, setOrderFilter] = useState("All");
+  const [analytics, setAnalytics] = useState([]);
+const [range, setRange] = useState(7);
 
 const [newItem, setNewItem] = useState({
   name: "",
@@ -60,6 +78,42 @@ const [editItem, setEditItem] = useState({
   return () => unsubscribe();
 
 }, []);
+
+useEffect(() => {
+  const today = new Date();
+
+  const data = [];
+
+  for (let i = range - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+
+    data.push({
+      key: d.toDateString(),
+      day: d.toLocaleDateString("en-US", {
+        weekday: "short",
+      }),
+      revenue: 0,
+      orders: 0,
+    });
+  }
+
+  orders.forEach((order) => {
+    if (!order.createdAt?.toDate) return;
+
+    const date = order.createdAt.toDate().toDateString();
+
+    const item = data.find((d) => d.key === date);
+
+    if (item) {
+      item.orders += 1;
+      item.revenue += Number(order.total || 0);
+    }
+  });
+
+  setAnalytics(data);
+}, [orders, range]);
+  
 
   async function loadMenu() {
     const snapshot = await getDocs(collection(db, "menu"));
@@ -289,6 +343,126 @@ const totalProducts = menu.length;
       </h2>
     </div>
   ))}
+</div>
+
+      <div
+  style={{
+    background: "#fff",
+    borderRadius: 24,
+    padding: 30,
+    marginBottom: 40,
+    boxShadow: "0 15px 40px rgba(0,0,0,.08)",
+  }}
+>
+
+<div
+style={{
+display:"flex",
+justifyContent:"space-between",
+alignItems:"center",
+marginBottom:25
+}}
+>
+
+<h2
+style={{
+fontFamily:"Playfair Display",
+margin:0
+}}
+>
+📈 Sales Analytics
+</h2>
+
+<select
+value={range}
+onChange={(e)=>setRange(Number(e.target.value))}
+style={{
+padding:"10px 14px",
+borderRadius:12,
+border:"1px solid #ddd"
+}}
+>
+<option value={7}>Last 7 Days</option>
+<option value={30}>Last 30 Days</option>
+</select>
+
+</div>
+
+<div
+style={{
+display:"grid",
+gridTemplateColumns:"1fr 1fr",
+gap:30
+}}
+>
+
+<div>
+
+<h3>Revenue</h3>
+
+<div style={{width:"100%",height:300}}>
+
+<ResponsiveContainer>
+
+<LineChart data={analytics}>
+
+<CartesianGrid strokeDasharray="3 3"/>
+
+<XAxis dataKey="day"/>
+
+<YAxis/>
+
+<Tooltip/>
+
+<Line
+type="monotone"
+dataKey="revenue"
+stroke="#C4956A"
+strokeWidth={4}
+/>
+
+</LineChart>
+
+</ResponsiveContainer>
+
+</div>
+
+</div>
+
+<div>
+
+<h3>Orders</h3>
+
+<div style={{width:"100%",height:300}}>
+
+<ResponsiveContainer>
+
+<BarChart data={analytics}>
+
+<CartesianGrid strokeDasharray="3 3"/>
+
+<XAxis dataKey="day"/>
+
+<YAxis/>
+
+<Tooltip/>
+
+<Bar
+dataKey="orders"
+fill="#3B1A08"
+radius={[8,8,0,0]}
+/>
+
+</BarChart>
+
+</ResponsiveContainer>
+
+</div>
+
+</div>
+
+</div>
+
 </div>
       
      <button
