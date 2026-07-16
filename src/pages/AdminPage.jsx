@@ -645,7 +645,54 @@ gap:30
   )}
 </div>
 
-      
+    <h2
+  style={{
+    marginTop: 40,
+    marginBottom: 20,
+    fontFamily: "Playfair Display",
+  }}
+>
+  ⚡ Recent Activity
+</h2>
+
+<div
+  style={{
+    background: "#fff",
+    borderRadius: 20,
+    padding: 20,
+    boxShadow: "0 10px 30px rgba(0,0,0,.08)",
+  }}
+>
+  {orders
+    .slice()
+    .sort(
+      (a, b) =>
+        (b.createdAt?.seconds || 0) -
+        (a.createdAt?.seconds || 0)
+    )
+    .slice(0, 5)
+    .map((order) => (
+      <div
+        key={order.id}
+        style={{
+          padding: "14px 0",
+          borderBottom: "1px solid #eee",
+        }}
+      >
+        <strong>{order.customer?.name}</strong>
+
+        <div
+          style={{
+            color: "#777",
+            fontSize: 14,
+            marginTop: 4,
+          }}
+        >
+          {order.status} • ₹{order.total}
+        </div>
+      </div>
+    ))}
+</div>  
       
      <button
   onClick={() => setShowAdd(true)}
