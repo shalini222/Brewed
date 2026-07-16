@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   collection,
   getDocs,
@@ -40,7 +40,7 @@ const [orderLoading, setOrderLoading] = useState(true);
 const [range, setRange] = useState(7);
   const [topProducts, setTopProducts] = useState([]);
   const [notifications, setNotifications] = useState([]);
-const [lastOrderId, setLastOrderId] = useState(null);
+const lastOrderId = useRef(null);
 
 
   
@@ -85,17 +85,17 @@ const [editItem, setEditItem] = useState({
       (a.createdAt?.seconds || 0)
   )[0];
 
-  if (lastOrderId && newest.id !== lastOrderId) {
-    setNotifications((prev) => [
-      {
-        id: newest.id,
-        text: `🛎️ New order from ${newest.customer?.name}`,
-      },
-      ...prev,
-    ]);
-  }
+if (lastOrderId.current && newest.id !== lastOrderId.current) {
+  setNotifications((prev) => [
+    {
+      id: newest.id,
+      text: `🛎️ New order from ${newest.customer?.name}`,
+    },
+    ...prev,
+  ]);
+}
 
-  setLastOrderId(newest.id);
+lastOrderId.current = newest.id;
       }
     }
   );
