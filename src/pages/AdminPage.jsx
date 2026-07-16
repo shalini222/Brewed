@@ -13,6 +13,7 @@ export default function AdminPage({ setPage }) {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
+  const [search, setSearch] = useState("");
 
 const [newItem, setNewItem] = useState({
   name: "",
@@ -160,6 +161,24 @@ async function deleteProduct(id) {
 >
   ➕ Add Product
 </button>
+
+      <input
+  type="text"
+  placeholder="🔍 Search products..."
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+  style={{
+    width: "100%",
+    maxWidth: 450,
+    padding: "14px 18px",
+    borderRadius: 14,
+    border: "1px solid #ddd",
+    fontSize: 16,
+    marginBottom: 30,
+    outline: "none",
+    background: "#fff",
+  }}
+/>
       {showAdd && (
   <div
     style={{
@@ -179,6 +198,8 @@ async function deleteProduct(id) {
     />
 
     <br /><br />
+
+    
 
     <select
       value={newItem.category}
@@ -370,9 +391,14 @@ async function deleteProduct(id) {
       
       
       
-      {menu.map((item) => (
+      {menu
+  .filter((item) =>
+    item.name.toLowerCase().includes(search.toLowerCase()) ||
+    item.category.toLowerCase().includes(search.toLowerCase())
+  )
+  .map((item) => (
         <div
-          key={item.id}
+          key={item.forestoreId}
           style={{
             background: "white",
             borderRadius: 18,
