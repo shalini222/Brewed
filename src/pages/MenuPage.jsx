@@ -453,9 +453,9 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
           
 
       <div style={styles.cardEmoji}>
-        {item.image ? (
+        {(item.img || item.image) ? (
   <img
-    src={item.image}
+    src={item.img || item.image}
     alt={item.name}
     style={{
       width: "100%",
