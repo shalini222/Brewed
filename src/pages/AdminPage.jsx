@@ -279,6 +279,25 @@ const totalRevenue = orders
 const totalProducts = menu.length;
 
 
+const today = new Date().toDateString();
+
+const todaySales = orders
+  .filter(
+    (order) =>
+      order.createdAt?.toDate &&
+      order.createdAt.toDate().toDateString() === today &&
+      order.status !== "Cancelled"
+  )
+  .reduce((sum, order) => sum + (order.total || 0), 0);
+
+const todayOrders = orders.filter(
+  (order) =>
+    order.createdAt?.toDate &&
+    order.createdAt.toDate().toDateString() === today &&
+    order.status !== "Cancelled"
+).length;
+
+
 
   
   return (
@@ -743,7 +762,30 @@ gap:30
   )}
 </div>
 
+<div
+  style={{
+    background: "#fff",
+    borderRadius: 20,
+    padding: 20,
+    boxShadow: "0 10px 30px rgba(0,0,0,.08)",
+  }}
+>
+  <h3>☀️ Today's Sales</h3>
 
+  <h1
+    style={{
+      color: "#C4956A",
+      margin: "10px 0",
+    }}
+  >
+    ₹{todaySales}
+  </h1>
+
+  <p>{todayOrders} Orders Today</p>
+</div>
+
+
+      
 
       
      <button
