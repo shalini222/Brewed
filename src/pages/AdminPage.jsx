@@ -646,9 +646,17 @@ boxShadow:"0 10px 30px rgba(0,0,0,.08)"
 >
 
 
-<h2>
-Order #{order.id.slice(0,6)}
-</h2>
+<p
+style={{
+color:"#70645C",
+fontSize:14
+}}
+>
+Placed:{" "}
+{order.createdAt?.toDate
+  ? order.createdAt.toDate().toLocaleString()
+  : "Just now"}
+</p>
 
 
 <p>
