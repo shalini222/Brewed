@@ -42,9 +42,9 @@ const [editItem, setEditItem] = useState({
     const snapshot = await getDocs(collection(db, "menu"));
 
     const items = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+  ...doc.data(),
+  firestoreId: doc.id,
+}));
 
     setMenu(items);
     setLoading(false);
@@ -102,17 +102,17 @@ async function deleteProduct(id) {
   alert("Document ID = " + editing.id);
 
   try {
-    await updateDoc(
-      doc(db, "menu", String(editing.id)),
-      {
-        name: editItem.name,
-        category: editItem.category,
-        price: Number(editItem.price),
-        desc: editItem.desc,
-        emoji: editItem.emoji,
-        img: editItem.img,
-      }
-    );
+   await updateDoc(
+  doc(db, "menu", editing.firestoreId),
+  {
+    name: editItem.name,
+    category: editItem.category,
+    price: Number(editItem.price),
+    desc: editItem.desc,
+    emoji: editItem.emoji,
+    img: editItem.img,
+  }
+);
 
     alert("Updated!");
     setEditing(null);
@@ -426,7 +426,7 @@ async function deleteProduct(id) {
 </button>
 
             <button
-  onClick={() => deleteProduct(item.id)}
+  onClick={() => deleteProduct(item.firestoreId)}
   style={{
     background: "#b3261e",
     color: "white",
