@@ -577,6 +577,7 @@ async function updateOrderStatus(id, status) {
  {orderLoading ? (
   <p>Loading orders...</p>
 ) : (     
+  <>
       
 <h1
   style={{
@@ -989,5 +990,6 @@ cursor:"pointer"
 )}
       
     </div>
+  </>
   );
 }
