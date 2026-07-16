@@ -39,6 +39,11 @@ const [orderLoading, setOrderLoading] = useState(true);
   const [analytics, setAnalytics] = useState([]);
 const [range, setRange] = useState(7);
   const [topProducts, setTopProducts] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+const [lastOrderId, setLastOrderId] = useState(null);
+
+
+  
 
 const [newItem, setNewItem] = useState({
   name: "",
@@ -73,6 +78,25 @@ const [editItem, setEditItem] = useState({
 
       setOrders(data);
       setOrderLoading(false);
+      if (data.length > 0) {
+  const newest = data.sort(
+    (a, b) =>
+      (b.createdAt?.seconds || 0) -
+      (a.createdAt?.seconds || 0)
+  )[0];
+
+  if (lastOrderId && newest.id !== lastOrderId) {
+    setNotifications((prev) => [
+      {
+        id: newest.id,
+        text: `🛎️ New order from ${newest.customer?.name}`,
+      },
+      ...prev,
+    ]);
+  }
+
+  setLastOrderId(newest.id);
+      }
     }
   );
 
@@ -321,6 +345,50 @@ const todayOrders = orders.filter(
       >
         Brewed Admin
       </h1>
+
+
+<div
+  style={{
+    display: "flex",
+    justifyContent: "flex-end",
+    marginBottom: 20,
+  }}
+>
+  <button
+    style={{
+      border: "none",
+      background: "#fff",
+      borderRadius: 999,
+      padding: "12px 18px",
+      fontSize: 18,
+      cursor: "pointer",
+      boxShadow: "0 8px 20px rgba(0,0,0,.08)",
+    }}
+  >
+    🔔 {notifications.length}
+  </button>
+</div>
+
+{notifications.length > 0 && (
+  <div
+    style={{
+      background: "#fff",
+      borderRadius: 20,
+      padding: 20,
+      marginBottom: 30,
+      boxShadow: "0 10px 30px rgba(0,0,0,.08)",
+    }}
+  >
+    <h3>Notifications</h3>
+
+    {notifications.map((n) => (
+      <p key={n.id} style={{ marginBottom: 10 }}>
+        {n.text}
+      </p>
+    ))}
+  </div>
+)}
+      
 
 <div
   style={{
