@@ -744,11 +744,13 @@ Milk: {item.milk}
 
 {item.toppings?.length > 0 && (
 <>
-Toppings: {item.toppings.join(", ")}
+Toppings:{" "}
+{item.toppings.map((t) =>
+  typeof t === "string" ? t : t.name
+).join(", ")}
 <br/>
 </>
 )}
-
 
 {item.temperature && (
 <>
