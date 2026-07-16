@@ -97,30 +97,29 @@ async function deleteProduct(id) {
 }
 
   async function updateProduct() {
-  if (!editing) return;
+  console.log("Editing:", editing);
+  console.log("Edit Item:", editItem);
 
   try {
-    await updateDoc(
-      doc(db, "menu", editing.id),
-      {
-        name: editItem.name,
-        category: editItem.category,
-        price: Number(editItem.price),
-        desc: editItem.desc,
-        emoji: editItem.emoji,
-        img: editItem.img,
-      }
-    );
+    await updateDoc(doc(db, "menu", editing.id), {
+      name: String(editItem.name),
+      category: String(editItem.category),
+      price: Number(editItem.price),
+      desc: String(editItem.desc),
+      emoji: String(editItem.emoji),
+      img: String(editItem.img),
+    });
 
-    alert("Product updated successfully!");
-
+    alert("Updated!");
     setEditing(null);
-    await loadMenu();
+    loadMenu();
+
   } catch (error) {
-  alert(error.code);
-  alert(error.message);
+    console.log(error);
+    alert(JSON.stringify(error));
   }
-  }
+}
+
 
   
   return (
