@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import {
   collection,
-  getDocs,
+ getDocs,
   addDoc,
   deleteDoc,
+  updateDoc,
   doc,
 } from "firebase/firestore";
 import { db } from "../firebase";
@@ -14,6 +15,17 @@ export default function AdminPage({ setPage }) {
   const [showAdd, setShowAdd] = useState(false);
 
 const [newItem, setNewItem] = useState({
+  name: "",
+  category: "Coffee",
+  price: "",
+  desc: "",
+  emoji: "",
+  img: "",
+});
+
+  const [editing, setEditing] = useState(null);
+
+const [editItem, setEditItem] = useState({
   name: "",
   category: "Coffee",
   price: "",
@@ -84,7 +96,21 @@ async function deleteProduct(id) {
   loadMenu();
 }
 
-  
+  async function updateProduct() {
+  if (!editing) return;
+
+  await updateDoc(
+    doc(db, "menu", editing.id),
+    {
+      ...editItem,
+      price: Number(editItem.price),
+    }
+  );
+
+  setEditing(null);
+
+  loadMenu();
+  }
   return (
     <div
       style={{
@@ -214,6 +240,120 @@ async function deleteProduct(id) {
     </button>
   </div>
 )}
+     
+      {editing && (
+  <div
+    style={{
+      background: "#fff",
+      padding: 25,
+      borderRadius: 20,
+      marginBottom: 30,
+      boxShadow: "0 15px 40px rgba(0,0,0,.1)",
+    }}
+  >
+    <h2>Edit Product</h2>
+
+    <input
+      placeholder="Name"
+      value={editItem.name}
+      onChange={(e) =>
+        setEditItem({
+          ...editItem,
+          name: e.target.value,
+        })
+      }
+    />
+
+    <br /><br />
+
+    <select
+      value={editItem.category}
+      onChange={(e) =>
+        setEditItem({
+          ...editItem,
+          category: e.target.value,
+        })
+      }
+    >
+      <option>Coffee</option>
+      <option>Non-Coffee</option>
+      <option>Food</option>
+    </select>
+
+    <br /><br />
+
+    <input
+      type="number"
+      placeholder="Price"
+      value={editItem.price}
+      onChange={(e) =>
+        setEditItem({
+          ...editItem,
+          price: e.target.value,
+        })
+      }
+    />
+
+    <br /><br />
+
+    <textarea
+      placeholder="Description"
+      value={editItem.desc}
+      onChange={(e) =>
+        setEditItem({
+          ...editItem,
+          desc: e.target.value,
+        })
+      }
+    />
+
+    <br /><br />
+
+    <input
+      placeholder="Emoji"
+      value={editItem.emoji}
+      onChange={(e) =>
+        setEditItem({
+          ...editItem,
+          emoji: e.target.value,
+        })
+      }
+    />
+
+    <br /><br />
+
+    <input
+      placeholder="Cloudinary URL"
+      value={editItem.img}
+      onChange={(e) =>
+        setEditItem({
+          ...editItem,
+          img: e.target.value,
+        })
+      }
+    />
+
+    <br /><br />
+
+    <button
+      onClick={updateProduct}
+      style={{
+        marginRight: 10,
+      }}
+    >
+      💾 Save
+    </button>
+
+    <button
+      onClick={() => setEditing(null)}
+    >
+      Cancel
+    </button>
+  </div>
+)}
+      
+      
+      
       {menu.map((item) => (
         <div
           key={item.id}
@@ -242,7 +382,30 @@ async function deleteProduct(id) {
               gap: 10,
             }}
           >
-            <button>✏ Edit</button>
+            <button
+  onClick={() => {
+    setEditing(item);
+
+    setEditItem({
+      name: item.name || "",
+      category: item.category || "Coffee",
+      price: item.price || "",
+      desc: item.desc || "",
+      emoji: item.emoji || "",
+      img: item.img || "",
+    });
+  }}
+  style={{
+    background: "#C4956A",
+    color: "#fff",
+    border: "none",
+    padding: "10px 16px",
+    borderRadius: 10,
+    cursor: "pointer",
+  }}
+>
+  ✏ Edit
+</button>
 
             <button
   onClick={() => deleteProduct(item.id)}
