@@ -701,12 +701,23 @@ flexWrap:"wrap"
 }}
 >
 
+
+
 <button
 onClick={()=>updateOrderStatus(order.id,"Preparing")}
+style={{
+  background:"#C4956A",
+  color:"white",
+  border:"none",
+  padding:"10px 16px",
+  borderRadius:10,
+  cursor:"pointer"
+}}
 >
-☕ Preparing
+✅ Accept Order
 </button>
 
+  
 
 <button
 onClick={()=>updateOrderStatus(order.id,"Ready")}
