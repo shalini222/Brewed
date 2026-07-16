@@ -522,7 +522,128 @@ gap:30
 </div>
 
 
+<div
+  style={{
+    background: "#fff",
+    borderRadius: 24,
+    padding: 30,
+    marginBottom: 40,
+    boxShadow: "0 15px 40px rgba(0,0,0,.08)",
+  }}
+>
+  <h2
+    style={{
+      fontFamily: "Playfair Display",
+      marginBottom: 25,
+    }}
+  >
+    🏆 Best Selling Products
+  </h2>
 
+  {topProducts.length === 0 ? (
+    <p>No sales yet.</p>
+  ) : (
+    topProducts.map((product, index) => (
+      <div
+        key={product.name}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 20,
+          padding: "18px 0",
+          borderBottom:
+            index !== topProducts.length - 1
+              ? "1px solid #eee"
+              : "none",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 34,
+            width: 50,
+            textAlign: "center",
+          }}
+        >
+          {index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}
+        </div>
+
+        {product.img && (
+          <img
+            src={product.img}
+            alt={product.name}
+            style={{
+              width: 70,
+              height: 70,
+              borderRadius: 16,
+              objectFit: "cover",
+            }}
+          />
+        )}
+
+        <div style={{ flex: 1 }}>
+          <h3
+            style={{
+              margin: 0,
+              fontFamily: "Playfair Display",
+            }}
+          >
+            {product.name}
+          </h3>
+
+          <p
+            style={{
+              margin: "6px 0",
+              color: "#70645C",
+            }}
+          >
+            {product.sold} sold
+          </p>
+
+          <div
+            style={{
+              height: 10,
+              background: "#EFE5DB",
+              borderRadius: 999,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width: `${(product.sold / topProducts[0].sold) * 100}%`,
+                height: "100%",
+                background: "#C4956A",
+              }}
+            />
+          </div>
+        </div>
+
+        <div
+          style={{
+            textAlign: "right",
+          }}
+        >
+          <strong
+            style={{
+              fontSize: 20,
+              color: "#2E7D32",
+            }}
+          >
+            ₹{product.revenue}
+          </strong>
+
+          <p
+            style={{
+              margin: 0,
+              color: "#70645C",
+            }}
+          >
+            Revenue
+          </p>
+        </div>
+      </div>
+    ))
+  )}
+</div>
 
       
       
@@ -900,128 +1021,9 @@ gap:30
 <hr style={{margin:"60px 0"}} />
 
 
-      <div
-  style={{
-    background: "#fff",
-    borderRadius: 24,
-    padding: 30,
-    marginBottom: 40,
-    boxShadow: "0 15px 40px rgba(0,0,0,.08)",
-  }}
->
-  <h2
-    style={{
-      fontFamily: "Playfair Display",
-      marginBottom: 25,
-    }}
-  >
-    🏆 Best Selling Products
-  </h2>
-
-  {topProducts.length === 0 ? (
-    <p>No sales yet.</p>
-  ) : (
-    topProducts.map((product, index) => (
-      <div
-        key={product.name}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 20,
-          padding: "18px 0",
-          borderBottom:
-            index !== topProducts.length - 1
-              ? "1px solid #eee"
-              : "none",
-        }}
-      >
-        <div
-          style={{
-            fontSize: 34,
-            width: 50,
-            textAlign: "center",
-          }}
-        >
-          {index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}
-        </div>
-
-        {product.img && (
-          <img
-            src={product.img}
-            alt={product.name}
-            style={{
-              width: 70,
-              height: 70,
-              borderRadius: 16,
-              objectFit: "cover",
-            }}
-          />
-        )}
-
-        <div style={{ flex: 1 }}>
-          <h3
-            style={{
-              margin: 0,
-              fontFamily: "Playfair Display",
-            }}
-          >
-            {product.name}
-          </h3>
-
-          <p
-            style={{
-              margin: "6px 0",
-              color: "#70645C",
-            }}
-          >
-            {product.sold} sold
-          </p>
-
-          <div
-            style={{
-              height: 10,
-              background: "#EFE5DB",
-              borderRadius: 999,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                width: `${(product.sold / topProducts[0].sold) * 100}%`,
-                height: "100%",
-                background: "#C4956A",
-              }}
-            />
-          </div>
-        </div>
-
-        <div
-          style={{
-            textAlign: "right",
-          }}
-        >
-          <strong
-            style={{
-              fontSize: 20,
-              color: "#2E7D32",
-            }}
-          >
-            ₹{product.revenue}
-          </strong>
-
-          <p
-            style={{
-              margin: 0,
-              color: "#70645C",
-            }}
-          >
-            Revenue
-          </p>
-        </div>
-      </div>
-    ))
-  )}
-</div>
+      
+  
+          
        
       
  {orderLoading ? (
