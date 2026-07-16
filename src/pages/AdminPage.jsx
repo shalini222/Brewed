@@ -372,6 +372,8 @@ margin:0
 >
 📈 Sales Analytics
 </h2>
+
+  
   <p
   style={{
     color: "#8A7D73",
