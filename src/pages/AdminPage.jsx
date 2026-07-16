@@ -120,7 +120,7 @@ async function deleteProduct(id) {
   alert(error.code);
   alert(error.message);
   }
-  
+  }
 
   
   return (
