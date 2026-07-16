@@ -372,6 +372,15 @@ margin:0
 >
 📈 Sales Analytics
 </h2>
+  <p
+  style={{
+    color: "#8A7D73",
+    marginTop: 6,
+    marginBottom: 25,
+  }}
+>
+Revenue and order trends over time
+</p>
 
 <select
 value={range}
@@ -478,15 +487,7 @@ gap:30
 </div>
 
 
-<p
-  style={{
-    color: "#8A7D73",
-    marginTop: 6,
-    marginBottom: 25,
-  }}
->
-Revenue and order trends over time
-</p>
+
 
       
       
