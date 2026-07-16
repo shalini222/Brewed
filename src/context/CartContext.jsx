@@ -41,29 +41,46 @@ export function CartProvider({ children }) {
   const clearCart = () => setCart([]);
 
   const placeOrder = async (orderDetails) => {
-    // 3. Added Auth Check for placing orders
-    if (!auth.currentUser) throw new Error("User must be logged in to place an order.");
+  if (!auth.currentUser) throw new Error("User must be logged in to place an order.");
 
-    try {
-      const orderData = {
-        items: cart,
-        total: total,
-        customer: orderDetails.customer,
-        paymentMethod: orderDetails.paymentMethod,
-        userId: auth.currentUser.uid, // 4. Link order to user ID
-        status: orderData.status || "New",
-        createdAt: serverTimestamp(),
-      };
+  try {
+    const orderData = {
+      items: orderDetails.items || cart,
 
-      const docRef = await addDoc(collection(db, "orders"), orderData);
-      clearCart(); 
-      return docRef.id;
-    } catch (error) {
-      console.error("Error placing order: ", error);
-      throw error;
-    }
-  };
-        const reorder = (itemsToReorder) => {
+      subtotal: orderDetails.subtotal,
+      tax: orderDetails.tax,
+      delivery: orderDetails.delivery,
+
+      total: orderDetails.total || total,
+
+      customer: orderDetails.customer,
+
+      paymentMethod: orderDetails.paymentMethod,
+
+      userId: auth.currentUser.uid,
+
+      status: orderDetails.status || "New",
+
+      createdAt: serverTimestamp(),
+    };
+
+    const docRef = await addDoc(
+      collection(db, "orders"),
+      orderData
+    );
+
+    clearCart();
+
+    return docRef.id;
+
+  } catch (error) {
+    console.error("Error placing order: ", error);
+    throw error;
+  }
+};
+        
+  
+  const reorder = (itemsToReorder) => {
   if (!auth.currentUser) {
     alert("Please log in to reorder.");
     return;
