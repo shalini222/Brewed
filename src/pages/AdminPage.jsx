@@ -791,9 +791,35 @@ Note: {item.instructions}
 
 ))}
 
+
+  <div
+style={{
+background:"#F8F3ED",
+padding:15,
+borderRadius:12,
+marginTop:20
+}}
+>
+
+<p>
+Subtotal: ₹{order.subtotal}
+</p>
+
+<p>
+Tax: ₹{order.tax}
+</p>
+
+<p>
+Delivery: ₹{order.delivery}
+</p>
+
+<hr />
+
 <h3>
 Total: ₹{order.total}
 </h3>
+
+</div>
 
 
 <p>
