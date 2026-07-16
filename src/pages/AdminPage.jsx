@@ -3,6 +3,8 @@ import {
   collection,
   getDocs,
   addDoc,
+  deleteDoc,
+  doc,
 } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -70,7 +72,17 @@ async function addProduct() {
   loadMenu();
 }
 
+async function deleteProduct(id) {
+  const confirmed = window.confirm(
+    "Delete this product?"
+  );
 
+  if (!confirmed) return;
+
+  await deleteDoc(doc(db, "menu", id));
+
+  loadMenu();
+}
 
   
   return (
@@ -232,7 +244,19 @@ async function addProduct() {
           >
             <button>✏ Edit</button>
 
-            <button>🗑 Delete</button>
+            <button
+  onClick={() => deleteProduct(item.id)}
+  style={{
+    background: "#b3261e",
+    color: "white",
+    border: "none",
+    padding: "10px 16px",
+    borderRadius: 10,
+    cursor: "pointer",
+  }}
+>
+  🗑 Delete
+</button>
           </div>
         </div>
       ))}
