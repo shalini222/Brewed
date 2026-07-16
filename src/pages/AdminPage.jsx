@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import {
   collection,
- getDocs,
+  getDocs,
   addDoc,
   deleteDoc,
   updateDoc,
   doc,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -15,6 +16,8 @@ export default function AdminPage({ setPage }) {
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
+  const [orders, setOrders] = useState([]);
+const [orderLoading, setOrderLoading] = useState(true);
 
 const [newItem, setNewItem] = useState({
   name: "",
@@ -39,6 +42,23 @@ const [editItem, setEditItem] = useState({
   useEffect(() => {
     loadMenu();
   }, []);
+  
+  const unsubscribe = onSnapshot(
+    collection(db, "orders"),
+    (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setOrders(data);
+      setOrderLoading(false);
+    }
+  );
+
+  return () => unsubscribe();
+
+}, []);
 
   async function loadMenu() {
     const snapshot = await getDocs(collection(db, "menu"));
@@ -137,7 +157,14 @@ async function toggleAvailability(item) {
   }
   }
 
-
+async function updateOrderStatus(id, status) {
+  await updateDoc(
+    doc(db, "orders", id),
+    {
+      status,
+    }
+  );
+}
   
   return (
     <div
@@ -529,6 +556,131 @@ async function toggleAvailability(item) {
           </div>
         </div>
       ))}
+
+// order management 
+<hr style={{margin:"60px 0"}} />
+
+<h1
+style={{
+fontFamily:"Playfair Display"
+}}
+>
+📦 Orders
+</h1>
+
+
+{orders.length === 0 ? (
+<p>No orders yet.</p>
+) : (
+
+orders.map((order)=>(
+
+<div
+key={order.id}
+style={{
+background:"#fff",
+borderRadius:20,
+padding:25,
+marginBottom:20,
+boxShadow:"0 10px 30px rgba(0,0,0,.08)"
+}}
+>
+
+
+<h2>
+Order #{order.id.slice(0,6)}
+</h2>
+
+
+<p>
+<strong>
+Customer:
+</strong>{" "}
+{order.customer?.name}
+</p>
+
+
+<p>
+<strong>
+Phone:
+</strong>{" "}
+{order.customer?.phone}
+</p>
+
+
+<h3>
+Items
+</h3>
+
+
+{order.items?.map((item,index)=>(
+
+<div key={index}>
+
+{item.quantity} × {item.name}
+
+<br/>
+
+₹{item.price}
+
+</div>
+
+))}
+
+
+<h3>
+Total: ₹{order.total}
+</h3>
+
+
+<p>
+Status: 
+<strong>
+{" "}
+{order.status}
+</strong>
+</p>
+
+
+
+<div
+style={{
+display:"flex",
+gap:10,
+flexWrap:"wrap"
+}}
+>
+
+<button
+onClick={()=>updateOrderStatus(order.id,"Preparing")}
+>
+☕ Preparing
+</button>
+
+
+<button
+onClick={()=>updateOrderStatus(order.id,"Ready")}
+>
+✅ Ready
+</button>
+
+
+<button
+onClick={()=>updateOrderStatus(order.id,"Delivered")}
+>
+🚚 Delivered
+</button>
+
+
+</div>
+
+
+</div>
+
+))
+
+)}
+      
     </div>
   );
 }
