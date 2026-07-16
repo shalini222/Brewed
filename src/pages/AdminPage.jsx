@@ -406,7 +406,10 @@ gap:30
 
 <LineChart data={analytics}>
 
-<CartesianGrid strokeDasharray="3 3"/>
+<CartesianGrid
+  stroke="#F0E8E0"
+  strokeDasharray="4 4"
+/>
 
 <XAxis dataKey="day"/>
 
@@ -414,13 +417,19 @@ gap:30
 
 <Tooltip/>
 
+
+
 <Line
-type="monotone"
-dataKey="revenue"
-stroke="#C4956A"
-strokeWidth={4}
+  type="monotone"
+  dataKey="revenue"
+  stroke="#C4956A"
+  strokeWidth={4}
+  dot={{ r: 5 }}
+  activeDot={{ r: 7 }}
 />
 
+
+  
 </LineChart>
 
 </ResponsiveContainer>
@@ -437,7 +446,10 @@ strokeWidth={4}
 
 <ResponsiveContainer>
 
-<BarChart data={analytics}>
+<BarChart
+  data={analytics}
+  style={{ outline: "none" }}
+>
 
 <CartesianGrid strokeDasharray="3 3"/>
 
@@ -448,9 +460,9 @@ strokeWidth={4}
 <Tooltip/>
 
 <Bar
-dataKey="orders"
-fill="#3B1A08"
-radius={[8,8,0,0]}
+  dataKey="orders"
+  fill="#3B1A08"
+  radius={[12, 12, 0, 0]}
 />
 
 </BarChart>
@@ -464,6 +476,19 @@ radius={[8,8,0,0]}
 </div>
 
 </div>
+
+
+<p
+  style={{
+    color: "#8A7D73",
+    marginTop: 6,
+    marginBottom: 25,
+  }}
+>
+Revenue and order trends over time
+</p>
+
+      
       
      <button
   onClick={() => setShowAdd(true)}
