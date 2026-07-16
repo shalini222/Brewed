@@ -175,6 +175,24 @@ async function updateOrderStatus(id, status) {
     }
   );
 }
+
+const totalOrders = orders.length;
+
+const pendingOrders = orders.filter(
+  (o) =>
+    o.status === "New" ||
+    o.status === "Preparing" ||
+    o.status === "Ready"
+).length;
+
+const totalRevenue = orders
+  .filter((o) => o.status === "Delivered")
+  .reduce((sum, o) => sum + (o.total || 0), 0);
+
+const totalProducts = menu.length;
+
+
+
   
   return (
     <div
@@ -197,6 +215,82 @@ async function updateOrderStatus(id, status) {
       >
         Brewed Admin
       </h1>
+
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+    gap: 20,
+    marginBottom: 40,
+  }}
+>
+  {[
+    {
+      icon: "📦",
+      title: "Orders",
+      value: totalOrders,
+      color: "#4F46E5",
+    },
+    {
+      icon: "💰",
+      title: "Revenue",
+      value: `₹${totalRevenue}`,
+      color: "#2E7D32",
+    },
+    {
+      icon: "⏳",
+      title: "Pending",
+      value: pendingOrders,
+      color: "#E67E22",
+    },
+    {
+      icon: "☕",
+      title: "Products",
+      value: totalProducts,
+      color: "#C4956A",
+    },
+  ].map((card) => (
+    <div
+      key={card.title}
+      style={{
+        background: "#fff",
+        borderRadius: 20,
+        padding: 24,
+        boxShadow: "0 10px 25px rgba(0,0,0,.08)",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 36,
+          marginBottom: 12,
+        }}
+      >
+        {card.icon}
+      </div>
+
+      <div
+        style={{
+          color: "#70645C",
+          fontSize: 15,
+        }}
+      >
+        {card.title}
+      </div>
+
+      <h2
+        style={{
+          margin: "8px 0 0",
+          color: card.color,
+          fontFamily: "Playfair Display",
+          fontSize: 32,
+        }}
+      >
+        {card.value}
+      </h2>
+    </div>
+  ))}
+</div>
+      
      <button
   onClick={() => setShowAdd(true)}
   style={{
