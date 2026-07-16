@@ -557,7 +557,7 @@ async function updateOrderStatus(id, status) {
         </div>
       ))}
 
-// order management 
+
 <hr style={{margin:"60px 0"}} />
 
 <h1
