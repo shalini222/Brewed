@@ -674,18 +674,120 @@ Items
 
 {order.items?.map((item,index)=>(
 
-<div key={index}>
+<div
+key={index}
+style={{
+display:"flex",
+gap:15,
+padding:"15px 0",
+borderBottom:"1px solid #eee"
+}}
+>
 
-{item.quantity} × {item.name}
+{item.img && (
+<img
+src={item.img}
+alt={item.name}
+style={{
+width:80,
+height:80,
+borderRadius:14,
+objectFit:"cover"
+}}
+/>
+)}
 
-<br/>
 
+<div>
+
+<h3
+style={{
+margin:"0 0 8px",
+fontFamily:"Playfair Display"
+}}
+>
+☕ {item.name}
+</h3>
+
+
+<p style={{margin:0}}>
+<strong>
+{item.qty || item.quantity || 1} ×
+</strong>{" "}
 ₹{item.price}
+</p>
+
+
+<p
+style={{
+marginTop:8,
+fontSize:14,
+color:"#70645C"
+}}
+>
+
+{item.size && (
+<>
+Size: {item.size}
+<br/>
+</>
+)}
+
+
+{item.milk && (
+<>
+Milk: {item.milk}
+<br/>
+</>
+)}
+
+
+{item.toppings?.length > 0 && (
+<>
+Toppings: {item.toppings.join(", ")}
+<br/>
+</>
+)}
+
+
+{item.temperature && (
+<>
+Temperature: {item.temperature}
+<br/>
+</>
+)}
+
+
+{item.iceLevel && (
+<>
+Ice: {item.iceLevel}
+<br/>
+</>
+)}
+
+
+{item.sweetness !== undefined && (
+<>
+Sweetness: {item.sweetness}%
+<br/>
+</>
+)}
+
+
+{item.instructions && (
+<>
+Note: {item.instructions}
+</>
+)}
+
+</p>
+
+
+</div>
 
 </div>
 
 ))}
-
 
 <h3>
 Total: ₹{order.total}
