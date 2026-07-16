@@ -667,14 +667,50 @@ Customer:
 </p>
 
 
+
+
+
 <p>
 <strong>
-Phone:
+Address:
 </strong>{" "}
-{order.customer?.phone}
+{order.customer?.address}
+</p>
+
+{order.customer?.instructions && (
+<p>
+<strong>
+Instructions:
+</strong>{" "}
+{order.customer.instructions}
+</p>
+)}
+
+
+<p>
+<strong>
+Payment:
+</strong>{" "}
+
+<span
+style={{
+background:
+order.paymentMethod === "COD"
+? "#FFF3CD"
+: "#D4EDDA",
+padding:"5px 10px",
+borderRadius:999,
+fontSize:14,
+fontWeight:600
+}}
+>
+{order.paymentMethod}
+</span>
+
 </p>
 
 
+  
 <h3>
 Items
 </h3>
@@ -840,31 +876,44 @@ Status:
 
 
 
-<div
-style={{
-display:"flex",
-gap:10,
-flexWrap:"wrap"
-}}
->
-
-
-
+{order.status === "New" && (
 <button
 onClick={()=>updateOrderStatus(order.id,"Preparing")}
 style={{
-  background:"#C4956A",
-  color:"white",
-  border:"none",
-  padding:"10px 16px",
-  borderRadius:10,
-  cursor:"pointer"
+background:"#C4956A",
+color:"white",
+border:"none",
+padding:"10px 16px",
+borderRadius:10,
+cursor:"pointer"
 }}
 >
 ✅ Accept Order
 </button>
+)}
 
-  <button
+
+{order.status === "Preparing" && (
+<button
+onClick={()=>updateOrderStatus(order.id,"Ready")}
+>
+☕ Ready
+</button>
+)}
+
+
+{order.status === "Ready" && (
+<button
+onClick={()=>updateOrderStatus(order.id,"Delivered")}
+>
+🚚 Delivered
+</button>
+)}
+
+
+{order.status !== "Delivered" &&
+order.status !== "Cancelled" && (
+<button
 onClick={()=>updateOrderStatus(order.id,"Cancelled")}
 style={{
 background:"#DE6B48",
@@ -877,22 +926,7 @@ cursor:"pointer"
 >
 ❌ Cancel
 </button>
-
-<button
-onClick={()=>updateOrderStatus(order.id,"Ready")}
->
-✅ Ready
-</button>
-
-
-<button
-onClick={()=>updateOrderStatus(order.id,"Delivered")}
->
-🚚 Delivered
-</button>
-
-
-</div>
+)}
 
 
 </div>
