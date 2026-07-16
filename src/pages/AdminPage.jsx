@@ -484,7 +484,7 @@ async function updateOrderStatus(id, status) {
     return matchesSearch && matchesCategory;
   }).map((item) => (
         <div
-          key={item.forestoreId}
+          key={item.firestoreId}
           style={{
             background: "white",
             borderRadius: 18,
@@ -574,14 +574,21 @@ async function updateOrderStatus(id, status) {
       
        
       
+ {orderLoading ? (
+  <p>Loading orders...</p>
+) : (     
       
-      <h1
-style={{
-fontFamily:"Playfair Display"
-}}
+<h1
+  style={{
+    marginBottom: 10,
+    fontFamily: "Playfair Display",
+  }}
 >
-📦 Orders
+  📦 Orders ({orders.length})
 </h1>
+
+
+      
 
 <input
 type="text"
@@ -711,7 +718,9 @@ Customer:
 </p>
 
 
-
+<p>
+<strong>Phone:</strong> {order.customer?.phone}
+</p>
 
 
 <p>
