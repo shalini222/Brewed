@@ -18,6 +18,7 @@ export default function AdminPage({ setPage }) {
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [orders, setOrders] = useState([]);
 const [orderLoading, setOrderLoading] = useState(true);
+  const [orderSearch, setOrderSearch] = useState("");
   const [orderFilter, setOrderFilter] = useState("All");
 
 const [newItem, setNewItem] = useState({
@@ -582,6 +583,28 @@ fontFamily:"Playfair Display"
 📦 Orders
 </h1>
 
+<input
+type="text"
+placeholder="🔍 Search orders..."
+value={orderSearch}
+onChange={(e)=>setOrderSearch(e.target.value)}
+style={{
+width:"100%",
+maxWidth:450,
+padding:"14px 18px",
+borderRadius:14,
+border:"1px solid #ddd",
+fontSize:16,
+marginBottom:20,
+outline:"none",
+background:"#fff"
+}}
+/>
+
+
+
+      
+
 <div
   style={{
     display:"flex",
@@ -625,11 +648,32 @@ fontFamily:"Playfair Display"
 ) : (
 
 orders
+.sort((a,b)=>
+(b.createdAt?.seconds || 0) -
+(a.createdAt?.seconds || 0)
+)
 .filter((order)=>{
 
-if(orderFilter==="All") return true;
+const matchesStatus =
+orderFilter === "All" ||
+order.status === orderFilter;
 
-return order.status === orderFilter;
+
+const searchText =
+orderSearch.toLowerCase();
+
+
+const matchesSearch =
+order.customer?.name
+?.toLowerCase()
+.includes(searchText)
+||
+order.id
+.toLowerCase()
+.includes(searchText);
+
+
+return matchesStatus && matchesSearch;
 
 })
 .map((order)=>(
