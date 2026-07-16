@@ -97,28 +97,31 @@ async function deleteProduct(id) {
 }
 
   async function updateProduct() {
-  console.log("Editing:", editing);
-  console.log("Edit Item:", editItem);
+  if (!editing) return;
+
+  alert("Document ID = " + editing.id);
 
   try {
-    await updateDoc(doc(db, "menu", editing.id), {
-      name: String(editItem.name),
-      category: String(editItem.category),
-      price: Number(editItem.price),
-      desc: String(editItem.desc),
-      emoji: String(editItem.emoji),
-      img: String(editItem.img),
-    });
+    await updateDoc(
+      doc(db, "menu", String(editing.id)),
+      {
+        name: editItem.name,
+        category: editItem.category,
+        price: Number(editItem.price),
+        desc: editItem.desc,
+        emoji: editItem.emoji,
+        img: editItem.img,
+      }
+    );
 
     alert("Updated!");
     setEditing(null);
     loadMenu();
 
-  } catch (error) {
-    console.log(error);
-    alert(JSON.stringify(error));
+  } catch (e) {
+    alert("Error:\n" + String(e));
   }
-}
+  }
 
 
   
