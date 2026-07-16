@@ -160,16 +160,29 @@ const handleFormSubmission = async (e) => {
 
     try {
       // 2. Prepare the order data
-      const orderData = {
-        customer: form,
-        paymentMethod: paymentMethod === "cod" ? "COD" : "Online",
-        userId: auth.currentUser.uid, // <--- THIS IS THE FIX
-        createdAt: new Date(), // Ensure this matches what your OrdersPage expects
-        status: "Preparing",   // Initialize the status so it shows up in your badge
-        total: calculations.grandTotal, // Ensure this exists
-        items: cart.map(item => `${item.quantity}x ${item.name}`).join(" • ") // Format as your UI expects
-      };
 
+      const orderData = {
+  customer: form,
+  userId: auth.currentUser.uid,
+
+  items: cart,
+
+  subtotal: calculations.subtotal,
+  tax: calculations.tax,
+  delivery: calculations.delivery,
+  total: calculations.grandTotal,
+
+  paymentMethod: paymentMethod === "cod" ? "COD" : "Online",
+
+  status: "Preparing",
+
+  createdAt: new Date(),
+};
+
+
+
+
+      
       // 3. Await the result
       const orderId = await placeOrder(orderData);
 
