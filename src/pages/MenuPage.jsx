@@ -42,7 +42,9 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
         }));
         
         console.log("Data fetched successfully:", items);
-        setMenuItems(items);
+        setMenuItems(
+  items.filter((item) => item.available !== false)
+);
       } catch (error) {
         console.error("FATAL ERROR FETCHING MENU: ", error);
         alert("Check the console for the error!");
