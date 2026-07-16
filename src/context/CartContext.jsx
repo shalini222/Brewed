@@ -40,19 +40,24 @@ export function CartProvider({ children }) {
   };
   const clearCart = () => setCart([]);
 
-  const placeOrder = async (orderDetails) => {
-  if (!auth.currentUser) throw new Error("User must be logged in to place an order.");
+        const placeOrder = async (orderDetails) => {
+  if (!auth.currentUser) {
+    throw new Error("User must be logged in to place an order.");
+  }
 
   try {
+
     const orderData = {
-  ...orderDetails,
+      ...orderDetails,
 
-  userId: auth.currentUser.uid,
+      userId: auth.currentUser.uid,
 
-  status: orderDetails.status || "New",
+      status: orderDetails.status || "New",
 
-  createdAt: serverTimestamp(),
-};
+      createdAt: serverTimestamp(),
+    };
+
+
     const docRef = await addDoc(
       collection(db, "orders"),
       orderData
@@ -62,12 +67,11 @@ export function CartProvider({ children }) {
 
     return docRef.id;
 
-  } catch (error) {
-    console.error("Error placing order: ", error);
+  } catch(error) {
+    console.error(error);
     throw error;
   }
-};
-        
+}; 
   
   const reorder = (itemsToReorder) => {
   if (!auth.currentUser) {
