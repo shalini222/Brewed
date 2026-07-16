@@ -18,6 +18,7 @@ export default function AdminPage({ setPage }) {
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [orders, setOrders] = useState([]);
 const [orderLoading, setOrderLoading] = useState(true);
+  const [orderFilter, setOrderFilter] = useState("All");
 
 const [newItem, setNewItem] = useState({
   name: "",
@@ -559,7 +560,12 @@ async function updateOrderStatus(id, status) {
 
 <hr style={{margin:"60px 0"}} />
 
-<h1
+
+      
+      
+      
+      
+      <h1
 style={{
 fontFamily:"Playfair Display"
 }}
@@ -567,12 +573,57 @@ fontFamily:"Playfair Display"
 📦 Orders
 </h1>
 
+<div
+  style={{
+    display:"flex",
+    gap:10,
+    flexWrap:"wrap",
+    marginBottom:30
+  }}
+>
 
+{["All","Preparing","Ready","Delivered"].map((status)=>(
+  
+<button
+  key={status}
+  onClick={()=>setOrderFilter(status)}
+  style={{
+    padding:"10px 18px",
+    borderRadius:999,
+    border:"none",
+    cursor:"pointer",
+    background:
+      orderFilter === status
+      ? "#3B1A08"
+      : "#F2ECE5",
+    color:
+      orderFilter === status
+      ? "white"
+      : "#3B1A08",
+    fontWeight:600
+  }}
+>
+
+{status}
+
+</button>
+
+))}
+
+</div>
 {orders.length === 0 ? (
 <p>No orders yet.</p>
 ) : (
 
-orders.map((order)=>(
+orders
+.filter((order)=>{
+
+if(orderFilter==="All") return true;
+
+return order.status === orderFilter;
+
+})
+.map((order)=>(
 
 <div
 key={order.id}
