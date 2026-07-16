@@ -45,25 +45,14 @@ export function CartProvider({ children }) {
 
   try {
     const orderData = {
-      items: orderDetails.items || cart,
+  ...orderDetails,
 
-      subtotal: orderDetails.subtotal,
-      tax: orderDetails.tax,
-      delivery: orderDetails.delivery,
+  userId: auth.currentUser.uid,
 
-      total: orderDetails.total || total,
+  status: orderDetails.status || "New",
 
-      customer: orderDetails.customer,
-
-      paymentMethod: orderDetails.paymentMethod,
-
-      userId: auth.currentUser.uid,
-
-      status: orderDetails.status || "New",
-
-      createdAt: serverTimestamp(),
-    };
-
+  createdAt: serverTimestamp(),
+};
     const docRef = await addDoc(
       collection(db, "orders"),
       orderData
