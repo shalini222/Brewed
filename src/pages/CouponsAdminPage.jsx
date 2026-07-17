@@ -442,6 +442,15 @@ export default function CouponsAdminPage({ setPage }) {
     fontFamily: "inherit"
   };
 
+  const COLORS = [
+  "#C4956A",
+  "#4F46E5",
+  "#2E7D32",
+  "#F59E0B",
+  "#EC4899",
+  "#06B6D4",
+];
+
   // --- MASTER RENDER LAYER WITH CRASH SAFEGUARDS ---
   if (!db) {
     return <div style={{ padding: "50px", textAlign: "center", color: "red" }}>Error: Firebase db connection configuration missing in context resources.</div>;
