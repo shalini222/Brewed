@@ -22,6 +22,7 @@ export default function CouponsAdminPage({ setPage }) {
   type: "percentage",
   category: "General",
   value: "",
+  maxDiscount: "",
   minOrder: "",
   usageLimit: "",
   expires: "",
@@ -104,6 +105,7 @@ const mostUsed =
   type: newCoupon.type,
   category: newCoupon.category,
   value: Number(newCoupon.value),
+  maxDiscount: Number(newCoupon.maxDiscount || 0),
   minOrder: Number(newCoupon.minOrder),
   active: newCoupon.active,
   usageLimit: Number(newCoupon.usageLimit || 0),
@@ -117,6 +119,7 @@ const mostUsed =
   type: "percentage",
   category: "General",
   value: "",
+  maxDiscount: "",
   minOrder: "",
   usageLimit: "",
   expires: "",
@@ -511,6 +514,23 @@ return (
 
     <br /><br />
 
+
+  <br /><br />
+
+<input
+  type="number"
+  placeholder="Maximum Discount (₹)"
+  value={newCoupon.maxDiscount}
+  onChange={(e) =>
+    setNewCoupon({
+      ...newCoupon,
+      maxDiscount: e.target.value,
+    })
+  }
+/>
+
+
+    
     <input
       type="number"
       placeholder="Minimum Order"
@@ -779,11 +799,15 @@ return (
         </div>
 
         <p>
-          <strong>Discount:</strong>{" "}
-          {coupon.type === "percentage"
-            ? `${coupon.value}%`
-            : `₹${coupon.value}`}
-        </p>
+  <strong>Discount:</strong>{" "}
+  {coupon.type === "percentage"
+    ? `${coupon.value}%`
+    : `₹${coupon.value}`}
+
+  {coupon.type === "percentage" &&
+    coupon.maxDiscount > 0 &&
+    ` (Up to ₹${coupon.maxDiscount})`}
+</p>
 
         <p>
           <strong>Minimum Order:</strong> ₹
