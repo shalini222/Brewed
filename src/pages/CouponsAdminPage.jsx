@@ -20,6 +20,7 @@ export default function CouponsAdminPage({ setPage }) {
   const [newCoupon, setNewCoupon] = useState({
   code: "",
   type: "percentage",
+  category: "General",
   value: "",
   minOrder: "",
   usageLimit: "",
@@ -99,26 +100,28 @@ const mostUsed =
   }
 
   await addDoc(collection(db, "coupons"), {
-    code: newCoupon.code.toUpperCase(),
-    type: newCoupon.type,
-    value: Number(newCoupon.value),
-    minOrder: Number(newCoupon.minOrder),
-    active: newCoupon.active,
-    usageLimit: Number(newCoupon.usageLimit || 0),
-    usageCount: 0,
-    expires: newCoupon.expires,
-    createdAt: serverTimestamp(),
-  });
+  code: newCoupon.code.toUpperCase(),
+  type: newCoupon.type,
+  category: newCoupon.category,
+  value: Number(newCoupon.value),
+  minOrder: Number(newCoupon.minOrder),
+  active: newCoupon.active,
+  usageLimit: Number(newCoupon.usageLimit || 0),
+  usageCount: 0,
+  expires: newCoupon.expires,
+  createdAt: serverTimestamp(),
+});
 
   setNewCoupon({
-    code: "",
-    type: "percentage",
-    value: "",
-    minOrder: "",
-    usageLimit: "",
-    expires: "",
-    active: true,
-  });
+  code: "",
+  type: "percentage",
+  category: "General",
+  value: "",
+  minOrder: "",
+  usageLimit: "",
+  expires: "",
+  active: true,
+});
 
   loadCoupons();
 
@@ -321,18 +324,24 @@ return (
 
       <br /><br />
 
-      <select
-        value={newCoupon.type}
-        onChange={(e) =>
-          setNewCoupon({
-            ...newCoupon,
-            type: e.target.value,
-          })
-        }
-      >
-        <option value="percentage">Percentage (%)</option>
-        <option value="fixed">Fixed Amount (₹)</option>
-      </select>
+      
+
+<select
+  value={newCoupon.category}
+  onChange={(e) =>
+    setNewCoupon({
+      ...newCoupon,
+      category: e.target.value,
+    })
+  }
+>
+  <option value="General">🏷 General</option>
+  <option value="New User">👤 New User</option>
+  <option value="Festival">🎉 Festival</option>
+  <option value="Birthday">🎂 Birthday</option>
+  <option value="Referral">🤝 Referral</option>
+  <option value="Loyalty">💎 Loyalty</option>
+</select>
 
       <br /><br />
 
@@ -691,7 +700,9 @@ return (
           >
             {coupon.code}
           </h2>
-
+          <p>
+  <strong>Category:</strong> {coupon.category || "General"}
+</p>
           <span
             style={{
               background: coupon.active
