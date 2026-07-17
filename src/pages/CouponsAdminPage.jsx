@@ -17,7 +17,7 @@ export default function CouponsAdminPage({ setPage }) {
   
   
 
-  const [newCoupon, setNewCoupon] = useState({
+ const [newCoupon, setNewCoupon] = useState({
   code: "",
   type: "percentage",
   category: "General",
@@ -25,6 +25,7 @@ export default function CouponsAdminPage({ setPage }) {
   maxDiscount: "",
   minOrder: "",
   usageLimit: "",
+  perUserLimit: 1,
   starts: "",
   expires: "",
   singleUse: false,
@@ -42,7 +43,7 @@ export default function CouponsAdminPage({ setPage }) {
   maxDiscount: "",
   minOrder: "",
   category: "General",
-  validFrom: "",
+  starts: "",
   expires: "",
   usageLimit: "",
   perUserLimit: 1,
@@ -120,6 +121,7 @@ const mostUsed =
   starts: newCoupon.starts,
   expires: newCoupon.expires,
   singleUse: newCoupon.singleUse,
+  perUserLimit: Number(newCoupon.perUserLimit),
   createdAt: serverTimestamp(),
 });
 
@@ -134,6 +136,7 @@ const mostUsed =
   starts: "",
   expires: "",
   singleUse: false,
+  perUserLimit: 1,
   active: true,
 });
 
@@ -168,7 +171,7 @@ async function updateCoupon() {
   maxDiscount: Number(editCoupon.maxDiscount),
   minOrder: Number(editCoupon.minOrder),
   category: editCoupon.category,
-  validFrom: editCoupon.validFrom,
+  starts: editCoupon.starts,
   expires: editCoupon.expires,
   usageLimit: Number(editCoupon.usageLimit),
   perUserLimit: Number(editCoupon.perUserLimit),
@@ -583,10 +586,10 @@ return (
 <input
   type="number"
   placeholder="Maximum Discount (₹)"
-  value={newCoupon.maxDiscount}
+  value={editCoupon.maxDiscount}
   onChange={(e) =>
-    setNewCoupon({
-      ...newCoupon,
+    setEditCoupon({
+      ...editCoupon,
       maxDiscount: e.target.value,
     })
   }
@@ -607,6 +610,20 @@ return (
     />
 
     <br /><br />
+    
+
+<input
+  type="number"
+  min="1"
+  placeholder="Per User Usage Limit"
+  value={editCoupon.perUserLimit}
+  onChange={(e) =>
+    setEditCoupon({
+      ...editCoupon,
+      perUserLimit: e.target.value,
+    })
+  }
+/>
 
     <input
       type="number"
@@ -619,19 +636,25 @@ return (
         })
       }
     />
+    
 
     <br /><br />
 
 <input
   type="date"
-  value={newCoupon.starts}
+  value={editCoupon.starts}
   onChange={(e) =>
-    setNewCoupon({
-      ...newCoupon,
-      starts: e.target.value,
-    })
+    setEditCoupon({
+  ...editCoupon,
+  starts: e.target.value,
+})
   }
 />
+
+
+
+<br /><br />
+    
 
     <input
       type="date"
@@ -901,6 +924,12 @@ return (
           {coupon.usageCount || 0} /{" "}
           {coupon.usageLimit || "∞"}
         </p>
+
+        <p>
+  <strong>Per User:</strong>{" "}
+  {coupon.perUserLimit || 1} use
+  {coupon.perUserLimit > 1 ? "s" : ""}
+</p>
          <p>
   <strong>Valid From:</strong>{" "}
   {coupon.starts || "Immediately"}
@@ -958,7 +987,7 @@ return (
   maxDiscount: coupon.maxDiscount || "",
   minOrder: coupon.minOrder,
   category: coupon.category || "General",
-  validFrom: coupon.validFrom || "",
+  starts: coupon.starts || "",
   expires: coupon.expires || "",
   usageLimit: coupon.usageLimit || "",
   perUserLimit: coupon.perUserLimit || 1,
