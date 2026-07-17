@@ -12,6 +12,9 @@ import { db } from "../firebase";
 
 export default function CouponsAdminPage({ setPage }) {
   const [coupons, setCoupons] = useState([]);
+  
+  
+  
 
   const [newCoupon, setNewCoupon] = useState({
   code: "",
@@ -24,6 +27,20 @@ export default function CouponsAdminPage({ setPage }) {
 });
 
   const [loading, setLoading] = useState(true);
+
+  const [editing, setEditing] = useState(null);
+
+const [editCoupon, setEditCoupon] = useState({
+  code: "",
+  type: "percentage",
+  value: "",
+  minOrder: "",
+  usageLimit: "",
+  expires: "",
+});
+
+
+  
 
   async function loadCoupons() {
     const snapshot = await getDocs(collection(db, "coupons"));
@@ -96,7 +113,26 @@ async function toggleCoupon(coupon) {
   loadCoupons();
 }
 
+async function updateCoupon() {
+  if (!editing) return;
 
+  await updateDoc(doc(db, "coupons", editing.id), {
+    code: editCoupon.code.toUpperCase(),
+    type: editCoupon.type,
+    value: Number(editCoupon.value),
+    minOrder: Number(editCoupon.minOrder),
+    usageLimit: Number(editCoupon.usageLimit),
+    expires: editCoupon.expires,
+  });
+
+  alert("Coupon updated!");
+
+  setEditing(null);
+
+  loadCoupons();
+}
+
+  
 
 return (
   <div
@@ -277,7 +313,122 @@ return (
         ➕ Create Coupon
       </button>
     </div>
+    {editing && (
+  <div
+    style={{
+      background: "#fff",
+      padding: 30,
+      borderRadius: 20,
+      marginBottom: 40,
+      boxShadow: "0 10px 30px rgba(0,0,0,.08)",
+    }}
+  >
+    <h2>Edit Coupon</h2>
 
+    <input
+      value={editCoupon.code}
+      onChange={(e) =>
+        setEditCoupon({
+          ...editCoupon,
+          code: e.target.value.toUpperCase(),
+        })
+      }
+      placeholder="Coupon Code"
+    />
+
+    <br /><br />
+
+    <select
+      value={editCoupon.type}
+      onChange={(e) =>
+        setEditCoupon({
+          ...editCoupon,
+          type: e.target.value,
+        })
+      }
+    >
+      <option value="percentage">Percentage</option>
+      <option value="fixed">Fixed Amount</option>
+    </select>
+
+    <br /><br />
+
+    <input
+      type="number"
+      placeholder="Discount"
+      value={editCoupon.value}
+      onChange={(e) =>
+        setEditCoupon({
+          ...editCoupon,
+          value: e.target.value,
+        })
+      }
+    />
+
+    <br /><br />
+
+    <input
+      type="number"
+      placeholder="Minimum Order"
+      value={editCoupon.minOrder}
+      onChange={(e) =>
+        setEditCoupon({
+          ...editCoupon,
+          minOrder: e.target.value,
+        })
+      }
+    />
+
+    <br /><br />
+
+    <input
+      type="number"
+      placeholder="Usage Limit"
+      value={editCoupon.usageLimit}
+      onChange={(e) =>
+        setEditCoupon({
+          ...editCoupon,
+          usageLimit: e.target.value,
+        })
+      }
+    />
+
+    <br /><br />
+
+    <input
+      type="date"
+      value={editCoupon.expires}
+      onChange={(e) =>
+        setEditCoupon({
+          ...editCoupon,
+          expires: e.target.value,
+        })
+      }
+    />
+
+    <br /><br />
+
+    <button
+      onClick={updateCoupon}
+      style={{
+        background: "#2E7D32",
+        color: "#fff",
+        border: "none",
+        padding: "12px 20px",
+        borderRadius: 10,
+        marginRight: 10,
+      }}
+    >
+      💾 Save
+    </button>
+
+    <button
+      onClick={() => setEditing(null)}
+    >
+      Cancel
+    </button>
+  </div>
+)}
 
     <h2
   style={{
@@ -403,6 +554,34 @@ return (
             {coupon.active ? "Disable" : "Enable"}
           </button>
 
+           <button
+  onClick={() => {
+    setEditing(coupon);
+
+    setEditCoupon({
+      code: coupon.code,
+      type: coupon.type,
+      value: coupon.value,
+      minOrder: coupon.minOrder,
+      usageLimit: coupon.usageLimit,
+      expires: coupon.expires,
+    });
+  }}
+  style={{
+    flex: 1,
+    background: "#C4956A",
+    color: "#fff",
+    border: "none",
+    padding: 10,
+    borderRadius: 10,
+    cursor: "pointer",
+  }}
+>
+  ✏ Edit
+</button>
+
+
+          
           <button
             onClick={() => deleteCoupon(coupon.id)}
             style={{
