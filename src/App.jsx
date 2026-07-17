@@ -29,6 +29,7 @@ import TermsPage from "./pages/TermsPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import DeleteAccountPage from "./pages/DeleteAccountPage";
 import AdminPage from "./pages/AdminPage";
+import CouponsAdminPage from "./pages/CouponsAdminPage";
 
 
 
@@ -60,6 +61,7 @@ export default function App() {
     "change-password",
     "deleteAccount",
     "admin",
+    "couponsadmin"
   ];
 
   return (
@@ -194,6 +196,10 @@ html.dark {
   <AdminPage setPage={navigateTo} />
 )}
 
+
+        {page === "couponsadmin" && (
+  <CouponsAdminPage setPage={setPage} />
+)}
 
         
         <Footer />
