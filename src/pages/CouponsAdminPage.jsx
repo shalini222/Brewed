@@ -58,6 +58,24 @@ const totalUses = coupons.reduce(
   0
 );
 
+
+const totalPossibleUses = coupons.reduce(
+  (sum, c) => sum + (c.usageLimit || 0),
+  0
+);
+
+const redemptionRate =
+  totalPossibleUses > 0
+    ? (
+        (totalUses / totalPossibleUses) *
+        100
+      ).toFixed(1)
+    : 0;
+
+
+
+  
+
 const totalDiscount = coupons.reduce(
   (sum, c) =>
     sum + (c.totalDiscountGiven || 0),
@@ -368,6 +386,13 @@ return (
     icon="💸"
   />
 </div>
+
+    <StatCard
+  title="Redemption Rate"
+  value={`${redemptionRate}%`}
+  color="#FF9800"
+  icon="📈"
+/>
 
     {mostUsed && (
   <div
