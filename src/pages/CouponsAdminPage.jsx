@@ -12,6 +12,7 @@ import { db } from "../firebase";
 
 export default function CouponsAdminPage({ setPage }) {
   const [coupons, setCoupons] = useState([]);
+  const [sortBy, setSortBy] = useState("newest");
   
   
   
@@ -562,6 +563,32 @@ return (
 
 
 
+    <div
+  style={{
+    display: "flex",
+    justifyContent: "flex-end",
+    marginBottom: 20,
+  }}
+>
+  <select
+    value={sortBy}
+    onChange={(e) => setSortBy(e.target.value)}
+    style={{
+      padding: "10px 14px",
+      borderRadius: 12,
+      border: "1px solid #ddd",
+      background: "#fff",
+      cursor: "pointer",
+    }}
+  >
+    <option value="newest">Newest</option>
+    <option value="code">Coupon Code (A-Z)</option>
+    <option value="used">Most Used</option>
+    <option value="expiry">Expiring Soon</option>
+  </select>
+</div>
+
+
     
     <h2
   style={{
@@ -617,6 +644,27 @@ return (
 
     return matchesSearch && matchesFilter;
   })
+
+  .sort((a, b) => {
+    switch (sortBy) {
+      case "code":
+        return a.code.localeCompare(b.code);
+
+      case "used":
+        return (b.usageCount || 0) - (a.usageCount || 0);
+
+      case "expiry":
+        return new Date(a.expires || "9999-12-31") -
+               new Date(b.expires || "9999-12-31");
+
+      default:
+        return (
+          (b.createdAt?.seconds || 0) -
+          (a.createdAt?.seconds || 0)
+        );
+    }
+  })
+
   .map((coupon) => (
       <div
         key={coupon.id}
