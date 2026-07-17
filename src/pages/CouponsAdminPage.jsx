@@ -210,7 +210,50 @@ function StatCard({
 }
 
 
+function getCategoryColor(category) {
+  switch (category) {
+    case "New User":
+      return {
+        bg: "#E3F2FD",
+        color: "#1565C0",
+      };
 
+    case "Festival":
+      return {
+        bg: "#FFF3E0",
+        color: "#EF6C00",
+      };
+
+    case "Birthday":
+      return {
+        bg: "#FCE4EC",
+        color: "#C2185B",
+      };
+
+    case "Referral":
+      return {
+        bg: "#E8F5E9",
+        color: "#2E7D32",
+      };
+
+    case "Loyalty":
+      return {
+        bg: "#F3E5F5",
+        color: "#6A1B9A",
+      };
+
+    default:
+      return {
+        bg: "#ECEFF1",
+        color: "#455A64",
+      };
+  }
+}
+
+
+
+
+  
 
   
 
@@ -700,9 +743,23 @@ return (
           >
             {coupon.code}
           </h2>
-          <p>
-  <strong>Category:</strong> {coupon.category || "General"}
-</p>
+          <span
+  style={{
+    display: "inline-block",
+    marginTop: 8,
+    marginBottom: 12,
+    padding: "6px 12px",
+    borderRadius: 999,
+    fontWeight: 600,
+    fontSize: 13,
+    background:
+      getCategoryColor(coupon.category).bg,
+    color:
+      getCategoryColor(coupon.category).color,
+  }}
+>
+  {coupon.category || "General"}
+</span>
           <span
             style={{
               background: coupon.active
