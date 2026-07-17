@@ -128,7 +128,7 @@ useEffect(() => {
         setUserNotifications((prev) => [
           {
             id: newest.id,
-            text: `👤 New user registered`,
+            text: `👤 ${user.name || "New user"} has joined Brewed`,
           },
           ...prev,
         ]);
