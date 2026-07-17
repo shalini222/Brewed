@@ -41,6 +41,32 @@ const [editCoupon, setEditCoupon] = useState({
 
 const [search, setSearch] = useState("");
 const [filter, setFilter] = useState("All");
+
+const totalUses = coupons.reduce(
+  (sum, c) => sum + (c.usageCount || 0),
+  0
+);
+
+const totalDiscount = coupons.reduce(
+  (sum, c) =>
+    sum + (c.totalDiscountGiven || 0),
+  0
+);
+
+const mostUsed =
+  coupons.length > 0
+    ? [...coupons].sort(
+        (a, b) =>
+          (b.usageCount || 0) -
+          (a.usageCount || 0)
+      )[0]
+    : null;
+
+
+
+
+
+  
   
 
   async function loadCoupons() {
@@ -133,6 +159,55 @@ async function updateCoupon() {
   loadCoupons();
 }
 
+function StatCard({
+  title,
+  value,
+  color,
+  icon,
+}) {
+  return (
+    <div
+      style={{
+        background: "#fff",
+        padding: 25,
+        borderRadius: 20,
+        boxShadow:
+          "0 10px 25px rgba(0,0,0,.08)",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 32,
+          marginBottom: 10,
+        }}
+      >
+        {icon}
+      </div>
+
+      <p
+        style={{
+          color: "#777",
+          margin: 0,
+        }}
+      >
+        {title}
+      </p>
+
+      <h1
+        style={{
+          marginTop: 10,
+          color,
+        }}
+      >
+        {value}
+      </h1>
+    </div>
+  );
+}
+
+
+
+
   
 
 return (
@@ -158,53 +233,68 @@ return (
     </h1>
 
     <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+    gap: 20,
+    marginBottom: 40,
+  }}
+>
+  <StatCard
+    title="Coupons"
+    value={coupons.length}
+    color="#3B1A08"
+    icon="🎟"
+  />
+
+  <StatCard
+    title="Active"
+    value={coupons.filter(c => c.active).length}
+    color="#2E7D32"
+    icon="✅"
+  />
+
+  <StatCard
+    title="Total Uses"
+    value={totalUses}
+    color="#C4956A"
+    icon="🔥"
+  />
+
+  <StatCard
+    title="Discount Given"
+    value={`₹${totalDiscount}`}
+    color="#4F46E5"
+    icon="💸"
+  />
+</div>
+
+    {mostUsed && (
+  <div
+    style={{
+      background: "#fff",
+      borderRadius: 20,
+      padding: 25,
+      marginBottom: 35,
+      boxShadow:
+        "0 10px 25px rgba(0,0,0,.08)",
+    }}
+  >
+    <h2
       style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
-        gap: 20,
-        marginBottom: 35,
+        fontFamily: "Playfair Display",
       }}
     >
-      <div
-        style={{
-          background: "#fff",
-          padding: 25,
-          borderRadius: 20,
-          boxShadow: "0 10px 25px rgba(0,0,0,.08)",
-        }}
-      >
-        <h3>Total Coupons</h3>
-        <h1>{coupons.length}</h1>
-      </div>
+      🏆 Most Used Coupon
+    </h2>
 
-      <div
-        style={{
-          background: "#fff",
-          padding: 25,
-          borderRadius: 20,
-          boxShadow: "0 10px 25px rgba(0,0,0,.08)",
-        }}
-      >
-        <h3>Active</h3>
-        <h1>
-          {coupons.filter(c => c.active).length}
-        </h1>
-      </div>
+    <h1>{mostUsed.code}</h1>
 
-      <div
-        style={{
-          background: "#fff",
-          padding: 25,
-          borderRadius: 20,
-          boxShadow: "0 10px 25px rgba(0,0,0,.08)",
-        }}
-      >
-        <h3>Disabled</h3>
-        <h1>
-          {coupons.filter(c => !c.active).length}
-        </h1>
-      </div>
-    </div>
+    <p>
+      Used {mostUsed.usageCount || 0} times
+    </p>
+  </div>
+)}
 
     <div
       style={{
