@@ -8,7 +8,25 @@ import {
   doc,
   serverTimestamp,
 } from "firebase/firestore";
+
 import { db } from "../firebase";
+
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts";
+
+
+
 
 export default function CouponsAdminPage({ setPage }) {
   const [coupons, setCoupons] = useState([]);
@@ -82,6 +100,12 @@ const totalDiscount = coupons.reduce(
   0
 );
 
+  const totalRevenue = coupons.reduce(
+  (sum, c) =>
+    sum + (c.totalRevenue || 0),
+  0
+);
+
 const mostUsed =
   coupons.length > 0
     ? [...coupons].sort(
@@ -92,9 +116,32 @@ const mostUsed =
     : null;
 
 
+const couponTypes = [
+  "General",
+  "New User",
+  "Festival",
+  "Birthday",
+  "Referral",
+  "Loyalty",
+];
 
+const categoryData = couponTypes.map((type) => ({
+  name: type,
+  value: coupons.filter(
+    (c) => (c.category || "General") === type
+  ).length,
+}));
 
-
+const usageData = [...coupons]
+  .sort(
+    (a, b) =>
+      (a.createdAt?.seconds || 0) -
+      (b.createdAt?.seconds || 0)
+  )
+  .map((coupon) => ({
+    name: coupon.code,
+    uses: coupon.usageCount || 0,
+  }));
   
   
 
@@ -320,7 +367,14 @@ function getExpiryStatus(expires) {
 
 
 
-
+const COLORS = [
+  "#C4956A",
+  "#4F46E5",
+  "#2E7D32",
+  "#F59E0B",
+  "#EC4899",
+  "#06B6D4",
+];
 
   
 
@@ -393,7 +447,16 @@ return (
   color="#FF9800"
   icon="📈"
 />
+<StatCard
+  title="Revenue Generated"
+  value={`₹${totalRevenue}`}
+  color="#009688"
+  icon="💰"
+/>
 
+
+
+    
     {mostUsed && (
   <div
     style={{
@@ -420,7 +483,92 @@ return (
     </p>
   </div>
 )}
+<div
+  style={{
+    background: "#fff",
+    borderRadius: 20,
+    padding: 25,
+    marginBottom: 40,
+    boxShadow: "0 10px 25px rgba(0,0,0,.08)",
+    height: 420,
+  }}
+>
+  <h2
+    style={{
+      fontFamily: "Playfair Display",
+      marginBottom: 20,
+    }}
+  >
+    🥧 Coupon Categories
+  </h2>
 
+  <ResponsiveContainer width="100%" height={300}>
+    <PieChart>
+      <Pie
+        data={categoryData}
+        dataKey="value"
+        nameKey="name"
+        outerRadius={100}
+        label
+      >
+        {categoryData.map((entry, index) => (
+          <Cell
+            key={index}
+            fill={COLORS[index % COLORS.length]}
+          />
+        ))}
+      </Pie>
+
+      <Tooltip />
+      <Legend />
+    </PieChart>
+  </ResponsiveContainer>
+</div>
+
+<div
+  style={{
+    background: "#fff",
+    borderRadius: 20,
+    padding: 25,
+    marginBottom: 40,
+    boxShadow: "0 10px 25px rgba(0,0,0,.08)",
+    height: 420,
+  }}
+>
+  <h2
+    style={{
+      fontFamily: "Playfair Display",
+      marginBottom: 20,
+    }}
+  >
+    📈 Coupon Usage Trend
+  </h2>
+
+  <ResponsiveContainer width="100%" height={300}>
+    <LineChart data={usageData}>
+      <CartesianGrid strokeDasharray="3 3" />
+
+      <XAxis dataKey="name" />
+
+      <YAxis />
+
+      <Tooltip />
+
+      <Legend />
+
+      <Line
+        type="monotone"
+        dataKey="uses"
+        stroke="#C4956A"
+        strokeWidth={3}
+      />
+    </LineChart>
+  </ResponsiveContainer>
+</div>
+
+    
+
+    
     <div
       style={{
         background: "#fff",
