@@ -39,7 +39,8 @@ const [editCoupon, setEditCoupon] = useState({
   expires: "",
 });
 
-
+const [search, setSearch] = useState("");
+const [filter, setFilter] = useState("All");
   
 
   async function loadCoupons() {
@@ -430,6 +431,48 @@ return (
   </div>
 )}
 
+
+<div
+  style={{
+    display: "flex",
+    gap: 15,
+    marginBottom: 25,
+    flexWrap: "wrap",
+  }}
+>
+  <input
+    type="text"
+    placeholder="🔍 Search coupon..."
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+    style={{
+      flex: 1,
+      minWidth: 250,
+      padding: "12px 16px",
+      borderRadius: 12,
+      border: "1px solid #ddd",
+    }}
+  />
+
+  <select
+    value={filter}
+    onChange={(e) => setFilter(e.target.value)}
+    style={{
+      padding: "12px 16px",
+      borderRadius: 12,
+      border: "1px solid #ddd",
+    }}
+  >
+    <option>All</option>
+    <option>Active</option>
+    <option>Disabled</option>
+    <option>Expired</option>
+  </select>
+</div>
+
+
+
+    
     <h2
   style={{
     fontFamily: "Playfair Display",
@@ -462,7 +505,29 @@ return (
       gap: 20,
     }}
   >
-    {coupons.map((coupon) => (
+    {coupons
+  .filter((coupon) => {
+    const matchesSearch =
+      coupon.code
+        .toLowerCase()
+        .includes(search.toLowerCase());
+
+    let matchesFilter = true;
+
+    if (filter === "Active")
+      matchesFilter = coupon.active;
+
+    if (filter === "Disabled")
+      matchesFilter = !coupon.active;
+
+    if (filter === "Expired")
+      matchesFilter =
+        coupon.expires &&
+        new Date(coupon.expires) < new Date();
+
+    return matchesSearch && matchesFilter;
+  })
+  .map((coupon) => (
       <div
         key={coupon.id}
         style={{
