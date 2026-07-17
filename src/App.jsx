@@ -1,10 +1,5 @@
 import { useState } from "react";
 
-
-
-
-
-
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -31,8 +26,6 @@ import DeleteAccountPage from "./pages/DeleteAccountPage";
 import AdminPage from "./pages/AdminPage";
 import CouponsAdminPage from "./pages/CouponsAdminPage";
 import ReservationPage from "./pages/ReservationPage";
-
-
 
 export default function App() {
   const [page, setPage] = useState("menu");
@@ -68,151 +61,150 @@ export default function App() {
 
   return (
     <ThemeProvider>
-    <CartProvider>
-      <AuthProvider>
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
-:root {
-  --bg:#fcfcfc;
-  --surface:#ffffff;
-  --text:#1a1a1a;
-  --muted:#8a8a8a;
-  --border:#eeeeee;
-  --button-bg:#1a1a1a;
-  --button-text:#ffffff;
-  --accent:#C4956A;
-}
+      <CartProvider>
+        <AuthProvider>
+          <style>{`
+            @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
+            :root {
+              --bg:#fcfcfc;
+              --surface:#surface;
+              --text:#1a1a1a;
+              --muted:#8a8a8a;
+              --border:#eeeeee;
+              --button-bg:#1a1a1a;
+              --button-text:#ffffff;
+              --accent:#C4956A;
+            }
 
-html.dark {
-  --bg:#121212;
-  --surface:#1e1e1e;
-  --text:#f5f5f5;
-  --muted:#b8b8b8;
-  --border:#333333;
-  --button-bg:#f5f5f5;
-  --button-text:#121212;
-  --accent:#D6A878;
-}
+            html.dark {
+              --bg:#121212;
+              --surface:#1e1e1e;
+              --text:#f5f5f5;
+              --muted:#b8b8b8;
+              --border:#333333;
+              --button-bg:#f5f5f5;
+              --button-text:#121212;
+              --accent:#D6A878;
+            }
 
-  *{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-  }
+            *{
+              margin:0;
+              padding:0;
+              box-sizing:border-box;
+            }
 
-  html,body{
-    background:var(--bg);
-    color:var(--text);
-  }
+            html,body{
+              background:var(--bg);
+              color:var(--text);
+            }
 
-  button:hover{
-    opacity:.88;
-  }
-        `}</style>
+            button:hover{
+              opacity:.88;
+            }
+          `}</style>
 
-        {!hideNavbarPages.includes(page) && (
-          <Navbar
-            currentPage={page}
-            setPage={navigateTo}
-          />
-        )}
+          {!hideNavbarPages.includes(page) && (
+            <Navbar
+              currentPage={page}
+              setPage={navigateTo}
+            />
+          )}
 
-        {page === "menu" && (
-          <MenuPage
-            setPage={navigateTo}
-            setSelectedProduct={setSelectedProduct}
-          />
-        )}
+          {page === "menu" && (
+            <MenuPage
+              setPage={navigateTo}
+              setSelectedProduct={setSelectedProduct}
+            />
+          )}
 
-        {page === "product" && (
-          <ProductPage
-            setPage={navigateTo}
-            product={selectedProduct}
-          />
-        )}
+          {page === "product" && (
+            <ProductPage
+              setPage={navigateTo}
+              product={selectedProduct}
+            />
+          )}
 
-        {page === "cart" && (
-          <CartPage setPage={navigateTo} />
-        )}
+          {page === "cart" && (
+            <CartPage setPage={navigateTo} />
+          )}
 
-        {page === "checkout" && (
-          <CheckoutPage setPage={navigateTo} />
-        )}
+          {page === "checkout" && (
+            <CheckoutPage setPage={navigateTo} />
+          )}
 
-        {page === "tracking" && (
-          <TrackingPage 
-            setPage={navigateTo} 
-            orderSnapshot={activeOrder}
-            setSideOrderItem={setActiveOrder} 
-          />
-        )}
+          {page === "tracking" && (
+            <TrackingPage 
+              setPage={navigateTo} 
+              orderSnapshot={activeOrder}
+              setSideOrderItem={setActiveOrder} 
+            />
+          )}
 
-        {page === "login" && (
-          <Login setPage={navigateTo} />
-        )}
+          {page === "login" && (
+            <Login setPage={navigateTo} />
+          )}
 
-        {page === "profile" && (
-          <ProfilePage setPage={navigateTo} />
-        )}
+          {page === "profile" && (
+            <ProfilePage setPage={navigateTo} />
+          )}
 
-        {page === "orders" && (
-          <OrdersPage setPage={navigateTo} />
-        )}
+          {page === "orders" && (
+            <OrdersPage setPage={navigateTo} />
+          )}
 
-        {page === "rewards" && (
-          <RewardsPage setPage={navigateTo} />
-        )}
+          {page === "rewards" && (
+            <RewardsPage setPage={navigateTo} />
+          )}
 
-        {page === "favorites" && (
-  <FavoritesPage setPage={navigateTo} />
-)}
-        
+          {page === "favorites" && (
+            <FavoritesPage setPage={navigateTo} />
+          )}
+          
+          {page === "notifications" && (
+            <NotificationsPage setPage={navigateTo} />
+          )}
 
-        {page === "notifications" && (
-          <NotificationsPage setPage={navigateTo} />
-        )}
-        {page === "settings" && (
-          <SettingsPage setPage={navigateTo} />
-        )}
+          {page === "settings" && (
+            <SettingsPage setPage={navigateTo} />
+          )}
 
-        {page === "reservation" && (
-          <SettingsPage setPage={navigateTo} />
-        )}
+          {/* FIXED: Now renders ReservationPage correctly instead of SettingsPage */}
+          {page === "reservation" && (
+            <ReservationPage setPage={navigateTo} />
+          )}
+          
+          {/* FIXED: Updated to use unifed navigateTo instead of raw setPage */}
+          {page === "privacy" && (
+            <PrivacyPolicyPage setPage={navigateTo} />
+          )}
 
-        
-        {page === "privacy" && (
-  <PrivacyPolicyPage
-    setPage={setPage}
-  />
-)}
-        {page === "terms" && (
-  <TermsPage
-    setPage={setPage}
-  />
-)}
-        {page === "change-password" && (
-  <ChangePasswordPage setPage={setPage} />
-)}
+          {/* FIXED: Updated to use unifed navigateTo instead of raw setPage */}
+          {page === "terms" && (
+            <TermsPage setPage={navigateTo} />
+          )}
 
-    
-        {page === "deleteAccount" && (
-  <DeleteAccountPage setPage={setPage} />
+          {/* FIXED: Updated to use unifed navigateTo instead of raw setPage */}
+          {page === "change-password" && (
+            <ChangePasswordPage setPage={navigateTo} />
+          )}
       
-)}
+          {/* FIXED: Updated to use unifed navigateTo instead of raw setPage */}
+          {page === "deleteAccount" && (
+            <DeleteAccountPage setPage={navigateTo} />
+          )}
 
-{page === "admin" && (
-  <AdminPage setPage={navigateTo} />
-)}
+          {page === "admin" && (
+            <AdminPage setPage={navigateTo} />
+          )}
 
-
-        {page === "couponsadmin" && (
-  <CouponsAdminPage setPage={setPage} />
-)}
-
-        
-        <Footer />
-      </AuthProvider>
-    </CartProvider>
-      </ThemeProvider>
+          {/* FIXED: Updated to use unifed navigateTo instead of raw setPage */}
+          {page === "couponsadmin" && (
+            <CouponsAdminPage setPage={navigateTo} />
+          )}
+          
+          <Footer />
+        </AuthProvider>
+      </CartProvider>
+    </ThemeProvider>
   );
 }
