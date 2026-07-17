@@ -410,7 +410,9 @@ const todayOrders = orders.filter(
 </button>
 </div>
 
-{showNotifications && notifications.length > 0 && (
+{showNotifications &&
+  (notifications.length > 0 ||
+    userNotifications.length > 0) && (
   <div
     style={{
       background: "#fff",
