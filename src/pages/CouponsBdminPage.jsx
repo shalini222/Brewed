@@ -28,7 +28,7 @@ import {
 
 
 
-export default function CouponsAdminPage({ setPage }) {
+export default function CouponsBdminPage({ setPage }) {
   const [coupons, setCoupons] = useState([]);
   const [sortBy, setSortBy] = useState("newest");
   
