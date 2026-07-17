@@ -388,6 +388,12 @@ const todayOrders = orders.filter(
       </h1>
 
 
+<button
+  onClick={() => setPage("couponsadmin")}
+>
+  🎟 Manage Coupons
+</button>
+      
 <div
   style={{
     display: "flex",
@@ -896,12 +902,6 @@ gap:30
   <p>{todayOrders} Orders Today</p>
 </div>
 
-<button
-  onClick={() => setPage("couponsadmin")}
->
-  🎟 Manage Coupons
-</button>
-      
 
       
      <button
