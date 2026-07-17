@@ -10,7 +10,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 
-export default function CouponsPage({ setPage }) {
+export default function CouponsAdminPage({ setPage }) {
   const [coupons, setCoupons] = useState([]);
 
   const [newCoupon, setNewCoupon] = useState({
