@@ -120,6 +120,7 @@ useEffect(() => {
       if (snapshot.empty) return;
 
       const newest = snapshot.docs[0];
+      const user = newest.data();
 
       if (
         lastUserId.current &&
