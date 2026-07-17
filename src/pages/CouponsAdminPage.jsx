@@ -77,36 +77,40 @@ export default function CouponsAdminPage({ setPage }) {
     triggerType: "manual"
   });
 
-  // --- CORE PRESERVED DATA REDUCERS ---
-  const totalUses = coupons.reduce((sum, c) => sum + (c.usageCount || 0), 0);
-  const totalPossibleUses = coupons.reduce((sum, c) => sum + (c.usageLimit || 0), 0);
+  // --- SAFE DATA REDUCERS (WITH FALLBACK PROTECTION) ---
+  const safeCoupons = Array.isArray(coupons) ? coupons : [];
+  const safeOrders = Array.isArray(orders) ? orders : [];
+  const safeLogs = Array.isArray(auditLogs) ? auditLogs : [];
+
+  const totalUses = safeCoupons.reduce((sum, c) => sum + (Number(c?.usageCount) || 0), 0);
+  const totalPossibleUses = safeCoupons.reduce((sum, c) => sum + (Number(c?.usageLimit) || 0), 0);
   const redemptionRate = totalPossibleUses > 0 ? ((totalUses / totalPossibleUses) * 100).toFixed(1) : 0;
-  const totalDiscount = coupons.reduce((sum, c) => sum + (c.totalDiscountGiven || 0), 0);
-  const totalRevenue = coupons.reduce((sum, c) => sum + (c.totalRevenue || 0), 0);
+  const totalDiscount = safeCoupons.reduce((sum, c) => sum + (Number(c?.totalDiscountGiven) || 0), 0);
+  const totalRevenue = safeCoupons.reduce((sum, c) => sum + (Number(c?.totalRevenue) || 0), 0);
 
   const mostUsed =
-    coupons.length > 0
-      ? [...coupons].sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))[0]
+    safeCoupons.length > 0
+      ? [...safeCoupons].sort((a, b) => (Number(b?.usageCount) || 0) - (Number(a?.usageCount) || 0))[0]
       : null;
 
   const couponTypes = ["General", "New User", "Festival", "Birthday", "Referral", "Loyalty"];
 
   const categoryData = couponTypes.map((type) => ({
     name: type,
-    value: coupons.filter((c) => (c.category || "General") === type).length,
+    value: safeCoupons.filter((c) => (c?.category || "General") === type).length,
   }));
 
-  const usageData = [...coupons]
-    .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0))
+  const usageData = [...safeCoupons]
+    .sort((a, b) => (Number(a?.createdAt?.seconds) || 0) - (Number(b?.createdAt?.seconds) || 0))
     .map((coupon) => ({
-      name: coupon.code,
-      uses: coupon.usageCount || 0,
+      name: coupon?.code || "UNNAMED",
+      uses: Number(coupon?.usageCount) || 0,
     }));
 
   // --- REVENUE INTERVAL PROCESSOR ENGINE ---
-  const salesTodayStats = orders.reduce(
+  const salesTodayStats = safeOrders.reduce(
     (stats, order) => {
-      const orderDate = order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000) : null;
+      const orderDate = order?.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000) : null;
       if (orderDate) {
         const today = new Date();
         if (
@@ -115,7 +119,7 @@ export default function CouponsAdminPage({ setPage }) {
           orderDate.getFullYear() === today.getFullYear()
         ) {
           stats.count += 1;
-          stats.revenue += Number(order.totalPrice || 0);
+          stats.revenue += Number(order?.totalPrice || 0);
         }
       }
       return stats;
@@ -135,25 +139,26 @@ export default function CouponsAdminPage({ setPage }) {
     else if (revenueTimeframe === "24hrs") { cutoffLimitMs = 24 * 60 * 60 * 1000; groupingKey = "hour"; }
 
     const cutoffDate = new Date(now.getTime() - cutoffLimitMs);
-    const filtered = orders.filter((o) => {
-      const oDate = o.createdAt?.seconds ? new Date(o.createdAt.seconds * 1000) : null;
+    const filtered = safeOrders.filter((o) => {
+      const oDate = o?.createdAt?.seconds ? new Date(o.createdAt.seconds * 1000) : null;
       return oDate && oDate >= cutoffDate;
     });
 
     const aggregations = {};
     filtered.forEach((order) => {
+      if (!order?.createdAt?.seconds) return;
       const oDate = new Date(order.createdAt.seconds * 1000);
       const key = groupingKey === "date" 
         ? oDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })
         : `${oDate.getHours()}:00`;
-      aggregations[key] = (aggregations[key] || 0) + Number(order.totalPrice || 0);
+      aggregations[key] = (aggregations[key] || 0) + Number(order?.totalPrice || 0);
     });
 
     return Object.keys(aggregations).map((key) => ({ label: key, amount: aggregations[key] }));
   };
 
   const revenueDataTimeline = getFilteredRevenueData();
-  const totalSalesRevenueCollection = orders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
+  const totalSalesRevenueCollection = safeOrders.reduce((sum, o) => sum + Number(o?.totalPrice || 0), 0);
 
   // --- AUTOMATIC ALPHANUMERIC STRING ENGINE GENERATOR ---
   function handleGenerateRandomCode() {
@@ -162,12 +167,13 @@ export default function CouponsAdminPage({ setPage }) {
     for (let i = 0; i < 8; i++) {
       token += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    const prefix = newCoupon.category.substring(0, 3).toUpperCase();
+    const prefix = (newCoupon.category || "GEN").substring(0, 3).toUpperCase();
     setNewCoupon({ ...newCoupon, code: `${prefix}-${token}`, isAutoGenerated: true });
   }
 
   // --- ONE-CLICK CLIPBOARD COPY MODULE ---
   function copyToClipboard(code) {
+    if (!code) return;
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2000);
@@ -175,12 +181,12 @@ export default function CouponsAdminPage({ setPage }) {
 
   // --- CSV RAW STREAM EXPORTER MODULE ---
   function handleExportToCSV() {
-    if (coupons.length === 0) return alert("Repository empty. Aborting extraction.");
+    if (safeCoupons.length === 0) return alert("Repository empty. Aborting extraction.");
     let csvContent = "data:text/csv;charset=utf-8,";
     csvContent += "Code,Category,Type,Value,Min Order,Usage Count,Usage Limit,Status,Expires\n";
     
-    coupons.forEach((c) => {
-      csvContent += `${c.code},${c.category || "General"},${c.type},${c.value},${c.minOrder},${c.usageCount || 0},${c.usageLimit || "Unlimited"},${c.active ? "Active" : "Disabled"},${c.expires || "Never"}\n`;
+    safeCoupons.forEach((c) => {
+      csvContent += `${c.code || ""},${c.category || "General"},${c.type || ""},${c.value || 0},${c.minOrder || 0},${c.usageCount || 0},${c.usageLimit || "Unlimited"},${c.active ? "Active" : "Disabled"},${c.expires || "Never"}\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -197,21 +203,25 @@ export default function CouponsAdminPage({ setPage }) {
     try {
       const couponSnapshot = await getDocs(collection(db, "coupons"));
       setCoupons(couponSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-      
+    } catch (e) {
+      console.error("Firestore loading coupons error:", e);
+    }
+
+    try {
       const orderSnapshot = await getDocs(collection(db, "orders"));
       setOrders(orderSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-
-      try {
-        const logSnapshot = await getDocs(collection(db, "coupon_audit_logs"));
-        setAuditLogs(logSnapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)));
-      } catch (e) {
-        setAuditLogs([]);
-      }
     } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
+      console.error("Firestore loading orders error:", e);
     }
+
+    try {
+      const logSnapshot = await getDocs(collection(db, "coupon_audit_logs"));
+      setAuditLogs(logSnapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)));
+    } catch (e) {
+      setAuditLogs([]);
+    }
+    
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -238,14 +248,17 @@ export default function CouponsAdminPage({ setPage }) {
     if (!window.confirm(`Apply bulk status update across ${selectedCouponIds.length} items?`)) return;
     
     setLoading(true);
-    const batch = writeBatch(db);
-    selectedCouponIds.forEach((id) => {
-      const docRef = doc(db, "coupons", id);
-      batch.update(docRef, { active: targetStatus });
-    });
-
-    await batch.commit();
-    await createAuditEntry("BULK_STATUS_MUTATION", `${selectedCouponIds.length} items`, { state: targetStatus });
+    try {
+      const batch = writeBatch(db);
+      selectedCouponIds.forEach((id) => {
+        const docRef = doc(db, "coupons", id);
+        batch.update(docRef, { active: targetStatus });
+      });
+      await batch.commit();
+      await createAuditEntry("BULK_STATUS_MUTATION", `${selectedCouponIds.length} items`, { state: targetStatus });
+    } catch (e) {
+      alert("Error handling batch update. Check security rules.");
+    }
     setSelectedCouponIds([]);
     await loadCoupons();
   }
@@ -255,14 +268,17 @@ export default function CouponsAdminPage({ setPage }) {
     if (!window.confirm(`⚠️ CRITICAL OPERATION: Permanently delete ${selectedCouponIds.length} selected items?`)) return;
 
     setLoading(true);
-    const batch = writeBatch(db);
-    selectedCouponIds.forEach((id) => {
-      const docRef = doc(db, "coupons", id);
-      batch.delete(docRef);
-    });
-
-    await batch.commit();
-    await createAuditEntry("BULK_PURGE_EXECUTION", `${selectedCouponIds.length} items`);
+    try {
+      const batch = writeBatch(db);
+      selectedCouponIds.forEach((id) => {
+        const docRef = doc(db, "coupons", id);
+        batch.delete(docRef);
+      });
+      await batch.commit();
+      await createAuditEntry("BULK_PURGE_EXECUTION", `${selectedCouponIds.length} items`);
+    } catch (e) {
+      alert("Error executing bulk delete.");
+    }
     setSelectedCouponIds([]);
     await loadCoupons();
   }
@@ -316,7 +332,7 @@ export default function CouponsAdminPage({ setPage }) {
 
   async function deleteCoupon(id) {
     if (!window.confirm("Delete this coupon?")) return;
-    const historicalDoc = coupons.find(c => c.id === id);
+    const historicalDoc = safeCoupons.find(c => c.id === id);
     await deleteDoc(doc(db, "coupons", id));
     if (historicalDoc) await createAuditEntry("DELETE_CAMPAIGN", historicalDoc.code);
     loadCoupons();
@@ -381,7 +397,6 @@ export default function CouponsAdminPage({ setPage }) {
     );
   }
 
-  // --- EXTENDED PREMIUM COLOR-COATING METHOD MAPPER ---
   function getCategoryColor(category) {
     switch (category) {
       case "New User": return { bg: "#E3F2FD", border: "#90CAF9", color: "#0D47A1", cardBg: "#F7FAFC" };
@@ -427,6 +442,11 @@ export default function CouponsAdminPage({ setPage }) {
     fontFamily: "inherit"
   };
 
+  // --- MASTER RENDER LAYER WITH CRASH SAFEGUARDS ---
+  if (!db) {
+    return <div style={{ padding: "50px", textAlign: "center", color: "red" }}>Error: Firebase db connection configuration missing in context resources.</div>;
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: "#FAF6F0", padding: "40px 4%", fontFamily: "system-ui, -apple-system, sans-serif" }}>
       
@@ -447,7 +467,7 @@ export default function CouponsAdminPage({ setPage }) {
         <StatCard title="Sales Confirmed Today" value={`${salesTodayStats.count} Orders`} color="#fff" icon="🛍️" highlight={true} />
         <StatCard title="Revenue Captured Today" value={`₹${salesTodayStats.revenue}`} color="#009688" icon="⚡" />
         <StatCard title="All-Time Total Revenue" value={`₹${totalSalesRevenueCollection}`} color="#2E7D32" icon="💼" />
-        <StatCard title="Active Configuration Templates" value={coupons.filter(c => c.active).length} color="#3B1A08" icon="⚙️" />
+        <StatCard title="Active Templates" value={safeCoupons.filter(c => c?.active).length} color="#3B1A08" icon="⚙️" />
       </div>
 
       {/* VISUAL CHART REPORT FLEX LAYOUT BLOCKS */}
@@ -498,7 +518,7 @@ export default function CouponsAdminPage({ setPage }) {
 
       {/* EXTENDED RETROACTIVE MATRIX GRID SUMMARY */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "20px", marginBottom: "40px" }}>
-        <StatCard title="Total Repository" value={coupons.length} color="#3B1A08" icon="📋" />
+        <StatCard title="Total Repository" value={safeCoupons.length} color="#3B1A08" icon="📋" />
         <StatCard title="Total Redemptions" value={totalUses} color="#C4956A" icon="🔥" />
         <StatCard title="Discounts Distributed" value={`₹${totalDiscount}`} color="#4F46E5" icon="💸" />
         <StatCard title="System Efficiency" value={`${redemptionRate}%`} color="#FF9800" icon="📈" />
@@ -627,22 +647,22 @@ export default function CouponsAdminPage({ setPage }) {
             <div style={{ background: "#fff", borderRadius: "16px", padding: "28px", border: "2px solid #C4956A", boxShadow: "0 10px 30px rgba(0,0,0,0.05)" }}>
               <h3 style={{ margin: "0 0 20px 0" }}>✏️ Adjust Configuration Matrix</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                <input style={formInputStyle} value={editCoupon.code} onChange={(e) => setEditCoupon({ ...editCoupon, code: e.target.value.toUpperCase() })} />
-                <select style={formInputStyle} value={editCoupon.audienceType} onChange={(e) => setEditCoupon({ ...editCoupon, audienceType: e.target.value })}>
+                <input style={formInputStyle} value={editCoupon.code || ""} onChange={(e) => setEditCoupon({ ...editCoupon, code: e.target.value.toUpperCase() })} />
+                <select style={formInputStyle} value={editCoupon.audienceType || "all"} onChange={(e) => setEditCoupon({ ...editCoupon, audienceType: e.target.value })}>
                   <option value="all">🌐 Open Public</option>
                   <option value="new_users_only">🆕 First-Order Target</option>
                   <option value="specific_user">👤 Customer Target Mapping</option>
                 </select>
                 {editCoupon.audienceType === "specific_user" && (
-                  <input style={formInputStyle} value={editCoupon.targetUserId} onChange={(e) => setEditCoupon({ ...editCoupon, targetUserId: e.target.value })} />
+                  <input style={formInputStyle} value={editCoupon.targetUserId || ""} onChange={(e) => setEditCoupon({ ...editCoupon, targetUserId: e.target.value })} />
                 )}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                  <input type="number" style={formInputStyle} value={editCoupon.value} onChange={(e) => setEditCoupon({ ...editCoupon, value: e.target.value })} />
-                  <input type="number" style={formInputStyle} value={editCoupon.maxDiscount} onChange={(e) => setEditCoupon({ ...editCoupon, maxDiscount: e.target.value })} />
+                  <input type="number" style={formInputStyle} value={editCoupon.value || ""} onChange={(e) => setEditCoupon({ ...editCoupon, value: e.target.value })} />
+                  <input type="number" style={formInputStyle} value={editCoupon.maxDiscount || ""} onChange={(e) => setEditCoupon({ ...editCoupon, maxDiscount: e.target.value })} />
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                  <input type="date" style={formInputStyle} value={editCoupon.starts} onChange={(e) => setEditCoupon({ ...editCoupon, starts: e.target.value })} />
-                  <input type="date" style={formInputStyle} value={editCoupon.expires} onChange={(e) => setEditCoupon({ ...editCoupon, expires: e.target.value })} />
+                  <input type="date" style={formInputStyle} value={editCoupon.starts || ""} onChange={(e) => setEditCoupon({ ...editCoupon, starts: e.target.value })} />
+                  <input type="date" style={formInputStyle} value={editCoupon.expires || ""} onChange={(e) => setEditCoupon({ ...editCoupon, expires: e.target.value })} />
                 </div>
                 <div style={{ display: "flex", gap: "10px" }}>
                   <button onClick={updateCoupon} style={{ flex: 1, background: "#2E7D32", color: "#fff", border: "none", padding: "12px", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}>💾 Commit Changes</button>
@@ -699,12 +719,12 @@ export default function CouponsAdminPage({ setPage }) {
             <p>Syncing secure data channels...</p>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px", marginBottom: "40px" }}>
-              {coupons
-                .filter((c) => c.code.toLowerCase().includes(search.toLowerCase()) && (filter === "All" || (filter === "Active" ? c.active : !c.active)))
-                .sort((a, b) => sortBy === "code" ? a.code.localeCompare(b.code) : sortBy === "used" ? (b.usageCount || 0) - (a.usageCount || 0) : (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+              {safeCoupons
+                .filter((c) => (c?.code || "").toLowerCase().includes(search.toLowerCase()) && (filter === "All" || (filter === "Active" ? c?.active : !c?.active)))
+                .sort((a, b) => sortBy === "code" ? (a?.code || "").localeCompare(b?.code || "") : sortBy === "used" ? (b?.usageCount || 0) - (a?.usageCount || 0) : (b?.createdAt?.seconds || 0) - (a?.createdAt?.seconds || 0))
                 .map((coupon) => {
-                  const styleSheet = getCategoryColor(coupon.category);
-                  const timeSpecs = getExpiryStatus(coupon.expires, coupon.starts);
+                  const styleSheet = getCategoryColor(coupon?.category);
+                  const timeSpecs = getExpiryStatus(coupon?.expires, coupon?.starts);
                   const selectCheck = selectedCouponIds.includes(coupon.id);
 
                   return (
@@ -717,27 +737,27 @@ export default function CouponsAdminPage({ setPage }) {
                             <input type="checkbox" checked={selectCheck} onChange={() => toggleSelectCoupon(coupon.id)} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
                             
                             <div style={{ position: "relative" }}>
-                              <h2 onClick={() => copyToClipboard(coupon.code)} style={{ margin: 0, fontFamily: "monospace", fontSize: "22px", color: "#1E1B18", cursor: "pointer", fontWeight: "700" }} title="Click to copy parameter token">
-                                {coupon.code} 📋
+                              <h2 onClick={() => copyToClipboard(coupon?.code)} style={{ margin: 0, fontFamily: "monospace", fontSize: "22px", color: "#1E1B18", cursor: "pointer", fontWeight: "700" }} title="Click to copy parameter token">
+                                {coupon?.code || "UNNAMED"} 📋
                               </h2>
-                              {copiedCode === coupon.code && (
+                              {copiedCode === coupon?.code && (
                                 <span style={{ position: "absolute", top: "-24px", left: 0, background: "#1E1B18", color: "#fff", fontSize: "10px", padding: "2px 6px", borderRadius: "4px" }}>Copied!</span>
                               )}
                             </div>
                           </div>
 
-                          <span style={{ background: coupon.active ? "#E8F5E9" : "#FFEBEE", color: coupon.active ? "#2E7D32" : "#C62828", padding: "4px 10px", borderRadius: "20px", fontWeight: "700", fontSize: "12px" }}>
-                            {coupon.active ? "● Active" : "○ Offline"}
+                          <span style={{ background: coupon?.active ? "#E8F5E9" : "#FFEBEE", color: coupon?.active ? "#2E7D32" : "#C62828", padding: "4px 10px", borderRadius: "20px", fontWeight: "700", fontSize: "12px" }}>
+                            {coupon?.active ? "● Active" : "○ Offline"}
                           </span>
                         </div>
 
                         {/* Tag Badges Metrics Panel */}
                         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "14px" }}>
                           <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 8px", borderRadius: "4px", background: styleSheet.bg, color: styleSheet.color, textTransform: "uppercase" }}>
-                            {coupon.category || "General"}
+                            {coupon?.category || "General"}
                           </span>
                           <span style={{ fontSize: "11px", fontWeight: "600", padding: "4px 8px", borderRadius: "4px", background: "#FAF6F0", color: "#544E48" }}>
-                            {coupon.audienceType === "specific_user" ? `👤 Only: ${coupon.targetUserId}` : coupon.audienceType === "new_users_only" ? "🆕 First-Order Account" : "🌐 Public Open Tier"}
+                            {coupon?.audienceType === "specific_user" ? `👤 Only: ${coupon?.targetUserId}` : coupon?.audienceType === "new_users_only" ? "🆕 First-Order" : "🌐 Open Tier"}
                           </span>
 
                           {/* DYNAMIC TIMEFRAME BADGE RENDERS */}
@@ -747,21 +767,21 @@ export default function CouponsAdminPage({ setPage }) {
 
                         {/* Technical Configuration Specifications */}
                         <div style={{ fontSize: "14px", display: "flex", flexDirection: "column", gap: "6px", color: "#3B342E" }}>
-                          <p style={{ margin: 0 }}><strong>Benefit Yield:</strong> {coupon.type === "percentage" ? `${coupon.value}% Off` : `₹${coupon.value} Off`}{coupon.type === "percentage" && coupon.maxDiscount > 0 && ` (Max ₹${coupon.maxDiscount})`}</p>
-                          <p style={{ margin: 0 }}><strong>Minimum Trigger:</strong> ₹{coupon.minOrder}</p>
-                          <p style={{ margin: 0 }}><strong>Redemption Vol Cap:</strong> {coupon.usageCount || 0} / {coupon.usageLimit || "∞"}</p>
-                          <p style={{ margin: 0 }}><strong>Account Target Lifecycle:</strong> {coupon.singleUse ? "Global Single Use" : "Reusable Core Pattern"}</p>
+                          <p style={{ margin: 0 }}><strong>Benefit Yield:</strong> {coupon?.type === "percentage" ? `${coupon?.value}% Off` : `₹${coupon?.value} Off`}{coupon?.type === "percentage" && Number(coupon?.maxDiscount) > 0 && ` (Max ₹${coupon?.maxDiscount})`}</p>
+                          <p style={{ margin: 0 }}><strong>Minimum Trigger:</strong> ₹{coupon?.minOrder}</p>
+                          <p style={{ margin: 0 }}><strong>Redemption Vol Cap:</strong> {coupon?.usageCount || 0} / {coupon?.usageLimit || "∞"}</p>
+                          <p style={{ margin: 0 }}><strong>Target Lifecycle:</strong> {coupon?.singleUse ? "Global Single Use" : "Reusable Pattern"}</p>
                         </div>
 
                         {/* DYNAMIC PROGRESS ACCELERATOR GRAPH PROGRESS SLIDER */}
-                        {coupon.usageLimit > 0 && (
+                        {Number(coupon?.usageLimit) > 0 && (
                           <div style={{ marginTop: "15px", marginBottom: "15px" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#8A827C", marginBottom: "4px" }}>
                               <span>Campaign Consumption Velocity</span>
-                              <strong>{Math.round(((coupon.usageCount || 0) / coupon.usageLimit) * 100)}%</strong>
+                              <strong>{Math.round(((coupon?.usageCount || 0) / coupon.usageLimit) * 100)}%</strong>
                             </div>
                             <div style={{ width: "100%", height: "6px", background: "#FAF6F0", borderRadius: "10px", border: "1px solid #EAE1D4", overflow: "hidden" }}>
-                              <div style={{ height: "100%", background: coupon.active ? "#3B1A08" : "#A8A096", width: `${Math.min(((coupon.usageCount || 0) / coupon.usageLimit) * 100, 100)}%`, transition: "width 0.4s ease" }} />
+                              <div style={{ height: "100%", background: coupon?.active ? "#3B1A08" : "#A8A096", width: `${Math.min(((coupon?.usageCount || 0) / coupon.usageLimit) * 100, 100)}%`, transition: "width 0.4s ease" }} />
                             </div>
                           </div>
                         )}
@@ -773,29 +793,28 @@ export default function CouponsAdminPage({ setPage }) {
 
                       {/* Bottom Level Operation Drawers */}
                       <div style={{ display: "flex", gap: "8px", marginTop: "18px", borderTop: "1px dashed #DCD1C4", paddingTop: "14px" }}>
-                        <button onClick={() => toggleCoupon(coupon)} style={{ flex: 1, background: coupon.active ? "#F5B942" : "#2E7D32", color: "#fff", border: "none", padding: "10px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>
-                          {coupon.active ? "Disable" : "Enable"}
+                        <button onClick={() => toggleCoupon(coupon)} style={{ flex: 1, background: coupon?.active ? "#F5B942" : "#2E7D32", color: "#fff", border: "none", padding: "10px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>
+                          {coupon?.active ? "Disable" : "Enable"}
                         </button>
                         
-                        {/* CRASH FIXED EDIT INTERACTIVE BUTTON CLICK TRIGGERS */}
                         <button 
                           onClick={() => { 
                             setEditing(coupon); 
                             setEditCoupon({
-                              code: coupon.code || "",
-                              type: coupon.type || "percentage",
-                              value: coupon.value || "",
-                              maxDiscount: coupon.maxDiscount || "",
-                              minOrder: coupon.minOrder || "",
-                              category: coupon.category || "General",
-                              starts: coupon.starts || "",
-                              expires: coupon.expires || "",
-                              usageLimit: coupon.usageLimit || "",
-                              perUserLimit: coupon.perUserLimit || 1,
-                              singleUse: coupon.singleUse || false,
-                              audienceType: coupon.audienceType || "all",
-                              targetUserId: coupon.targetUserId || "",
-                              triggerType: coupon.triggerType || "manual"
+                              code: coupon?.code || "",
+                              type: coupon?.type || "percentage",
+                              value: coupon?.value || "",
+                              maxDiscount: coupon?.maxDiscount || "",
+                              minOrder: coupon?.minOrder || "",
+                              category: coupon?.category || "General",
+                              starts: coupon?.starts || "",
+                              expires: coupon?.expires || "",
+                              usageLimit: coupon?.usageLimit || "",
+                              perUserLimit: coupon?.perUserLimit || 1,
+                              singleUse: coupon?.singleUse || false,
+                              audienceType: coupon?.audienceType || "all",
+                              targetUserId: coupon?.targetUserId || "",
+                              triggerType: coupon?.triggerType || "manual"
                             }); 
                           }} 
                           style={{ flex: 1, background: "#C4956A", color: "#fff", border: "none", padding: "10px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}
@@ -817,7 +836,7 @@ export default function CouponsAdminPage({ setPage }) {
           {/* DYNAMIC HISTORICAL DATA AUDIT LOG DATAGRID TABLE */}
           <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", boxShadow: "0 4px 20px rgba(0,0,0,0.01)" }}>
             <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: "700" }}>📜 Permanent Coupon System Audit Log</h3>
-            <p style={{ color: "#8A827C", fontSize: "13px", margin: "0 0 20px 0" }}>Real-time cryptographic tracing of deployment loops, administrative parameter mutations, and state resets.</p>
+            <p style={{ color: "#8A827C", fontSize: "13px", margin: "0 0 20px 0" }}>Real-time tracing of deployment loops, administrative parameter mutations, and state resets.</p>
             
             <div style={{ overflowX: "auto", maxHeight: "280px" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
@@ -830,21 +849,21 @@ export default function CouponsAdminPage({ setPage }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {auditLogs.length === 0 ? (
+                  {safeLogs.length === 0 ? (
                     <tr>
                       <td colSpan="4" style={{ padding: "20px", textAlign: "center", color: "#A8A096" }}>No active logs stored in current execution pipelines.</td>
                     </tr>
                   ) : (
-                    auditLogs.map((log) => (
-                      <tr key={log.id} style={{ borderBottom: "1px solid #FAF6F0" }}>
-                        <td style={{ padding: "12px", color: "#544E48" }}>{log.timestamp?.seconds ? new Date(log.timestamp.seconds * 1000).toLocaleString() : "Sync Processing"}</td>
-                        <td style={{ padding: "12px", fontWeight: "700", fontFamily: "monospace" }}>{log.code}</td>
+                    safeLogs.map((log) => (
+                      <tr key={log?.id || Math.random()} style={{ borderBottom: "1px solid #FAF6F0" }}>
+                        <td style={{ padding: "12px", color: "#544E48" }}>{log?.timestamp?.seconds ? new Date(log.timestamp.seconds * 1000).toLocaleString() : "Sync Processing"}</td>
+                        <td style={{ padding: "12px", fontWeight: "700", fontFamily: "monospace" }}>{log?.code || "SYSTEM"}</td>
                         <td style={{ padding: "12px" }}>
-                          <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "700", background: log.action?.includes("CREATE") ? "#E8F5E9" : log.action?.includes("PURGE") || log.action?.includes("DELETE") ? "#FFEBEE" : "#FFF3E0", color: log.action?.includes("CREATE") ? "#1B5E20" : log.action?.includes("PURGE") || log.action?.includes("DELETE") ? "#C62828" : "#E65100" }}>
-                            {log.action}
+                          <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "700", background: log?.action?.includes("CREATE") ? "#E8F5E9" : log?.action?.includes("PURGE") || log?.action?.includes("DELETE") ? "#FFEBEE" : "#FFF3E0", color: log?.action?.includes("CREATE") ? "#1B5E20" : log?.action?.includes("PURGE") || log?.action?.includes("DELETE") ? "#C62828" : "#E65100" }}>
+                            {log?.action || "LOG_EVENT"}
                           </span>
                         </td>
-                        <td style={{ padding: "12px", color: "#8A827C" }}>{log.category ? `${log.category} Framework` : "Metadata Config Sync Override"}</td>
+                        <td style={{ padding: "12px", color: "#8A827C" }}>{log?.category ? `${log?.category} Framework` : "Metadata Config Sync Override"}</td>
                       </tr>
                     ))
                   )}
