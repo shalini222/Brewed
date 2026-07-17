@@ -295,6 +295,17 @@ export default function HeadlessNavbar({ currentPage, setPage }) {
               >
                 ❤️ Favorites
               </button>
+
+  <button
+                onClick={() => {
+                  setShowMenu(false);
+                  setPage("reservation");
+                }}
+              >
+                🗓️ Reservation
+              </button>
+
+              
               
               <button
                 onClick={() => {
