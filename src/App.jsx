@@ -61,7 +61,7 @@ export default function App() {
     "change-password",
     "deleteAccount",
     "admin",
-    "couponsadmin"
+    "couponsadmin",
   ];
 
   return (
