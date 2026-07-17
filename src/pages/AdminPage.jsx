@@ -1,12 +1,14 @@
 import { useEffect, useState, useRef } from "react";
 import {
   collection,
-  getDocs,
+ getDocs,
   addDoc,
   deleteDoc,
   updateDoc,
   doc,
   onSnapshot,
+  query,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import {
@@ -42,6 +44,8 @@ const [range, setRange] = useState(7);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
 const lastOrderId = useRef(null);
+  const [userNotifications, setUserNotifications] = useState([]);
+const lastUserId = useRef(null);
 
 
   
@@ -66,9 +70,10 @@ const [editItem, setEditItem] = useState({
   img: "",
 });
 
-  useEffect(() => {
+useEffect(() => {
   loadMenu();
 
+  // Orders listener
   const unsubscribe = onSnapshot(
     collection(db, "orders"),
     (snapshot) => {
@@ -78,40 +83,65 @@ const [editItem, setEditItem] = useState({
       }));
 
       setOrders(data);
-setOrderLoading(false);
+      setOrderLoading(false);
 
-setNotifications(
-  data
-    .filter(order => order.status === "New")
-    .map(order => ({
-      id: order.id,
-      text: `🛎️ New order from ${order.customer?.name}`,
-    }))
-);
       if (data.length > 0) {
-  const newest = data.sort(
-    (a, b) =>
-      (b.createdAt?.seconds || 0) -
-      (a.createdAt?.seconds || 0)
-  )[0];
+        const newest = [...data].sort(
+          (a, b) =>
+            (b.createdAt?.seconds || 0) -
+            (a.createdAt?.seconds || 0)
+        )[0];
 
-if (lastOrderId.current && newest.id !== lastOrderId.current) {
-  setNotifications((prev) => [
-    {
-      id: newest.id,
-      text: `🛎️ New order from ${newest.customer?.name}`,
-    },
-    ...prev,
-  ]);
-}
+        if (
+          lastOrderId.current &&
+          newest.id !== lastOrderId.current
+        ) {
+          setNotifications((prev) => [
+            {
+              id: newest.id,
+              text: `🛎️ New order from ${newest.customer?.name}`,
+            },
+            ...prev,
+          ]);
+        }
 
-lastOrderId.current = newest.id;
+        lastOrderId.current = newest.id;
       }
     }
   );
 
-  return () => unsubscribe();
+  // User registration listener
+  const unsubscribeUsers = onSnapshot(
+    query(
+      collection(db, "users"),
+      orderBy("createdAt", "desc")
+    ),
+    (snapshot) => {
+      if (snapshot.empty) return;
 
+      const newest = snapshot.docs[0];
+
+      if (
+        lastUserId.current &&
+        newest.id !== lastUserId.current
+      ) {
+        setUserNotifications((prev) => [
+          {
+            id: newest.id,
+            text: `👤 New user registered`,
+          },
+          ...prev,
+        ]);
+      }
+
+      lastUserId.current = newest.id;
+    }
+  );
+
+  return () => {
+    unsubscribe();
+    unsubscribeUsers();
+  };
 }, []);
 
 useEffect(() => {
@@ -376,7 +406,7 @@ const todayOrders = orders.filter(
     boxShadow: "0 8px 20px rgba(0,0,0,.08)",
   }}
 >
-  🔔 {notifications.length}
+  🔔 {notifications.length + userNotifications.length}
 </button>
 </div>
 
@@ -392,7 +422,7 @@ const todayOrders = orders.filter(
   >
     <h3>Notifications</h3>
 
-    {notifications.map((n) => (
+    {[...userNotifications, ...notifications].map((n) => (
       <p key={n.id} style={{ marginBottom: 10 }}>
         {n.text}
       </p>
