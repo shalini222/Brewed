@@ -896,7 +896,11 @@ gap:30
   <p>{todayOrders} Orders Today</p>
 </div>
 
-
+<button
+  onClick={() => setPage("couponsadmin")}
+>
+  🎟 Manage Coupons
+</button>
       
 
       
