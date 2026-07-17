@@ -25,7 +25,9 @@ export default function CouponsAdminPage({ setPage }) {
   maxDiscount: "",
   minOrder: "",
   usageLimit: "",
+  starts: "",
   expires: "",
+  singleUse: false,
   active: true,
 });
 
@@ -33,13 +35,18 @@ export default function CouponsAdminPage({ setPage }) {
 
   const [editing, setEditing] = useState(null);
 
-const [editCoupon, setEditCoupon] = useState({
+   const [editCoupon, setEditCoupon] = useState({
   code: "",
   type: "percentage",
   value: "",
+  maxDiscount: "",
   minOrder: "",
-  usageLimit: "",
+  category: "General",
+  validFrom: "",
   expires: "",
+  usageLimit: "",
+  perUserLimit: 1,
+  singleUse: false,
 });
 
 const [search, setSearch] = useState("");
@@ -110,7 +117,9 @@ const mostUsed =
   active: newCoupon.active,
   usageLimit: Number(newCoupon.usageLimit || 0),
   usageCount: 0,
+  starts: newCoupon.starts,
   expires: newCoupon.expires,
+  singleUse: newCoupon.singleUse,
   createdAt: serverTimestamp(),
 });
 
@@ -122,7 +131,9 @@ const mostUsed =
   maxDiscount: "",
   minOrder: "",
   usageLimit: "",
+  starts: "",
   expires: "",
+  singleUse: false,
   active: true,
 });
 
@@ -151,13 +162,18 @@ async function updateCoupon() {
   if (!editing) return;
 
   await updateDoc(doc(db, "coupons", editing.id), {
-    code: editCoupon.code.toUpperCase(),
-    type: editCoupon.type,
-    value: Number(editCoupon.value),
-    minOrder: Number(editCoupon.minOrder),
-    usageLimit: Number(editCoupon.usageLimit),
-    expires: editCoupon.expires,
-  });
+  code: editCoupon.code.toUpperCase(),
+  type: editCoupon.type,
+  value: Number(editCoupon.value),
+  maxDiscount: Number(editCoupon.maxDiscount),
+  minOrder: Number(editCoupon.minOrder),
+  category: editCoupon.category,
+  validFrom: editCoupon.validFrom,
+  expires: editCoupon.expires,
+  usageLimit: Number(editCoupon.usageLimit),
+  perUserLimit: Number(editCoupon.perUserLimit),
+  singleUse: editCoupon.singleUse,
+});
 
   alert("Coupon updated!");
 
@@ -254,7 +270,38 @@ function getCategoryColor(category) {
 }
 
 
+function getExpiryStatus(expires) {
+  if (!expires) return "Never Expires";
 
+  const today = new Date();
+  const expiry = new Date(expires);
+
+  today.setHours(0, 0, 0, 0);
+  expiry.setHours(0, 0, 0, 0);
+
+  const days = Math.ceil(
+    (expiry - today) / (1000 * 60 * 60 * 24)
+  );
+
+  if (days < 0)
+    return `❌ Expired ${Math.abs(days)} day${
+      Math.abs(days) !== 1 ? "s" : ""
+    } ago`;
+
+  if (days === 0)
+    return "⚠️ Expires Today";
+
+  if (days === 1)
+    return "⏳ Expires Tomorrow";
+
+  return `⏳ Expires in ${days} days`;
+}
+
+
+
+
+
+  
 
   
 
@@ -388,6 +435,22 @@ return (
   <option value="Referral">🤝 Referral</option>
   <option value="Loyalty">💎 Loyalty</option>
 </select>
+
+<br /><br />
+
+<select
+  value={newCoupon.singleUse ? "single" : "multi"}
+  onChange={(e) =>
+    setNewCoupon({
+      ...newCoupon,
+      singleUse: e.target.value === "single",
+    })
+  }
+>
+  <option value="multi">🔄 Multi Use</option>
+  <option value="single">1️⃣ Single Use</option>
+</select>
+      
 
       <br /><br />
 
@@ -557,7 +620,18 @@ return (
       }
     />
 
-    <br /><br />
+    <<br /><br />
+
+<input
+  type="date"
+  value={newCoupon.starts}
+  onChange={(e) =>
+    setNewCoupon({
+      ...newCoupon,
+      starts: e.target.value,
+    })
+  }
+/>
 
     <input
       type="date"
@@ -780,6 +854,14 @@ return (
 >
   {coupon.category || "General"}
 </span>
+
+<p>
+  <strong>Usage Type:</strong>{" "}
+  {coupon.singleUse ? "1️⃣ Single Use" : "🔄 Multi Use"}
+</p>
+
+
+          
           <span
             style={{
               background: coupon.active
@@ -819,11 +901,27 @@ return (
           {coupon.usageCount || 0} /{" "}
           {coupon.usageLimit || "∞"}
         </p>
-
+         <p>
+  <strong>Valid From:</strong>{" "}
+  {coupon.starts || "Immediately"}
+</p>
         <p>
-          <strong>Expires:</strong>{" "}
-          {coupon.expires || "Never"}
-        </p>
+  <strong>Expires:</strong>{" "}
+  {coupon.expires || "Never"}
+</p>
+
+<p
+  style={{
+    fontWeight: 600,
+    color:
+      coupon.expires &&
+      new Date(coupon.expires) < new Date()
+        ? "#D32F2F"
+        : "#C4956A",
+  }}
+>
+  {getExpiryStatus(coupon.expires)}
+</p>
 
         <div
           style={{
@@ -854,13 +952,18 @@ return (
     setEditing(coupon);
 
     setEditCoupon({
-      code: coupon.code,
-      type: coupon.type,
-      value: coupon.value,
-      minOrder: coupon.minOrder,
-      usageLimit: coupon.usageLimit,
-      expires: coupon.expires,
-    });
+  code: coupon.code,
+  type: coupon.type,
+  value: coupon.value,
+  maxDiscount: coupon.maxDiscount || "",
+  minOrder: coupon.minOrder,
+  category: coupon.category || "General",
+  validFrom: coupon.validFrom || "",
+  expires: coupon.expires || "",
+  usageLimit: coupon.usageLimit || "",
+  perUserLimit: coupon.perUserLimit || 1,
+  singleUse: coupon.singleUse || false,
+});
   }}
   style={{
     flex: 1,
