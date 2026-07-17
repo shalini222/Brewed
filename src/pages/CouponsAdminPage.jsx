@@ -555,7 +555,7 @@ export default function CouponsAdminPage({ setPage }) {
               <div>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>System Automation Trigger Integration</label>
                 <select style={formInputStyle} value={newCoupon.triggerType} onChange={(e) => setNewCoupon({ ...newCoupon, triggerType: e.target.value })}>
-                  <option value="manual">Manual Administrative Issuance Only</option>
+                  <option value="manual">Manual Direct Assignment</option>
                   <option value="birthday_event">🎂 Auto-Generate on Profile Birthday Matches</option>
                   <option value="referral_generation">🤝 Auto-Generate via Affiliate Tracker Hook</option>
                 </select>
@@ -776,9 +776,33 @@ export default function CouponsAdminPage({ setPage }) {
                         <button onClick={() => toggleCoupon(coupon)} style={{ flex: 1, background: coupon.active ? "#F5B942" : "#2E7D32", color: "#fff", border: "none", padding: "10px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>
                           {coupon.active ? "Disable" : "Enable"}
                         </button>
-                        <button onClick={() => { setEditing(coupon); setEditCoupon(coupon); }} style={{ flex: 1, background: "#C4956A", color: "#fff", border: "none", padding: "10px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>
+                        
+                        {/* CRASH FIXED EDIT INTERACTIVE BUTTON CLICK TRIGGERS */}
+                        <button 
+                          onClick={() => { 
+                            setEditing(coupon); 
+                            setEditCoupon({
+                              code: coupon.code || "",
+                              type: coupon.type || "percentage",
+                              value: coupon.value || "",
+                              maxDiscount: coupon.maxDiscount || "",
+                              minOrder: coupon.minOrder || "",
+                              category: coupon.category || "General",
+                              starts: coupon.starts || "",
+                              expires: coupon.expires || "",
+                              usageLimit: coupon.usageLimit || "",
+                              perUserLimit: coupon.perUserLimit || 1,
+                              singleUse: coupon.singleUse || false,
+                              audienceType: coupon.audienceType || "all",
+                              targetUserId: coupon.targetUserId || "",
+                              triggerType: coupon.triggerType || "manual"
+                            }); 
+                          }} 
+                          style={{ flex: 1, background: "#C4956A", color: "#fff", border: "none", padding: "10px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}
+                        >
                           ✏️ Parameters
                         </button>
+
                         <button onClick={() => deleteCoupon(coupon.id)} style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FFCDD2", padding: "10px 14px", borderRadius: "8px", cursor: "pointer" }}>
                           🗑️
                         </button>
