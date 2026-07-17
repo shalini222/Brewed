@@ -30,6 +30,7 @@ import ChangePasswordPage from "./pages/ChangePasswordPage";
 import DeleteAccountPage from "./pages/DeleteAccountPage";
 import AdminPage from "./pages/AdminPage";
 import CouponsAdminPage from "./pages/CouponsAdminPage";
+import ReservationPage from "./pages/ReservationPage";
 
 
 
@@ -62,6 +63,7 @@ export default function App() {
     "deleteAccount",
     "admin",
     "couponsadmin",
+    "reservation",
   ];
 
   return (
@@ -172,6 +174,12 @@ html.dark {
         {page === "settings" && (
           <SettingsPage setPage={navigateTo} />
         )}
+
+        {page === "reservation" && (
+          <SettingsPage setPage={navigateTo} />
+        )}
+
+        
         {page === "privacy" && (
   <PrivacyPolicyPage
     setPage={setPage}
