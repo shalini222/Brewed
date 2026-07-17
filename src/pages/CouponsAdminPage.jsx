@@ -620,7 +620,7 @@ return (
       }
     />
 
-    <<br /><br />
+    <br /><br />
 
 <input
   type="date"
