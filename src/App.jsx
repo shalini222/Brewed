@@ -27,6 +27,10 @@ import AdminPage from "./pages/AdminPage";
 import CouponsAdminPage from "./pages/CouponsAdminPage";
 import ReservationPage from "./pages/ReservationPage";
 import CustomersAdminPage from "./pages/CustomersAdminPage";
+import SettingsAdminPage from "./pages/SettingsAdminPage";
+
+
+
 
 export default function App() {
   const [page, setPage] = useState("menu");
@@ -59,6 +63,7 @@ export default function App() {
     "couponsadmin",
     "customersadmin",
     "reservation",
+    "settingsadmin",
   ];
 
   return (
@@ -206,6 +211,13 @@ export default function App() {
           {page === "customersadmin" && (
             <CustomersAdminPage setPage={navigateTo} />
           )}
+
+{page === "settingsadmin" && (
+            <SettingsAdminPage setPage={navigateTo} />
+          )}
+
+
+          
           
           <Footer />
         </AuthProvider>
