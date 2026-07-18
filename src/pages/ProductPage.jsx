@@ -1132,7 +1132,7 @@ body{
               <div className="product-info-grid">
                 <div className="info-card">
                   <Clock3 size={22} />
-                  <span>5–8 mins</span>
+                  <span>{product.prepTime}</span>
                 </div>
                 <div className="info-card">
                   <Flame size={22} />
