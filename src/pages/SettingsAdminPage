@@ -6,15 +6,12 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 
-
 const inputStyle = {
   padding: 14,
   borderRadius: 10,
   border: "1px solid #ddd",
   fontSize: 15,
 };
-
-
 
 export default function SettingsAdminPage({ setPage }) {
   const [loading, setLoading] = useState(true);
@@ -40,11 +37,16 @@ export default function SettingsAdminPage({ setPage }) {
       const snap = await getDoc(ref);
 
       if (snap.exists()) {
+        const data = snap.data();
+        // Fixed the nested syntax typo here and added safe fallbacks
         setSettings({
-          setSettings((prev) => ({
-  ...prev,
-  ...snap.data(),
-}));
+          cafeName: data.cafeName || "",
+          logo: data.logo || "",
+          phone: data.phone || "",
+          email: data.email || "",
+          address: data.address || "",
+          currency: data.currency || "₹",
+        });
       }
     } catch (err) {
       console.error(err);
@@ -268,4 +270,3 @@ export default function SettingsAdminPage({ setPage }) {
     </div>
   );
 }
-
