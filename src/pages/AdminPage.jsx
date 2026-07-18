@@ -314,6 +314,7 @@ async function toggleAvailability(item) {
     desc: editItem.desc,
     emoji: editItem.emoji,
     img: editItem.img,
+    isFeatured: editItem.isFeatured,
   }
 );
 
@@ -1190,7 +1191,36 @@ gap:30
       }
     />
 
+
+    
+
     <br /><br />
+
+
+
+    <label
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 12,
+    fontWeight: 600,
+  }}
+>
+  <input
+    type="checkbox"
+    checked={editItem.isFeatured}
+    onChange={(e) =>
+      setEditItem({
+        ...editItem,
+        isFeatured: e.target.checked,
+      })
+    }
+  />
+  ⭐ Featured Product
+</label>
+
+    <br/><br/>
 
     <button
       onClick={updateProduct}
