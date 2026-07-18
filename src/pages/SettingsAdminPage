@@ -6,6 +6,15 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 
+const inputStyle = {
+  padding: 14,
+  borderRadius: 10,
+  border: "1px solid #ddd",
+  fontSize: 15,
+  width: "100%", // Ensures full grid alignment across different screens
+  boxSizing: "border-box",
+};
+
 export default function SettingsAdminPage({ setPage }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -30,9 +39,14 @@ export default function SettingsAdminPage({ setPage }) {
       const snap = await getDoc(ref);
 
       if (snap.exists()) {
+        const data = snap.data();
         setSettings({
-          ...settings,
-          ...snap.data(),
+          cafeName: data.cafeName || "",
+          logo: data.logo || "",
+          phone: data.phone || "",
+          email: data.email || "",
+          address: data.address || "",
+          currency: data.currency || "₹",
         });
       }
     } catch (err) {
@@ -44,38 +58,37 @@ export default function SettingsAdminPage({ setPage }) {
 
   async function saveSettings() {
     setSaving(true);
-
     try {
       await setDoc(doc(db, "settings", "store"), settings);
-
       setSaved(true);
-
       setTimeout(() => {
         setSaved(false);
       }, 2500);
     } catch (err) {
       console.error(err);
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
   }
 
   function handleChange(e) {
-    setSettings({
-      ...settings,
+    setSettings((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
-    });
+    }));
   }
 
   function resetForm() {
-    setSettings({
-      cafeName: "",
-      logo: "",
-      phone: "",
-      email: "",
-      address: "",
-      currency: "₹",
-    });
+    if (window.confirm("Are you sure you want to clear the form?")) {
+      setSettings({
+        cafeName: "",
+        logo: "",
+        phone: "",
+        email: "",
+        address: "",
+        currency: "₹",
+      });
+    }
   }
 
   if (loading) {
@@ -86,6 +99,8 @@ export default function SettingsAdminPage({ setPage }) {
           display: "grid",
           placeItems: "center",
           background: "#FAF6F0",
+          fontFamily: "sans-serif",
+          color: "#3B1A08"
         }}
       >
         Loading Settings...
@@ -99,6 +114,7 @@ export default function SettingsAdminPage({ setPage }) {
         background: "#FAF6F0",
         minHeight: "100vh",
         padding: 40,
+        fontFamily: "sans-serif",
       }}
     >
       <button
@@ -111,6 +127,7 @@ export default function SettingsAdminPage({ setPage }) {
           color: "#fff",
           cursor: "pointer",
           marginBottom: 25,
+          fontWeight: 600,
         }}
       >
         ← Back
@@ -119,7 +136,7 @@ export default function SettingsAdminPage({ setPage }) {
       <h1
         style={{
           color: "#3B1A08",
-          fontFamily: "Playfair Display",
+          fontFamily: "Playfair Display, serif",
           marginBottom: 30,
         }}
       >
@@ -149,61 +166,79 @@ export default function SettingsAdminPage({ setPage }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
             gap: 20,
           }}
         >
-          <input
-            name="cafeName"
-            placeholder="Cafe Name"
-            value={settings.cafeName}
-            onChange={handleChange}
-            style={inputStyle}
-          />
+          <div>
+            <label style={{ display: "block", fontSize: 13, color: "#666", marginBottom: 6, fontWeight: 600 }}>Cafe Name</label>
+            <input
+              name="cafeName"
+              placeholder="e.g. The Daily Roast"
+              value={settings.cafeName}
+              onChange={handleChange}
+              style={inputStyle}
+            />
+          </div>
 
-          <input
-            name="logo"
-            placeholder="Logo URL"
-            value={settings.logo}
-            onChange={handleChange}
-            style={inputStyle}
-          />
+          <div>
+            <label style={{ display: "block", fontSize: 13, color: "#666", marginBottom: 6, fontWeight: 600 }}>Logo URL</label>
+            <input
+              name="logo"
+              placeholder="https://example.com/logo.png"
+              value={settings.logo}
+              onChange={handleChange}
+              style={inputStyle}
+            />
+          </div>
 
-          <input
-            name="phone"
-            placeholder="Phone Number"
-            value={settings.phone}
-            onChange={handleChange}
-            style={inputStyle}
-          />
+          <div>
+            <label style={{ display: "block", fontSize: 13, color: "#666", marginBottom: 6, fontWeight: 600 }}>Phone Number</label>
+            <input
+              name="phone"
+              placeholder="Phone Number"
+              value={settings.phone}
+              onChange={handleChange}
+              style={inputStyle}
+            />
+          </div>
 
-          <input
-            name="email"
-            placeholder="Email"
-            value={settings.email}
-            onChange={handleChange}
-            style={inputStyle}
-          />
+          <div>
+            <label style={{ display: "block", fontSize: 13, color: "#666", marginBottom: 6, fontWeight: 600 }}>Email Address</label>
+            <input
+              name="email"
+              placeholder="Email"
+              value={settings.email}
+              onChange={handleChange}
+              style={inputStyle}
+            />
+          </div>
 
-          <input
-            name="address"
-            placeholder="Address"
-            value={settings.address}
-            onChange={handleChange}
-            style={inputStyle}
-          />
+          <div>
+            <label style={{ display: "block", fontSize: 13, color: "#666", marginBottom: 6, fontWeight: 600 }}>Store Address</label>
+            <input
+              name="address"
+              placeholder="Address"
+              value={settings.address}
+              onChange={handleChange}
+              style={inputStyle}
+            />
+          </div>
 
-          <select
-            name="currency"
-            value={settings.currency}
-            onChange={handleChange}
-            style={inputStyle}
-          >
-            <option value="₹">₹ INR</option>
-            <option value="$">$ USD</option>
-            <option value="€">€ EUR</option>
-            <option value="£">£ GBP</option>
-          </select>
+          <div>
+            <label style={{ display: "block", fontSize: 13, color: "#666", marginBottom: 6, fontWeight: 600 }}>Default Currency</label>
+            <select
+              name="currency"
+              value={settings.currency}
+              onChange={handleChange}
+              style={inputStyle}
+            >
+              <option value="₹">₹ INR</option>
+              <option value="$">$ USD</option>
+              <option value="€">€ EUR</option>
+              <option value="£">£ GBP</option>
+            </select>
+          </div>
         </div>
 
         <div
@@ -223,6 +258,8 @@ export default function SettingsAdminPage({ setPage }) {
               border: "none",
               borderRadius: 10,
               cursor: "pointer",
+              fontWeight: 600,
+              opacity: saving ? 0.7 : 1,
             }}
           >
             {saving ? "Saving..." : "Save Settings"}
@@ -233,12 +270,14 @@ export default function SettingsAdminPage({ setPage }) {
             style={{
               padding: "12px 24px",
               background: "#ddd",
+              color: "#3B1A08",
               border: "none",
               borderRadius: 10,
               cursor: "pointer",
+              fontWeight: 600,
             }}
           >
-            Reset
+            Reset Form
           </button>
         </div>
 
@@ -246,7 +285,7 @@ export default function SettingsAdminPage({ setPage }) {
           <p
             style={{
               marginTop: 20,
-              color: "green",
+              color: "#2E7D32",
               fontWeight: "bold",
             }}
           >
@@ -257,10 +296,3 @@ export default function SettingsAdminPage({ setPage }) {
     </div>
   );
 }
-
-const inputStyle = {
-  padding: 14,
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  fontSize: 15,
-};
