@@ -71,6 +71,9 @@ export function CartProvider({ children }) {
       collection(db, "orders"),
       orderData
     );
+    
+    alert("Order saved successfully!");
+    
    for (const item of orderDetails.items) {
   await updateDoc(
     doc(db, "menu", item.id),
