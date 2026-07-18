@@ -400,6 +400,16 @@ const todayOrders = orders.filter(
 >
   🎟 Manage Customers
 </button>
+
+<button
+  onClick={() => setPage("settingsadmin")}
+>
+  🎟 Manage Settings
+</button>
+
+
+
+      
       
 <div
   style={{
