@@ -28,6 +28,11 @@ import CouponsAdminPage from "./pages/CouponsAdminPage";
 import ReservationPage from "./pages/ReservationPage";
 import CustomersAdminPage from "./pages/CustomersAdminPage";
 import SettingsAdminPage from "./pages/SettingsAdminPage";
+import MenuMigrationPage from "./pages/MenuMigrationPage";
+
+
+
+
 
 
 export default function App() {
@@ -132,7 +137,7 @@ export default function App() {
 
           
 
-          
+          <MenuMigration/>
 
           {page === "product" && (
             <ProductPage
