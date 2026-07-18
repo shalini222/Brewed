@@ -402,7 +402,7 @@ const todayOrders = orders.filter(
 </button>
 
 <button
-  onClick={() => setPage("settingsadmin")}
+  onClick={() => setPage("settingsAdmin")}
 >
   🎟 Manage Settings
 </button>
