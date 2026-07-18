@@ -6,13 +6,6 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 
-const inputStyle = {
-  padding: 14,
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  fontSize: 15,
-};
-
 export default function SettingsAdminPage({ setPage }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -27,6 +20,16 @@ export default function SettingsAdminPage({ setPage }) {
     currency: "₹",
   });
 
+  // Safe inline styling layout dictionary definition
+  const inputStyle = {
+    padding: 14,
+    borderRadius: 10,
+    border: "1px solid #ddd",
+    fontSize: 15,
+    width: "100%",
+    boxSizing: "border-box"
+  };
+
   useEffect(() => {
     loadSettings();
   }, []);
@@ -38,7 +41,6 @@ export default function SettingsAdminPage({ setPage }) {
 
       if (snap.exists()) {
         const data = snap.data();
-        // Fixed the nested syntax typo here and added safe fallbacks
         setSettings({
           cafeName: data.cafeName || "",
           logo: data.logo || "",
@@ -49,7 +51,7 @@ export default function SettingsAdminPage({ setPage }) {
         });
       }
     } catch (err) {
-      console.error(err);
+      console.error("Firestore Loading Error:", err);
     } finally {
       setLoading(false);
     }
@@ -57,20 +59,17 @@ export default function SettingsAdminPage({ setPage }) {
 
   async function saveSettings() {
     setSaving(true);
-
     try {
       await setDoc(doc(db, "settings", "store"), settings);
-
       setSaved(true);
-
       setTimeout(() => {
         setSaved(false);
       }, 2500);
     } catch (err) {
-      console.error(err);
+      console.error("Firestore Saving Error:", err);
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
   }
 
   function handleChange(e) {
@@ -99,6 +98,8 @@ export default function SettingsAdminPage({ setPage }) {
           display: "grid",
           placeItems: "center",
           background: "#FAF6F0",
+          fontFamily: "sans-serif",
+          color: "#3B1A08"
         }}
       >
         Loading Settings...
@@ -112,6 +113,7 @@ export default function SettingsAdminPage({ setPage }) {
         background: "#FAF6F0",
         minHeight: "100vh",
         padding: 40,
+        fontFamily: "sans-serif"
       }}
     >
       <button
@@ -124,6 +126,7 @@ export default function SettingsAdminPage({ setPage }) {
           color: "#fff",
           cursor: "pointer",
           marginBottom: 25,
+          fontWeight: 600
         }}
       >
         ← Back
@@ -132,7 +135,7 @@ export default function SettingsAdminPage({ setPage }) {
       <h1
         style={{
           color: "#3B1A08",
-          fontFamily: "Playfair Display",
+          fontFamily: "serif",
           marginBottom: 30,
         }}
       >
@@ -236,6 +239,7 @@ export default function SettingsAdminPage({ setPage }) {
               border: "none",
               borderRadius: 10,
               cursor: "pointer",
+              fontWeight: 600
             }}
           >
             {saving ? "Saving..." : "Save Settings"}
@@ -249,6 +253,8 @@ export default function SettingsAdminPage({ setPage }) {
               border: "none",
               borderRadius: 10,
               cursor: "pointer",
+              color: "#3B1A08",
+              fontWeight: 600
             }}
           >
             Reset
