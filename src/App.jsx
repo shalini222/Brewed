@@ -29,9 +29,6 @@ import ReservationPage from "./pages/ReservationPage";
 import CustomersAdminPage from "./pages/CustomersAdminPage";
 import SettingsAdminPage from "./pages/SettingsAdminPage";
 
-
-
-
 export default function App() {
   const [page, setPage] = useState("menu");
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -74,7 +71,7 @@ export default function App() {
             @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
             :root {
               --bg:#fcfcfc;
-              --surface:#surface;
+              --surface:#ffffff;
               --text:#1a1a1a;
               --muted:#8a8a8a;
               --border:#eeeeee;
@@ -175,27 +172,22 @@ export default function App() {
             <SettingsPage setPage={navigateTo} />
           )}
 
-          {/* FIXED: Now renders ReservationPage correctly instead of SettingsPage */}
           {page === "reservation" && (
             <ReservationPage setPage={navigateTo} />
           )}
           
-          {/* FIXED: Updated to use unifed navigateTo instead of raw setPage */}
           {page === "privacy" && (
             <PrivacyPolicyPage setPage={navigateTo} />
           )}
 
-          {/* FIXED: Updated to use unifed navigateTo instead of raw setPage */}
           {page === "terms" && (
             <TermsPage setPage={navigateTo} />
           )}
 
-          {/* FIXED: Updated to use unifed navigateTo instead of raw setPage */}
           {page === "change-password" && (
             <ChangePasswordPage setPage={navigateTo} />
           )}
       
-          {/* FIXED: Updated to use unifed navigateTo instead of raw setPage */}
           {page === "deleteAccount" && (
             <DeleteAccountPage setPage={navigateTo} />
           )}
@@ -204,7 +196,6 @@ export default function App() {
             <AdminPage setPage={navigateTo} />
           )}
 
-          {/* FIXED: Updated to use unifed navigateTo instead of raw setPage */}
           {page === "couponsadmin" && (
             <CouponsAdminPage setPage={navigateTo} />
           )}
@@ -215,9 +206,6 @@ export default function App() {
           {page === "settingsAdmin" && (
             <SettingsAdminPage setPage={navigateTo} />
           )}
-
-
-          
           
           <Footer />
         </AuthProvider>
