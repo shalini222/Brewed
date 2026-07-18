@@ -1318,7 +1318,7 @@ dietType:e.target.value
       }
     />
 
-    <br /><br />
+    <br/><br/>
 
     <input
       placeholder="Cloudinary URL"
@@ -1334,7 +1334,7 @@ dietType:e.target.value
 
     
 
-    <br /><br />
+    <br />
 
 
 
