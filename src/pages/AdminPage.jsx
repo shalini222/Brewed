@@ -57,8 +57,15 @@ const [newItem, setNewItem] = useState({
   desc: "",
   emoji: "",
   img: "",
+
   available: true,
   isFeatured: false,
+  isBestSeller: false,
+
+  prepTime: "5–8 mins",
+  servedAs: "Hot",
+  dietType: "Vegetarian",
+
   salesCount: 0,
   rating: 0,
   reviews: 0,
@@ -73,7 +80,14 @@ const [editItem, setEditItem] = useState({
   desc: "",
   emoji: "",
   img: "",
-  isFeatured:false,
+
+  available: true,
+  isFeatured: false,
+  isBestSeller: false,
+
+  prepTime: "5–8 mins",
+  servedAs: "Hot",
+  dietType: "Vegetarian",
 });
 
 useEffect(() => {
@@ -247,29 +261,43 @@ async function addProduct() {
   }
 
   await addDoc(collection(db, "menu"), {
-    ...newItem,
-    price: Number(newItem.price),
-    available: true,
-     isFeatured: false,
+  ...newItem,
+
+  price: Number(newItem.price),
+
+  available: newItem.available,
+  isFeatured: newItem.isFeatured,
+  isBestSeller: newItem.isBestSeller,
+
+  prepTime: newItem.prepTime,
+  servedAs: newItem.servedAs,
+  dietType: newItem.dietType,
+
   salesCount: 0,
   rating: 0,
   reviews: 0,
-  });
+});
 
   setNewItem({
-    name: "",
-    category: "Coffee",
-    price: "",
-    desc: "",
-    emoji: "",
-    img: "",
-    available: true,
+  name: "",
+  category: "Coffee",
+  price: "",
+  desc: "",
+  emoji: "",
+  img: "",
+
+  available: true,
   isFeatured: false,
+  isBestSeller: false,
+
+  prepTime: "5–8 mins",
+  servedAs: "Hot",
+  dietType: "Vegetarian",
+
   salesCount: 0,
   rating: 0,
   reviews: 0,
-  
-  });
+});
 
   setShowAdd(false);
 
@@ -314,7 +342,13 @@ async function toggleAvailability(item) {
     desc: editItem.desc,
     emoji: editItem.emoji,
     img: editItem.img,
-    isFeatured: editItem.isFeatured,
+    available: editItem.available,
+isFeatured: editItem.isFeatured,
+isBestSeller: editItem.isBestSeller,
+
+prepTime: editItem.prepTime,
+servedAs: editItem.servedAs,
+dietType: editItem.dietType,
   }
 );
 
@@ -1091,6 +1125,112 @@ gap:30
 
     <br /><br />
 
+
+
+<label style={{
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 12,
+    fontWeight: 600,
+  }}
+>
+  <input
+    type="checkbox"
+    checked={newItem.isFeatured}
+    onChange={(e) =>
+      setNewItem({
+        ...newItem,
+        isFeatured: e.target.checked,
+      })
+    }
+  />
+  Featured Product
+</label>
+
+    <br/><br/>
+    <label style={{
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 12,
+    fontWeight: 600,
+  }} >
+<input
+type="checkbox"
+checked={newItem.isBestSeller}
+onChange={(e)=>
+setNewItem({
+...newItem,
+isBestSeller:e.target.checked
+})
+}
+/>
+
+ Best Seller
+</label>
+
+<br/><br/>
+
+<select
+value={newItem.prepTime}
+onChange={(e)=>
+setNewItem({
+...newItem,
+prepTime:e.target.value
+})
+}
+>
+
+<option>2–4 mins</option>
+<option>5–8 mins</option>
+<option>8–12 mins</option>
+<option>10–15 mins</option>
+<option>Ready to Serve</option>
+
+</select>
+
+<br/><br/>
+
+    <select
+value={newItem.servedAs}
+onChange={(e)=>
+setNewItem({
+...newItem,
+servedAs:e.target.value
+})
+}
+>
+
+<option>Hot</option>
+<option>Cold</option>
+<option>Hot / Cold</option>
+<option>Room Temperature</option>
+
+</select>
+
+    <br/><br/>
+
+    <select
+value={newItem.dietType}
+onChange={(e)=>
+setNewItem({
+...newItem,
+dietType:e.target.value
+})
+}
+>
+
+<option>Vegetarian</option>
+<option>Vegan</option>
+<option>Non-Vegetarian</option>
+
+</select>
+
+    <br/></br>
+
+    
+
     <button onClick={addProduct}>
       Save Product
     </button>
@@ -1217,8 +1357,87 @@ gap:30
       })
     }
   />
-  ⭐ Featured Product
+  Featured Product
 </label>
+
+    <br/><br/>
+    <label style={{
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 12,
+    fontWeight: 600,
+  }} >
+<input
+type="checkbox"
+checked={newItem.isBestSeller}
+onChange={(e)=>
+setEditItem({
+...editItem,
+isBestSeller:e.target.checked
+})
+}
+/>
+
+ Best Seller
+</label>
+
+<br/><br/>
+
+<select
+value={editItem.prepTime}
+onChange={(e)=>
+setEditItem({
+...editItem,
+prepTime:e.target.value
+})
+}
+>
+
+<option>2–4 mins</option>
+<option>5–8 mins</option>
+<option>8–12 mins</option>
+<option>10–15 mins</option>
+<option>Ready to Serve</option>
+
+</select>
+
+<br/><br/>
+
+    <select
+value={editItem.servedAs}
+onChange={(e)=>
+setEditItem({
+...editItem,
+servedAs:e.target.value
+})
+}
+>
+
+<option>Hot</option>
+<option>Cold</option>
+<option>Hot / Cold</option>
+<option>Room Temperature</option>
+
+</select>
+
+    <br/><br/>
+
+    <select
+value={editItem.dietType}
+onChange={(e)=>
+setEditItem({
+...editItem,
+dietType:e.target.value
+})
+}
+>
+
+<option>Vegetarian</option>
+<option>Vegan</option>
+<option>Non-Vegetarian</option>
+
+</select>
 
     <br/><br/>
 
@@ -1294,6 +1513,12 @@ gap:30
       emoji: item.emoji || "",
       img: item.img || "",
       isFeatured: item.isFeatured || false,
+       available: item.available,
+  isBestSeller: item.isBestSeller,
+
+  prepTime: item.prepTime,
+  servedAs: item.servedAs,
+  dietType: item.dietType,
     });
   }}
   style={{
