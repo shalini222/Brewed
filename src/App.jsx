@@ -28,7 +28,7 @@ import CouponsAdminPage from "./pages/CouponsAdminPage";
 import ReservationPage from "./pages/ReservationPage";
 import CustomersAdminPage from "./pages/CustomersAdminPage";
 import SettingsAdminPage from "./pages/SettingsAdminPage";
-import MenuMigration from "./pages/MenuMigration";
+import MigrateMenu from "./pages/MigrateMenu";
 
 
 
@@ -137,7 +137,7 @@ export default function App() {
 
           
 
-          <MenuMigration/>
+          <MigrateMenu />
 
           {page === "product" && (
             <ProductPage
