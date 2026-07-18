@@ -5,7 +5,7 @@ import {
   updateDoc,
   doc,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { db } from "../firebase";
 
 export default function MigrateMenu() {
   useEffect(() => {
