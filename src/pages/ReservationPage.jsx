@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 
-export default function PremiumReservationSystem({ setPage, currentUser = { name: "Alex Morgan", email: "alex.morgan@premium.com", phone: "+1 (555) 234-5678", tier: "Gold Member" } }) {
+export default function ReservationPage({ setPage, currentUser = { name: "Alex Morgan", email: "alex.morgan@premium.com", phone: "+1 (555) 234-5678", tier: "Gold Member" } }) {
   // Navigation State: 'landing' | 'book' | 'dashboard'
   const [activeTab, setActiveTab] = useState("landing");
   
