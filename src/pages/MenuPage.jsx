@@ -38,7 +38,7 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
       try {
         const querySnapshot = await getDocs(collection(db, "menu"));
         const items = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
+          firestoreId: doc.id,
           ...doc.data(),
         }));
         setMenuItems(items);
