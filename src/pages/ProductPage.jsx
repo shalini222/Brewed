@@ -1124,8 +1124,7 @@ body{
 </div>
 
               <p className="description">
-                Crafted with rich espresso, silky steamed milk and Madagascar vanilla, our Vanilla Latte delivers the
-                perfect balance of sweetness and bold coffee flavour. A Brewed favourite made for every season.
+                {product.desc}
               </p>
 
               <div className="product-info-grid">
