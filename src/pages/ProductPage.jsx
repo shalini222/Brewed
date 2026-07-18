@@ -1,6 +1,16 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  where,
+  serverTimestamp
+} from "firebase/firestore";
+
+import { db } from "../firebase";
 
 
 import {
@@ -32,27 +42,44 @@ export default function ProductPage({
   const [reviewImages, setReviewImages] = useState([]);
   const [quantity, setQuantity] = useState(1);
 
-  const [reviews, setReviews] = useState([
-    {
-      id: 1,
-      name: "Emily R.",
-      rating: 5,
-      text: "Smooth, creamy and perfectly balanced. Definitely one of my favourite coffees.",
-      images: [
-        "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=700"
-      ]
-    },
-    {
-      id: 2,
-      name: "Daniel K.",
-      rating: 5,
-      text: "The oat milk option tastes amazing. Highly recommend adding caramel drizzle.",
-      images: []
-    }
-  ]);
+  const [reviews, setReviews] = useState([]);
   
   const { addToCart } = useCart();
   const { currentUser } = useAuth(); 
+
+
+
+useEffect(()=>{
+
+ if(!product) return;
+
+ const fetchReviews = async()=>{
+
+   const q = query(
+     collection(db,"reviews"),
+     where("productId","==",product.id)
+   );
+
+
+   const snapshot = await getDocs(q);
+
+
+   const loadedReviews = snapshot.docs.map(doc=>({
+      id:doc.id,
+      ...doc.data()
+   }));
+
+
+   setReviews(loadedReviews);
+
+ };
+
+
+ fetchReviews();
+
+},[product]);
+
+
   
   
   const basePrice = product.price;
@@ -107,22 +134,53 @@ export default function ProductPage({
     setReviewImages(imageURLs);
   };
 
-  const submitReview = () => {
-    if (!reviewText.trim()) return;
+  const submitReview = async()=>{
 
-    const newReview = {
-      id: Date.now(),
-      name: "You",
-      rating: reviewRating,
-      text: reviewText,
-      images: reviewImages
-    };
+ if(!currentUser){
+   setPage("login");
+   return;
+ }
 
-    setReviews([newReview, ...reviews]);
-    setReviewText("");
-    setReviewRating(5);
-    setReviewImages([]);
-  };
+ if(!reviewText.trim()) return;
+
+
+ await addDoc(
+   collection(db,"reviews"),
+   {
+     productId:product.id,
+     userId:currentUser.uid,
+     name:currentUser.displayName || "Customer",
+     rating:reviewRating,
+     text:reviewText,
+     images:reviewImages,
+     createdAt:serverTimestamp()
+   }
+ );
+
+
+ setReviewText("");
+ setReviewRating(5);
+ setReviewImages([]);
+
+
+ // refresh reviews
+ const q = query(
+   collection(db,"reviews"),
+   where("productId","==",product.id)
+ );
+
+ const snapshot = await getDocs(q);
+
+
+ setReviews(
+   snapshot.docs.map(doc=>({
+     id:doc.id,
+     ...doc.data()
+   }))
+ );
+
+
+};
 
   const handleAddToCart = () => {
   // Check if user is logged in
