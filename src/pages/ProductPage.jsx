@@ -65,8 +65,8 @@ useEffect(() => {
 
       const q = query(
         collection(db,"reviews"),
-        where("productId","==",product.id),
-        orderBy("createdAt","desc")
+        where("productId","==",product.id)
+        
       );
 
       const snapshot = await getDocs(q);
