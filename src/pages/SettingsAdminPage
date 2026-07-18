@@ -56,7 +56,7 @@ export default function SettingsAdminPage({ setPage }) {
     }
   }
 
-  async function saveSettings() {
+  async function saveSettings({setPage) {
     setSaving(true);
     try {
       await setDoc(doc(db, "settings", "store"), settings);
