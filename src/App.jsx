@@ -28,6 +28,7 @@ import CouponsAdminPage from "./pages/CouponsAdminPage";
 import ReservationPage from "./pages/ReservationPage";
 import CustomersAdminPage from "./pages/CustomersAdminPage";
 import SettingsAdminPage from "./pages/SettingsAdminPage";
+import MenuMigration from "./pages/MenuMigration";
 
 export default function App() {
   const [page, setPage] = useState("menu");
@@ -114,12 +115,21 @@ export default function App() {
             />
           )}
 
+
+
+
+          
           {page === "menu" && (
             <MenuPage
               setPage={navigateTo}
               setSelectedProduct={setSelectedProduct}
             />
           )}
+
+
+          <MenuMigration />
+
+          
 
           {page === "product" && (
             <ProductPage
