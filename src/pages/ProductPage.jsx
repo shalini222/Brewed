@@ -59,28 +59,29 @@ useEffect(()=>{
  if(!product) return;
 
  const fetchReviews = async()=>{
+ try {
 
    const q = query(
      collection(db,"reviews"),
      where("productId","==",product.id)
+     orderBy("createdAt","desc")
    );
-
 
    const snapshot = await getDocs(q);
 
-
    const loadedReviews = snapshot.docs.map(doc=>({
-      id:doc.id,
-      ...doc.data()
+     id:doc.id,
+     ...doc.data()
    }));
-
 
    setReviews(loadedReviews);
 
- };
+ } catch(error){
+   console.error("Failed loading reviews:", error);
+ }
+};
 
-
- fetchReviews();
+  fetchReviews();
 
 },[product]);
 
@@ -1096,7 +1097,7 @@ body{
             <div className="product-image">
               <img
                 src="https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=900"
-                alt="Vanilla Latte"
+                alt={product.name}
               />
               <button className="favorite-btn" onClick={() => setFavorite(!favorite)}>
                 <Heart
@@ -1110,13 +1111,17 @@ body{
             {/* RIGHT SIDE */}
             <div>
               <div className="badge">BEST SELLER</div>
-              <h1 className="product-name">Vanilla Latte</h1>
+              <h1 className="product-name">{product.name}</h1>
 
               <div className="rating">
-                <Star size={20} fill="#C4956A" color="#C4956A" />
-                <span>4.9</span>
-                <span style={{ color: "#9A8A80" }}>(268 Reviews)</span>
-              </div>
+  <Star size={20} fill="#C4956A" color="#C4956A" />
+
+  <span>{averageRating}</span>
+
+  <span style={{ color: "#9A8A80" }}>
+    ({reviews.length} Reviews)
+  </span>
+</div>
 
               <p className="description">
                 Crafted with rich espresso, silky steamed milk and Madagascar vanilla, our Vanilla Latte delivers the
