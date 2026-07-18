@@ -74,16 +74,16 @@ export function CartProvider({ children }) {
     
     alert("Order saved successfully!");
     
-   for (const item of orderDetails.items) {
-     console.log(item);
-  console.log("Item ID:", item.id);
-  await updateDoc(
-    doc(db, "menu", item.id),
-    {
-      salesCount: increment(item.qty || item.quantity || 1),
-    }
-  );
-   }
+//   for (const item of orderDetails.items) {
+ //    console.log(item);
+//  console.log("Item ID:", item.id);
+//  await updateDoc(
+//    doc(db, "menu", item.id),
+//    {
+//      salesCount: increment(item.qty || item.quantity || 1),
+ //   }
+//  );
+//   }
     clearCart();
 
     return docRef.id;
