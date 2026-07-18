@@ -73,6 +73,11 @@ export function CartProvider({ children }) {
     );
     
     alert("Order saved successfully!");
+
+    for (const item of orderDetails.items) {
+  alert(JSON.stringify(item, null, 2));
+  break;
+    }
     
 //   for (const item of orderDetails.items) {
  //    console.log(item);
