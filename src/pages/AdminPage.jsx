@@ -393,6 +393,13 @@ const todayOrders = orders.filter(
 >
   🎟 Manage Coupons
 </button>
+
+
+      <button
+  onClick={() => setPage("customersadmin")}
+>
+  🎟 Manage Customers
+</button>
       
 <div
   style={{
