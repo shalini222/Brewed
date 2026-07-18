@@ -211,19 +211,10 @@ export default function App() {
           {page === "customersadmin" && (
             <CustomersAdminPage setPage={navigateTo} />
           )}
-{page === "settingsAdmin" && (
-  <div
-    style={{
-      minHeight: "100vh",
-      background: "red",
-      color: "white",
-      fontSize: 40,
-      padding: 40,
-    }}
-  >
-    APP.JSX TEST
-  </div>
-)}
+
+          {page === "settingsAdmin" && (
+            <SettingsAdminPage setPage={navigateTo} />
+          )}
 
 
           
