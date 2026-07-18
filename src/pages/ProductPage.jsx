@@ -47,7 +47,12 @@ export default function ProductPage({
   const { addToCart } = useCart();
   const { currentUser } = useAuth(); 
 
-
+const averageRating = reviews.length
+  ? (
+      reviews.reduce((total, review) => total + review.rating, 0) /
+      reviews.length
+    ).toFixed(1)
+  : "0.0";
 
 useEffect(()=>{
 
