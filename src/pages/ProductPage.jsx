@@ -39,7 +39,7 @@ export default function ProductPage({
   const [sweetness, setSweetness] = useState(50);
   const [instructions, setInstructions] = useState("");
   const [reviewText, setReviewText] = useState("");
-  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewRating, setReviewRating] = useState(0);
   const [reviewImages, setReviewImages] = useState([]);
   const [quantity, setQuantity] = useState(1);
 
@@ -55,32 +55,34 @@ const averageRating = reviews.length
     ).toFixed(1)
   : "0.0";
 
-useEffect(()=>{
+useEffect(() => {
 
- if(!product) return;
+  if(!product) return;
 
- const fetchReviews = async()=>{
- try {
+  const fetchReviews = async()=>{
 
-   const q = query(
-     collection(db,"reviews"),
-     where("productId","==",product.id),
-     orderBy("createdAt","desc")
-   );
+    try {
 
-   const snapshot = await getDocs(q);
+      const q = query(
+        collection(db,"reviews"),
+        where("productId","==",product.id),
+        orderBy("createdAt","desc")
+      );
 
-   const loadedReviews = snapshot.docs.map(doc=>({
-     id:doc.id,
-     ...doc.data()
-   }));
+      const snapshot = await getDocs(q);
 
-   setReviews(loadedReviews);
+      const loadedReviews = snapshot.docs.map(doc=>({
+        id: doc.id,
+        ...doc.data()
+      }));
 
- } catch(error){
-   console.error("Failed loading reviews:", error);
- }
-};
+      setReviews(loadedReviews);
+
+    } catch(error){
+      console.error("Failed loading reviews:", error);
+    }
+
+  };
 
   fetchReviews();
 
@@ -148,7 +150,7 @@ useEffect(()=>{
    return;
  }
 
- if(!reviewText.trim()) return;
+ if(!reviewText.trim() || reviewRating === 0) return;
 
 
  await addDoc(
@@ -166,7 +168,7 @@ useEffect(()=>{
 
 
  setReviewText("");
- setReviewRating(5);
+ setReviewRating(0);
  setReviewImages([]);
 
 
