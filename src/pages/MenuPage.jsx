@@ -8,6 +8,8 @@ import {
   setDoc,
   deleteDoc,
   getDocs as getFavoriteDocs,
+  query,
+  where
 } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import { Heart, Search, X } from "lucide-react";
@@ -19,6 +21,7 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
   const [added, setAdded] = useState({});
   const [favorites, setFavorites] = useState([]);
   const [menuItems, setMenuItems] = useState([]); 
+  const [reviewStats, setReviewStats] = useState({});
   const [toasts, setToasts] = useState([]); 
   const { addToCart } = useCart();
   const { currentUser } = useAuth(); 
@@ -61,21 +64,64 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
     loadFavorites();
   }, [currentUser]);
 
-  const itemRatingsMap = {
-    1: { rating: "4.5", reviews: 142 }, 2: { rating: "4.8", reviews: 320 },
-    3: { rating: "4.6", reviews: 88 },  4: { rating: "4.7", reviews: 215 },
-    5: { rating: "4.9", reviews: 412 }, 6: { rating: "4.4", reviews: 67 },
-    7: { rating: "4.8", reviews: 523 }, 8: { rating: "4.6", reviews: 198 }
+ useEffect(() => {
+
+  const fetchReviewStats = async()=>{
+
+    const snapshot = await getDocs(collection(db,"reviews"));
+
+    const stats = {};
+
+    snapshot.docs.forEach(doc=>{
+
+      const review = doc.data();
+
+      if(!stats[review.productId]){
+        stats[review.productId] = {
+          total:0,
+          rating:0
+        };
+      }
+
+
+      stats[review.productId].total += 1;
+      stats[review.productId].rating += review.rating;
+
+    });
+
+
+    Object.keys(stats).forEach(id=>{
+      stats[id].rating =
+        (stats[id].rating / stats[id].total).toFixed(1);
+    });
+
+
+    setReviewStats(stats);
+
   };
 
+
+  fetchReviewStats();
+
+},[]);
+
+  
+
+  
+
   const menuWithLiveMetadata = menuItems.map(item => {
-    const localRatingData = itemRatingsMap[item.id] || { rating: "4.5", reviews: 50 };
-    return {
-      ...item,
-      rating: parseFloat(item.rating || localRatingData.rating),
-      reviews: item.reviews || localRatingData.reviews,
-      isFeatured: item.isFeatured ?? false, 
-      salesCount: item.salesCount ?? 0, 
+    const liveReview = reviewStats[item.id];
+
+return {
+ ...item,
+
+ rating: liveReview 
+   ? Number(liveReview.rating)
+   : 0,
+
+ reviews: liveReview
+   ? liveReview.total
+   : 0,
     };
   });
  
@@ -417,7 +463,7 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
                 <div className="rating-badge">
                   <span className="rating-star">★</span>
                   <span className="rating-score">{item.rating}</span>
-                  <span className="rating-count">({item.reviews})</span>
+<span className="rating-count">({item.reviews})</span>
                 </div>
 
                 <p style={styles.cardDesc}>{item.desc}</p>
