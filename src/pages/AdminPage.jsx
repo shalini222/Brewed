@@ -302,7 +302,7 @@ async function toggleAvailability(item) {
   async function updateProduct() {
   if (!editing) return;
 
-  alert("Document ID = " + editing.id);
+  alert("Document ID = " + editing.firestoreId);
 
   try {
    await updateDoc(
