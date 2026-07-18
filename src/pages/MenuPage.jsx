@@ -14,16 +14,18 @@ import { Heart, Search, X } from "lucide-react";
 
 export default function MenuPage({ setPage, setSelectedProduct }) {
   const [activeCategory, setActiveCategory] = useState("All");
-  const [sortBy, setSortBy] = useState("featured"); 
-  const [searchQuery, setSearchQuery] = useState(""); // Dynamic search input state
+  const [sortBy, setSortBy] = useState("default"); // Internal structural sort baseline
+  const [searchQuery, setSearchQuery] = useState(""); 
   const [added, setAdded] = useState({});
   const [favorites, setFavorites] = useState([]);
   const [menuItems, setMenuItems] = useState([]); 
-  const [toasts, setToasts] = useState([]); // Toast Notification Array Stack
+  const [toasts, setToasts] = useState([]); 
   const { addToCart } = useCart();
   const { currentUser } = useAuth(); 
   
-  const categories = ["All", "Coffee", "Non-Coffee", "Food"];
+  // --- UPDATED FILTERS LINEUP ---
+  // "Bestselling" and "Featured" are now treated as top-level active filters!
+  const filters = ["All", "Bestselling", "Featured", "Coffee", "Non-Coffee", "Food"];
 
   // Global Dynamic Toast Notification Dispatcher
   const showToast = (message, type = "success") => {
@@ -50,7 +52,6 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
         setMenuItems(items);
       } catch (error) {
         console.error("FATAL ERROR FETCHING MENU: ", error);
-        showToast("Error updating menu items from cloud database", "error");
       }
     };
     
@@ -96,31 +97,38 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
     };
   });
  
-  // --- 2. DYNAMIC TEXT SEARCHBAR FILTER LAYER ---
+  // --- 2. DYNAMIC SEARCH & FILTER PILL LOGIC ---
   const filteredBySearchAndCategory = menuWithLiveMetadata.filter((item) => {
-    const matchesCategory = activeCategory === "All" || item.category === activeCategory;
-    
+    // Check Search bar matching
     const cleanSearch = searchQuery.toLowerCase().trim();
     const matchesSearch = !cleanSearch || 
       item.name?.toLowerCase().includes(cleanSearch) || 
       item.desc?.toLowerCase().includes(cleanSearch);
 
-    return matchesCategory && matchesSearch;
+    if (!matchesSearch) return false;
+
+    // Check Filter Pill condition matching
+    if (activeCategory === "All") return true;
+    if (activeCategory === "Featured") return item.isFeatured === true;
+    if (activeCategory === "Bestselling") return item.salesCount > 0; // Show any items with sales history
+    
+    // Default matching fallback for "Coffee", "Non-Coffee", "Food" categories
+    return item.category === activeCategory;
   });
 
-  // --- 3. DYNAMIC SORTING (FEATURED & BESTSELLING) ---
+  // --- 3. DYNAMIC SORTING GRID LOGIC ---
   const sortedAndFiltered = filteredBySearchAndCategory.sort((a, b) => {
+    // If the user clicks the "Bestselling" pill, automatically order by highest sales count first
+    if (activeCategory === "Bestselling") {
+      return b.salesCount - a.salesCount;
+    }
+
     if (sortBy === "price-low") return a.price - b.price;
     if (sortBy === "price-high") return b.price - a.price;
     
-    // Most Popular (Bestselling) Sort
-    if (sortBy === "popular") return b.salesCount - a.salesCount; 
-    
-    // Featured Sort (Puts features up top, then defaults to alphabetical order)
-    if (sortBy === "featured") {
-      if (a.isFeatured !== b.isFeatured) {
-        return a.isFeatured ? -1 : 1; 
-      }
+    // Default sorting layout baseline (Puts featured items up top first)
+    if (a.isFeatured !== b.isFeatured) {
+      return a.isFeatured ? -1 : 1; 
     }
     return a.name.localeCompare(b.name);
   });
@@ -133,6 +141,7 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
     }
 
     addToCart(item);
+    // TOAST FIRES HERE: Item Added to Cart Action
     showToast(`Added ${item.name} to cart!`);
     setAdded((prev) => ({ ...prev, [item.id]: true }));
     setTimeout(() => setAdded((prev) => ({ ...prev, [item.id]: false })), 1000);
@@ -189,7 +198,6 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
           box-sizing: border-box;
         }
 
-        /* --- Dynamic Search bar Input Styles --- */
         .search-input-container {
           position: relative;
           display: flex;
@@ -269,7 +277,6 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
         {/* --- Unified Header Control Center --- */}
         <div className="filter-bar">
           
-          {/* Dynamic Input Search Node */}
           <div className="search-input-container">
             <Search className="search-icon-left" size={16} />
             <input
@@ -288,13 +295,13 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
 
           <div className="categories-scroll-wrapper">
             <div className="categories-wrapper">
-              {categories.map((cat) => (
+              {filters.map((cat) => (
                 <button
                   key={cat}
                   className={`filter-pill-btn ${activeCategory === cat ? "active" : ""}`}
                   onClick={() => {
                     setActiveCategory(cat);
-                    showToast(`Viewing ${cat} items`);
+                    // NO TOAST DISPATCHED HERE - keeping category switches silent!
                   }}
                 >
                   {cat}
@@ -309,11 +316,10 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
               value={sortBy} 
               onChange={(e) => {
                 setSortBy(e.target.value);
-                showToast(`Sorted by ${e.target.options[e.target.selectedIndex].text}`);
+                // NO TOAST DISPATCHED HERE - keeping sort select adjustments silent!
               }}
             >
-              <option value="featured">Sort by: Featured</option>
-              <option value="popular">Sort by: Bestselling</option>
+              <option value="default">Sort by: Default</option>
               <option value="price-low">Price: Low to High</option>
               <option value="price-high">Price: High to Low</option>
             </select>
@@ -334,7 +340,6 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
                 setPage("product");
               }}
             >
-              {/* Dynamic Featured Item Star Ribbon Badge */}
               {item.isFeatured && (
                 <div
                   style={{
@@ -378,10 +383,12 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
                     if (favorites.includes(item.id)) {
                       await deleteDoc(favRef);
                       setFavorites(prev => prev.filter(id => id !== item.id));
+                      // TOAST FIRES HERE: Item Removed from Favorites Action
                       showToast(`Removed ${item.name} from favorites`);
                     } else {
                       await setDoc(favRef, { ...item, savedAt: Date.now() });
                       setFavorites(prev => [...prev, item.id]);
+                      // TOAST FIRES HERE: Item Added to Favorites Action
                       showToast(`Saved ${item.name} to favorites!`);
                     }
                   }}
