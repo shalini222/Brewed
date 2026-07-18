@@ -1,6 +1,13 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { db, auth } from "../firebase"; // 1. Added 'auth' import
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  serverTimestamp,
+  doc,
+  updateDoc,
+  increment,
+} from "firebase/firestore";
 
 const CartContext = createContext();
 
@@ -34,10 +41,12 @@ export function CartProvider({ children }) {
   };
 
   const removeFromCart = (itemToRemove) => setCart((prev) => prev.filter((i) => i !== itemToRemove));
+
   const updateQty = (itemToUpdate, qty) => {
     if (qty < 1) return removeFromCart(itemToUpdate);
     setCart((prev) => prev.map((i) => (i === itemToUpdate ? { ...i, qty } : i)));
   };
+ 
   const clearCart = () => setCart([]);
 
         const placeOrder = async (orderDetails) => {
@@ -62,7 +71,14 @@ export function CartProvider({ children }) {
       collection(db, "orders"),
       orderData
     );
-
+   for (const item of orderDetails.items) {
+  await updateDoc(
+    doc(db, "menu", item.id),
+    {
+      salesCount: increment(item.qty || item.quantity || 1),
+    }
+  );
+   }
     clearCart();
 
     return docRef.id;
