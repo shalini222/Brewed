@@ -84,10 +84,9 @@ useEffect(() => {
 
   };
 
-  fetchReviews();
+  fetchReviews(); 
 
-},[product]);
-
+}, [product]);
 
   
   
