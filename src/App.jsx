@@ -26,6 +26,7 @@ import DeleteAccountPage from "./pages/DeleteAccountPage";
 import AdminPage from "./pages/AdminPage";
 import CouponsAdminPage from "./pages/CouponsAdminPage";
 import ReservationPage from "./pages/ReservationPage";
+import CouponsAdminPage from "./pages/CustomersAdminage";
 
 export default function App() {
   const [page, setPage] = useState("menu");
@@ -56,6 +57,7 @@ export default function App() {
     "deleteAccount",
     "admin",
     "couponsadmin",
+    "customers",
     "reservation",
   ];
 
@@ -200,6 +202,9 @@ export default function App() {
           {/* FIXED: Updated to use unifed navigateTo instead of raw setPage */}
           {page === "couponsadmin" && (
             <CouponsAdminPage setPage={navigateTo} />
+          )}
+          {page === "customersadmin" && (
+            <CustomersAdminPage setPage={navigateTo} />
           )}
           
           <Footer />
