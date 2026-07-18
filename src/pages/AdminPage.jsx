@@ -57,6 +57,11 @@ const [newItem, setNewItem] = useState({
   desc: "",
   emoji: "",
   img: "",
+  available: true,
+  isFeatured: false,
+  salesCount: 0,
+  rating: 0,
+  reviews: 0,
 });
 
   const [editing, setEditing] = useState(null);
@@ -68,6 +73,7 @@ const [editItem, setEditItem] = useState({
   desc: "",
   emoji: "",
   img: "",
+  isFeatured:false,
 });
 
 useEffect(() => {
@@ -244,6 +250,10 @@ async function addProduct() {
     ...newItem,
     price: Number(newItem.price),
     available: true,
+     isFeatured: false,
+  salesCount: 0,
+  rating: 0,
+  reviews: 0,
   });
 
   setNewItem({
@@ -253,6 +263,12 @@ async function addProduct() {
     desc: "",
     emoji: "",
     img: "",
+    available: true,
+  isFeatured: false,
+  salesCount: 0,
+  rating: 0,
+  reviews: 0,
+  
   });
 
   setShowAdd(false);
@@ -1247,6 +1263,7 @@ gap:30
       desc: item.desc || "",
       emoji: item.emoji || "",
       img: item.img || "",
+      isFeatured: item.isFeatured || false,
     });
   }}
   style={{
