@@ -7,7 +7,8 @@ import {
   getDocs,
   query,
   where,
-  serverTimestamp
+  serverTimestamp,
+  orderBy
 } from "firebase/firestore";
 
 import { db } from "../firebase";
@@ -63,7 +64,7 @@ useEffect(()=>{
 
    const q = query(
      collection(db,"reviews"),
-     where("productId","==",product.id)
+     where("productId","==",product.id),
      orderBy("createdAt","desc")
    );
 
