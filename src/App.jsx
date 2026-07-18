@@ -26,7 +26,7 @@ import DeleteAccountPage from "./pages/DeleteAccountPage";
 import AdminPage from "./pages/AdminPage";
 import CouponsAdminPage from "./pages/CouponsAdminPage";
 import ReservationPage from "./pages/ReservationPage";
-import CouponsAdminPage from "./pages/CustomersAdminage";
+import CouponsAdminPage from "./pages/CustomersAdminPage";
 
 export default function App() {
   const [page, setPage] = useState("menu");
@@ -57,7 +57,7 @@ export default function App() {
     "deleteAccount",
     "admin",
     "couponsadmin",
-    "customers",
+    "customersadmin",
     "reservation",
   ];
 
