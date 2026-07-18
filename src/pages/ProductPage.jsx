@@ -1112,7 +1112,9 @@ body{
 
             {/* RIGHT SIDE */}
             <div>
-              <div className="badge">BEST SELLER</div>
+              {product.isBestSeller && (
+  <div className="badge">BEST SELLER</div>
+)}
               <h1 className="product-name">{product.name}</h1>
 
               <div className="rating">
