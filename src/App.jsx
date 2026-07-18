@@ -63,7 +63,7 @@ export default function App() {
     "couponsadmin",
     "customersadmin",
     "reservation",
-    "settingsadmin",
+    "settingsAdmin",
   ];
 
   return (
@@ -212,7 +212,7 @@ export default function App() {
             <CustomersAdminPage setPage={navigateTo} />
           )}
 
-{page === "settingsadmin" && (
+{page === "settingsAdmin" && (
             <SettingsAdminPage setPage={navigateTo} />
           )}
 
