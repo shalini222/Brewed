@@ -28,7 +28,7 @@ import CouponsAdminPage from "./pages/CouponsAdminPage";
 import ReservationPage from "./pages/ReservationPage";
 import CustomersAdminPage from "./pages/CustomersAdminPage";
 import SettingsAdminPage from "./pages/SettingsAdminPage";
-import MenuMigrationPage from "./pages/MenuMigrationPage";
+import MenuMigration from "./pages/MenuMigration";
 
 
 
