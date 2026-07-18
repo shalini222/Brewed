@@ -199,6 +199,7 @@ const handleFormSubmission = async (e) => {
       
     } catch (err) {
       console.error("Critical submission failure:", err);
+      alert(err.message);
       setStatus("failure");
     }
   };
