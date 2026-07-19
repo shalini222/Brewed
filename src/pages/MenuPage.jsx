@@ -121,20 +121,22 @@ setBestSellerIds(
   
 
   const menuWithLiveMetadata = menuItems.map(item => {
-    const liveReview = reviewStats[item.id];
+  const liveReview = reviewStats[item.id];
 
-return {
- ...item,
+  return {
+    ...item,
 
- rating: liveReview 
-   ? Number(liveReview.rating)
-   : 0,
+    isBestSeller: bestSellerIds.includes(item.firestoreId),
 
- reviews: liveReview
-   ? liveReview.total
-   : 0,
-    };
-  });
+    rating: liveReview
+      ? Number(liveReview.rating)
+      : 0,
+
+    reviews: liveReview
+      ? liveReview.total
+      : 0,
+  };
+});
  
   const filteredBySearchAndCategory = menuWithLiveMetadata.filter((item) => {
     const cleanSearch = searchQuery.toLowerCase().trim();
@@ -145,7 +147,9 @@ return {
     if (!matchesSearch) return false;
     if (activeCategory === "All") return true;
     if (activeCategory === "Featured") return item.isFeatured === true;
-    if (activeCategory === "Bestselling") return item.salesCount > 0; 
+    if (activeCategory === "Bestselling") {
+  return bestSellerIds.includes(item.firestoreId);
+    }
     
     return item.category === activeCategory;
   });
