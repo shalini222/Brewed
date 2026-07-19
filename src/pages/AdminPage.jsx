@@ -1316,8 +1316,105 @@ cursor:"pointer"
   />
   Featured Product
 </label>
+<br/><br/>
+    <h3
+  style={{
+    marginTop: 30,
+    marginBottom: 15,
+  }}
+>
+  Milk Options
+</h3>
 
-    
+<button
+  type="button"
+  onClick={() =>
+    setNewItem({
+      ...newItem,
+      milkOptions: [
+        ...newItem.milkOptions,
+        {
+          name: "",
+          price: 0,
+        },
+      ],
+    })
+  }
+  style={{
+    padding: "10px 18px",
+    background: "#C4956A",
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    cursor: "pointer",
+    marginBottom: 20,
+  }}
+>
+  🥛 Add Milk Option
+</button>
+
+{newItem.milkOptions?.map((milk, index) => (
+  <div
+    key={index}
+    style={{
+      display: "flex",
+      gap: 10,
+      alignItems: "center",
+      marginBottom: 12,
+    }}
+  >
+    <input
+      placeholder="Milk Name"
+      value={milk.name}
+      onChange={(e) => {
+        const updated = [...newItem.milkOptions];
+        updated[index].name = e.target.value;
+
+        setNewItem({
+          ...newItem,
+          milkOptions: updated,
+        });
+      }}
+    />
+
+    <input
+      type="number"
+      placeholder="Extra Price"
+      value={milk.price}
+      onChange={(e) => {
+        const updated = [...newItem.milkOptions];
+        updated[index].price = Number(e.target.value);
+
+        setNewItem({
+          ...newItem,
+          milkOptions: updated,
+        });
+      }}
+    />
+
+    <button
+      type="button"
+      onClick={() =>
+        setNewItem({
+          ...newItem,
+          milkOptions: newItem.milkOptions.filter(
+            (_, i) => i !== index
+          ),
+        })
+      }
+      style={{
+        background: "#D32F2F",
+        color: "#fff",
+        border: "none",
+        padding: "10px 14px",
+        borderRadius: 8,
+        cursor: "pointer",
+      }}
+    >
+      🗑
+    </button>
+  </div>
+))}
 
 <br/><br/>
 
@@ -1595,85 +1692,10 @@ cursor:"pointer"
 
 </div>
 ))}
-    
-<h3
-style={{
-  marginTop: 30,
-  marginBottom: 15,
-}}
->
-Milk Options
-</h3>
+    <br/><br/>
 
-<button
-type="button"
-onClick={() =>
-  setNewItem({
-    ...newItem,
-    milkOptions: [
-      ...newItem.milkOptions,
-      {
-        name: "",
-        price: 0,
-      },
-    ],
-  })
-}
-style={{
-  padding: "10px 18px",
-  background: "#C4956A",
-  border: "none",
-  color: "#fff",
-  borderRadius: 10,
-  cursor: "pointer",
-  marginBottom: 20,
-}}
->
-🥛 Add Milk Option
-</button>
-{newItem.milkOptions.map((milk, index) => (
 
-  <div
-    key={index}
-    style={{
-      display: "flex",
-      gap: 10,
-      alignItems: "center",
-      marginBottom: 12,
-    }}
-  >
-
-    <input
-      placeholder="Milk Name"
-      value={milk.name}
-      onChange={(e) => {
-        const updated = [...newItem.milkOptions];
-        updated[index].name = e.target.value;
-
-        setNewItem({
-          ...newItem,
-          milkOptions: updated,
-        });
-      }}
-    />
-
-    <input
-      type="number"
-      placeholder="Extra Price"
-      value={milk.price}
-      onChange={(e) => {
-        const updated = [...newItem.milkOptions];
-        updated[index].price = Number(e.target.value);
-
-        setNewItem({
-          ...newItem,
-          milkOptions: updated,
-        });
-      }}
-    />
-
-<br/><br/>
-<h3
+      <h3
   style={{
     marginTop: 30,
     marginBottom: 15,
@@ -1685,10 +1707,10 @@ style={{
 <button
   type="button"
   onClick={() =>
-    setNewItem({
-      ...newItem,
+    setEditItem({
+      ...editItem,
       milkOptions: [
-        ...newItem.milkOptions,
+        ...editItem.milkOptions,
         {
           name: "",
           price: 0,
@@ -1709,7 +1731,7 @@ style={{
   🥛 Add Milk Option
 </button>
 
-{newItem.milkOptions?.map((milk, index) => (
+{editItem.milkOptions?.map((milk, index) => (
   <div
     key={index}
     style={{
@@ -1723,11 +1745,11 @@ style={{
       placeholder="Milk Name"
       value={milk.name}
       onChange={(e) => {
-        const updated = [...newItem.milkOptions];
+        const updated = [...editItem.milkOptions];
         updated[index].name = e.target.value;
 
-        setNewItem({
-          ...newItem,
+        setEditItem({
+          ...editItem,
           milkOptions: updated,
         });
       }}
@@ -1738,11 +1760,11 @@ style={{
       placeholder="Extra Price"
       value={milk.price}
       onChange={(e) => {
-        const updated = [...newItem.milkOptions];
+        const updated = [...editItem.milkOptions];
         updated[index].price = Number(e.target.value);
 
-        setNewItem({
-          ...newItem,
+        setEditItem({
+          ...editItem,
           milkOptions: updated,
         });
       }}
@@ -1751,9 +1773,9 @@ style={{
     <button
       type="button"
       onClick={() =>
-        setNewItem({
-          ...newItem,
-          milkOptions: newItem.milkOptions.filter(
+        setEditItem({
+          ...editItem,
+          milkOptions: editItem.milkOptions.filter(
             (_, i) => i !== index
           ),
         })
@@ -1891,108 +1913,6 @@ dietType:e.target.value
 
 </select>
 
-    <br/><br/>
-
-<h3
-  style={{
-    marginTop: 30,
-    marginBottom: 15,
-  }}
->
-  Milk Options
-</h3>
-
-<button
-  type="button"
-  onClick={() =>
-    setEditItem({
-      ...editItem,
-      milkOptions: [
-        ...editItem.milkOptions,
-        {
-          name: "",
-          price: 0,
-        },
-      ],
-    })
-  }
-  style={{
-    padding: "10px 18px",
-    background: "#C4956A",
-    color: "#fff",
-    border: "none",
-    borderRadius: 10,
-    cursor: "pointer",
-    marginBottom: 20,
-  }}
->
-  🥛 Add Milk Option
-</button>
-
-{editItem.milkOptions?.map((milk, index) => (
-  <div
-    key={index}
-    style={{
-      display: "flex",
-      gap: 10,
-      alignItems: "center",
-      marginBottom: 12,
-    }}
-  >
-    <input
-      placeholder="Milk Name"
-      value={milk.name}
-      onChange={(e) => {
-        const updated = [...editItem.milkOptions];
-        updated[index].name = e.target.value;
-
-        setEditItem({
-          ...editItem,
-          milkOptions: updated,
-        });
-      }}
-    />
-
-    <input
-      type="number"
-      placeholder="Extra Price"
-      value={milk.price}
-      onChange={(e) => {
-        const updated = [...editItem.milkOptions];
-        updated[index].price = Number(e.target.value);
-
-        setEditItem({
-          ...editItem,
-          milkOptions: updated,
-        });
-      }}
-    />
-
-    <button
-      type="button"
-      onClick={() =>
-        setEditItem({
-          ...editItem,
-          milkOptions: editItem.milkOptions.filter(
-            (_, i) => i !== index
-          ),
-        })
-      }
-      style={{
-        background: "#D32F2F",
-        color: "#fff",
-        border: "none",
-        padding: "10px 14px",
-        borderRadius: 8,
-        cursor: "pointer",
-      }}
-    >
-      🗑
-    </button>
-  </div>
-))}
-
-    
 
     <br/><br/>
 
