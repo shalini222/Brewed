@@ -996,7 +996,9 @@ gap:30
 >
   ➕ Add Product
 </button>
-
+      
+<br /><br />
+      
       <input
   type="text"
   placeholder="🔍 Search products..."
@@ -1928,7 +1930,7 @@ dietType:e.target.value
   </div>
 )}
       
-      
+    <h2>Menu Count: {menu.length}</h2>  
       
 {menu
   .filter((item) => {
