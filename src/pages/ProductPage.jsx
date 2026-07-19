@@ -31,7 +31,9 @@ export default function ProductPage({
   product,
 })  {
   const [favorite, setFavorite] = useState(false);
-  const [size, setSize] = useState("Medium");
+  const [size, setSize] = useState(
+  product?.sizes?.[0]?.name || ""
+);
   const [milk, setMilk] = useState("Whole Milk");
   const [toppings, setToppings] = useState([]);
   const [temperature, setTemperature] = useState("Hot");
@@ -92,11 +94,7 @@ useEffect(() => {
   
   const basePrice = product.price;
 
-  const sizePrices = {
-    Small: -50,
-    Medium: 0,
-    Large: 50
-  };
+  
 
   const milkPrices = {
     "Whole Milk": 0,
@@ -120,11 +118,14 @@ useEffect(() => {
     0
   );
 
-  const singlePrice =
-    basePrice +
-    sizePrices[size] +
-    milkPrices[milk] +
-    toppingsTotal;
+  const selectedSize =
+  product.sizes?.find(s => s.name === size);
+
+const singlePrice =
+  basePrice +
+  (selectedSize?.price || 0) +
+  milkPrices[milk] +
+  toppingsTotal;
 
   const totalPrice = singlePrice * quantity;
 
@@ -1156,38 +1157,34 @@ body{
               <div className="option-section">
                 <h2 className="option-title">Choose Your Size</h2>
                 <div className="size-grid">
-                  <div
-                    className={`size-card ${size === "Small" ? "active" : ""}`}
-                    onClick={() => setSize("Small")}
-                  >
-                    <CupSoda className="cup-icon" />
-                    <div className="size-name">Small</div>
-                    <div className="size-volume">8 oz</div>
-                    <div className="size-price">₹195</div>
-                  </div>
+  {product.sizes?.map((item) => (
+    <div
+      key={item.name}
+      className={`size-card ${
+        size === item.name ? "active" : ""
+      }`}
+      onClick={() => setSize(item.name)}
+    >
+      <CupSoda className="cup-icon" />
 
-                  <div
-                    className={`size-card ${size === "Medium" ? "active" : ""}`}
-                    onClick={() => setSize("Medium")}
-                  >
-                    <div className="popular-badge">Most Popular</div>
-                    <CupSoda className="cup-icon" />
-                    <div className="size-name">Medium</div>
-                    <div className="size-volume">12 oz</div>
-                    <div className="size-price">₹245</div>
-                  </div>
+      <div className="size-name">
+        {item.name}
+      </div>
 
-                  <div
-                    className={`size-card ${size === "Large" ? "active" : ""}`}
-                    onClick={() => setSize("Large")}
-                  >
-                    <CupSoda className="cup-icon" />
-                    <div className="size-name">Large</div>
-                    <div className="size-volume">16 oz</div>
-                    <div className="size-price">₹295</div>
-                  </div>
-                </div>
-              </div>
+      <div className="size-volume">
+        {item.volume}
+      </div>
+
+      <div className="size-price">
+  {item.price > 0
+    ? `+₹${item.price}`
+    : item.price < 0
+      ? `-₹${Math.abs(item.price)}`
+      : "No extra charge"}
+</div>
+    </div>
+  ))}
+</div>
 
               {/* MILK OPTIONS SECTION */}
               <div className="option-section">
