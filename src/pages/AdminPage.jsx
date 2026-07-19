@@ -60,7 +60,7 @@ const [newItem, setNewItem] = useState({
 
   available: true,
   isFeatured: false,
-  isBestSeller: false,
+
 
   prepTime: "5–8 mins",
   servedAs: "Hot",
@@ -83,7 +83,7 @@ const [editItem, setEditItem] = useState({
 
   available: true,
   isFeatured: false,
-  isBestSeller: false,
+  
 
   prepTime: "5–8 mins",
   servedAs: "Hot",
@@ -267,7 +267,7 @@ async function addProduct() {
 
   available: newItem.available,
   isFeatured: newItem.isFeatured,
-  isBestSeller: newItem.isBestSeller,
+  
 
   prepTime: newItem.prepTime,
   servedAs: newItem.servedAs,
@@ -344,7 +344,7 @@ async function toggleAvailability(item) {
     img: editItem.img,
     available: editItem.available,
 isFeatured: editItem.isFeatured,
-isBestSeller: editItem.isBestSeller,
+
 
 prepTime: editItem.prepTime,
 servedAs: editItem.servedAs,
@@ -1148,27 +1148,7 @@ gap:30
   Featured Product
 </label>
 
-    <br/><br/>
-    <label style={{
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    marginTop: 12,
-    fontWeight: 600,
-  }} >
-<input
-type="checkbox"
-checked={newItem.isBestSeller}
-onChange={(e)=>
-setNewItem({
-...newItem,
-isBestSeller:e.target.checked
-})
-}
-/>
-
- Best Seller
-</label>
+    
 
 <br/><br/>
 
@@ -1360,27 +1340,7 @@ dietType:e.target.value
   Featured Product
 </label>
 
-    <br/><br/>
-    <label style={{
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    marginTop: 12,
-    fontWeight: 600,
-  }} >
-<input
-type="checkbox"
-checked={newItem.isBestSeller}
-onChange={(e)=>
-setEditItem({
-...editItem,
-isBestSeller:e.target.checked
-})
-}
-/>
-
- Best Seller
-</label>
+    
 
 <br/><br/>
 
@@ -1514,7 +1474,7 @@ dietType:e.target.value
       img: item.img || "",
       isFeatured: item.isFeatured || false,
        available: item.available,
-  isBestSeller: item.isBestSeller,
+  
 
   prepTime: item.prepTime,
   servedAs: item.servedAs,
