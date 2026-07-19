@@ -1251,6 +1251,9 @@ body{
   </div>
 )}
 
+
+                <br />
+
               {/* TEMPERATURE SECTION */}
               <div className="temperature-grid">
   {product.temperatureOptions?.map((option) => (
