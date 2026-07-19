@@ -1112,7 +1112,7 @@ body{
 
             {/* RIGHT SIDE */}
             <div>
-              {product.isBestseller && (
+              {product.isBestSeller && (
   <div className="badge">BEST SELLER</div>
 )}
               <h1 className="product-name">{product.name}</h1>
@@ -1138,15 +1138,15 @@ body{
                 </div>
                 <div className="info-card">
                   <Flame size={22} />
-                  <span>Served Hot</span>
+                  <span>{product.servedAs}</span>
                 </div>
                 <div className="info-card">
                   <Leaf size={22} />
-                  <span>Vegetarian</span>
+                  <span>{product.dietType}</span>
                 </div>
                 <div className="info-card">
                   <Star size={22} fill="#C4956A" color="#C4956A" />
-                  <span>1.2k Sold</span>
+                  <span>{product.salesCount}</span>
                 </div>
               </div>
 
