@@ -1336,6 +1336,7 @@ cursor:"pointer"
         {
           name: "",
           price: 0,
+          icon: "",
         },
       ],
     })
@@ -1391,7 +1392,20 @@ cursor:"pointer"
         });
       }}
     />
+   <input
+  placeholder="Icon (🥛 🌾 🫘 🥥 or image URL)"
+  value={milk.icon}
+  onChange={(e) => {
+    const updated = [...newItem.milkOptions];
 
+    updated[index].icon = e.target.value;
+
+    setNewItem({
+      ...newItem,
+      milkOptions: updated,
+    });
+  }}
+/>
     <button
       type="button"
       onClick={() =>
@@ -1714,6 +1728,7 @@ cursor:"pointer"
         {
           name: "",
           price: 0,
+          icon: "",
         },
       ],
     })
@@ -1769,7 +1784,20 @@ cursor:"pointer"
         });
       }}
     />
+<input
+  placeholder="Icon (🥛 🌾 🫘 🥥 or image URL)"
+  value={milk.icon}
+  onChange={(e) => {
+    const updated = [...editItem.milkOptions];
 
+    updated[index].icon = e.target.value;
+
+    setEditItem({
+      ...editItem,
+      milkOptions: updated,
+    });
+  }}
+/>
     <button
       type="button"
       onClick={() =>
