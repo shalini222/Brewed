@@ -1797,39 +1797,6 @@ cursor:"pointer"
 
 
     <br/><br/>
-    <button
-      type="button"
-      onClick={() => {
-        setNewItem({
-          ...newItem,
-          milkOptions: newItem.milkOptions.filter(
-            (_, i) => i !== index
-          ),
-        });
-      }}
-      style={{
-        background: "#D32F2F",
-        color: "#fff",
-        border: "none",
-        padding: "10px 14px",
-        borderRadius: 8,
-        cursor: "pointer",
-      }}
-    >
-      🗑
-    </button>
-
-  </div>
-
-))}
-
-
-
-
-    
-
-
-    
     
 
     <label
