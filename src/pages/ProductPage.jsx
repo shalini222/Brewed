@@ -1424,7 +1424,7 @@ body{
             </div>
           </div>
 
-                    {/* PERSISTENT BAR TRACKER */}
+                              {/* PERSISTENT BAR TRACKER */}
           <div className="sticky-order-bar">
             <div className="sticky-left">
               <div className="sticky-product-name">{product.name}</div>
@@ -1434,7 +1434,6 @@ body{
             </div>
 
             <div className="sticky-right">
-              {/* Only show quantity selector if logged in */}
               {currentUser && (
                 <div className="quantity-selector">
                   <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))}>−</button>
@@ -1443,29 +1442,28 @@ body{
                 </div>
               )}
 
-              {/* Dynamic Button: Changes label and color based on login status */}
-              
-             <button 
-  className="sticky-cart-button" 
-  onClick={currentUser ? handleAddToCart : () => setPage("login")} // Redirect if not logged in
-  style={{ 
-    background: currentUser ? "#C4956A" : "#6B5C53",
-    opacity: 1
-  }}
->
-  {currentUser ? (
-    <>
-      ₹{totalPrice}
-      <span>Add to Cart</span>
-    </>
-  ) : (
-    <span>Log in to Order</span>
-  )}
-</button>
-              </div>
-          </div>
-        </div>
+              <button 
+                className="sticky-cart-button" 
+                onClick={currentUser ? handleAddToCart : () => setPage("login")}
+                style={{ 
+                  background: currentUser ? "#C4956A" : "#6B5C53",
+                  opacity: 1
+                }}
+              >
+                {currentUser ? (
+                  <>
+                    ₹{totalPrice}
+                    <span>Add to Cart</span>
+                  </>
+                ) : (
+                  <span>Log in to Order</span>
+                )}
+              </button>
+            </div>
+          </div> 
+        </div> 
       </div>
     </>
   );
 }
+      
