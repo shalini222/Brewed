@@ -1930,7 +1930,7 @@ dietType:e.target.value
   </div>
 )}
       
-    <h2>Menu Count: {menu.length}</h2>  
+    
       
 {menu
   .filter((item) => {
