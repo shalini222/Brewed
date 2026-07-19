@@ -22,6 +22,7 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
   const [favorites, setFavorites] = useState([]);
   const [menuItems, setMenuItems] = useState([]); 
   const [reviewStats, setReviewStats] = useState({});
+  const [bestSellerIds, setBestSellerIds] = useState([]);
   const [toasts, setToasts] = useState([]); 
   const { addToCart } = useCart();
   const { currentUser } = useAuth(); 
@@ -41,9 +42,19 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
       try {
         const querySnapshot = await getDocs(collection(db, "menu"));
         const items = querySnapshot.docs.map((doc) => ({
-          firestoreId: doc.id,
-          ...doc.data(),
-        }));
+  firestoreId: doc.id,
+  ...doc.data(),
+}));
+
+const topSelling = [...items]
+  .sort((a, b) => (b.salesCount || 0) - (a.salesCount || 0))
+  .slice(0, 5);
+
+setBestSellerIds(
+  topSelling.map((item) => item.firestoreId)
+);
+
+
         setMenuItems(items);
       } catch (error) {
         console.error("Error fetching menu: ", error);
