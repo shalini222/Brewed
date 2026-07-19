@@ -34,7 +34,7 @@ export default function ProductPage({
   const [size, setSize] = useState(
   product?.sizes?.[0]?.name || ""
 );
-  const [milk, setMilk] = useState("Whole Milk");
+  const [milk, setMilk] = useState("");
   const [toppings, setToppings] = useState([]);
   const [temperature, setTemperature] = useState("Hot");
   const [iceLevel, setIceLevel] = useState("Regular");
@@ -90,20 +90,26 @@ useEffect(() => {
 
 }, [product]);
 
+  useEffect(() => {
+  if (product?.milkOptions?.length > 0) {
+    setMilk(product.milkOptions[0].name);
+  } else {
+    setMilk("");
+  }
+}, [product]);
+
   
   
   const basePrice = product.price;
 
   
 
-  const milkPrices = {
-    "Whole Milk": 0,
-    "Skim Milk": 0,
-    "Soy Milk": 20,
-    "Oat Milk": 30,
-    "Almond Milk": 30,
-    "Coconut Milk": 35
-  };
+  const milkPrices = Object.fromEntries(
+  (product.milkOptions || []).map((milk) => [
+    milk.name,
+    Number(milk.price || 0),
+  ])
+);
 
   const toppingPrices = {
     "Whipped Cream": 20,
@@ -1187,38 +1193,47 @@ body{
 </div>
 
               {/* MILK OPTIONS SECTION */}
-              <div className="option-section">
-                <h2 className="option-title">Milk Options</h2>
-                <div className="milk-grid">
-                  <div
-                    className={`milk-card ${milk === "Whole Milk" ? "active" : ""}`}
-                    onClick={() => setMilk("Whole Milk")}
-                  >
-                    <div className="milk-header">
-                      <div className="milk-emoji">🥛</div>
-                      <div>
-                        <div className="milk-name">Whole Milk</div>
-                        <div className="milk-tagline">Standard Premium Dairy</div>
-                      </div>
-                    </div>
-                    <div className="milk-price">Free</div>
-                  </div>
+              {product.milkOptions?.length > 0 && (
+  <div className="option-section">
+    <h2 className="option-title">
+      Choose Your Milk
+    </h2>
 
-                  <div
-                    className={`milk-card ${milk === "Oat Milk" ? "active" : ""}`}
-                    onClick={() => setMilk("Oat Milk")}
-                  >
-                    <div className="milk-header">
-                      <div className="milk-emoji">🌾</div>
-                      <div>
-                        <div className="milk-name">Oat Milk</div>
-                        <div className="milk-tagline">Creamy plant-based choice</div>
-                      </div>
-                    </div>
-                    <div className="milk-price">+ ₹30</div>
-                  </div>
-                </div>
+    <div className="milk-grid">
+      {product.milkOptions.map((option) => (
+        <div
+          key={option.name}
+          className={`milk-card ${
+            milk === option.name ? "active" : ""
+          }`}
+          onClick={() => setMilk(option.name)}
+        >
+          <div className="milk-header">
+            <div className="milk-emoji">
+              🥛
+            </div>
+
+            <div>
+              <div className="milk-name">
+                {option.name}
               </div>
+
+              <div className="milk-tagline">
+                {option.description || ""}
+              </div>
+            </div>
+          </div>
+
+          <div className="milk-price">
+            {option.price > 0
+              ? `+₹${option.price}`
+              : "Free"}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
               {/* TEMPERATURE SECTION */}
               <div className="option-section">
