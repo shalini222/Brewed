@@ -1214,10 +1214,10 @@ body{
         >
           <div className="milk-header">
             <div className="milk-emoji">
-  {milk.icon?.startsWith("http") ? (
+  {option.icon?.startsWith("http") ? (
     <img
-      src={milk.icon}
-      alt={milk.name}
+      src={option.icon}
+      alt={option.name}
       style={{
         width: 30,
         height: 30,
@@ -1225,7 +1225,7 @@ body{
       }}
     />
   ) : (
-    milk.icon || "🥛"
+    option.icon || "🥛"
   )}
 </div>
 
