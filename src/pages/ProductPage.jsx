@@ -1255,49 +1255,57 @@ body{
                 <br />
 
               {/* TEMPERATURE SECTION */}
-               <div className="option-section">
+               {/* TEMPERATURE SECTION */}
+{product.temperatureOptions?.length > 0 && (
+  <div className="option-section">
     <h2 className="option-title">
-      Choose Your Temperature 
+      Temperature
     </h2>
-                
-              <div className="temperature-grid">
-  {product.temperatureOptions?.map((option) => (
-    <div
-      key={option.name}
-      className={`temperature-card ${
-        temperature === option.name ? "active" : ""
-      }`}
-      onClick={() => setTemperature(option.name)}
-    >
-      <div className="temperature-icon">
-        {option.icon?.startsWith("http") ||
-        option.icon?.startsWith("/") ? (
-          <img
-            src={option.icon}
-            alt={option.name}
-            style={{
-              width: 30,
-              height: 30,
-              objectFit: "contain",
-            }}
-          />
-        ) : (
-          option.icon || "🌡️"
-        )}
-      </div>
 
-      <div>
-        <div className="temperature-name">
-          {option.name}
-        </div>
+    <div className="temperature-grid">
+      {product.temperatureOptions.map((option) => (
+        <div
+          key={option.name}
+          className={`temperature-card ${
+            temperature === option.name ? "active" : ""
+          }`}
+          onClick={() => setTemperature(option.name)}
+        >
+          <div className="temperature-icon">
+            {option.icon?.startsWith("http") ||
+            option.icon?.startsWith("/") ? (
+              <img
+                src={option.icon}
+                alt={option.name}
+                style={{
+                  width: 30,
+                  height: 30,
+                  objectFit: "contain",
+                }}
+              />
+            ) : (
+              option.icon || "🌡️"
+            )}
+          </div>
 
-        <div className="temperature-desc">
-          {option.description || ""}
+          <div>
+            <div className="temperature-name">
+              {option.name}
+            </div>
+
+            <div className="temperature-desc">
+              {option.description || ""}
+            </div>
+          </div>
         </div>
-      </div>
+      ))}
     </div>
-  ))}
-</div>
+  </div>
+)}
+                
+              
+
+        
                 
 
     
