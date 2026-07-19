@@ -10,7 +10,9 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
+
 import { db } from "../firebase";
+
 import {
   ResponsiveContainer,
   LineChart,
@@ -84,11 +86,12 @@ const [editItem, setEditItem] = useState({
 
   available: true,
   isFeatured: false,
-  
 
   prepTime: "5–8 mins",
   servedAs: "Hot",
   dietType: "Vegetarian",
+
+  sizes: [],
 });
 
 useEffect(() => {
@@ -346,7 +349,7 @@ async function toggleAvailability(item) {
     img: editItem.img,
     available: editItem.available,
 isFeatured: editItem.isFeatured,
-
+sizes: editItem.sizes,
 
 prepTime: editItem.prepTime,
 servedAs: editItem.servedAs,
@@ -1477,7 +1480,119 @@ dietType:e.target.value
 
     <br />
 
+<h3
+style={{
+marginTop:30,
+marginBottom:15
+}}
+>
+Product Sizes
+</h3>
 
+<button
+type="button"
+onClick={()=>
+setEditItem({
+...editItem,
+sizes:[
+...editItem.sizes,
+{
+name:"",
+volume:"",
+price:0
+}
+]
+})
+}
+style={{
+padding:"10px 18px",
+background:"#C4956A",
+color:"#fff",
+border:"none",
+borderRadius:10,
+cursor:"pointer",
+marginBottom:20
+}}
+>
+➕ Add Size
+</button>
+
+{editItem.sizes.map((size,index)=>(
+<div
+key={index}
+style={{
+display:"flex",
+gap:10,
+alignItems:"center",
+marginBottom:12
+}}
+>
+
+<input
+placeholder="Size Name"
+value={size.name}
+onChange={(e)=>{
+const updated=[...editItem.sizes];
+updated[index].name=e.target.value;
+setEditItem({
+...editItem,
+sizes:updated
+});
+}}
+/>
+
+<input
+placeholder="Volume"
+value={size.volume}
+onChange={(e)=>{
+const updated=[...editItem.sizes];
+updated[index].volume=e.target.value;
+setEditItem({
+...editItem,
+sizes:updated
+});
+}}
+/>
+
+<input
+type="number"
+placeholder="Price Difference"
+value={size.price}
+onChange={(e)=>{
+const updated=[...editItem.sizes];
+updated[index].price=Number(e.target.value);
+setEditItem({
+...editItem,
+sizes:updated
+});
+}}
+/>
+
+<button
+type="button"
+onClick={()=>{
+setEditItem({
+...editItem,
+sizes:editItem.sizes.filter((_,i)=>i!==index)
+});
+}}
+style={{
+background:"#D32F2F",
+color:"#fff",
+border:"none",
+padding:"10px 14px",
+borderRadius:8,
+cursor:"pointer"
+}}
+>
+🗑
+</button>
+
+</div>
+))}
+    
+
+    
 
     <label
   style={{
@@ -1635,7 +1750,7 @@ dietType:e.target.value
       img: item.img || "",
       isFeatured: item.isFeatured || false,
        available: item.available,
-  
+  sizes: item.sizes || [],
 
   prepTime: item.prepTime,
   servedAs: item.servedAs,
