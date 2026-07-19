@@ -1530,6 +1530,8 @@ cursor:"pointer"
 />
 
 
+    <br/><br/>
+
     <button
   type="button"
   onClick={() =>
@@ -1959,6 +1961,122 @@ cursor:"pointer"
     <br/><br/>
     
 
+<h3
+  style={{
+    marginTop: 30,
+    marginBottom: 15,
+  }}
+>
+  Temperature Options
+</h3>
+
+<button
+  type="button"
+  onClick={() =>
+    setEditItem({
+      ...editItem,
+      temperatureOptions: [
+        ...editItem.temperatureOptions,
+        {
+          name: "",
+          description: "",
+          icon: "",
+        },
+      ],
+    })
+  }
+  style={{
+    padding: "10px 18px",
+    background: "#C4956A",
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    cursor: "pointer",
+    marginBottom: 20,
+  }}
+>
+  🌡 Add Temperature
+</button>
+
+{editItem.temperatureOptions?.map((temp, index) => (
+  <div
+    key={index}
+    style={{
+      display: "flex",
+      gap: 10,
+      alignItems: "center",
+      marginBottom: 12,
+    }}
+  >
+    <input
+      placeholder="Temperature Name"
+      value={temp.name}
+      onChange={(e) => {
+        const updated = [...editItem.temperatureOptions];
+        updated[index].name = e.target.value;
+
+        setEditItem({
+          ...editItem,
+          temperatureOptions: updated,
+        });
+      }}
+    />
+
+    <input
+      placeholder="Description"
+      value={temp.description}
+      onChange={(e) => {
+        const updated = [...editItem.temperatureOptions];
+        updated[index].description = e.target.value;
+
+        setEditItem({
+          ...editItem,
+          temperatureOptions: updated,
+        });
+      }}
+    />
+
+    <input
+      placeholder="Icon (🔥 ❄️ or image/SVG URL)"
+      value={temp.icon}
+      onChange={(e) => {
+        const updated = [...editItem.temperatureOptions];
+        updated[index].icon = e.target.value;
+
+        setEditItem({
+          ...editItem,
+          temperatureOptions: updated,
+        });
+      }}
+    />
+
+    <button
+      type="button"
+      onClick={() =>
+        setEditItem({
+          ...editItem,
+          temperatureOptions: editItem.temperatureOptions.filter(
+            (_, i) => i !== index
+          ),
+        })
+      }
+      style={{
+        background: "#D32F2F",
+        color: "#fff",
+        border: "none",
+        padding: "10px 14px",
+        borderRadius: 8,
+        cursor: "pointer",
+      }}
+    >
+      🗑
+    </button>
+  </div>
+))}
+
+
+<br/><br/>
+    
     <label
   style={{
     display: "flex",
@@ -2042,6 +2160,9 @@ dietType:e.target.value
 
 
     <br/><br/>
+
+
+    
 
     <button
       onClick={updateProduct}
