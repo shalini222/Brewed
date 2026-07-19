@@ -1176,15 +1176,6 @@ alignItems:"center",
 marginBottom:12
 }}
 >
-<div
-key={index}
-style={{
-display:"flex",
-gap:10,
-alignItems:"center",
-marginBottom:12
-}}
->
 
 <input
 placeholder="Size Name"
