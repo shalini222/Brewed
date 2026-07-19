@@ -26,6 +26,10 @@ import {
   ImagePlus
 } from "lucide-react";
 
+
+
+
+
 export default function ProductPage({
   setPage,
   product,
@@ -1210,8 +1214,20 @@ body{
         >
           <div className="milk-header">
             <div className="milk-emoji">
-              🥛
-            </div>
+  {milk.icon?.startsWith("http") ? (
+    <img
+      src={milk.icon}
+      alt={milk.name}
+      style={{
+        width: 30,
+        height: 30,
+        objectFit: "contain",
+      }}
+    />
+  ) : (
+    milk.icon || "🥛"
+  )}
+</div>
 
             <div>
               <div className="milk-name">
