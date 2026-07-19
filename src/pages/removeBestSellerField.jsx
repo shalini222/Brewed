@@ -1,5 +1,5 @@
 import { collection, getDocs, updateDoc, deleteField } from "firebase/firestore";
-import { db } from "./firebase";
+import { db } from "../firebase";
 
 async function removeBestSellerField() {
   const snapshot = await getDocs(collection(db, "menu"));
