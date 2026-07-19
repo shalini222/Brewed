@@ -73,6 +73,7 @@ const [newItem, setNewItem] = useState({
 
   sizes: [],
   milkOptions: [],
+  temperatureOptions: [],
 });
 
   const [editing, setEditing] = useState(null);
@@ -94,6 +95,7 @@ const [editItem, setEditItem] = useState({
 
   sizes: [],
   milkOptions: [],
+  temperatureOptions: [],
 });
 
 useEffect(() => {
@@ -279,6 +281,7 @@ async function addProduct() {
   servedAs: newItem.servedAs,
   dietType: newItem.dietType,
   milkOptions: newItem.milkOptions,
+  temperatureOptions: newItem.temperatureOptions,
 
   salesCount: 0,
   rating: 0,
@@ -355,6 +358,7 @@ async function toggleAvailability(item) {
     isFeatured: editItem.isFeatured,
     sizes: editItem.sizes,
     milkOptions: editItem.milkOptions,
+    temperatureOptions: editItem.temperatureOptions,
 
 prepTime: editItem.prepTime,
 servedAs: editItem.servedAs,
@@ -1434,6 +1438,132 @@ cursor:"pointer"
 
 <br/><br/>
 
+<h3
+  style={{
+    marginTop: 30,
+    marginBottom: 15,
+  }}
+>
+  Temperature Options
+</h3>
+
+<button
+  type="button"
+  onClick={() =>
+    setNewItem({
+      ...newItem,
+      temperatureOptions: [
+        ...newItem.temperatureOptions,
+        {
+          name: "",
+          description: "",
+          icon: "",
+        },
+      ],
+    })
+  }
+  style={{
+    padding: "10px 18px",
+    background: "#C4956A",
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    cursor: "pointer",
+    marginBottom: 20,
+  }}
+>
+  🌡 Add Temperature
+</button>
+
+    {newItem.temperatureOptions?.map((temp, index) => (
+  <div
+    key={index}
+    style={{
+      display: "flex",
+      gap: 10,
+      alignItems: "center",
+      marginBottom: 12,
+    }}
+  >
+
+<input
+  placeholder="Temperature Name"
+  value={temp.name}
+  onChange={(e) => {
+    const updated = [...newItem.temperatureOptions];
+    updated[index].name = e.target.value;
+
+    setNewItem({
+      ...newItem,
+      temperatureOptions: updated,
+    });
+  }}
+/>
+
+
+<input
+  placeholder="Description"
+  value={temp.description}
+  onChange={(e) => {
+    const updated = [...newItem.temperatureOptions];
+    updated[index].description = e.target.value;
+
+    setNewItem({
+      ...newItem,
+      temperatureOptions: updated,
+    });
+  }}
+/>
+
+<input
+  placeholder="Icon (🔥 ❄️ or image/SVG URL)"
+  value={temp.icon}
+  onChange={(e) => {
+    const updated = [...newItem.temperatureOptions];
+    updated[index].icon = e.target.value;
+
+    setNewItem({
+      ...newItem,
+      temperatureOptions: updated,
+    });
+  }}
+/>
+
+
+    <button
+  type="button"
+  onClick={() =>
+    setNewItem({
+      ...newItem,
+      temperatureOptions: newItem.temperatureOptions.filter(
+        (_, i) => i !== index
+      ),
+    })
+  }
+  style={{
+    background: "#D32F2F",
+    color: "#fff",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: 8,
+    cursor: "pointer",
+  }}
+>
+  🗑
+</button>
+
+    
+  </div>
+))}
+
+    
+
+    
+
+
+
+    
+
 <select
 value={newItem.prepTime}
 onChange={(e)=>
@@ -1988,6 +2118,7 @@ dietType:e.target.value
       available: item.available,
       sizes: item.sizes || [],
       milkOptions: item.milkOptions || [],
+      temperatureOptions: item.temperatureOptions || [],
 
   prepTime: item.prepTime,
   servedAs: item.servedAs,
