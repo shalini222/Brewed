@@ -61,7 +61,6 @@ const [newItem, setNewItem] = useState({
   available: true,
   isFeatured: false,
 
-
   prepTime: "5–8 mins",
   servedAs: "Hot",
   dietType: "Vegetarian",
@@ -69,6 +68,8 @@ const [newItem, setNewItem] = useState({
   salesCount: 0,
   rating: 0,
   reviews: 0,
+
+  sizes: [],
 });
 
   const [editing, setEditing] = useState(null);
@@ -268,7 +269,7 @@ async function addProduct() {
   available: newItem.available,
   isFeatured: newItem.isFeatured,
   
-
+  sizes: newItem.sizes,
   prepTime: newItem.prepTime,
   servedAs: newItem.servedAs,
   dietType: newItem.dietType,
@@ -297,6 +298,7 @@ async function addProduct() {
   salesCount: 0,
   rating: 0,
   reviews: 0,
+    sizes: [],
 });
 
   setShowAdd(false);
@@ -1125,7 +1127,175 @@ gap:30
 
     <br /><br />
 
+<h3
+style={{
+marginTop:30,
+marginBottom:15
+}}
+>
+Product Sizes
+</h3>
 
+<button
+type="button"
+onClick={()=>
+setNewItem({
+...newItem,
+sizes:[
+...newItem.sizes,
+{
+name:"",
+volume:"",
+price:0
+}
+]
+})
+}
+
+style={{
+padding:"10px 18px",
+background:"#C4956A",
+border:"none",
+color:"#fff",
+borderRadius:10,
+cursor:"pointer",
+marginBottom:20
+}}
+>
+➕ Add Size
+</button>
+
+
+{newItem.sizes.map((size,index)=>(
+<div
+key={index}
+style={{
+display:"flex",
+gap:10,
+alignItems:"center",
+marginBottom:12
+}}
+>
+<div
+key={index}
+style={{
+display:"flex",
+gap:10,
+alignItems:"center",
+marginBottom:12
+}}
+>
+
+<input
+placeholder="Size Name"
+value={size.name}
+onChange={(e)=>{
+
+const updated=[...newItem.sizes];
+
+updated[index].name=e.target.value;
+
+setNewItem({
+...newItem,
+sizes:updated
+});
+
+}}
+/>
+
+<input
+placeholder="Volume"
+
+value={size.volume}
+
+onChange={(e)=>{
+
+const updated=[...newItem.sizes];
+
+updated[index].volume=e.target.value;
+
+setNewItem({
+
+...newItem,
+
+sizes:updated
+
+});
+
+}}
+/>
+
+<input
+type="number"
+
+placeholder="Price Difference"
+
+value={size.price}
+
+onChange={(e)=>{
+
+const updated=[...newItem.sizes];
+
+updated[index].price=Number(e.target.value);
+
+setNewItem({
+
+...newItem,
+
+sizes:updated
+
+});
+
+}}
+/>
+
+<button
+type="button"
+
+onClick={()=>{
+
+setNewItem({
+
+...newItem,
+
+sizes:newItem.sizes.filter((_,i)=>i!==index)
+
+});
+
+}}
+
+style={{
+
+background:"#D32F2F",
+
+color:"#fff",
+
+border:"none",
+
+padding:"10px 14px",
+
+borderRadius:8,
+
+cursor:"pointer"
+
+}}
+>
+🗑
+</button>
+
+
+  
+</div>
+))}
+
+
+
+
+    
+
+
+
+    
 
 <label style={{
     display: "flex",
