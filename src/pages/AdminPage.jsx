@@ -45,6 +45,8 @@ const [range, setRange] = useState(7);
   const [topProducts, setTopProducts] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [specialRequests, setSpecialRequests] = useState([]);
+  const [newRequest, setNewRequest] = useState("");
 const lastOrderId = useRef(null);
   const [userNotifications, setUserNotifications] = useState([]);
 const lastUserId = useRef(null);
@@ -247,7 +249,24 @@ useEffect(() => {
 }, [orders]);
 
 
+useEffect(() => {
+  const fetchRequests = async () => {
+    const snapshot = await getDocs(
+      collection(db, "specialRequests")
+    );
 
+    const data = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    setSpecialRequests(data);
+  };
+
+  fetchRequests();
+}, []);
+
+  
   
   async function loadMenu() {
     const snapshot = await getDocs(collection(db, "menu"));
@@ -413,6 +432,35 @@ async function updateOrderStatus(id, status) {
   );
 }
 
+const defaultSpecialRequests = [
+  "Less Ice",
+  "Extra Hot",
+  "No Sugar",
+  "Extra Shot",
+  "Less Foam",
+  "Extra Caramel",
+];
+
+const createSpecialRequests = async () => {
+  try {
+    for (const request of defaultSpecialRequests) {
+      await addDoc(
+        collection(db, "specialRequests"),
+        {
+          name: request,
+          active: true,
+          order: defaultSpecialRequests.indexOf(request) + 1,
+        }
+      );
+    }
+
+    alert("Special requests added!");
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+  
 const totalOrders = orders.length;
 
 const pendingOrders = orders.filter(
@@ -448,7 +496,20 @@ const todayOrders = orders.filter(
 ).length;
 
 
+const addSpecialRequest = async () => {
+  if (!newRequest.trim()) return;
 
+  await addDoc(
+    collection(db, "specialRequests"),
+    {
+      name: newRequest,
+      active: true,
+      order: specialRequests.length + 1,
+    }
+  );
+
+  setNewRequest("");
+};
   
   return (
     <div
@@ -2898,6 +2959,11 @@ dietType:e.target.value
         </div>
       ))}
 
+
+      
+<button onClick={createSpecialRequests}>
+  Create Default Special Requests
+</button>
 
 <hr style={{margin:"60px 0"}} />
 
