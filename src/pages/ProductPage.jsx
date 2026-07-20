@@ -1590,7 +1590,7 @@ body{
 >
   {option.name}
 </span>
-  </div>
+  
 </div>
 
                 
