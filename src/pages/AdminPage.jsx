@@ -76,6 +76,7 @@ const [newItem, setNewItem] = useState({
   temperatureOptions: [],
   customExtras: [],
   customExtrasMaxSelection: 3,
+  sweetnessOptions: [],
 });
 
   const [editing, setEditing] = useState(null);
@@ -100,6 +101,7 @@ const [editItem, setEditItem] = useState({
   temperatureOptions: [],
   customExtras: [],
   customExtrasMaxSelection: 3,
+  sweetnessOptions: [],
 });
 
 useEffect(() => {
@@ -289,6 +291,7 @@ async function addProduct() {
   customExtras: newItem.customExtras,
   customExtrasMaxSelection:
   Number(newItem.customExtrasMaxSelection),
+  sweetnessOptions: newItem.sweetnessOptions,
 
   salesCount: 0,
   rating: 0,
@@ -369,6 +372,7 @@ async function toggleAvailability(item) {
     customExtras: editItem.customExtras,
     customExtrasMaxSelection:
   Number(editItem.customExtrasMaxSelection),
+    sweetnessOptions: editItem.sweetnessOptions,
 
 prepTime: editItem.prepTime,
 servedAs: editItem.servedAs,
@@ -1730,7 +1734,119 @@ cursor:"pointer"
   </div>
 ))}
     
+<br/><br/>
+    <h3
+  style={{
+    marginTop: 30,
+    marginBottom: 15,
+  }}
+>
+  Sweetness Options
+</h3>
 
+<button
+  type="button"
+  onClick={() =>
+    setNewItem({
+      ...newItem,
+      sweetnessOptions: [
+        ...newItem.sweetnessOptions,
+        {
+          name: "",
+          description: "",
+          icon: "",
+        },
+      ],
+    })
+  }
+  style={{
+    padding: "10px 18px",
+    background: "#C4956A",
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    cursor: "pointer",
+    marginBottom: 20,
+  }}
+>
+  🍬 Add Sweetness
+</button>
+
+{newItem.sweetnessOptions?.map((sweet, index) => (
+  <div
+    key={index}
+    style={{
+      display: "flex",
+      gap: 10,
+      alignItems: "center",
+      marginBottom: 12,
+    }}
+  >
+    <input
+      placeholder="Name"
+      value={sweet.name}
+      onChange={(e) => {
+        const updated = [...newItem.sweetnessOptions];
+        updated[index].name = e.target.value;
+
+        setNewItem({
+          ...newItem,
+          sweetnessOptions: updated,
+        });
+      }}
+    />
+
+    <input
+      placeholder="Description"
+      value={sweet.description}
+      onChange={(e) => {
+        const updated = [...newItem.sweetnessOptions];
+        updated[index].description = e.target.value;
+
+        setNewItem({
+          ...newItem,
+          sweetnessOptions: updated,
+        });
+      }}
+    />
+
+    <input
+      placeholder="Icon (🍬 or image/SVG URL)"
+      value={sweet.icon}
+      onChange={(e) => {
+        const updated = [...newItem.sweetnessOptions];
+        updated[index].icon = e.target.value;
+
+        setNewItem({
+          ...newItem,
+          sweetnessOptions: updated,
+        });
+      }}
+    />
+
+    <button
+      type="button"
+      onClick={() =>
+        setNewItem({
+          ...newItem,
+          sweetnessOptions: newItem.sweetnessOptions.filter(
+            (_, i) => i !== index
+          ),
+        })
+      }
+      style={{
+        background: "#D32F2F",
+        color: "#fff",
+        border: "none",
+        padding: "10px 14px",
+        borderRadius: 8,
+        cursor: "pointer",
+      }}
+    >
+      🗑
+    </button>
+  </div>
+))}
 
 
     <br/><br/>
@@ -2407,6 +2523,122 @@ cursor:"pointer"
 ))}
 
     <br/><br/>
+
+    <h3
+  style={{
+    marginTop: 30,
+    marginBottom: 15,
+  }}
+>
+  Sweetness Options
+</h3>
+
+<button
+  type="button"
+  onClick={() =>
+    setEditItem({
+      ...editItem,
+      sweetnessOptions: [
+        ...(editItem.sweetnessOptions || []),
+        {
+          name: "",
+          description: "",
+          icon: "",
+        },
+      ],
+    })
+  }
+  style={{
+    padding: "10px 18px",
+    background: "#C4956A",
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    cursor: "pointer",
+    marginBottom: 20,
+  }}
+>
+  🍬 Add Sweetness
+</button>
+
+{editItem.sweetnessOptions?.map((sweet, index) => (
+  <div
+    key={index}
+    style={{
+      display: "flex",
+      gap: 10,
+      alignItems: "center",
+      marginBottom: 12,
+    }}
+  >
+    <input
+      placeholder="Name"
+      value={sweet.name}
+      onChange={(e) => {
+        const updated = [...editItem.sweetnessOptions];
+        updated[index].name = e.target.value;
+
+        setEditItem({
+          ...editItem,
+          sweetnessOptions: updated,
+        });
+      }}
+    />
+
+    <input
+      placeholder="Description"
+      value={sweet.description}
+      onChange={(e) => {
+        const updated = [...editItem.sweetnessOptions];
+        updated[index].description = e.target.value;
+
+        setEditItem({
+          ...editItem,
+          sweetnessOptions: updated,
+        });
+      }}
+    />
+
+    <input
+      placeholder="Icon (🍬 or image/SVG URL)"
+      value={sweet.icon}
+      onChange={(e) => {
+        const updated = [...editItem.sweetnessOptions];
+        updated[index].icon = e.target.value;
+
+        setEditItem({
+          ...editItem,
+          sweetnessOptions: updated,
+        });
+      }}
+    />
+
+    <button
+      type="button"
+      onClick={() =>
+        setEditItem({
+          ...editItem,
+          sweetnessOptions:
+            editItem.sweetnessOptions.filter(
+              (_, i) => i !== index
+            ),
+        })
+      }
+      style={{
+        background: "#D32F2F",
+        color: "#fff",
+        border: "none",
+        padding: "10px 14px",
+        borderRadius: 8,
+        cursor: "pointer",
+      }}
+    >
+      🗑
+    </button>
+  </div>
+))}
+
+    <br/><br/>
     
     <label
   style={{
@@ -2574,6 +2806,7 @@ dietType:e.target.value
       customExtras: item.customExtras || [],
       customExtrasMaxSelection:
   item.customExtrasMaxSelection || 3,
+      sweetnessOptions: item.sweetnessOptions || [],
 
   prepTime: item.prepTime,
   servedAs: item.servedAs,
