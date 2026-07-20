@@ -624,9 +624,12 @@ body{
   background:#C4956A;
   color:white;
 }
+
 .product-image-container {
   width: 100%;
-  height: 320px;
+  max-width: 420px;
+  height: 280px;
+  margin: 0 auto;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -640,7 +643,7 @@ body{
 }
 
 .product-emoji {
-  font-size: 120px;
+  font-size: 90px;
 }
 .preview-grid{
   display:grid;
