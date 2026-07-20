@@ -75,6 +75,7 @@ const [newItem, setNewItem] = useState({
   milkOptions: [],
   temperatureOptions: [],
   customExtras: [],
+  customExtrasMaxSelection: 3,
 });
 
   const [editing, setEditing] = useState(null);
@@ -98,6 +99,7 @@ const [editItem, setEditItem] = useState({
   milkOptions: [],
   temperatureOptions: [],
   customExtras: [],
+  customExtrasMaxSelection: 3,
 });
 
 useEffect(() => {
@@ -285,6 +287,8 @@ async function addProduct() {
   milkOptions: newItem.milkOptions,
   temperatureOptions: newItem.temperatureOptions,
   customExtras: newItem.customExtras,
+  customExtrasMaxSelection:
+  Number(newItem.customExtrasMaxSelection),
 
   salesCount: 0,
   rating: 0,
@@ -363,6 +367,8 @@ async function toggleAvailability(item) {
     milkOptions: editItem.milkOptions,
     temperatureOptions: editItem.temperatureOptions,
     customExtras: editItem.customExtras,
+    customExtrasMaxSelection:
+  Number(editItem.customExtrasMaxSelection),
 
 prepTime: editItem.prepTime,
 servedAs: editItem.servedAs,
@@ -1564,6 +1570,36 @@ cursor:"pointer"
 
     
 <br/><br/>
+    <h4
+  style={{
+    marginTop: 30,
+    marginBottom: 10,
+  }}
+>
+  Maximum Extras Allowed
+</h4>
+
+<input
+  type="number"
+  min={1}
+  value={newItem.customExtrasMaxSelection}
+  onChange={(e) =>
+    setNewItem({
+      ...newItem,
+      customExtrasMaxSelection: Math.max(
+        1,
+        Number(e.target.value)
+      ),
+    })
+  }
+  style={{
+    width: 100,
+    padding: 10,
+    borderRadius: 10,
+    border: "1px solid #ddd",
+    marginBottom: 20,
+  }}
+/>
 
     <h3
   style={{
@@ -2210,7 +2246,36 @@ cursor:"pointer"
 
 <br/><br/>
 
+<h4
+  style={{
+    marginTop: 30,
+    marginBottom: 10,
+  }}
+>
+  Maximum Extras Allowed
+</h4>
 
+<input
+  type="number"
+  min={1}
+  value={editItem.customExtrasMaxSelection}
+  onChange={(e) =>
+    setEditItem({
+      ...editItem,
+      customExtrasMaxSelection: Math.max(
+        1,
+        Number(e.target.value)
+      ),
+    })
+  }
+  style={{
+    width: 100,
+    padding: 10,
+    borderRadius: 10,
+    border: "1px solid #ddd",
+    marginBottom: 20,
+  }}
+/>
 
 <h3
   style={{
@@ -2507,6 +2572,8 @@ dietType:e.target.value
       milkOptions: item.milkOptions || [],
       temperatureOptions: item.temperatureOptions || [],
       customExtras: item.customExtras || [],
+      customExtrasMaxSelection:
+  item.customExtrasMaxSelection || 3,
 
   prepTime: item.prepTime,
   servedAs: item.servedAs,
