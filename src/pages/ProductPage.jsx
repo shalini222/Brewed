@@ -1505,70 +1505,72 @@ body{
 
 
               {/* SWEETNESS SECTION */}
-              <div className="option-section">
+
+{/* SWEETNESS SECTION */}
+<div className="option-section">
   <h2 className="option-title">
     Sweetness Level
   </h2>
 
   <div className="sweetness-display">
     <div
-  style={{
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 15,
-  }}
->
-  <div
-    style={{
-      fontSize: 28,
-      width: 34,
-      textAlign: "center",
-    }}
-  >
-    {selectedSweetness?.icon?.startsWith("http") ||
-    selectedSweetness?.icon?.startsWith("/") ? (
-      <img
-        src={selectedSweetness.icon}
-        alt={selectedSweetness.name}
-        style={{
-          width: 30,
-          height: 30,
-          objectFit: "contain",
-        }}
-      />
-    ) : (
-      selectedSweetness?.icon || "🍬"
-    )}
-  </div>
-
-  <div>
-    <div
       style={{
-        fontWeight: 700,
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        marginBottom: 15,
       }}
     >
-      {selectedSweetness?.name}
-    </div>
+      <div
+        style={{
+          fontSize: 28,
+          width: 34,
+          textAlign: "center",
+        }}
+      >
+        {selectedSweetness?.icon?.startsWith("http") ||
+        selectedSweetness?.icon?.startsWith("/") ? (
+          <img
+            src={selectedSweetness.icon}
+            alt={selectedSweetness.name}
+            style={{
+              width: 30,
+              height: 30,
+              objectFit: "contain",
+            }}
+          />
+        ) : (
+          selectedSweetness?.icon || "🍬"
+        )}
+      </div>
 
-    <div className="sweetness-desc">
-      {selectedSweetness?.description}
+      <div>
+        <div
+          style={{
+            fontWeight: 700,
+          }}
+        >
+          {selectedSweetness?.name}
+        </div>
+
+        <div className="sweetness-desc">
+          {selectedSweetness?.description}
+        </div>
+      </div>
     </div>
-  </div>
-</div>
   </div>
 
   <ReactSlider
-  className="sweetness-slider"
-  thumbClassName="sweetness-thumb"
-  trackClassName="sweetness-track"
-  min={0}
-  max={Math.max(sweetnessOptions.length - 1, 0)}
-  step={1}
-  value={sweetnessIndex}
-  onChange={setSweetnessIndex}
-  disabled={sweetnessOptions.length <= 1}
-/>
+    className="sweetness-slider"
+    thumbClassName="sweetness-thumb"
+    trackClassName="sweetness-track"
+    min={0}
+    max={Math.max(sweetnessOptions.length - 1, 0)}
+    step={1}
+    value={sweetnessIndex}
+    onChange={setSweetnessIndex}
+    disabled={sweetnessOptions.length <= 1}
+  />
 
   <div
     style={{
@@ -1581,18 +1583,18 @@ body{
   >
     {sweetnessOptions.map((option, index) => (
       <span
-  key={option.name}
-  className={
-    sweetnessIndex === index
-      ? "sweetness-label active"
-      : "sweetness-label"
-  }
->
-  {option.name}
-</span>
-  
+        key={option.name}
+        className={
+          sweetnessIndex === index
+            ? "sweetness-label active"
+            : "sweetness-label"
+        }
+      >
+        {option.name}
+      </span>
+    ))}
+  </div>
 </div>
-
                 
               {/* SPECIAL INSTRUCTIONS SECTION */}
               <div className="option-section">
