@@ -186,6 +186,7 @@ const singlePrice =
   (selectedSize?.price || 0) +
   milkPrices[milk] +
   toppingsTotal;
+  
 
   const totalPrice = singlePrice * quantity;
 
@@ -1770,8 +1771,7 @@ body{
 </div>
 
               {/* REVIEWS & FEEDBACK MODULE */}
-              {/* REVIEWS & FEEDBACK MODULE */}
-<div className="option-section">
+              <div className="option-section">
   <h2 className="option-title">Customer Reviews</h2>
 
   <div className="write-review-card">
@@ -1828,6 +1828,7 @@ body{
     )}
 
     <button
+      type="button"
       className="submit-review"
       onClick={submitReview}
     >
@@ -1893,6 +1894,9 @@ body{
     ))}
   </div>
 </div>
+
+
+
                 
 
                               {/* PERSISTENT BAR TRACKER */}
