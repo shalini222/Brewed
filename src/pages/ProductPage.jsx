@@ -54,6 +54,8 @@ export default function ProductPage({
   const [selectedExtras, setSelectedExtras] = useState([]);
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [quickRequests, setQuickRequests] = useState([]);
+  const [reviewSort, setReviewSort] = useState("newest");
+const [showSortMenu, setShowSortMenu] = useState(false);
   const [toast, setToast] = useState("");
 
   const [reviews, setReviews] = useState([]);
@@ -391,6 +393,34 @@ function toggleExtra(extra) {
 }
 
 
+const sortedReviews = [...reviews].sort((a, b) => {
+  switch (reviewSort) {
+    case "highest":
+      return b.rating - a.rating;
+
+    case "lowest":
+      return a.rating - b.rating;
+
+    case "oldest":
+      return (
+        (a.createdAt?.seconds || 0) -
+        (b.createdAt?.seconds || 0)
+      );
+
+    case "newest":
+    default:
+      return (
+        (b.createdAt?.seconds || 0) -
+        (a.createdAt?.seconds || 0)
+      );
+  }
+});
+
+
+
+
+
+  
   
 
   return (
@@ -1229,7 +1259,64 @@ body{
   white-space:nowrap;
 }
 
+.review-toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:40px 0 25px;
+}
 
+.sort-wrapper{
+  position:relative;
+}
+
+.sort-btn{
+  background:white;
+  border:1px solid #E8DDD2;
+  padding:12px 18px;
+  border-radius:14px;
+  cursor:pointer;
+  font-weight:600;
+  color:#3B1A08;
+  transition:.25s;
+}
+
+.sort-btn:hover{
+  border-color:#C4956A;
+}
+
+.sort-menu{
+  position:absolute;
+  top:55px;
+  right:0;
+  width:220px;
+  background:white;
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 20px 50px rgba(0,0,0,.12);
+  z-index:100;
+}
+
+.sort-menu button{
+  width:100%;
+  text-align:left;
+  padding:15px 18px;
+  border:none;
+  background:white;
+  cursor:pointer;
+  font-size:.95rem;
+  transition:.2s;
+}
+
+.sort-menu button:hover{
+  background:#FFF8F2;
+}
+
+.sort-menu button.active{
+  background:#FFF4EA;
+  color:#C4956A;
+  font-weight:700;
+}
 /* ===== Sweetness Slider ===== */
 
 .sweetness-slider {
@@ -1951,9 +2038,80 @@ body{
     </button>
   </div>
 
+
+<div className="review-toolbar">
+
+  <h3>
+    {reviews.length} Reviews
+  </h3>
+
+  <div className="sort-wrapper">
+
+    <button
+      className="sort-btn"
+      onClick={() =>
+        setShowSortMenu(!showSortMenu)
+      }
+    >
+      Sort by
+    </button>
+
+    {showSortMenu && (
+      <div className="sort-menu">
+
+        <button
+          className={reviewSort === "newest" ? "active" : ""}
+          onClick={() => {
+            setReviewSort("newest");
+            setShowSortMenu(false);
+          }}
+        >
+          ○ Newest
+        </button>
+
+        <button
+          className={reviewSort === "highest" ? "active" : ""}
+          onClick={() => {
+            setReviewSort("highest");
+            setShowSortMenu(false);
+          }}
+        >
+          ○ Highest Rated
+        </button>
+
+        <button
+          className={reviewSort === "lowest" ? "active" : ""}
+          onClick={() => {
+            setReviewSort("lowest");
+            setShowSortMenu(false);
+          }}
+        >
+          ○ Lowest Rated
+        </button>
+
+        <button
+          className={reviewSort === "oldest" ? "active" : ""}
+          onClick={() => {
+            setReviewSort("oldest");
+            setShowSortMenu(false);
+          }}
+        >
+          ○ Oldest
+        </button>
+
+      </div>
+    )}
+
+  </div>
+
+</div>
+
+
+
+                
   {/* Existing Reviews */}
   <div className="reviews-list">
-    {reviews.map((rev) => (
+    {sortedReviews.map((rev) => (
       <div
         key={rev.id}
         className="review-card"
