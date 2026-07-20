@@ -242,7 +242,6 @@ const singlePrice =
   );
   }
 
-
 function toggleExtra(extra) {
   const alreadySelected = selectedExtras.some(
     (item) => item.name === extra.name
@@ -257,10 +256,10 @@ function toggleExtra(extra) {
     return;
   }
 
-  if (
-    selectedExtras.length >=
-    (product.customExtrasMaxSelection || 3)
-  ) {
+  const max = product.customExtrasMaxSelection || 3;
+
+  if (selectedExtras.length >= max) {
+    showToast(`You can select up to ${max} extras.`);
     return;
   }
 
