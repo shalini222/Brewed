@@ -14,6 +14,9 @@ import {
 import { db } from "../firebase";
 
 
+import ReactSlider from "react-slider";
+
+
 import {
   ArrowLeft,
   Heart,
@@ -1072,6 +1075,63 @@ body{
   white-space:nowrap;
 }
 
+
+/* ===== Sweetness Slider ===== */
+
+.sweetness-slider {
+  width: 100%;
+  height: 12px;
+  margin: 20px 0;
+}
+
+.sweetness-track {
+  top: 4px;
+  height: 6px;
+  border-radius: 999px;
+  background: #E8DED3;
+}
+
+.sweetness-track-0 {
+  background: #C4956A;
+}
+
+.sweetness-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #C4956A;
+  border: 3px solid #fff;
+  cursor: grab;
+  box-shadow: 0 6px 16px rgba(0,0,0,.18);
+  transition: transform .18s ease,
+              box-shadow .18s ease;
+  outline: none;
+  top: -6px;
+}
+
+.sweetness-thumb:hover {
+  transform: scale(1.08);
+}
+
+.sweetness-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.18);
+  box-shadow: 0 10px 24px rgba(0,0,0,.25);
+}
+
+
+.sweetness-label {
+  color: #777;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all .2s ease;
+}
+
+.sweetness-label.active {
+  color: #C4956A;
+  font-weight: 700;
+  transform: scale(1.08);
+}
 .info-card:hover{
   transform:translateY(-5px);
   box-shadow:0 18px 35px rgba(0,0,0,.10);
@@ -1498,18 +1558,17 @@ body{
 </div>
   </div>
 
-  <input
-    type="range"
-    min={0}
-    max={Math.max(sweetnessOptions.length - 1, 0)}
-    step={1}
-    value={sweetnessIndex}
-    onChange={(e) =>
-      setSweetnessIndex(Number(e.target.value))
-    }
-    disabled={sweetnessOptions.length <= 1}
-    className="sweetness-slider"
-  />
+  <ReactSlider
+  className="sweetness-slider"
+  thumbClassName="sweetness-thumb"
+  trackClassName="sweetness-track"
+  min={0}
+  max={Math.max(sweetnessOptions.length - 1, 0)}
+  step={1}
+  value={sweetnessIndex}
+  onChange={setSweetnessIndex}
+  disabled={sweetnessOptions.length <= 1}
+/>
 
   <div
     style={{
@@ -1522,19 +1581,15 @@ body{
   >
     {sweetnessOptions.map((option, index) => (
       <span
-        key={option.name}
-        style={{
-          fontWeight:
-            sweetnessIndex === index ? 700 : 400,
-          color:
-            sweetnessIndex === index
-              ? "#C4956A"
-              : "#777",
-        }}
-      >
-        {option.name}
-      </span>
-    ))}
+  key={option.name}
+  className={
+    sweetnessIndex === index
+      ? "sweetness-label active"
+      : "sweetness-label"
+  }
+>
+  {option.name}
+</span>
   </div>
 </div>
 
