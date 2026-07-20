@@ -12,10 +12,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../firebase";
-
-
 import ReactSlider from "react-slider";
-
 
 import {
   ArrowLeft,
@@ -29,18 +26,14 @@ import {
   ImagePlus
 } from "lucide-react";
 
-
-
-
-
 export default function ProductPage({
   setPage,
   product,
-})  {
+}) {
   const [favorite, setFavorite] = useState(false);
   const [size, setSize] = useState(
-  product?.sizes?.[0]?.name || ""
-);
+    product?.sizes?.[0]?.name || ""
+  );
   const [milk, setMilk] = useState("");
   const [toppings, setToppings] = useState([]);
   const [temperature, setTemperature] = useState("Hot");
@@ -61,109 +54,89 @@ export default function ProductPage({
   const { addToCart } = useCart();
   const { currentUser } = useAuth(); 
 
-const averageRating = reviews.length
-  ? (
-      reviews.reduce((total, review) => total + review.rating, 0) /
-      reviews.length
-    ).toFixed(1)
-  : "0.0";
+  const averageRating = reviews.length
+    ? (
+        reviews.reduce((total, review) => total + review.rating, 0) /
+        reviews.length
+      ).toFixed(1)
+    : "0.0";
 
-
-  
   const sweetnessOptions = Array.isArray(product?.sweetnessOptions)
-  ? product.sweetnessOptions
-  : [];
+    ? product.sweetnessOptions
+    : [];
   
-  const selectedSweetness =
-  sweetnessOptions[sweetnessIndex] ?? null;
+  const selectedSweetness = sweetnessOptions[sweetnessIndex] ?? null;
 
-
-const CLOUD_NAME = "knvwfzhp";
-const UPLOAD_PRESET = "brewed_menu";
-const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+  const CLOUD_NAME = "knvwfzhp";
+  const UPLOAD_PRESET = "brewed_menu";
+  const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
   
-  
+  useEffect(() => {
+    if (!product) return;
 
-useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const q = query(
+          collection(db, "reviews"),
+          where("productId", "==", product.id)
+        );
 
-  if(!product) return;
+        const snapshot = await getDocs(q);
 
-  const fetchReviews = async()=>{
+        const loadedReviews = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
 
-    try {
+        setReviews(loadedReviews);
+      } catch (error) {
+        console.error("Failed loading reviews:", error);
+      }
+    };
 
-      const q = query(
-        collection(db,"reviews"),
-        where("productId","==",product.id)
-        
-      );
-
-      const snapshot = await getDocs(q);
-
-      const loadedReviews = snapshot.docs.map(doc=>({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      setReviews(loadedReviews);
-
-    } catch(error){
-      console.error("Failed loading reviews:", error);
-    }
-
-  };
-
-  fetchReviews(); 
-
-}, [product]);
+    fetchReviews(); 
+  }, [product]);
 
   useEffect(() => {
-  if (product?.milkOptions?.length > 0) {
-    setMilk(product.milkOptions[0].name);
-  } else {
-    setMilk("");
-  }
-}, [product]);
+    if (product?.milkOptions?.length > 0) {
+      setMilk(product.milkOptions[0].name);
+    } else {
+      setMilk("");
+    }
+  }, [product]);
 
-useEffect(() => {
-  setSweetnessIndex(0);
-}, [product]);
+  useEffect(() => {
+    setSweetnessIndex(0);
+  }, [product]);
 
-useEffect(() => {
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        const q = query(
+          collection(db, "specialRequests"),
+          where("active", "==", true)
+        );
 
- const fetchRequests = async () => {
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs.map(doc => doc.data().name);
 
-  const q = query(
-    collection(db,"specialRequests"),
-    where("active","==",true)
-  );
+        setQuickRequests(data);
+      } catch (error) {
+        console.error("Failed fetching requests:", error);
+      }
+    };
 
-  const snapshot = await getDocs(q);
+    fetchRequests();
+  }, []);
 
-  const data = snapshot.docs.map(doc => doc.data().name);
-
-  setQuickRequests(data);
-
- };
-
- fetchRequests();
-
-}, []);
-
-
-
-  
-  
-  const basePrice = product.price;
-
-  
+  const basePrice = product?.price || 0;
 
   const milkPrices = Object.fromEntries(
-  (product.milkOptions || []).map((milk) => [
-    milk.name,
-    Number(milk.price || 0),
-  ])
-);
+    (product?.milkOptions || []).map((m) => [
+      m.name,
+      Number(m.price || 0),
+    ])
+  );
 
   const toppingPrices = {
     "Whipped Cream": 20,
@@ -172,21 +145,18 @@ useEffect(() => {
     "Vanilla Syrup": 20
   };
   
-  
   const toppingsTotal = toppings.reduce(
     (sum, topping) => sum + (toppingPrices[topping] || 0),
     0
   );
 
-  const selectedSize =
-  product.sizes?.find(s => s.name === size);
+  const selectedSize = product?.sizes?.find(s => s.name === size);
 
-const singlePrice =
-  basePrice +
-  (selectedSize?.price || 0) +
-  milkPrices[milk] +
-  toppingsTotal;
-  
+  const singlePrice =
+    basePrice +
+    (selectedSize?.price || 0) +
+    (milkPrices[milk] || 0) +
+    toppingsTotal;
 
   const totalPrice = singlePrice * quantity;
 
@@ -199,179 +169,141 @@ const singlePrice =
   };
 
   const handleReviewImages = (e) => {
-  const files = Array.from(e.target.files);
-
-  setReviewImages(files);
-};
+    const files = Array.from(e.target.files);
+    setReviewImages(files);
+  };
 
   const uploadReviewImages = async () => {
-  const uploadedImages = [];
+    const uploadedImages = [];
 
-  for (const image of reviewImages) {
-    const formData = new FormData();
+    for (const image of reviewImages) {
+      const formData = new FormData();
+      formData.append("file", image);
+      formData.append("upload_preset", UPLOAD_PRESET);
 
-    formData.append("file", image);
-    formData.append("upload_preset", UPLOAD_PRESET);
+      const response = await fetch(CLOUDINARY_URL, {
+        method: "POST",
+        body: formData,
+      });
 
-    const response = await fetch(CLOUDINARY_URL, {
-      method: "POST",
-      body: formData,
-    });
+      const data = await response.json();
+      uploadedImages.push(data.secure_url);
+    }
 
-    const data = await response.json();
+    return uploadedImages;
+  };
 
-    uploadedImages.push(data.secure_url);
-  }
-
-  return uploadedImages;
-};
-
-
-  
-  
-  
   const submitReview = async () => {
-  if (!currentUser) {
-    setPage("login");
-    return;
-  }
+    if (!currentUser) {
+      setPage("login");
+      return;
+    }
 
-  if (!reviewText.trim() || reviewRating === 0) return;
+    if (!reviewText.trim() || reviewRating === 0) return;
 
-  try {
-    // Upload images to Cloudinary
-    const uploadedImages = await uploadReviewImages();
+    try {
+      const uploadedImages = await uploadReviewImages();
 
-    // Save review
-    await addDoc(collection(db, "reviews"), {
-      productId: product.id,
-      userId: currentUser.uid,
-      name: currentUser.displayName || "Customer",
-      rating: reviewRating,
-      text: reviewText,
-      images: uploadedImages,
-      createdAt: serverTimestamp(),
-    });
+      await addDoc(collection(db, "reviews"), {
+        productId: product.id,
+        userId: currentUser.uid,
+        name: currentUser.displayName || "Customer",
+        rating: reviewRating,
+        text: reviewText,
+        images: uploadedImages,
+        createdAt: serverTimestamp(),
+      });
 
-    // Clear form
-    setReviewText("");
-    setReviewRating(0);
-    setReviewImages([]);
+      setReviewText("");
+      setReviewRating(0);
+      setReviewImages([]);
 
-    // Reload reviews
-    const q = query(
-      collection(db, "reviews"),
-      where("productId", "==", product.id)
-    );
+      const q = query(
+        collection(db, "reviews"),
+        where("productId", "==", product.id)
+      );
 
-    const snapshot = await getDocs(q);
+      const snapshot = await getDocs(q);
 
-    setReviews(
-      snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-    );
-
-  } catch (error) {
-    console.error("Failed to submit review:", error);
-    alert("Failed to submit review. Please try again.");
-  }
-};
- 
-
-
-
-  
-
-
-  
-  
+      setReviews(
+        snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+      );
+    } catch (error) {
+      console.error("Failed to submit review:", error);
+      alert("Failed to submit review. Please try again.");
+    }
+  };
 
   const handleAddToCart = () => {
-  if (!currentUser) {
-    setPage("login");
-    return;
-  }
+    if (!currentUser) {
+      setPage("login");
+      return;
+    }
 
-  addToCart({
-    ...product,
-    price: singlePrice,
-    qty: quantity,
+    addToCart({
+      ...product,
+      price: singlePrice,
+      qty: quantity,
+      size,
+      milk,
+      toppings,
+      temperature,
+      iceLevel,
+      sweetness: selectedSweetness,
+      instructions,
+      extras: selectedExtras,
+    });
 
-    // Customizations
-    size,
-    milk,
-    toppings,
-    temperature,
-    iceLevel,
-    sweetness: selectedSweetness,
+    setPage("cart");
+  };
 
-    // Special requests
-    instructions,
-
-    // Extras
-    extras: selectedExtras,
-  });
-
-  setPage("cart");
-};
-  
-
-
-  
   if (!product) {
-  return (
-    <div style={{ padding: 40 }}>
-      <h2>No product selected.</h2>
-
-      <button onClick={() => setPage("menu")}>
-        Back to Menu
-      </button>
-    </div>
-  );
-  }
-
-
-function showToast(message) {
-  setToast(message);
-
-  setTimeout(() => {
-    setToast("");
-  }, 2500);
-}
-
-  
-
-function toggleExtra(extra) {
-  const alreadySelected = selectedExtras.some(
-    (item) => item.name === extra.name
-  );
-
-  if (alreadySelected) {
-    setSelectedExtras(
-      selectedExtras.filter(
-        (item) => item.name !== extra.name
-      )
+    return (
+      <div style={{ padding: 40 }}>
+        <h2>No product selected.</h2>
+        <button onClick={() => setPage("menu")}>
+          Back to Menu
+        </button>
+      </div>
     );
-    return;
   }
 
-  const max = product.customExtrasMaxSelection || 3;
-
-  if (selectedExtras.length >= max) {
-    showToast(`You can select up to ${max} extras.`);
-    return;
+  function showToast(message) {
+    setToast(message);
+    setTimeout(() => {
+      setToast("");
+    }, 2500);
   }
 
-  setSelectedExtras([
-    ...selectedExtras,
-    extra,
-  ]);
-}
+  function toggleExtra(extra) {
+    const alreadySelected = selectedExtras.some(
+      (item) => item.name === extra.name
+    );
 
+    if (alreadySelected) {
+      setSelectedExtras(
+        selectedExtras.filter(
+          (item) => item.name !== extra.name
+        )
+      );
+      return;
+    }
 
-  
+    const max = product.customExtrasMaxSelection || 3;
+
+    if (selectedExtras.length >= max) {
+      showToast(`You can select up to ${max} extras.`);
+      return;
+    }
+
+    setSelectedExtras([
+      ...selectedExtras,
+      extra,
+    ]);
+  }
 
   return (
     <>
@@ -532,12 +464,6 @@ body{
   margin-bottom:20px;
 }
 
-.sweetness-slider{
-  width:100%;
-  accent-color:#C4956A;
-  cursor:pointer;
-}
-
 .toast {
   position: fixed;
   bottom: 30px;
@@ -633,8 +559,6 @@ body{
   color:white;
 }
 
-
- 
 .preview-grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,90px);
@@ -1147,7 +1071,6 @@ body{
   white-space:nowrap;
 }
 
-
 /* ===== Sweetness Slider ===== */
 
 .sweetness-slider {
@@ -1191,7 +1114,6 @@ body{
   box-shadow: 0 10px 24px rgba(0,0,0,.25);
 }
 
-
 .sweetness-label {
   color: #777;
   font-size: 13px;
@@ -1231,719 +1153,48 @@ body{
   margin-top: 18px;
   padding: 15px;
   border-radius: 18px;
-  background: var(--surface);
+  background: #ffffff;
   border: 1px solid #eee;
-}
-
-.instructions-input {
-  width: 100%;
-  min-height: 90px;
-  border: none;
-  outline: none;
-  resize: none;
-  background: transparent;
-  font-family: inherit;
-  font-size: 14px;
-}
-
-.character-count {
-  text-align: right;
-  font-size: 12px;
-  color: #888;
-}
-
-
-.info-card:hover{
-  transform:translateY(-5px);
-  box-shadow:0 18px 35px rgba(0,0,0,.10);
-}
-
-@media(max-width:900px){
-  .hero-section{
-    grid-template-columns:1fr;
-    gap:30px;
-  }
-  .product-image img{
-    height:380px;
-  }
-  .milk-grid, .size-grid{
-    grid-template-columns:1fr;
-  }
-  .temperature-grid{
-    grid-template-columns:1fr;
-  }
-  .milk-card{
-    padding:20px;
-  }
-  .milk-header{
-    gap:14px;
-  }
-  .milk-emoji{
-    width:44px;
-    height:44px;
-    font-size:1.8rem;
-  }
-  .product-name{
-    font-size:2.3rem;
-  }
-  .product-info-grid{
-    grid-template-columns:1fr;
-  }
-  .extra-card{
-    padding:20px;
-  }
-  .extra-left{
-    gap:14px;
-  }
-  .quick-request-grid{
-    gap:10px;
-  }
-  .quick-chip{
-    font-size:.9rem;
-    padding:10px 16px;
-  }
-  .write-review-card{
-    padding:22px;
-  }
-  .review-card{
-    padding:20px;
-  }
-  .review-header{
-    flex-direction:column;
-    align-items:flex-start;
-    gap:15px;
-  }
-  .review-photo-grid{
-    grid-template-columns:repeat(2,1fr);
-  }
-  .preview-photo{
-    width:80px;
-    height:80px;
-  }
-  .instructions-card{
-    padding:20px;
-  }
-  .instructions-input{
-    min-height:120px;
-  }
-  .sticky-order-bar{
-    flex-direction:column;
-    gap:18px;
-    padding:20px;
-    bottom:12px;
-  }
-  .sticky-right{
-    width:100%;
-    justify-content:space-between;
-  }
-  .sticky-cart-button{
-    flex:1;
-    justify-content:center;
-  }
-  .extra-icon{
-    width:46px;
-    height:46px;
-  }
-  .product-page{
-    padding:25px 18px 160px;
-  }
 }
 `}</style>
 
       <div className="product-page">
-        <div className= "product-image">
+        <div className="product-container">
           <button className="back-button" onClick={() => setPage("menu")}>
-            <ArrowLeft size={20} />
-            Back to Menu
+            <ArrowLeft size={20} /> Back to Menu
           </button>
 
           <div className="hero-section">
-            {/* LEFT SIDE */}
             <div className="product-image">
-              {product?.image ? (
-  <img
-    src={product.image}
-    alt={product.name}
-  />
-) : (
-  <div className="product-emoji">
-    {product?.emoji || "☕"}
-  </div>
-)}
-              <button className="favorite-btn" onClick={() => setFavorite(!favorite)}>
-                <Heart
-                  size={24}
-                  fill={favorite ? "#C4956A" : "none"}
-                  color="#C4956A"
+              <img src={product.image} alt={product.name} />
+              <button 
+                className="favorite-btn" 
+                onClick={() => setFavorite(!favorite)}
+              >
+                <Heart 
+                  size={24} 
+                  color={favorite ? "#C4956A" : "#3B1A08"} 
+                  fill={favorite ? "#C4956A" : "none"} 
                 />
               </button>
             </div>
 
-            {/* RIGHT SIDE */}
             <div>
-              {product.isBestSeller && (
-  <div className="badge">BEST SELLER</div>
-)}
+              <span className="badge">{product.category || "Beverage"}</span>
               <h1 className="product-name">{product.name}</h1>
-
+              
               <div className="rating">
-  <Star size={20} fill="#C4956A" color="#C4956A" />
-
-  <span>{averageRating}</span>
-
-  <span style={{ color: "#9A8A80" }}>
-    ({reviews.length} Reviews)
-  </span>
-</div>
-
-              <p className="description">
-                {product.desc}
-              </p>
-
-              <div className="product-info-grid">
-                <div className="info-card">
-                  <Clock3 size={22} />
-                  <span>{product.prepTime}</span>
-                </div>
-                <div className="info-card">
-                  <Flame size={22} />
-                  <span>{product.servedAs}</span>
-                </div>
-                <div className="info-card">
-                  <Leaf size={22} />
-                  <span>{product.dietType}</span>
-                </div>
-                <div className="info-card">
-                  <Star size={22} fill="#C4956A" color="#C4956A" />
-                  <span>{product.salesCount}</span>
-                </div>
+                <Star size={18} fill="#8B5E34" />
+                <span>{averageRating}</span>
+                <span>({reviews.length} reviews)</span>
               </div>
 
-              <div className="price">₹{singlePrice}</div>
-
-              {/* SIZE SELECTION SECTION */}
-              <div className="option-section">
-                <h2 className="option-title">Choose Your Size</h2>
-                <div className="size-grid">
-  {product.sizes?.map((item) => (
-    <div
-      key={item.name}
-      className={`size-card ${
-        size === item.name ? "active" : ""
-      }`}
-      onClick={() => setSize(item.name)}
-    >
-      <CupSoda className="cup-icon" />
-
-      <div className="size-name">
-        {item.name}
-      </div>
-
-      <div className="size-volume">
-        {item.volume}
-      </div>
-
-      <div className="size-price">
-  {item.price > 0
-    ? `+₹${item.price}`
-    : item.price < 0
-      ? `-₹${Math.abs(item.price)}`
-      : "No extra charge"}
-</div>
-    </div>
-  ))}
-</div>
-
-              {/* MILK OPTIONS SECTION */}
-              {product.milkOptions?.length > 0 && (
-  <div className="option-section">
-    <h2 className="option-title">
-      Choose Your Milk
-    </h2>
-
-    <div className="milk-grid">
-      {product.milkOptions.map((option) => (
-        <div
-          key={option.name}
-          className={`milk-card ${
-            milk === option.name ? "active" : ""
-          }`}
-          onClick={() => setMilk(option.name)}
-        >
-          <div className="milk-header">
-            <div className="milk-emoji">
-  {option.icon?.startsWith("http") ? (
-    <img
-      src={option.icon}
-      alt={option.name}
-      style={{
-        width: 30,
-        height: 30,
-        objectFit: "contain",
-      }}
-    />
-  ) : (
-    option.icon || "🥛"
-  )}
-</div>
-
-            <div>
-              <div className="milk-name">
-                {option.name}
-              </div>
-
-              <div className="milk-tagline">
-                {option.description || ""}
-              </div>
-            </div>
-          </div>
-
-          <div className="milk-price">
-            {option.price > 0
-              ? `+₹${option.price}`
-              : "Free"}
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
-
-
-                <br />
-
-              {/* TEMPERATURE SECTION */}
-               {/* TEMPERATURE SECTION */}
-{product.temperatureOptions?.length > 0 && (
-  <div className="option-section">
-    <h2 className="option-title">
-      Temperature
-    </h2>
-
-    <div className="temperature-grid">
-      {product.temperatureOptions.map((option) => (
-        <div
-          key={option.name}
-          className={`temperature-card ${
-            temperature === option.name ? "active" : ""
-          }`}
-          onClick={() => setTemperature(option.name)}
-        >
-          <div className="temperature-icon">
-            {option.icon?.startsWith("http") ||
-            option.icon?.startsWith("/") ? (
-              <img
-                src={option.icon}
-                alt={option.name}
-                style={{
-                  width: 30,
-                  height: 30,
-                  objectFit: "contain",
-                }}
-              />
-            ) : (
-              option.icon || "🌡️"
-            )}
-          </div>
-
-          <div>
-            <div className="temperature-name">
-              {option.name}
-            </div>
-
-            <div className="temperature-desc">
-              {option.description || ""}
+              <p className="description">{product.description}</p>
+              <div className="price">₹{totalPrice}</div>
             </div>
           </div>
         </div>
-      ))}
-    </div>
-  </div>
-)}
-                
-              {/* CUSTOM EXTRAS PANEL */}
-
-                 {product.customExtras?.length > 0 && (
-  <div className="option-section">
-    <h2 className="option-title">
-      Custom Extras
-    </h2>
-
-    <p className="option-subtitle">
-      Choose up to{" "}
-      {product.customExtrasMaxSelection || 3} extras
-    </p>
-
-    <div className="extras-grid">
-      {product.customExtras.map((extra) => {
-        const selected = selectedExtras.some(
-          (item) => item.name === extra.name
-        );
-
-        return (
-          <div
-            key={extra.name}
-            className={`extra-card ${
-              selected ? "active" : ""
-            }`}
-            onClick={() => toggleExtra(extra)}
-          >
-            <div className="extra-left">
-              <div className="extra-icon">
-                {extra.icon?.startsWith("http") ||
-                extra.icon?.startsWith("/") ? (
-                  <img
-                    src={extra.icon}
-                    alt={extra.name}
-                    style={{
-                      width: 30,
-                      height: 30,
-                      objectFit: "contain",
-                    }}
-                  />
-                ) : (
-                  extra.icon || "✨"
-                )}
-              </div>
-
-              <div>
-                <div className="extra-name">
-                  {extra.name}
-                </div>
-
-                <div className="extra-desc">
-                  {extra.description || ""}
-                </div>
-              </div>
-            </div>
-
-            <div className="extra-price">
-              {extra.price > 0
-                ? `+₹${extra.price}`
-                : "Free"}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-)}
-
-
-
-              {/* SWEETNESS SECTION */}
-
-{/* SWEETNESS SECTION */}
-<div className="option-section">
-  <h2 className="option-title">
-    Sweetness Level
-  </h2>
-
-  <div className="sweetness-display">
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        marginBottom: 15,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 28,
-          width: 34,
-          textAlign: "center",
-        }}
-      >
-        {selectedSweetness?.icon?.startsWith("http") ||
-        selectedSweetness?.icon?.startsWith("/") ? (
-          <img
-            src={selectedSweetness.icon}
-            alt={selectedSweetness.name}
-            style={{
-              width: 30,
-              height: 30,
-              objectFit: "contain",
-            }}
-          />
-        ) : (
-          selectedSweetness?.icon || "🍬"
-        )}
       </div>
-
-      <div>
-        <div
-          style={{
-            fontWeight: 700,
-          }}
-        >
-          {selectedSweetness?.name}
-        </div>
-
-        <div className="sweetness-desc">
-          {selectedSweetness?.description}
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <ReactSlider
-    className="sweetness-slider"
-    thumbClassName="sweetness-thumb"
-    trackClassName="sweetness-track"
-    min={0}
-    max={Math.max(sweetnessOptions.length - 1, 0)}
-    step={1}
-    value={sweetnessIndex}
-    onChange={setSweetnessIndex}
-    disabled={sweetnessOptions.length <= 1}
-  />
-
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      marginTop: 10,
-      fontSize: 13,
-      color: "#777",
-    }}
-  >
-    {sweetnessOptions.map((option, index) => (
-      <span
-        key={option.name}
-        className={
-          sweetnessIndex === index
-            ? "sweetness-label active"
-            : "sweetness-label"
-        }
-      >
-        {option.name}
-      </span>
-    ))}
-  </div>
-</div>
-                
-              {/* SPECIAL INSTRUCTIONS SECTION */}
-            {/* SPECIAL REQUESTS */}
-<div className="option-section">
-  <h2 className="option-title">
-    Special Requests
-  </h2>
-
-  <div className="quick-request-grid">
-    {quickRequests.map((request) => (
-      <button
-        key={request}
-        type="button"
-        className={
-          instructions.includes(request)
-            ? "quick-chip active"
-            : "quick-chip"
-        }
-        onClick={() =>
-          setInstructions((prev) =>
-            prev
-              ? `${prev}, ${request}`
-              : request
-          )
-        }
-      >
-        {request}
-      </button>
-    ))}
-  </div>
-
-  <div className="instructions-card">
-    <textarea
-      className="instructions-input"
-      placeholder="Any additional instructions for your barista..."
-      maxLength={200}
-      value={instructions}
-      onChange={(e) =>
-        setInstructions(e.target.value)
-      }
-    />
-
-    <div className="character-count">
-      {instructions.length} / 200
-    </div>
-  </div>
-</div>
-
-              {/* REVIEWS & FEEDBACK MODULE */}
-              <div className="option-section">
-  <h2 className="option-title">Customer Reviews</h2>
-
-  <div className="write-review-card">
-    <h3 className="write-title">Share Your Experience</h3>
-    <p className="write-subtitle">
-      Tell other coffee lovers what you thought.
-    </p>
-
-    <div className="star-picker">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          size={30}
-          fill={star <= reviewRating ? "#C4956A" : "none"}
-          color="#C4956A"
-          style={{ cursor: "pointer" }}
-          onClick={() => setReviewRating(star)}
-        />
-      ))}
-    </div>
-
-    <textarea
-      className="review-input"
-      placeholder="How was your drink today?"
-      value={reviewText}
-      onChange={(e) => setReviewText(e.target.value)}
-    />
-
-    <label className="upload-review">
-      <Camera size={20} />
-      Add Drink Photos
-
-      <input
-        type="file"
-        accept="image/*"
-        multiple
-        hidden
-        onChange={handleReviewImages}
-      />
-    </label>
-
-    {/* Image Preview */}
-    {reviewImages.length > 0 && (
-      <div className="preview-grid">
-        {reviewImages.map((image, index) => (
-          <img
-            key={index}
-            src={URL.createObjectURL(image)}
-            alt={`Preview ${index + 1}`}
-            className="preview-photo"
-          />
-        ))}
-      </div>
-    )}
-
-    <button
-      type="button"
-      className="submit-review"
-      onClick={submitReview}
-    >
-      Post Review
-    </button>
-  </div>
-
-  <div className="reviews-list">
-    {reviews.map((rev) => (
-      <div
-        className="review-card"
-        key={rev.id}
-      >
-        <div className="review-header">
-          <div className="review-user">
-            <div className="review-avatar">
-              {rev.name.charAt(0)}
-            </div>
-
-            <div>
-              <div className="review-name">
-                {rev.name}
-              </div>
-
-              <div className="review-stars">
-                {Array.from({
-                  length: rev.rating,
-                }).map((_, idx) => (
-                  <Star
-                    key={idx}
-                    size={16}
-                    fill="#C4956A"
-                    color="#C4956A"
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="review-date">
-            Just now
-          </div>
-        </div>
-
-        <p className="review-text">
-          {rev.text}
-        </p>
-
-        {/* Review Photos */}
-        {rev.images?.length > 0 && (
-          <div className="review-photo-grid">
-            {rev.images.map((image, index) => (
-              <img
-                key={index}
-                src={image}
-                alt={`Review ${index + 1}`}
-                className="review-photo"
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    ))}
-  </div>
-</div>
-
-
-
-                
-
-                              {/* PERSISTENT BAR TRACKER */}
-          <div className="sticky-order-bar">
-            <div className="sticky-left">
-              <div className="sticky-product-name">{product.name}</div>
-              <div className="sticky-summary">
-                {size} • {milk} {toppings.length > 0 && ` • ${toppings.join(", ")}`}
-              </div>
-            </div>
-
-            <div className="sticky-right">
-              {currentUser && (
-                <div className="quantity-selector">
-                  <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))}>−</button>
-                  <span>{quantity}</span>
-                  <button type="button" onClick={() => setQuantity(quantity + 1)}>+</button>
-                </div>
-              )}
-
-              <button 
-                className="sticky-cart-button" 
-                onClick={currentUser ? handleAddToCart : () => setPage("login")}
-                style={{ 
-                  background: currentUser ? "#C4956A" : "#6B5C53",
-                  opacity: 1
-                }}
-              >
-                {currentUser ? (
-                  <>
-                    ₹{totalPrice}
-                    <span>Add to Cart</span>
-                  </>
-                ) : (
-                  <span>Log in to Order</span>
-                )}
-              </button>
-            </div>
-          </div> 
-        </div>
-          </div>
-      </div>
-      {toast && (
-      <div className="toast">
-        ⚠️ {toast}
-      </div>
-    )}
     </>
   );
 }
