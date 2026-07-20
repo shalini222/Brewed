@@ -225,7 +225,11 @@ const singlePrice =
   return uploadedImages;
 };
 
-const submitReview = async () => {
+
+  
+  
+  
+  const submitReview = async () => {
   if (!currentUser) {
     setPage("login");
     return;
@@ -237,26 +241,23 @@ const submitReview = async () => {
     // Upload images to Cloudinary
     const uploadedImages = await uploadReviewImages();
 
-    // Save review to Firestore
-    await addDoc(
-      collection(db, "reviews"),
-      {
-        productId: product.id,
-        userId: currentUser.uid,
-        name: currentUser.displayName || "Customer",
-        rating: reviewRating,
-        text: reviewText,
-        images: uploadedImages,
-        createdAt: serverTimestamp(),
-      }
-    );
+    // Save review
+    await addDoc(collection(db, "reviews"), {
+      productId: product.id,
+      userId: currentUser.uid,
+      name: currentUser.displayName || "Customer",
+      rating: reviewRating,
+      text: reviewText,
+      images: uploadedImages,
+      createdAt: serverTimestamp(),
+    });
 
-    // Reset form
+    // Clear form
     setReviewText("");
     setReviewRating(0);
     setReviewImages([]);
 
-    // Refresh reviews
+    // Reload reviews
     const q = query(
       collection(db, "reviews"),
       where("productId", "==", product.id)
@@ -270,12 +271,13 @@ const submitReview = async () => {
         ...doc.data(),
       }))
     );
+
   } catch (error) {
     console.error("Failed to submit review:", error);
     alert("Failed to submit review. Please try again.");
   }
 };
-   
+ 
 
 
 
@@ -1768,88 +1770,130 @@ body{
 </div>
 
               {/* REVIEWS & FEEDBACK MODULE */}
-              <div className="option-section">
-                <h2 className="option-title">Customer Reviews</h2>
+              {/* REVIEWS & FEEDBACK MODULE */}
+<div className="option-section">
+  <h2 className="option-title">Customer Reviews</h2>
 
-                <div className="write-review-card">
-                  <h3 className="write-title">Share Your Experience</h3>
-                  <p className="write-subtitle">Tell other coffee lovers what you thought.</p>
+  <div className="write-review-card">
+    <h3 className="write-title">Share Your Experience</h3>
+    <p className="write-subtitle">
+      Tell other coffee lovers what you thought.
+    </p>
 
-                  <div className="star-picker">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        size={30}
-                        fill={star <= reviewRating ? "#C4956A" : "none"}
-                        color="#C4956A"
-                        style={{ cursor: "pointer" }}
-                        onClick={() => setReviewRating(star)}
-                      />
-                    ))}
-                  </div>
+    <div className="star-picker">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          size={30}
+          fill={star <= reviewRating ? "#C4956A" : "none"}
+          color="#C4956A"
+          style={{ cursor: "pointer" }}
+          onClick={() => setReviewRating(star)}
+        />
+      ))}
+    </div>
 
-                  <textarea
-                    className="review-input"
-                    placeholder="How was your drink today?"
-                    value={reviewText}
-                    onChange={(e) => setReviewText(e.target.value)}
-                  />
+    <textarea
+      className="review-input"
+      placeholder="How was your drink today?"
+      value={reviewText}
+      onChange={(e) => setReviewText(e.target.value)}
+    />
 
-                  <label className="upload-review">
-                    <Camera size={20} />
-                    Add Drink Photos
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      hidden
-                      onChange={handleReviewImages}
-                    />
-                  </label>
+    <label className="upload-review">
+      <Camera size={20} />
+      Add Drink Photos
 
-                  {reviewImages.length > 0 && (
-  <div className="preview-grid">
-    {reviewImages.map((image, index) => (
-      <img
-        key={index}
-        src={image}
-        alt="Preview"
-        className="preview-photo"
+      <input
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        onChange={handleReviewImages}
       />
-    ))}
+    </label>
+
+    {/* Image Preview */}
+    {reviewImages.length > 0 && (
+      <div className="preview-grid">
+        {reviewImages.map((image, index) => (
+          <img
+            key={index}
+            src={URL.createObjectURL(image)}
+            alt={`Preview ${index + 1}`}
+            className="preview-photo"
+          />
+        ))}
+      </div>
+    )}
+
+    <button
+      className="submit-review"
+      onClick={submitReview}
+    >
+      Post Review
+    </button>
   </div>
-)}
 
-                  <button className="submit-review" onClick={submitReview}>
-                    Post Review
-                  </button>
-                </div>
+  <div className="reviews-list">
+    {reviews.map((rev) => (
+      <div
+        className="review-card"
+        key={rev.id}
+      >
+        <div className="review-header">
+          <div className="review-user">
+            <div className="review-avatar">
+              {rev.name.charAt(0)}
+            </div>
 
-                <div className="reviews-list">
-                  {reviews.map((rev) => (
-                    <div className="review-card" key={rev.id}>
-                      <div className="review-header">
-                        <div className="review-user">
-                          <div className="review-avatar">{rev.name.charAt(0)}</div>
-                          <div>
-                            <div className="review-name">{rev.name}</div>
-                            <div className="review-stars">
-                              {Array.from({ length: rev.rating }).map((_, idx) => (
-                                <Star key={idx} size={16} fill="#C4956A" color="#C4956A" />
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="review-date">Just now</div>
-                      </div>
-                      <p className="review-text">{rev.text}</p>
-                    </div>
-                  ))}
-                </div>
+            <div>
+              <div className="review-name">
+                {rev.name}
               </div>
 
+              <div className="review-stars">
+                {Array.from({
+                  length: rev.rating,
+                }).map((_, idx) => (
+                  <Star
+                    key={idx}
+                    size={16}
+                    fill="#C4956A"
+                    color="#C4956A"
+                  />
+                ))}
+              </div>
             </div>
           </div>
+
+          <div className="review-date">
+            Just now
+          </div>
+        </div>
+
+        <p className="review-text">
+          {rev.text}
+        </p>
+
+        {/* Review Photos */}
+        {rev.images?.length > 0 && (
+          <div className="review-photo-grid">
+            {rev.images.map((image, index) => (
+              <img
+                key={index}
+                src={image}
+                alt={`Review ${index + 1}`}
+                className="review-photo"
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+</div>
+                
 
                               {/* PERSISTENT BAR TRACKER */}
           <div className="sticky-order-bar">
