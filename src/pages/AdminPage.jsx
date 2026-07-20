@@ -77,6 +77,7 @@ const [newItem, setNewItem] = useState({
   customExtras: [],
   customExtrasMaxSelection: 3,
   sweetnessOptions: [],
+  specialInstructions: true,
 });
 
   const [editing, setEditing] = useState(null);
@@ -102,6 +103,7 @@ const [editItem, setEditItem] = useState({
   customExtras: [],
   customExtrasMaxSelection: 3,
   sweetnessOptions: [],
+  specialInstructions: true,
 });
 
 useEffect(() => {
@@ -292,7 +294,10 @@ async function addProduct() {
   customExtrasMaxSelection:
   Number(newItem.customExtrasMaxSelection),
   sweetnessOptions: newItem.sweetnessOptions,
+  specialInstructions: newItem.specialInstructions,
 
+
+    
   salesCount: 0,
   rating: 0,
   reviews: 0,
@@ -373,6 +378,7 @@ async function toggleAvailability(item) {
     customExtrasMaxSelection:
   Number(editItem.customExtrasMaxSelection),
     sweetnessOptions: editItem.sweetnessOptions,
+    specialInstructions: editItem.specialInstructions,
 
 prepTime: editItem.prepTime,
 servedAs: editItem.servedAs,
@@ -1851,6 +1857,25 @@ cursor:"pointer"
 
     <br/><br/>
 
+<div className="form-group">
+  <label>
+    <input
+      type="checkbox"
+      checked={newItem.specialInstructions}
+      onChange={(e) =>
+        setNewItem({
+          ...newItem,
+          specialInstructions: e.target.checked,
+        })
+      }
+    />
+    Allow Special Instructions
+  </label>
+</div>
+
+    <br/><br/>
+    
+
 <select
 value={newItem.prepTime}
 onChange={(e)=>
@@ -2639,6 +2664,23 @@ cursor:"pointer"
 ))}
 
     <br/><br/>
+    <div className="form-group">
+  <label>
+    <input
+      type="checkbox"
+      checked={newItem.specialInstructions}
+      onChange={(e) =>
+        setNewItem({
+          ...newItem,
+          specialInstructions: e.target.checked,
+        })
+      }
+    />
+    Allow Special Instructions
+  </label>
+</div>
+
+    <br/><br/>
     
     <label
   style={{
@@ -2807,6 +2849,7 @@ dietType:e.target.value
       customExtrasMaxSelection:
   item.customExtrasMaxSelection || 3,
       sweetnessOptions: item.sweetnessOptions || [],
+      specialInstructions: e.target.checked,
 
   prepTime: item.prepTime,
   servedAs: item.servedAs,
