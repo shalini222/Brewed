@@ -78,9 +78,10 @@ const averageRating = reviews.length
   sweetnessOptions[sweetnessIndex] ?? null;
 
 
-const CLOUDINARY_URL = "cloudinary://8x2_FyKQ3HnipSlaroveMjKiCVc:8x2_FyKQ3HnipSlaroveMjKiCVc@knvwfzhp";
-const UPLOAD_PRESET = ...
-
+const YOUR_CLOUDINARY_URL = "cloudinary://8x2_FyKQ3HnipSlaroveMjKiCVc:8x2_FyKQ3HnipSlaroveMjKiCVc@knvwfzhp";
+const YOUR_UPLOAD_PRESET = ...
+const YOUR_CLOUD_NAME = "knvwfzhp";
+  
   
 
 useEffect(() => {
