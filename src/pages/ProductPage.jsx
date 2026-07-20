@@ -118,7 +118,9 @@ useEffect(() => {
   }
 }, [product]);
 
-
+useEffect(() => {
+  setSweetnessIndex(0);
+}, [product]);
   
   const basePrice = product.price;
 
@@ -1449,15 +1451,51 @@ body{
   </h2>
 
   <div className="sweetness-display">
-    <strong>
-      {selectedSweetness?.name || "No sweetness options"}
-    </strong>
-
-    {selectedSweetness?.description && (
-      <div className="sweetness-desc">
-        {selectedSweetness.description}
-      </div>
+    <div
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 15,
+  }}
+>
+  <div
+    style={{
+      fontSize: 28,
+      width: 34,
+      textAlign: "center",
+    }}
+  >
+    {selectedSweetness?.icon?.startsWith("http") ||
+    selectedSweetness?.icon?.startsWith("/") ? (
+      <img
+        src={selectedSweetness.icon}
+        alt={selectedSweetness.name}
+        style={{
+          width: 30,
+          height: 30,
+          objectFit: "contain",
+        }}
+      />
+    ) : (
+      selectedSweetness?.icon || "🍬"
     )}
+  </div>
+
+  <div>
+    <div
+      style={{
+        fontWeight: 700,
+      }}
+    >
+      {selectedSweetness?.name}
+    </div>
+
+    <div className="sweetness-desc">
+      {selectedSweetness?.description}
+    </div>
+  </div>
+</div>
   </div>
 
   <input
