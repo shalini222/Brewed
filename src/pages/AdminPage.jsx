@@ -74,6 +74,7 @@ const [newItem, setNewItem] = useState({
   sizes: [],
   milkOptions: [],
   temperatureOptions: [],
+  customExtras: [],
 });
 
   const [editing, setEditing] = useState(null);
@@ -96,6 +97,7 @@ const [editItem, setEditItem] = useState({
   sizes: [],
   milkOptions: [],
   temperatureOptions: [],
+  customExtras: [],
 });
 
 useEffect(() => {
@@ -282,6 +284,7 @@ async function addProduct() {
   dietType: newItem.dietType,
   milkOptions: newItem.milkOptions,
   temperatureOptions: newItem.temperatureOptions,
+  customExtras: newItem.customExtras,
 
   salesCount: 0,
   rating: 0,
@@ -359,6 +362,7 @@ async function toggleAvailability(item) {
     sizes: editItem.sizes,
     milkOptions: editItem.milkOptions,
     temperatureOptions: editItem.temperatureOptions,
+    customExtras: editItem.customExtras,
 
 prepTime: editItem.prepTime,
 servedAs: editItem.servedAs,
@@ -1559,12 +1563,141 @@ cursor:"pointer"
 ))}
 
     
+<br/><br/>
 
+    <h3
+  style={{
+    marginTop: 30,
+    marginBottom: 15,
+  }}
+>
+  Custom Extras
+</h3>
+
+<button
+  type="button"
+  onClick={() =>
+    setNewItem({
+      ...newItem,
+      customExtras: [
+        ...newItem.customExtras,
+        {
+          name: "",
+          description: "",
+          price: 0,
+          icon: "",
+        },
+      ],
+    })
+  }
+  style={{
+    padding: "10px 18px",
+    background: "#C4956A",
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    cursor: "pointer",
+    marginBottom: 20,
+  }}
+>
+  ➕ Add Extra
+</button>
+
+{newItem.customExtras?.map((extra, index) => (
+  <div
+    key={index}
+    style={{
+      display: "flex",
+      gap: 10,
+      alignItems: "center",
+      marginBottom: 12,
+    }}
+  >
+    <input
+      placeholder="Extra Name"
+      value={extra.name}
+      onChange={(e) => {
+        const updated = [...newItem.customExtras];
+        updated[index].name = e.target.value;
+
+        setNewItem({
+          ...newItem,
+          customExtras: updated,
+        });
+      }}
+    />
+
+    <input
+      placeholder="Description"
+      value={extra.description}
+      onChange={(e) => {
+        const updated = [...newItem.customExtras];
+        updated[index].description = e.target.value;
+
+        setNewItem({
+          ...newItem,
+          customExtras: updated,
+        });
+      }}
+    />
+
+    <input
+      type="number"
+      placeholder="Price"
+      value={extra.price}
+      onChange={(e) => {
+        const updated = [...newItem.customExtras];
+        updated[index].price = Number(e.target.value);
+
+        setNewItem({
+          ...newItem,
+          customExtras: updated,
+        });
+      }}
+    />
+
+    <input
+      placeholder="Icon (🍫 or image/SVG URL)"
+      value={extra.icon}
+      onChange={(e) => {
+        const updated = [...newItem.customExtras];
+        updated[index].icon = e.target.value;
+
+        setNewItem({
+          ...newItem,
+          customExtras: updated,
+        });
+      }}
+    />
+
+    <button
+      type="button"
+      onClick={() =>
+        setNewItem({
+          ...newItem,
+          customExtras: newItem.customExtras.filter(
+            (_, i) => i !== index
+          ),
+        })
+      }
+      style={{
+        background: "#D32F2F",
+        color: "#fff",
+        border: "none",
+        padding: "10px 14px",
+        borderRadius: 8,
+        cursor: "pointer",
+      }}
+    >
+      🗑
+    </button>
+  </div>
+))}
     
 
 
 
-    
+    <br/><br/>
 
 <select
 value={newItem.prepTime}
@@ -2076,6 +2209,139 @@ cursor:"pointer"
 
 
 <br/><br/>
+
+
+
+<h3
+  style={{
+    marginTop: 30,
+    marginBottom: 15,
+  }}
+>
+  Custom Extras
+</h3>
+
+<button
+  type="button"
+  onClick={() =>
+    setEditItem({
+      ...editItem,
+      customExtras: [
+        ...editItem.customExtras,
+        {
+          name: "",
+          description: "",
+          price: 0,
+          icon: "",
+        },
+      ],
+    })
+  }
+  style={{
+    padding: "10px 18px",
+    background: "#C4956A",
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    cursor: "pointer",
+    marginBottom: 20,
+  }}
+>
+  ➕ Add Extra
+</button>
+
+{editItem.customExtras?.map((extra, index) => (
+  <div
+    key={index}
+    style={{
+      display: "flex",
+      gap: 10,
+      alignItems: "center",
+      marginBottom: 12,
+    }}
+  >
+    <input
+      placeholder="Extra Name"
+      value={extra.name}
+      onChange={(e) => {
+        const updated = [...editItem.customExtras];
+        updated[index].name = e.target.value;
+
+        setEditItem({
+          ...editItem,
+          customExtras: updated,
+        });
+      }}
+    />
+
+    <input
+      placeholder="Description"
+      value={extra.description}
+      onChange={(e) => {
+        const updated = [...editItem.customExtras];
+        updated[index].description = e.target.value;
+
+        setEditItem({
+          ...editItem,
+          customExtras: updated,
+        });
+      }}
+    />
+
+    <input
+      type="number"
+      placeholder="Price"
+      value={extra.price}
+      onChange={(e) => {
+        const updated = [...editItem.customExtras];
+        updated[index].price = Number(e.target.value);
+
+        setEditItem({
+          ...editItem,
+          customExtras: updated,
+        });
+      }}
+    />
+
+    <input
+      placeholder="Icon (🍫 or image/SVG URL)"
+      value={extra.icon}
+      onChange={(e) => {
+        const updated = [...editItem.customExtras];
+        updated[index].icon = e.target.value;
+
+        setEditItem({
+          ...editItem,
+          customExtras: updated,
+        });
+      }}
+    />
+
+    <button
+      type="button"
+      onClick={() =>
+        setEditItem({
+          ...editItem,
+          customExtras: editItem.customExtras.filter(
+            (_, i) => i !== index
+          ),
+        })
+      }
+      style={{
+        background: "#D32F2F",
+        color: "#fff",
+        border: "none",
+        padding: "10px 14px#",
+          borderRadius: 8,
+        cursor: "pointer",
+      }}
+    >
+      🗑
+    </button>
+  </div>
+))}
+
+    <br/><br/>
     
     <label
   style={{
@@ -2240,6 +2506,7 @@ dietType:e.target.value
       sizes: item.sizes || [],
       milkOptions: item.milkOptions || [],
       temperatureOptions: item.temperatureOptions || [],
+      customExtras: item.customExtras || [],
 
   prepTime: item.prepTime,
   servedAs: item.servedAs,
