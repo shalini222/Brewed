@@ -233,12 +233,12 @@ const singlePrice =
   }
 
   if (reviewRating === 0) {
-  alert("Please select a rating.");
+  showToast("Please select a rating.");
   return;
 }
 
 if (reviewImages.length > 0 && !reviewText.trim()) {
-  alert("Please write a review when uploading photos.");
+  showToast("Please write a review when uploading photos.");
   return;
 }
 
