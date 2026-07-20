@@ -79,7 +79,7 @@ const averageRating = reviews.length
 
 
 const YOUR_CLOUDINARY_URL = "cloudinary://8x2_FyKQ3HnipSlaroveMjKiCVc:8x2_FyKQ3HnipSlaroveMjKiCVc@knvwfzhp";
-const YOUR_UPLOAD_PRESET = ...
+const YOUR_UPLOAD_PRESET = "brewed_menu";
 const YOUR_CLOUD_NAME = "knvwfzhp";
   
   
