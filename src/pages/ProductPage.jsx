@@ -42,7 +42,7 @@ export default function ProductPage({
   const [toppings, setToppings] = useState([]);
   const [temperature, setTemperature] = useState("Hot");
   const [iceLevel, setIceLevel] = useState("Regular");
-  const [sweetness, setSweetness] = useState("");
+  const [sweetnessIndex, setSweetnessIndex] = useState(0);
   const [instructions, setInstructions] = useState("");
   const [reviewText, setReviewText] = useState("");
   const [reviewRating, setReviewRating] = useState(0);
