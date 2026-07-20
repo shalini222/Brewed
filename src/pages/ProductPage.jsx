@@ -78,7 +78,7 @@ const averageRating = reviews.length
   sweetnessOptions[sweetnessIndex] ?? null;
 
 
-const CLOUDINARY_URL = ...
+const CLOUDINARY_URL = "cloudinary://8x2_FyKQ3HnipSlaroveMjKiCVc:8x2_FyKQ3HnipSlaroveMjKiCVc@knvwfzhp";
 const UPLOAD_PRESET = ...
 
   
