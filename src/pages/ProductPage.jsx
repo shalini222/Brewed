@@ -1434,41 +1434,46 @@ body{
 
               {/* SWEETNESS SECTION */}
               <div className="option-section">
-                <h2 className="option-title">Sweetness Level</h2>
-                <div className="sweetness-grid">
-  {product.sweetnessOptions?.map((option) => (
-    <div
-      key={option.name}
-      className={`sweetness-card ${
-        sweetness === option.name ? "active" : ""
-      }`}
-      onClick={() => setSweetness(option.name)}
-    >
-      <div className="sweetness-icon">
-        {option.icon?.startsWith("http") ||
-        option.icon?.startsWith("/") ? (
-          <img
-            src={option.icon}
-            alt={option.name}
-            style={{
-              width: 30,
-              height: 30,
-              objectFit: "contain",
-            }}
-          />
-        ) : (
-          option.icon || "🍬"
-        )}
-      </div>
+  <h2 className="option-title">
+    Sweetness Level
+  </h2>
 
-      <div className="sweetness-name">
-        {option.name}
+  <div className="sweetness-grid">
+    {product.sweetnessOptions?.map((option) => (
+      <div
+        key={option.name}
+        className={`sweetness-card ${
+          sweetness === option.name ? "active" : ""
+        }`}
+        onClick={() => setSweetness(option.name)}
+      >
+        <div className="sweetness-icon">
+          {option.icon?.startsWith("http") ||
+          option.icon?.startsWith("/") ? (
+            <img
+              src={option.icon}
+              alt={option.name}
+              style={{
+                width: 30,
+                height: 30,
+                objectFit: "contain",
+              }}
+            />
+          ) : (
+            option.icon || "🍬"
+          )}
+        </div>
+
+        <div className="sweetness-name">
+          {option.name}
+        </div>
+
+        <div className="sweetness-desc">
+          {option.description || ""}
+        </div>
       </div>
-      <div className="sweetness-desc">
-        {option.description || ""}
-      </div>
-    </div>
-  ))}
+    ))}
+  </div>
 </div>
 
 
