@@ -558,7 +558,33 @@ body{
   border-radius: 12px;
   z-index: 9999;
 }
+.preview-item{
+  position:relative;
+  width:90px;
+  height:90px;
+}
 
+.remove-photo-btn{
+  position:absolute;
+  top:-6px;
+  right:-6px;
+  width:24px;
+  height:24px;
+  border:none;
+  border-radius:50%;
+  background:#3B1A08;
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.remove-photo-btn:hover{
+  background:#C4956A;
+  transform:scale(1.1);
+}
 .quick-request-title{
   font-weight:700;
   color:#3B1A08;
@@ -1826,14 +1852,26 @@ body{
     {/* Image Preview */}
     {reviewImages.length > 0 && (
       <div className="preview-grid">
-        {reviewImages.map((image, index) => (
-          <img
-            key={index}
-            src={URL.createObjectURL(image)}
-            alt={`Preview ${index + 1}`}
-            className="preview-photo"
-          />
-        ))}
+        <div className="preview-grid">
+  {reviewImages.map((file, index) => (
+    <div key={index} className="preview-item">
+      <img
+        src={URL.createObjectURL(file)}
+        className="preview-photo"
+        alt=""
+      />
+
+      <button
+        className="remove-photo-btn"
+        onClick={() =>
+          setReviewImages(reviewImages.filter((_, i) => i !== index))
+        }
+      >
+        <X size={16} />
+      </button>
+    </div>
+  ))}
+</div>
       </div>
     )}
 
