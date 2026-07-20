@@ -42,7 +42,7 @@ export default function ProductPage({
   const [toppings, setToppings] = useState([]);
   const [temperature, setTemperature] = useState("Hot");
   const [iceLevel, setIceLevel] = useState("Regular");
-  const [sweetness, setSweetness] = useState(50);
+  const [sweetness, setSweetness] = useState("");
   const [instructions, setInstructions] = useState("");
   const [reviewText, setReviewText] = useState("");
   const [reviewRating, setReviewRating] = useState(0);
@@ -104,7 +104,11 @@ useEffect(() => {
   }
 }, [product]);
 
-  
+useEffect(() => {
+  if (product.sweetnessOptions?.length) {
+    setSweetness(product.sweetnessOptions[0].name);
+  }
+}, [product]);  
   
   const basePrice = product.price;
 
@@ -1431,24 +1435,44 @@ body{
               {/* SWEETNESS SECTION */}
               <div className="option-section">
                 <h2 className="option-title">Sweetness Level</h2>
-                <div className="sweetness-card">
-                  <div className="sweetness-labels">
-                    <span>Unsweetened (0%)</span>
-                    <span>Regular (50%)</span>
-                    <span>Extra Sweet (100%)</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="25"
-                    value={sweetness}
-                    className="sweetness-slider"
-                    onChange={(e) => setSweetness(Number(e.target.value))}
-                  />
-                </div>
-              </div>
+                <div className="sweetness-grid">
+  {product.sweetnessOptions?.map((option) => (
+    <div
+      key={option.name}
+      className={`sweetness-card ${
+        sweetness === option.name ? "active" : ""
+      }`}
+      onClick={() => setSweetness(option.name)}
+    >
+      <div className="sweetness-icon">
+        {option.icon?.startsWith("http") ||
+        option.icon?.startsWith("/") ? (
+          <img
+            src={option.icon}
+            alt={option.name}
+            style={{
+              width: 30,
+              height: 30,
+              objectFit: "contain",
+            }}
+          />
+        ) : (
+          option.icon || "🍬"
+        )}
+      </div>
 
+      <div className="sweetness-name">
+        {option.name}
+      </div>
+      <div className="sweetness-desc">
+        {option.description || ""}
+      </div>
+    </div>
+  ))}
+</div>
+
+
+                
               {/* SPECIAL INSTRUCTIONS SECTION */}
               <div className="option-section">
                 <h2 className="option-title">Special Requests</h2>
