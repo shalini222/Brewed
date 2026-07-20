@@ -665,7 +665,11 @@ body{
   gap:14px;
   margin-bottom:20px;
 }
-
+.review-time{
+  font-size:.8rem;
+  color:#9A8A80;
+  margin-top:3px;
+}
 .upload-skeleton{
   width:90px;
   height:90px;
@@ -1979,11 +1983,17 @@ body{
           </div>
 
           <div className="review-date">
-            {rev.createdAt?.toDate
-              ? rev.createdAt.toDate().toLocaleDateString()
-              : "Just now"}
-          </div>
-        </div>
+  {rev.createdAt?.toDate
+    ? rev.createdAt.toDate().toLocaleString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })
+    : "Just now"}
+</div>
 
         <p className="review-text">
           {rev.text}
