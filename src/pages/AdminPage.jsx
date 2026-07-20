@@ -2961,9 +2961,7 @@ dietType:e.target.value
 
 
       
-<button onClick={createSpecialRequests}>
-  Create Default Special Requests
-</button>
+
 
 <hr style={{margin:"60px 0"}} />
 
