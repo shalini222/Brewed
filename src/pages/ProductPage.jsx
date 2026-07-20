@@ -78,9 +78,9 @@ const averageRating = reviews.length
   sweetnessOptions[sweetnessIndex] ?? null;
 
 
-const YOUR_CLOUDINARY_URL = "cloudinary://8x2_FyKQ3HnipSlaroveMjKiCVc:8x2_FyKQ3HnipSlaroveMjKiCVc@knvwfzhp";
-const YOUR_UPLOAD_PRESET = "brewed_menu";
-const YOUR_CLOUD_NAME = "knvwfzhp";
+const CLOUD_NAME = "knvwfzhp";
+const UPLOAD_PRESET = "brewed_menu";
+const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
   
   
 
@@ -207,23 +207,15 @@ const singlePrice =
   const uploadedImages = [];
 
   for (const image of reviewImages) {
-
     const formData = new FormData();
 
     formData.append("file", image);
+    formData.append("upload_preset", UPLOAD_PRESET);
 
-    formData.append(
-      "upload_preset",
-      "YOUR_UPLOAD_PRESET"
-    );
-
-    const response = await fetch(
-      "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload",
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
+    const response = await fetch(CLOUDINARY_URL, {
+      method: "POST",
+      body: formData,
+    });
 
     const data = await response.json();
 
@@ -233,10 +225,7 @@ const singlePrice =
   return uploadedImages;
 };
 
-
-   
 const submitReview = async () => {
-
   if (!currentUser) {
     setPage("login");
     return;
@@ -244,74 +233,56 @@ const submitReview = async () => {
 
   if (!reviewText.trim() || reviewRating === 0) return;
 
+  try {
+    // Upload images to Cloudinary
+    const uploadedImages = await uploadReviewImages();
 
-  // Upload review images to Cloudinary
-  const uploadedImages = [];
-
-  for (const image of reviewImages) {
-
-    const formData = new FormData();
-
-    formData.append("file", image);
-
-    formData.append(
-      "upload_preset",
-      "YOUR_UPLOAD_PRESET"
-    );
-
-
-    const response = await fetch(
-      "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload",
+    // Save review to Firestore
+    await addDoc(
+      collection(db, "reviews"),
       {
-        method: "POST",
-        body: formData,
+        productId: product.id,
+        userId: currentUser.uid,
+        name: currentUser.displayName || "Customer",
+        rating: reviewRating,
+        text: reviewText,
+        images: uploadedImages,
+        createdAt: serverTimestamp(),
       }
     );
 
+    // Reset form
+    setReviewText("");
+    setReviewRating(0);
+    setReviewImages([]);
 
-    const data = await response.json();
+    // Refresh reviews
+    const q = query(
+      collection(db, "reviews"),
+      where("productId", "==", product.id)
+    );
 
-    uploadedImages.push(data.secure_url);
+    const snapshot = await getDocs(q);
+
+    setReviews(
+      snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+    );
+  } catch (error) {
+    console.error("Failed to submit review:", error);
+    alert("Failed to submit review. Please try again.");
   }
-
-
-  await addDoc(
-    collection(db, "reviews"),
-    {
-      productId: product.id,
-      userId: currentUser.uid,
-      name: currentUser.displayName || "Customer",
-      rating: reviewRating,
-      text: reviewText,
-      images: uploadedImages,
-      createdAt: serverTimestamp()
-    }
-  );
-
-
-  setReviewText("");
-  setReviewRating(0);
-  setReviewImages([]);
-
-
-  // refresh reviews
-  const q = query(
-    collection(db, "reviews"),
-    where("productId", "==", product.id)
-  );
-
-
-  const snapshot = await getDocs(q);
-
-
-  setReviews(
-    snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }))
-  );
-
 };
+   
+
+
+
+  
+
+
+  
   
 
   const handleAddToCart = () => {
@@ -1837,12 +1808,17 @@ body{
                   </label>
 
                   {reviewImages.length > 0 && (
-                    <div className="preview-grid">
-                      {reviewImages.map((image, index) => (
-                        <img key={index} src={image} alt="Preview" className="preview-photo" />
-                      ))}
-                    </div>
-                  )}
+  <div className="preview-grid">
+    {reviewImages.map((image, index) => (
+      <img
+        key={index}
+        src={image}
+        alt="Preview"
+        className="preview-photo"
+      />
+    ))}
+  </div>
+)}
 
                   <button className="submit-review" onClick={submitReview}>
                     Post Review
