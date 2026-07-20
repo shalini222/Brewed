@@ -159,11 +159,12 @@ useEffect(() => {
   
 
   const milkPrices = Object.fromEntries(
-  (product.milkOptions || []).map((milk) => [
+  (product?.milkOptions || []).map((milk) => [
     milk.name,
     Number(milk.price || 0),
   ])
 );
+  
 
   const toppingPrices = {
     "Whipped Cream": 20,
@@ -1351,7 +1352,7 @@ body{
 `}</style>
 
       <div className="product-page">
-        <div className= "product-image">
+        <div className= "product-container">
           <button className="back-button" onClick={() => setPage("menu")}>
             <ArrowLeft size={20} />
             Back to Menu
@@ -1452,6 +1453,7 @@ body{
 </div>
     </div>
   ))}
+</div>
 </div>
 
               {/* MILK OPTIONS SECTION */}
@@ -1939,6 +1941,7 @@ body{
         </div>
           </div>
       </div>
+          
       {toast && (
       <div className="toast">
         ⚠️ {toast}
