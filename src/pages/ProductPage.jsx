@@ -78,7 +78,8 @@ const averageRating = reviews.length
   sweetnessOptions[sweetnessIndex] ?? null;
 
 
-
+const CLOUDINARY_URL = ...
+const UPLOAD_PRESET = ...
 
   
 
@@ -201,9 +202,8 @@ const singlePrice =
   setReviewImages(files);
 };
 
-
   const uploadReviewImages = async () => {
-  const uploadedUrls = [];
+  const uploadedImages = [];
 
   for (const image of reviewImages) {
 
@@ -226,59 +226,92 @@ const singlePrice =
 
     const data = await response.json();
 
-    uploadedUrls.push(data.secure_url);
+    uploadedImages.push(data.secure_url);
   }
 
-  return uploadedUrls;
+  return uploadedImages;
 };
 
-  const submitReview = async()=>{
 
- if(!currentUser){
-   setPage("login");
-   return;
- }
+   
+const submitReview = async () => {
 
- if(!reviewText.trim() || reviewRating === 0) return;
+  if (!currentUser) {
+    setPage("login");
+    return;
+  }
 
-
- await addDoc(
-   collection(db,"reviews"),
-   {
-     productId:product.id,
-     userId:currentUser.uid,
-     name:currentUser.displayName || "Customer",
-     rating:reviewRating,
-     text:reviewText,
-     images:reviewImages,
-     createdAt:serverTimestamp()
-   }
- );
+  if (!reviewText.trim() || reviewRating === 0) return;
 
 
- setReviewText("");
- setReviewRating(0);
- setReviewImages([]);
+  // Upload review images to Cloudinary
+  const uploadedImages = [];
+
+  for (const image of reviewImages) {
+
+    const formData = new FormData();
+
+    formData.append("file", image);
+
+    formData.append(
+      "upload_preset",
+      "YOUR_UPLOAD_PRESET"
+    );
 
 
- // refresh reviews
- const q = query(
-   collection(db,"reviews"),
-   where("productId","==",product.id)
- );
+    const response = await fetch(
+      "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
 
- const snapshot = await getDocs(q);
+
+    const data = await response.json();
+
+    uploadedImages.push(data.secure_url);
+  }
 
 
- setReviews(
-   snapshot.docs.map(doc=>({
-     id:doc.id,
-     ...doc.data()
-   }))
- );
+  await addDoc(
+    collection(db, "reviews"),
+    {
+      productId: product.id,
+      userId: currentUser.uid,
+      name: currentUser.displayName || "Customer",
+      rating: reviewRating,
+      text: reviewText,
+      images: uploadedImages,
+      createdAt: serverTimestamp()
+    }
+  );
 
+
+  setReviewText("");
+  setReviewRating(0);
+  setReviewImages([]);
+
+
+  // refresh reviews
+  const q = query(
+    collection(db, "reviews"),
+    where("productId", "==", product.id)
+  );
+
+
+  const snapshot = await getDocs(q);
+
+
+  setReviews(
+    snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }))
+  );
 
 };
+  
 
   const handleAddToCart = () => {
   if (!currentUser) {
