@@ -157,36 +157,31 @@ useEffect(() => {
   const basePrice = product.price;
 
   
+  
 
+ const selectedSize =
+  product.sizes?.find(s => s.name === size);
+
+  
   const milkPrices = Object.fromEntries(
   (product.milkOptions || []).map((milk) => [
     milk.name,
     Number(milk.price || 0),
   ])
 );
-  
 
-  const toppingPrices = {
-    "Whipped Cream": 20,
-    "Chocolate Drizzle": 25,
-    "Caramel Drizzle": 25,
-    "Vanilla Syrup": 20
-  };
-  
-  
-  const toppingsTotal = toppings.reduce(
-    (sum, topping) => sum + (toppingPrices[topping] || 0),
-    0
-  );
 
-  const selectedSize =
-  product.sizes?.find(s => s.name === size);
+const extrasTotal = selectedExtras.reduce(
+  (sum, extra) => sum + Number(extra.price || 0),
+  0
+);
 
+  
 const singlePrice =
   basePrice +
   (selectedSize?.price || 0) +
-  milkPrices[milk] +
-  toppingsTotal;
+  (milkPrices[milk] || 0) +
+  extrasTotal;
   
 
   const totalPrice = singlePrice * quantity;
