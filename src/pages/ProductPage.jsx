@@ -267,7 +267,7 @@ const singlePrice =
     toppings,
     temperature,
     iceLevel,
-    sweetness,
+    sweetness: selectedSweetness,
     instructions,
   });
 
@@ -275,7 +275,7 @@ const singlePrice =
 };
   
 
-  const quickRequests = ["Extra Hot", "Less Sweet", "No Ice", "Make it Vegan"];
+
   
   if (!product) {
   return (
