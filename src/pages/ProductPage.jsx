@@ -1677,7 +1677,7 @@ body{
 </div>
                 
               {/* SPECIAL INSTRUCTIONS SECTION */}
-            
+            {/* SPECIAL REQUESTS */}
 <div className="option-section">
   <h2 className="option-title">
     Special Requests
