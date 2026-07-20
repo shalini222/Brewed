@@ -1994,6 +1994,7 @@ body{
       })
     : "Just now"}
 </div>
+          </div>
 
         <p className="review-text">
           {rev.text}
