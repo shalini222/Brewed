@@ -266,6 +266,12 @@ export default function HeadlessNavbar({ currentPage, setPage }) {
                   <span>⭐</span> Rewards
                 </button>
 
+      <button onClick={() => { setShowMenu(false); setPage("support"); }}>
+                  <span>🎧</span> Support
+                </button>
+
+                
+
                 <button onClick={() => { setShowMenu(false); setPage("settings"); }}>
                   <span>⚙️</span> Settings
                 </button>
