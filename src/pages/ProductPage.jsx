@@ -49,6 +49,7 @@ export default function ProductPage({
   const [reviewImages, setReviewImages] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [selectedExtras, setSelectedExtras] = useState([]);
+  const [toast, setToast] = useState("");
 
   const [reviews, setReviews] = useState([]);
   
@@ -241,6 +242,17 @@ const singlePrice =
     </div>
   );
   }
+
+
+function showToast(message) {
+  setToast(message);
+
+  setTimeout(() => {
+    setToast("");
+  }, 2500);
+}
+
+  
 
 function toggleExtra(extra) {
   const alreadySelected = selectedExtras.some(
@@ -435,6 +447,18 @@ body{
   width:100%;
   accent-color:#C4956A;
   cursor:pointer;
+}
+
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #3B1A08;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 12px;
+  z-index: 9999;
 }
 
 .quick-request-title{
@@ -1572,6 +1596,11 @@ body{
         </div>
           </div>
       </div>
+      {toast && (
+      <div className="toast">
+        ⚠️ {toast}
+      </div>
+    )}
     </>
   );
 }
