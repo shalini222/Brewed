@@ -196,10 +196,41 @@ const singlePrice =
   };
 
   const handleReviewImages = (e) => {
-    const files = Array.from(e.target.files);
-    const imageURLs = files.map(file => URL.createObjectURL(file));
-    setReviewImages(imageURLs);
-  };
+  const files = Array.from(e.target.files);
+
+  setReviewImages(files);
+};
+
+
+  const uploadReviewImages = async () => {
+  const uploadedUrls = [];
+
+  for (const image of reviewImages) {
+
+    const formData = new FormData();
+
+    formData.append("file", image);
+
+    formData.append(
+      "upload_preset",
+      "YOUR_UPLOAD_PRESET"
+    );
+
+    const response = await fetch(
+      "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    uploadedUrls.push(data.secure_url);
+  }
+
+  return uploadedUrls;
+};
 
   const submitReview = async()=>{
 
