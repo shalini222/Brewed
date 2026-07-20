@@ -53,6 +53,7 @@ export default function ProductPage({
   const [quantity, setQuantity] = useState(1);
   const [selectedExtras, setSelectedExtras] = useState([]);
   const [specialInstructions, setSpecialInstructions] = useState("");
+  const [quickRequests, setQuickRequests] = useState([]);
   const [toast, setToast] = useState("");
 
   const [reviews, setReviews] = useState([]);
@@ -125,6 +126,31 @@ useEffect(() => {
 useEffect(() => {
   setSweetnessIndex(0);
 }, [product]);
+
+useEffect(() => {
+
+ const fetchRequests = async () => {
+
+  const q = query(
+    collection(db,"specialRequests"),
+    where("active","==",true)
+  );
+
+  const snapshot = await getDocs(q);
+
+  const data = snapshot.docs.map(doc => doc.data().name);
+
+  setQuickRequests(data);
+
+ };
+
+ fetchRequests();
+
+}, []);
+
+
+
+  
   
   const basePrice = product.price;
 
