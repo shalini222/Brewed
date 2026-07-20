@@ -1855,10 +1855,12 @@ body{
 
   <div className="write-review-card">
     <h3 className="write-title">Share Your Experience</h3>
+
     <p className="write-subtitle">
       Tell other coffee lovers what you thought.
     </p>
 
+    {/* Rating */}
     <div className="star-picker">
       {[1, 2, 3, 4, 5].map((star) => (
         <Star
@@ -1872,6 +1874,7 @@ body{
       ))}
     </div>
 
+    {/* Review Text */}
     <textarea
       className="review-input"
       placeholder="How was your drink today?"
@@ -1879,76 +1882,82 @@ body{
       onChange={(e) => setReviewText(e.target.value)}
     />
 
-    <label className="upload-review">
-      <Camera size={20} />
-      Add Drink Photos
+    {/* Hidden Upload Input */}
+    <input
+      id="review-photo-input"
+      type="file"
+      accept="image/*"
+      multiple
+      hidden
+      onChange={handleReviewImages}
+    />
 
-      <input
-        type="file"
-        accept="image/*"
-        multiple
-        hidden
-        onChange={handleReviewImages}
-      />
-    </label>
-
-    {/* Image Preview */}
+    {/* Upload Grid */}
     <div className="preview-grid">
-  {reviewImages.map((file, index) => (
-    <div key={index} className="preview-item">
-      <img
-        src={URL.createObjectURL(file)}
-        className="preview-photo"
-        alt=""
-      />
+      {/* Uploaded Images */}
+      {reviewImages.map((file, index) => (
+        <div
+          key={index}
+          className="preview-item"
+        >
+          <img
+            src={URL.createObjectURL(file)}
+            alt=""
+            className="preview-photo"
+          />
 
-      <button
-        type="button"
-        className="remove-photo-btn"
-        onClick={() =>
-          setReviewImages(
-            reviewImages.filter((_, i) => i !== index)
-          )
-        }
-      >
-        <X size={16} />
-      </button>
+          <button
+            type="button"
+            className="remove-photo-btn"
+            onClick={() =>
+              setReviewImages(
+                reviewImages.filter((_, i) => i !== index)
+              )
+            }
+          >
+            <X size={16} />
+          </button>
+        </div>
+      ))}
+
+      {/* Empty Upload Slots */}
+      {Array.from({
+        length: Math.max(0, 5 - reviewImages.length),
+      }).map((_, index) => (
+        <label
+          key={`slot-${index}`}
+          htmlFor="review-photo-input"
+          className="upload-skeleton"
+        >
+          <ImagePlus size={30} />
+        </label>
+      ))}
     </div>
-  ))}
 
-  {Array.from({
-    length: Math.max(0, 5 - reviewImages.length),
-  }).map((_, index) => (
-    <label key={`placeholder-${index}`} className="upload-skeleton">
-      <ImagePlus size={28} />
-      <span>Add Photo</span>
-    </label>
-  ))}
-</div>
+    <p className="upload-hint">
+      Upload up to 5 photos (optional)
+    </p>
 
-<p className="upload-hint">
-  Upload up to 5 photos (optional)
-</p>
-
-<button
-  type="button"
-  className="submit-review"
-  onClick={submitReview}
->
-  Post Review
-</button>
+    <button
+      type="button"
+      className="submit-review"
+      onClick={submitReview}
+    >
+      Post Review
+    </button>
   </div>
 
+  {/* Existing Reviews */}
   <div className="reviews-list">
     {reviews.map((rev) => (
       <div
-        className="review-card"
         key={rev.id}
+        className="review-card"
       >
         <div className="review-header">
           <div className="review-user">
             <div className="review-avatar">
-              {rev.name.charAt(0)}
+              {rev.name?.charAt(0).toUpperCase()}
             </div>
 
             <div>
@@ -1957,13 +1966,11 @@ body{
               </div>
 
               <div className="review-stars">
-                {Array.from({
-                  length: rev.rating,
-                }).map((_, idx) => (
+                {[1, 2, 3, 4, 5].map((star) => (
                   <Star
-                    key={idx}
+                    key={star}
                     size={16}
-                    fill="#C4956A"
+                    fill={star <= rev.rating ? "#C4956A" : "none"}
                     color="#C4956A"
                   />
                 ))}
@@ -1972,7 +1979,9 @@ body{
           </div>
 
           <div className="review-date">
-            Just now
+            {rev.createdAt?.toDate
+              ? rev.createdAt.toDate().toLocaleDateString()
+              : "Just now"}
           </div>
         </div>
 
@@ -1980,7 +1989,6 @@ body{
           {rev.text}
         </p>
 
-        {/* Review Photos */}
         {rev.images?.length > 0 && (
           <div className="review-photo-grid">
             {rev.images.map((image, index) => (
@@ -1989,6 +1997,7 @@ body{
                 src={image}
                 alt={`Review ${index + 1}`}
                 className="review-photo"
+                loading="lazy"
               />
             ))}
           </div>
@@ -1998,11 +2007,9 @@ body{
   </div>
 </div>
 
-
-
-                
-
-                              {/* PERSISTENT BAR TRACKER */}
+                         
+              
+              {/* PERSISTENT BAR TRACKER */}
           <div className="sticky-order-bar">
             <div className="sticky-left">
               <div className="sticky-product-name">{product.name}</div>
