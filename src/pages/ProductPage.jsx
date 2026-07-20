@@ -232,7 +232,20 @@ const singlePrice =
     return;
   }
 
-  if (!reviewText.trim() || reviewRating === 0) return;
+  if (reviewRating === 0) {
+  alert("Please select a rating.");
+  return;
+}
+
+if (reviewImages.length > 0 && !reviewText.trim()) {
+  alert("Please write a review when uploading photos.");
+  return;
+}
+
+if (!reviewText.trim() && reviewImages.length === 0) {
+  showToast("Please write a review or upload photos.");
+  return;
+}
 
   try {
     // Upload images to Cloudinary
