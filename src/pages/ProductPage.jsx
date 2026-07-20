@@ -593,7 +593,24 @@ body{
   background:#C4956A;
   color:white;
 }
+.product-image-container {
+  width: 100%;
+  height: 320px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
+.product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 24px;
+}
+
+.product-emoji {
+  font-size: 120px;
+}
 .preview-grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,90px);
@@ -1319,10 +1336,16 @@ body{
           <div className="hero-section">
             {/* LEFT SIDE */}
             <div className="product-image">
-              <img
-                src="https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=900"
-                alt={product.name}
-              />
+              {product?.image ? (
+  <img
+    src={product.image}
+    alt={product.name}
+  />
+) : (
+  <div className="product-emoji">
+    {product?.emoji || "☕"}
+  </div>
+)}
               <button className="favorite-btn" onClick={() => setFavorite(!favorite)}>
                 <Heart
                   size={24}
