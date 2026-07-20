@@ -48,6 +48,7 @@ export default function ProductPage({
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewImages, setReviewImages] = useState([]);
   const [quantity, setQuantity] = useState(1);
+  const [selectedExtras, setSelectedExtras] = useState([]);
 
   const [reviews, setReviews] = useState([]);
   
@@ -240,6 +241,37 @@ const singlePrice =
     </div>
   );
   }
+
+
+function toggleExtra(extra) {
+  const alreadySelected = selectedExtras.some(
+    (item) => item.name === extra.name
+  );
+
+  if (alreadySelected) {
+    setSelectedExtras(
+      selectedExtras.filter(
+        (item) => item.name !== extra.name
+      )
+    );
+    return;
+  }
+
+  if (
+    selectedExtras.length >=
+    (product.customExtrasMaxSelection || 3)
+  ) {
+    return;
+  }
+
+  setSelectedExtras([
+    ...selectedExtras,
+    extra,
+  ]);
+}
+
+
+  
 
   return (
     <>
@@ -1303,60 +1335,75 @@ body{
   </div>
 )}
                 
-              
-
-        
-                
-
-    
-
               {/* CUSTOM EXTRAS PANEL */}
-              <div className="option-section">
-                <h2 className="option-title">Custom Extras</h2>
-                <div className="extras-grid">
-                  <div
-                    className={`extra-card ${toppings.includes("Whipped Cream") ? "active" : ""}`}
-                    onClick={() => toggleTopping("Whipped Cream")}
-                  >
-                    <div className="extra-left">
-                      <div className="extra-icon">☁️</div>
-                      <div>
-                        <div className="extra-name">Whipped Cream</div>
-                        <div className="extra-desc">Fluffy & Sweet Cream Layer</div>
-                      </div>
-                    </div>
-                    <div className="extra-price">+ ₹20</div>
-                  </div>
 
-                  <div
-                    className={`extra-card ${toppings.includes("Caramel Drizzle") ? "active" : ""}`}
-                    onClick={() => toggleTopping("Caramel Drizzle")}
-                  >
-                    <div className="extra-left">
-                      <div className="extra-icon">🍯</div>
-                      <div>
-                        <div className="extra-name">Caramel Drizzle</div>
-                        <div className="extra-desc">Signature Sweet Drizzle</div>
-                      </div>
-                    </div>
-                    <div className="extra-price">+ ₹25</div>
-                  </div>
+                 {product.customExtras?.length > 0 && (
+  <div className="option-section">
+    <h2 className="option-title">
+      Custom Extras
+    </h2>
 
-                  <div
-                    className={`extra-card ${toppings.includes("Vanilla Syrup") ? "active" : ""}`}
-                    onClick={() => toggleTopping("Vanilla Syrup")}
-                  >
-                    <div className="extra-left">
-                      <div className="extra-icon">✨</div>
-                      <div>
-                        <div className="extra-name">Vanilla Syrup</div>
-                        <div className="extra-desc">Madagascar Vanilla Essence</div>
-                      </div>
-                    </div>
-                    <div className="extra-price">+ ₹20</div>
-                  </div>
+    <p className="option-subtitle">
+      Choose up to{" "}
+      {product.customExtrasMaxSelection || 3} extras
+    </p>
+
+    <div className="extras-grid">
+      {product.customExtras.map((extra) => {
+        const selected = selectedExtras.some(
+          (item) => item.name === extra.name
+        );
+
+        return (
+          <div
+            key={extra.name}
+            className={`extra-card ${
+              selected ? "active" : ""
+            }`}
+            onClick={() => toggleExtra(extra)}
+          >
+            <div className="extra-left">
+              <div className="extra-icon">
+                {extra.icon?.startsWith("http") ||
+                extra.icon?.startsWith("/") ? (
+                  <img
+                    src={extra.icon}
+                    alt={extra.name}
+                    style={{
+                      width: 30,
+                      height: 30,
+                      objectFit: "contain",
+                    }}
+                  />
+                ) : (
+                  extra.icon || "✨"
+                )}
+              </div>
+
+              <div>
+                <div className="extra-name">
+                  {extra.name}
+                </div>
+
+                <div className="extra-desc">
+                  {extra.description || ""}
                 </div>
               </div>
+            </div>
+
+            <div className="extra-price">
+              {extra.price > 0
+                ? `+₹${extra.price}`
+                : "Free"}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
+
+
 
               {/* SWEETNESS SECTION */}
               <div className="option-section">
