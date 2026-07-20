@@ -52,6 +52,7 @@ export default function ProductPage({
   const [reviewImages, setReviewImages] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [selectedExtras, setSelectedExtras] = useState([]);
+  const [specialInstructions, setSpecialInstructions] = useState("");
   const [toast, setToast] = useState("");
 
   const [reviews, setReviews] = useState([]);
@@ -1132,6 +1133,55 @@ body{
   font-weight: 700;
   transform: scale(1.08);
 }
+
+.quick-request-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quick-chip {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s ease;
+}
+
+.quick-chip.active {
+  background: #C4956A;
+  color: white;
+  border-color: #C4956A;
+}
+
+.instructions-card {
+  margin-top: 18px;
+  padding: 15px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid #eee;
+}
+
+.instructions-input {
+  width: 100%;
+  min-height: 90px;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.character-count {
+  text-align: right;
+  font-size: 12px;
+  color: #888;
+}
+
+
 .info-card:hover{
   transform:translateY(-5px);
   box-shadow:0 18px 35px rgba(0,0,0,.10);
@@ -1597,32 +1647,51 @@ body{
 </div>
                 
               {/* SPECIAL INSTRUCTIONS SECTION */}
-              <div className="option-section">
-                <h2 className="option-title">Special Requests</h2>
-                <div className="quick-request-grid">
-                  {quickRequests.map((request) => (
-                    <button
-                      key={request}
-                      type="button"
-                      className="quick-chip"
-                      onClick={() => setInstructions((prev) => (prev ? `${prev}, ${request}` : request))}
-                    >
-                      {request}
-                    </button>
-                  ))}
-                </div>
+            
+<div className="option-section">
+  <h2 className="option-title">
+    Special Requests
+  </h2>
 
-                <div className="instructions-card">
-                  <textarea
-                    className="instructions-input"
-                    placeholder="Any additional instructions for your barista..."
-                    maxLength={200}
-                    value={instructions}
-                    onChange={(e) => setInstructions(e.target.value)}
-                  />
-                  <div className="character-count">{instructions.length} / 200</div>
-                </div>
-              </div>
+  <div className="quick-request-grid">
+    {quickRequests.map((request) => (
+      <button
+        key={request}
+        type="button"
+        className={
+          instructions.includes(request)
+            ? "quick-chip active"
+            : "quick-chip"
+        }
+        onClick={() =>
+          setInstructions((prev) =>
+            prev
+              ? `${prev}, ${request}`
+              : request
+          )
+        }
+      >
+        {request}
+      </button>
+    ))}
+  </div>
+
+  <div className="instructions-card">
+    <textarea
+      className="instructions-input"
+      placeholder="Any additional instructions for your barista..."
+      maxLength={200}
+      value={instructions}
+      onChange={(e) =>
+        setInstructions(e.target.value)
+      }
+    />
+
+    <div className="character-count">
+      {instructions.length} / 200
+    </div>
+  </div>
+</div>
 
               {/* REVIEWS & FEEDBACK MODULE */}
               <div className="option-section">
