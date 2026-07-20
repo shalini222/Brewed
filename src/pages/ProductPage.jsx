@@ -1448,59 +1448,8 @@ body{
     Sweetness Level
   </h2>
 
-  <div className="sweetness-display">
-    <strong>
-      {selectedSweetness?.name || "No sweetness options"}
-    </strong>
-
-    {selectedSweetness?.description && (
-      <div className="sweetness-desc">
-        {selectedSweetness.description}
-      </div>
-    )}
-  </div>
-
-  <input
-    type="range"
-    min={0}
-    max={Math.max(sweetnessOptions.length - 1, 0)}
-    step={1}
-    value={sweetnessIndex}
-    onChange={(e) =>
-      setSweetnessIndex(Number(e.target.value))
-    }
-    disabled={sweetnessOptions.length <= 1}
-    className="sweetness-slider"
-  />
-
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      marginTop: 10,
-      fontSize: 13,
-      color: "#777",
-    }}
-  >
-    {sweetnessOptions.map((option, index) => (
-      <span
-        key={option.name}
-        style={{
-          fontWeight:
-            sweetnessIndex === index ? 700 : 400,
-          color:
-            sweetnessIndex === index
-              ? "#C4956A"
-              : "#777",
-        }}
-      >
-        {option.name}
-      </span>
-    ))}
-  </div>
+  <p>{selectedSweetness?.name}</p>
 </div>
-                
-
 
                 
               {/* SPECIAL INSTRUCTIONS SECTION */}
