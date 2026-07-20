@@ -194,10 +194,21 @@ const singlePrice =
     }
   };
 
-  const handleReviewImages = (e) => {
+  const MAX_REVIEW_PHOTOS = 5;
+
+const handleReviewImages = (e) => {
   const files = Array.from(e.target.files);
 
-  setReviewImages(files);
+  const updatedImages = [...reviewImages, ...files];
+
+  if (updatedImages.length > MAX_REVIEW_PHOTOS) {
+    showToast(`You can upload up to ${MAX_REVIEW_PHOTOS} photos.`);
+  }
+
+  setReviewImages(updatedImages.slice(0, MAX_REVIEW_PHOTOS));
+
+  // Allow selecting the same file again later
+  e.target.value = "";
 };
 
   const uploadReviewImages = async () => {
