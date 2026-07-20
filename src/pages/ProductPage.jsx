@@ -648,7 +648,39 @@ body{
 .instructions-input::placeholder{
   color:#A5968D;
 }
+.upload-skeleton-grid{
+  display:grid;
+  grid-template-columns:repeat(4,90px);
+  gap:14px;
+  margin-bottom:20px;
+}
 
+.upload-skeleton{
+  width:90px;
+  height:90px;
+  border:2px dashed #D9D1C8;
+  border-radius:18px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  color:#B2A79D;
+  transition:.25s;
+  background:#FAF7F3;
+}
+
+.upload-skeleton:hover{
+  border-color:#C4956A;
+  color:#C4956A;
+  background:#FFF8F2;
+}
+
+.upload-skeleton span{
+  margin-top:6px;
+  font-size:.75rem;
+  font-weight:600;
+}
 .upload-review{
   display:inline-flex;
   align-items:center;
@@ -1850,31 +1882,42 @@ body{
     </label>
 
     {/* Image Preview */}
-    {reviewImages.length > 0 && (
-  <div className="preview-grid">
-    {reviewImages.map((file, index) => (
-      <div key={index} className="preview-item">
-        <img
-          src={URL.createObjectURL(file)}
-          className="preview-photo"
-          alt=""
-        />
+    <div className="preview-grid">
+  {reviewImages.map((file, index) => (
+    <div key={index} className="preview-item">
+      <img
+        src={URL.createObjectURL(file)}
+        className="preview-photo"
+        alt=""
+      />
 
-        <button
-          type="button"
-          className="remove-photo-btn"
-          onClick={() =>
-            setReviewImages(
-              reviewImages.filter((_, i) => i !== index)
-            )
-          }
-        >
-          <X size={16} />
-        </button>
-      </div>
-    ))}
-  </div>
-)}
+      <button
+        type="button"
+        className="remove-photo-btn"
+        onClick={() =>
+          setReviewImages(
+            reviewImages.filter((_, i) => i !== index)
+          )
+        }
+      >
+        <X size={16} />
+      </button>
+    </div>
+  ))}
+
+  {Array.from({
+    length: Math.max(0, 5 - reviewImages.length),
+  }).map((_, index) => (
+    <label key={`placeholder-${index}`} className="upload-skeleton">
+      <ImagePlus size={28} />
+      <span>Add Photo</span>
+    </label>
+  ))}
+</div>
+
+<p className="upload-hint">
+  Upload up to 5 photos (optional)
+</p>
 
 <button
   type="button"
