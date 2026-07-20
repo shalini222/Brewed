@@ -28,6 +28,7 @@ import CouponsAdminPage from "./pages/CouponsAdminPage";
 import ReservationPage from "./pages/ReservationPage";
 import CustomersAdminPage from "./pages/CustomersAdminPage";
 import SettingsAdminPage from "./pages/SettingsAdminPage";
+import SupportPage from "./pages/SupportPage";
 
 
 
@@ -70,6 +71,7 @@ export default function App() {
     "customersadmin",
     "reservation",
     "settingsAdmin",
+    "support",
   ];
 
   return (
@@ -223,6 +225,11 @@ export default function App() {
 
           {page === "settingsAdmin" && (
             <SettingsAdminPage setPage={navigateTo} />
+          )}
+
+
+          {page === "support" && (
+            <SupportPage setPage={navigateTo} />
           )}
           
           <Footer />
