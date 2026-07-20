@@ -159,7 +159,7 @@ useEffect(() => {
   
 
   const milkPrices = Object.fromEntries(
-  (product?.milkOptions || []).map((milk) => [
+  (product.milkOptions || []).map((milk) => [
     milk.name,
     Number(milk.price || 0),
   ])
