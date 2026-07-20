@@ -1438,43 +1438,68 @@ body{
     Sweetness Level
   </h2>
 
-  <div className="sweetness-grid">
-    {product.sweetnessOptions?.map((option) => (
-      <div
-        key={option.name}
-        className={`sweetness-card ${
-          sweetness === option.name ? "active" : ""
-        }`}
-        onClick={() => setSweetness(option.name)}
-      >
-        <div className="sweetness-icon">
-          {option.icon?.startsWith("http") ||
-          option.icon?.startsWith("/") ? (
-            <img
-              src={option.icon}
-              alt={option.name}
-              style={{
-                width: 30,
-                height: 30,
-                objectFit: "contain",
-              }}
-            />
-          ) : (
-            option.icon || "🍬"
-          )}
-        </div>
+  <div className="sweetness-display">
+    <div className="sweetness-icon">
+      {selectedSweetness?.icon?.startsWith("http") ||
+      selectedSweetness?.icon?.startsWith("/") ? (
+        <img
+          src={selectedSweetness.icon}
+          alt={selectedSweetness.name}
+          style={{
+            width: 30,
+            height: 30,
+            objectFit: "contain",
+          }}
+        />
+      ) : (
+        selectedSweetness?.icon || "🍬"
+      )}
+    </div>
 
-        <div className="sweetness-name">
-          {option.name}
-        </div>
-
-        <div className="sweetness-desc">
-          {option.description || ""}
-        </div>
+    <div>
+      <div className="sweetness-name">
+        {selectedSweetness?.name}
       </div>
+
+      <div className="sweetness-desc">
+        {selectedSweetness?.description || ""}
+      </div>
+    </div>
+  </div>
+
+  <input
+    type="range"
+    min={0}
+    max={
+      Math.max(
+        (product.sweetnessOptions?.length || 1) - 1,
+        0
+      )
+    }
+    step={1}
+    value={sweetnessIndex}
+    onChange={(e) =>
+      setSweetnessIndex(Number(e.target.value))
+    }
+    className="sweetness-slider"
+  />
+
+  <div className="sweetness-labels">
+    {product.sweetnessOptions?.map((option, index) => (
+      <span
+        key={option.name}
+        className={
+          sweetnessIndex === index
+            ? "active"
+            : ""
+        }
+      >
+        {option.name}
+      </span>
     ))}
   </div>
 </div>
+                
 
 
                 
