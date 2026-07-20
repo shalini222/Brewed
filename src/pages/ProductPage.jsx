@@ -250,25 +250,29 @@ const singlePrice =
 };
 
   const handleAddToCart = () => {
-  // Check if user is logged in
   if (!currentUser) {
-    // Redirect to login if they aren't signed in
     setPage("login");
-    return; // Stop the function here
+    return;
   }
 
-  // If they are logged in, proceed as normal
   addToCart({
     ...product,
     price: singlePrice,
     qty: quantity,
+
+    // Customizations
     size,
     milk,
     toppings,
     temperature,
     iceLevel,
     sweetness: selectedSweetness,
+
+    // Special requests
     instructions,
+
+    // Extras
+    extras: selectedExtras,
   });
 
   setPage("cart");
