@@ -29,7 +29,7 @@ import {
   ImagePlus
 } from "lucide-react";
 
-
+import { X } from "lucide-react";
 
 
 
@@ -1851,37 +1851,38 @@ body{
 
     {/* Image Preview */}
     {reviewImages.length > 0 && (
-      <div className="preview-grid">
-        <div className="preview-grid">
-  {reviewImages.map((file, index) => (
-    <div key={index} className="preview-item">
-      <img
-        src={URL.createObjectURL(file)}
-        className="preview-photo"
-        alt=""
-      />
+  <div className="preview-grid">
+    {reviewImages.map((file, index) => (
+      <div key={index} className="preview-item">
+        <img
+          src={URL.createObjectURL(file)}
+          className="preview-photo"
+          alt=""
+        />
 
-      <button
-        className="remove-photo-btn"
-        onClick={() =>
-          setReviewImages(reviewImages.filter((_, i) => i !== index))
-        }
-      >
-        <X size={16} />
-      </button>
-    </div>
-  ))}
-</div>
+        <button
+          type="button"
+          className="remove-photo-btn"
+          onClick={() =>
+            setReviewImages(
+              reviewImages.filter((_, i) => i !== index)
+            )
+          }
+        >
+          <X size={16} />
+        </button>
       </div>
-    )}
+    ))}
+  </div>
+)}
 
-    <button
-      type="button"
-      className="submit-review"
-      onClick={submitReview}
-    >
-      Post Review
-    </button>
+<button
+  type="button"
+  className="submit-review"
+  onClick={submitReview}
+>
+  Post Review
+</button>
   </div>
 
   <div className="reviews-list">
