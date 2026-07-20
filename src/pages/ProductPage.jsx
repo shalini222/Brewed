@@ -626,16 +626,15 @@ body{
 }
 
 .product-image-container {
-  width: 100%;
-  max-width: 420px;
-  height: 280px;
-  margin: 0 auto;
+  width: 380px;
+  height: 380px;
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.product-image {
+.product-photo {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -643,8 +642,9 @@ body{
 }
 
 .product-emoji {
-  font-size: 90px;
+  font-size: 100px;
 }
+
 .preview-grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,90px);
@@ -1361,7 +1361,7 @@ body{
 `}</style>
 
       <div className="product-page">
-        <div className="product-container">
+        <div className= "product-image-container">
           <button className="back-button" onClick={() => setPage("menu")}>
             <ArrowLeft size={20} />
             Back to Menu
