@@ -14,12 +14,10 @@ export default function AddressPage({setPage}) {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
   
-  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentAddress, setCurrentAddress] = useState(null); 
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
-  // Checkout selection state
   const [selectedCheckoutAddress, setSelectedCheckoutAddress] = useState(
     localStorage.getItem('lastSelectedAddress') || null
   );
@@ -29,7 +27,6 @@ export default function AddressPage({setPage}) {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // 1. Fetch Addresses
   const fetchAddresses = async () => {
     setLoading(true);
     try {
@@ -47,13 +44,11 @@ export default function AddressPage({setPage}) {
     fetchAddresses();
   }, []);
 
-  // 2. Delivery Availability Check & Save / Update Address
   const handleSaveAddress = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData.entries());
 
-    // Delivery Availability Check (Mock: Block PIN codes starting with '9')
     if (data.pincode.startsWith('9')) {
       showToast('Sorry, delivery is not available for this PIN code.', 'error');
       return; 
@@ -62,14 +57,11 @@ export default function AddressPage({setPage}) {
     try {
       const snapshot = await getDocs(addressesCollectionRef);
       const isFirstAddress = snapshot.size === 0;
-
-      // Handle single-default logic securely on client batch write
       const batch = writeBatch(db);
 
       if (isFirstAddress) {
         data.isDefault = true;
       } else if (data.isDefault === 'true' || data.isDefault === true) {
-        // If user marked this as default, unset all others
         snapshot.docs.forEach((docItem) => {
           if (!currentAddress || docItem.id !== currentAddress.id) {
             batch.update(docItem.ref, { isDefault: false });
@@ -81,14 +73,12 @@ export default function AddressPage({setPage}) {
       }
 
       if (currentAddress) {
-        // Update existing
         const docRef = doc(db, 'addresses', currentAddress.id);
         batch.update(docRef, data);
         await batch.commit();
         showToast('Address updated successfully');
       } else {
-        // Create new
-        await batch.commit(); // commit default updates if any
+        await batch.commit();
         await addDoc(addressesCollectionRef, {
           ...data,
           createdAt: serverTimestamp()
@@ -104,7 +94,6 @@ export default function AddressPage({setPage}) {
     }
   };
 
-  // 3. Delete Address
   const handleDelete = async (id) => {
     try {
       const targetDocRef = doc(db, 'addresses', id);
@@ -112,7 +101,6 @@ export default function AddressPage({setPage}) {
       
       await deleteDoc(targetDocRef);
 
-      // If deleted item was default, assign default to the next available address
       if (targetAddress?.isDefault) {
         const remaining = addresses.filter(a => a.id !== id);
         if (remaining.length > 0) {
@@ -129,7 +117,6 @@ export default function AddressPage({setPage}) {
     }
   };
 
-  // 4. Set Default Address Explicitly
   const handleSetDefault = async (id) => {
     try {
       const snapshot = await getDocs(addressesCollectionRef);
@@ -147,7 +134,6 @@ export default function AddressPage({setPage}) {
     }
   };
 
-  // 5. Checkout Integration Selection
   const handleSelectForCheckout = (id) => {
     setSelectedCheckoutAddress(id);
     localStorage.setItem('lastSelectedAddress', id);
@@ -162,35 +148,39 @@ export default function AddressPage({setPage}) {
   );
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 bg-slate-50 min-h-screen font-sans">
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px', fontFamily: 'system-ui, sans-serif', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box' }}>
       
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed top-5 right-5 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-white transition-all animate-bounce ${
-          toast.type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'
-        }`}>
+        <div style={{
+          position: 'fixed', top: '20px', right: '20px', zIndex: 1000,
+          display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px',
+          borderRadius: '12px', color: 'white', fontWeight: 500, fontSize: '14px',
+          backgroundColor: toast.type === 'success' ? '#16a34a' : '#e11d48',
+          boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
+        }}>
           {toast.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
-          <span className="text-sm font-medium">{toast.message}</span>
+          <span>{toast.message}</span>
         </div>
       )}
 
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">📍 Address Book</h1>
-          <p className="text-sm text-slate-500">Manage your shipping and billing locations</p>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b', margin: '0 0 4px 0' }}>📍 Address Book</h1>
+          <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Manage your shipping and billing locations</p>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div style={{ display: 'flex', gap: '8px', width: 'auto' }}>
           <button 
             onClick={fetchAddresses} 
-            className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 text-slate-600"
+            style={{ padding: '10px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#475569' }}
             title="Refresh"
           >
             <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
           </button>
           <button
             onClick={() => { setCurrentAddress(null); setIsModalOpen(true); }}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-md transition-all"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', backgroundColor: '#4f46e5', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)', whiteSpace: 'nowrap' }}
           >
             <Plus size={18} /> Add New Address
           </button>
@@ -198,26 +188,26 @@ export default function AddressPage({setPage}) {
       </div>
 
       {/* Search Bar */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3.5 top-3 text-slate-400" size={18} />
+      <div style={{ position: 'relative', marginBottom: '24px' }}>
+        <Search style={{ position: 'absolute', left: '14px', top: '12px', color: '#94a3b8' }} size={18} />
         <input
           type="text"
           placeholder="Search by name, city, locality, or PIN..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+          style={{ width: '100%', padding: '10px 14px 10px 42px', backgroundColor: 'white', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
         />
       </div>
 
       {/* Empty State */}
       {filteredAddresses.length === 0 && !loading && (
-        <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 p-8">
-          <MapPin className="mx-auto text-slate-300 mb-3" size={48} />
-          <h3 className="text-lg font-semibold text-slate-700">No addresses found</h3>
-          <p className="text-sm text-slate-400 mb-4">Add a new delivery address to get started.</p>
+        <div style={{ textAlign: 'center', padding: '64px 20px', backgroundColor: 'white', borderRadius: '16px', border: '2px dashed #cbd5e1' }}>
+          <MapPin style={{ margin: '0 auto 12px auto', color: '#cbd5e1' }} size={48} />
+          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#334155', margin: '0 0 4px 0' }}>No addresses found</h3>
+          <p style={{ fontSize: '14px', color: '#94a3b8', margin: '0 0 16px 0' }}>Add a new delivery address to get started.</p>
           <button
             onClick={() => { setCurrentAddress(null); setIsModalOpen(true); }}
-            className="bg-indigo-50 text-indigo-600 font-medium px-4 py-2 rounded-xl text-sm hover:bg-indigo-100"
+            style={{ backgroundColor: '#e0e7ff', color: '#4f46e5', border: 'none', fontWeight: 500, padding: '8px 16px', borderRadius: '12px', fontSize: '14px', cursor: 'pointer' }}
           >
             Add Address
           </button>
@@ -225,77 +215,82 @@ export default function AddressPage({setPage}) {
       )}
 
       {/* Address Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
         {filteredAddresses.map((addr) => {
           const isSelected = selectedCheckoutAddress === addr.id;
           return (
             <div 
               key={addr.id} 
-              className={`bg-white rounded-2xl p-5 border transition-all shadow-sm relative flex flex-col justify-between ${
-                addr.isDefault ? 'border-indigo-500 ring-1 ring-indigo-500/20' : 'border-slate-200'
-              } ${isSelected ? 'bg-indigo-50/20' : ''}`}
+              style={{
+                backgroundColor: isSelected ? '#f5f3ff' : 'white',
+                borderRadius: '16px', padding: '20px',
+                border: addr.isDefault ? '2px solid #4f46e5' : '1px solid #e2e8f0',
+                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                boxSizing: 'border-box'
+              }}
             >
               <div>
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="p-1.5 bg-slate-100 text-slate-600 rounded-lg">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ padding: '6px', backgroundColor: '#f1f5f9', color: '#475569', borderRadius: '8px', display: 'flex' }}>
                       {addr.label === 'Home' && <Home size={16} />}
                       {addr.label === 'Work' && <Briefcase size={16} />}
                       {addr.label === 'Other' && <MapPin size={16} />}
                     </span>
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                    <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#475569' }}>
                       {addr.label} {addr.nickname && `(${addr.nickname})`}
                     </span>
                   </div>
                   {addr.isDefault && (
-                    <span className="bg-indigo-100 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-                      Default Address
+                    <span style={{ backgroundColor: '#e0e7ff', color: '#4338ca', fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '9999px' }}>
+                      Default
                     </span>
                   )}
                 </div>
 
-                <h3 className="font-bold text-slate-800 text-base mb-1">{addr.fullName}</h3>
-                <p className="text-sm text-slate-600 mb-3 leading-relaxed">
+                <h3 style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '15px', margin: '0 0 4px 0' }}>{addr.fullName}</h3>
+                <p style={{ fontSize: '13px', color: '#475569', margin: '0 0 12px 0', lineHeight: 1.5 }}>
                   {addr.houseNo}, {addr.street}, {addr.landmark ? `${addr.landmark}, ` : ''}
-                  {addr.locality}, {addr.city}, {addr.state} - <span className="font-semibold">{addr.pincode}</span>
+                  {addr.locality}, {addr.city}, {addr.state} - <strong style={{ color: '#1e293b' }}>{addr.pincode}</strong>
                 </p>
-                <p className="text-xs font-medium text-slate-500 mb-4">Phone: {addr.phone}</p>
+                <p style={{ fontSize: '12px', fontWeight: 500, color: '#64748b', margin: '0 0 16px 0' }}>Phone: {addr.phone}</p>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex flex-col gap-3">
-                <div className="flex justify-between items-center text-sm">
+              <div style={{ paddingTop: '12px', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
                   {!addr.isDefault ? (
                     <button 
                       onClick={() => handleSetDefault(addr.id)}
-                      className="text-indigo-600 font-medium hover:underline text-xs"
+                      style={{ background: 'none', border: 'none', color: '#4f46e5', fontWeight: 600, cursor: 'pointer', padding: 0 }}
                     >
                       Set as Default
                     </button>
                   ) : <span />}
 
-                  <div className="flex items-center gap-3">
+                  <div style={{ display: 'flex', gap: '12px', marginLeft: 'auto' }}>
                     <button 
                       onClick={() => { setCurrentAddress(addr); setIsModalOpen(true); }}
-                      className="text-slate-500 hover:text-indigo-600 flex items-center gap-1 text-xs font-medium"
+                      style={{ background: 'none', border: 'none', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontWeight: 500, padding: 0 }}
                     >
-                      <Edit size={14} /> Edit
+                      <Edit size={13} /> Edit
                     </button>
                     <button 
                       onClick={() => setDeleteConfirmId(addr.id)}
-                      className="text-rose-500 hover:text-rose-700 flex items-center gap-1 text-xs font-medium"
+                      style={{ background: 'none', border: 'none', color: '#e11d48', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontWeight: 500, padding: 0 }}
                     >
-                      <Trash2 size={14} /> Delete
+                      <Trash2 size={13} /> Delete
                     </button>
                   </div>
                 </div>
 
                 <button
                   onClick={() => handleSelectForCheckout(addr.id)}
-                  className={`w-full py-2 rounded-xl text-xs font-semibold transition-all ${
-                    isSelected 
-                      ? 'bg-emerald-600 text-white shadow-sm' 
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
+                  style={{
+                    width: '100%', padding: '8px', borderRadius: '10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: 'none',
+                    backgroundColor: isSelected ? '#16a34a' : '#f1f5f9',
+                    color: isSelected ? 'white' : '#334155'
+                  }}
                 >
                   {isSelected ? '✓ Deliver Here (Selected)' : 'Deliver Here'}
                 </button>
@@ -307,78 +302,78 @@ export default function AddressPage({setPage}) {
 
       {/* Add/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl my-8">
-            <h2 className="text-xl font-bold text-slate-800 mb-4">
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '20px', maxWidth: '500px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', maxHeight: '90vh', overflowY: 'auto', boxSizing: 'border-box' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', margin: '0 0 16px 0' }}>
               {currentAddress ? 'Edit Address' : 'Add New Address'}
             </h2>
-            <form onSubmit={handleSaveAddress} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleSaveAddress} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Full Name</label>
-                  <input name="fullName" defaultValue={currentAddress?.fullName} required className="w-full p-2.5 border rounded-xl text-sm" placeholder="John Doe" />
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Full Name</label>
+                  <input name="fullName" defaultValue={currentAddress?.fullName} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="John Doe" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Phone Number</label>
-                  <input name="phone" defaultValue={currentAddress?.phone} required className="w-full p-2.5 border rounded-xl text-sm" placeholder="9876543210" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">House / Flat / Apartment</label>
-                  <input name="houseNo" defaultValue={currentAddress?.houseNo} required className="w-full p-2.5 border rounded-xl text-sm" placeholder="Flat 402, Block B" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Street / Road</label>
-                  <input name="street" defaultValue={currentAddress?.street} required className="w-full p-2.5 border rounded-xl text-sm" placeholder="Park Street" />
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Phone Number</label>
+                  <input name="phone" defaultValue={currentAddress?.phone} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="9876543210" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Landmark (Optional)</label>
-                  <input name="landmark" defaultValue={currentAddress?.landmark} className="w-full p-2.5 border rounded-xl text-sm" placeholder="Near City Mall" />
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>House / Flat / Apt</label>
+                  <input name="houseNo" defaultValue={currentAddress?.houseNo} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="Flat 402, Block B" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Area / Locality</label>
-                  <input name="locality" defaultValue={currentAddress?.locality} required className="w-full p-2.5 border rounded-xl text-sm" placeholder="Downtown" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">City</label>
-                  <input name="city" defaultValue={currentAddress?.city} required className="w-full p-2.5 border rounded-xl text-sm" placeholder="Kolkata" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">State</label>
-                  <input name="state" defaultValue={currentAddress?.state} required className="w-full p-2.5 border rounded-xl text-sm" placeholder="WB" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">PIN / ZIP Code</label>
-                  <input name="pincode" defaultValue={currentAddress?.pincode} required className="w-full p-2.5 border rounded-xl text-sm" placeholder="700001" />
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Street / Road</label>
+                  <input name="street" defaultValue={currentAddress?.street} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="Park Street" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Label Type</label>
-                  <select name="label" defaultValue={currentAddress?.label || 'Home'} className="w-full p-2.5 border rounded-xl text-sm bg-white">
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Landmark (Optional)</label>
+                  <input name="landmark" defaultValue={currentAddress?.landmark} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="Near City Mall" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Area / Locality</label>
+                  <input name="locality" defaultValue={currentAddress?.locality} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="Downtown" />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>City</label>
+                  <input name="city" defaultValue={currentAddress?.city} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="Kolkata" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>State</label>
+                  <input name="state" defaultValue={currentAddress?.state} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="WB" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>PIN / ZIP</label>
+                  <input name="pincode" defaultValue={currentAddress?.pincode} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="700001" />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Label Type</label>
+                  <select name="label" defaultValue={currentAddress?.label || 'Home'} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', backgroundColor: 'white', boxSizing: 'border-box' }}>
                     <option value="Home">Home</option>
                     <option value="Work">Work</option>
                     <option value="Other">Other</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Nickname (Optional)</label>
-                  <input name="nickname" defaultValue={currentAddress?.nickname} className="w-full p-2.5 border rounded-xl text-sm" placeholder="Mom's House" />
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Nickname (Optional)</label>
+                  <input name="nickname" defaultValue={currentAddress?.nickname} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="Mom's House" />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
-                <button type="submit" className="px-5 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-md">Save Address</button>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '12px', borderTop: '1px solid #f1f5f9', marginTop: '4px' }}>
+                <button type="button" onClick={() => setIsModalOpen(false)} style={{ padding: '8px 16px', fontSize: '13px', color: '#475569', background: '#f1f5f9', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 600, backgroundColor: '#4f46e5', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)' }}>Save Address</button>
               </div>
             </form>
           </div>
@@ -387,13 +382,13 @@ export default function AddressPage({setPage}) {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl text-center">
-            <h3 className="text-lg font-bold text-slate-800 mb-2">Delete Address?</h3>
-            <p className="text-sm text-slate-500 mb-6">Are you sure you want to remove this delivery address?</p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteConfirmId(null)} className="flex-1 py-2 text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl font-medium">Cancel</button>
-              <button onClick={() => handleDelete(deleteConfirmId)} className="flex-1 py-2 text-sm text-white bg-rose-600 hover:bg-rose-700 rounded-xl font-medium shadow-md">Delete</button>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '20px', maxWidth: '360px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', textAlign: 'center', boxSizing: 'border-box' }}>
+            <h3 style={{ fontSize: '17px', fontWeight: 'bold', color: '#1e293b', margin: '0 0 8px 0' }}>Delete Address?</h3>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 20px 0' }}>Are you sure you want to remove this delivery address?</p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={() => setDeleteConfirmId(null)} style={{ flex: 1, padding: '9px', fontSize: '13px', color: '#475569', backgroundColor: '#f1f5f9', border: 'none', borderRadius: '10px', fontWeight: 500, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => handleDelete(deleteConfirmId)} style={{ flex: 1, padding: '9px', fontSize: '13px', color: 'white', backgroundColor: '#e11d48', border: 'none', borderRadius: '10px', fontWeight: 500, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(225, 29, 72, 0.2)' }}>Delete</button>
             </div>
           </div>
         </div>
@@ -401,4 +396,4 @@ export default function AddressPage({setPage}) {
 
     </div>
   );
-      }
+}
