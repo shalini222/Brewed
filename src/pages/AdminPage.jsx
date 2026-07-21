@@ -637,6 +637,96 @@ return (
       gap: 30,
     }}
   >
+
+            borderBottom: "1px solid #eee",
+        }}
+      >
+        <strong>{order.customer?.name}</strong>
+
+        <div
+          style={{
+            color: "#777",
+            fontSize: 14,
+            marginTop: 4,
+          }}
+        >
+          {order.status} • ₹{order.total}
+        </div>
+      </div>
+    ))}
+</div>  
+      <h2
+  style={{
+    marginTop: 40,
+    marginBottom: 20,
+    fontFamily: "Playfair Display",
+  }}
+>
+  ⚠️ Low Stock / Out of Stock
+</h2>
+
+<div
+  style={{
+    background: "#fff",
+    borderRadius: 20,
+    padding: 20,
+    boxShadow: "0 10px 30px rgba(0,0,0,.08)",
+  }}
+>
+  {menu.filter(item => item.available === false).length === 0 ? (
+    <p style={{ color: "#2E7D32", fontWeight: 600 }}>
+      ✅ All products are currently available.
+    </p>
+  ) : (
+    menu
+      .filter(item => item.available === false)
+      .map(item => (
+        <div
+          key={item.firestoreId}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "12px 0",
+            borderBottom: "1px solid #eee",
+          }}
+        >
+          <span>{item.name}</span>
+
+          <span
+            style={{
+              color: "#D32F2F",
+              fontWeight: 700,
+            }}
+          >
+            Out of Stock
+          </span>
+        </div>
+      ))
+  )}
+</div>
+
+<div
+  style={{
+    background: "#fff",
+    borderRadius: 20,
+    padding: 20,
+    boxShadow: "0 10px 30px rgba(0,0,0,.08)",
+  }}
+>
+  <h3>☀️ Today's Sales</h3>
+
+  <h1
+    style={{
+      color: "#C4956A",
+      margin: "10px 0",
+    }}
+  >
+    ₹{todaySales}
+  </h1>
+
+  <p>{todayOrders} Orders Today</p>
+</div>
+
     
   </div>
 );
