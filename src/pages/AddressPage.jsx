@@ -1,29 +1,25 @@
-import { useState } from "react";
-import { ArrowLeft, Search, Plus, MapPin } from "lucide-react";
+import { ArrowLeft, Plus, Search, MapPin } from "lucide-react";
 
 export default function AddressPage({ setPage }) {
-  const [search, setSearch] = useState("");
-
   return (
     <div
       style={{
-        minHeight: "100vh",
         background: "#FDFAF5",
+        minHeight: "100%",
         padding: "24px",
-        fontFamily: "Inter, sans-serif",
       }}
     >
       {/* Back */}
       <button
         onClick={() => setPage("profile")}
         style={{
-          background: "none",
           border: "none",
+          background: "transparent",
           cursor: "pointer",
-          marginBottom: 24,
+          marginBottom: "20px",
         }}
       >
-        <ArrowLeft size={26} color="#1A0B05" />
+        <ArrowLeft size={24} color="#1A0B05" />
       </button>
 
       {/* Header */}
@@ -32,18 +28,18 @@ export default function AddressPage({ setPage }) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          marginBottom: "24px",
           flexWrap: "wrap",
-          gap: 16,
-          marginBottom: 30,
+          gap: "16px",
         }}
       >
         <div>
           <h1
             style={{
-              margin: 0,
-              fontSize: 34,
               fontFamily: "Playfair Display",
+              fontSize: "34px",
               color: "#1A0B05",
+              marginBottom: "6px",
             }}
           >
             Address Book
@@ -51,9 +47,7 @@ export default function AddressPage({ setPage }) {
 
           <p
             style={{
-              marginTop: 8,
-              color: "#666",
-              fontSize: 15,
+              color: "#7A6E66",
             }}
           >
             Manage your saved delivery addresses.
@@ -65,14 +59,13 @@ export default function AddressPage({ setPage }) {
             background: "#C4956A",
             color: "#fff",
             border: "none",
-            borderRadius: 14,
             padding: "12px 22px",
+            borderRadius: "14px",
             display: "flex",
             alignItems: "center",
-            gap: 8,
+            gap: "8px",
             cursor: "pointer",
             fontWeight: 600,
-            fontSize: 15,
           }}
         >
           <Plus size={18} />
@@ -84,31 +77,28 @@ export default function AddressPage({ setPage }) {
       <div
         style={{
           position: "relative",
-          marginBottom: 35,
+          marginBottom: "28px",
         }}
       >
         <Search
           size={18}
           style={{
             position: "absolute",
-            left: 16,
-            top: 15,
-            color: "#888",
+            left: "16px",
+            top: "15px",
+            color: "#999",
           }}
         />
 
         <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
           placeholder="Search saved addresses..."
           style={{
             width: "100%",
-            padding: "14px 18px 14px 48px",
-            borderRadius: 16,
-            border: "1px solid #ddd",
-            background: "#fff",
+            padding: "14px 16px 14px 48px",
+            borderRadius: "14px",
+            border: "1px solid #E6DDD4",
             outline: "none",
-            fontSize: 15,
+            background: "#fff",
           }}
         />
       </div>
@@ -117,21 +107,20 @@ export default function AddressPage({ setPage }) {
       <div
         style={{
           background: "#fff",
-          borderRadius: 24,
-          padding: "70px 30px",
+          borderRadius: "20px",
+          border: "2px dashed #E8DDD2",
+          padding: "70px 20px",
           textAlign: "center",
-          border: "2px dashed #E4D8CA",
         }}
       >
         <MapPin
-          size={56}
+          size={54}
           color="#C4956A"
-          style={{ marginBottom: 18 }}
         />
 
         <h2
           style={{
-            margin: 0,
+            marginTop: "18px",
             fontFamily: "Playfair Display",
             color: "#1A0B05",
           }}
@@ -141,27 +130,22 @@ export default function AddressPage({ setPage }) {
 
         <p
           style={{
-            marginTop: 12,
-            color: "#777",
-            lineHeight: 1.6,
+            color: "#7A6E66",
+            marginTop: "10px",
           }}
         >
-          Save your delivery locations
-          <br />
-          to make checkout faster.
+          Save your delivery locations for faster checkout.
         </p>
 
         <button
           style={{
-            marginTop: 28,
+            marginTop: "24px",
             background: "#C4956A",
             color: "#fff",
             border: "none",
-            borderRadius: 14,
-            padding: "12px 28px",
+            borderRadius: "12px",
+            padding: "12px 24px",
             cursor: "pointer",
-            fontWeight: 600,
-            fontSize: 15,
           }}
         >
           + Add Address
