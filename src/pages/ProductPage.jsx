@@ -9,7 +9,12 @@ import {
   where,
   serverTimestamp,
   orderBy,
-  limit
+  limit,
+  doc,
+  getDoc,
+  updateDoc,
+  increment,
+  setDoc
 } from "firebase/firestore";
 
 import { db } from "../firebase";
@@ -34,6 +39,13 @@ import { X } from "lucide-react";
 
 import { BadgeCheck
 } from "lucide-react";
+
+import { ThumbsUp } from "lucide-react";
+
+
+
+
+
 
 export default function ProductPage({
   setPage,
@@ -298,6 +310,7 @@ const verifiedPurchase = purchaseSnapshot.docs.some((doc) => {
   name: currentUser.displayName || "Customer",
 
   verifiedPurchase,
+  helpfulCount: 0,
 
   rating: reviewRating,
   text: reviewText,
@@ -334,7 +347,56 @@ const verifiedPurchase = purchaseSnapshot.docs.some((doc) => {
  
 
 
+  
 
+const markHelpful = async (reviewId) => {
+  if (!currentUser) {
+    setPage("login");
+    return;
+  }
+
+  try {
+    const helpfulRef = doc(
+      db,
+      "reviews",
+      reviewId,
+      "helpfulBy",
+      currentUser.uid
+    );
+
+    const alreadyVoted = await getDoc(helpfulRef);
+
+    if (alreadyVoted.exists()) {
+      showToast("You've already marked this review as helpful.");
+      return;
+    }
+
+    await setDoc(helpfulRef, {
+      votedAt: serverTimestamp(),
+    });
+
+    await updateDoc(doc(db, "reviews", reviewId), {
+      helpfulCount: increment(1),
+    });
+
+    setReviews((prev) =>
+      prev.map((review) =>
+        review.id === reviewId
+          ? {
+              ...review,
+              helpfulCount:
+                (review.helpfulCount || 0) + 1,
+            }
+          : review
+      )
+    );
+
+    showToast("Thanks for your feedback ❤️");
+  } catch (err) {
+    console.error(err);
+    showToast("Something went wrong.");
+  }
+};
   
 
 
@@ -954,7 +1016,40 @@ gap:30px;
 }
 
 
+.review-actions{
+  margin-top:16px;
+}
 
+.helpful-btn{
+  display:flex;
+  align-items:center;
+  gap:8px;
+
+  padding:8px 14px;
+
+  background:#fff;
+
+  border:1px solid #E6DFD5;
+
+  border-radius:999px;
+
+  cursor:pointer;
+
+  font-size:14px;
+
+  transition:.25s;
+}
+
+.helpful-btn:hover{
+  background:#FAF6F0;
+  border-color:#C4956A;
+  color:#C4956A;
+}
+
+.helpful-btn svg{
+  width:17px;
+  height:17px;
+}
 
 
 
@@ -2754,23 +2849,42 @@ gap:30px;
 )}
 </div>
 
-        {rev.images?.length > 0 && (
-          <div className="review-photo-grid">
-            {rev.images.map((image, index) => (
-              <img
-                key={index}
-                src={image}
-                alt={`Review ${index + 1}`}
-                className="review-photo"
-                loading="lazy"
-              />
-            ))}
-          </div>
-        )}
-      </div>
+{rev.images?.length > 0 && (
+  <div className="review-photo-grid">
+    {rev.images.map((image, index) => (
+      <img
+        key={index}
+        src={image}
+        alt={`Review ${index + 1}`}
+        className="review-photo"
+        loading="lazy"
+      />
     ))}
   </div>
+)}
+
+<div className="review-actions">
+  <button
+    type="button"
+    className="helpful-btn"
+    onClick={() => markHelpful(rev.id)}
+  >
+    <ThumbsUp size={16} />
+
+    Helpful
+
+    {rev.helpfulCount > 0 && (
+      <span>({rev.helpfulCount})</span>
+    )}
+  </button>
 </div>
+
+</div>
+))}
+</div>
+</div>
+
+
 
                          
               
