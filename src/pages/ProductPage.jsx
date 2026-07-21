@@ -444,7 +444,19 @@ const sortedReviews = [...reviews].sort((a, b) => {
 });
 
 
+const ratingBreakdown = {
+  5: 0,
+  4: 0,
+  3: 0,
+  2: 0,
+  1: 0,
+};
 
+reviews.forEach((review) => {
+  if (ratingBreakdown[review.rating] !== undefined) {
+    ratingBreakdown[review.rating]++;
+  }
+});
 
 
   
@@ -739,6 +751,108 @@ body{
 .instructions-input:focus{
   box-shadow:0 0 0 2px #C4956A;
 }
+
+.rating-summary-card{
+  display:grid;
+  grid-template-columns:260px 1fr;
+  gap:40px;
+
+  background:white;
+  border-radius:24px;
+
+  padding:30px;
+
+  margin-bottom:35px;
+
+  box-shadow:0 12px 30px rgba(0,0,0,.06);
+}
+
+.summary-left{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+
+.summary-rating{
+  font-size:4rem;
+  font-weight:700;
+  color:#3B1A08;
+}
+
+.summary-stars{
+  display:flex;
+  gap:4px;
+  margin:10px 0;
+}
+
+.summary-total{
+  color:#8D7B70;
+  text-align:center;
+}
+
+.summary-right{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.rating-row{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+
+.rating-label{
+  width:32px;
+  font-weight:700;
+  color:#3B1A08;
+}
+
+.rating-bar{
+  flex:1;
+  height:10px;
+
+  background:#EFE5DB;
+
+  border-radius:999px;
+
+  overflow:hidden;
+}
+
+.rating-fill{
+  height:100%;
+
+  background:#C4956A;
+
+  border-radius:999px;
+
+  transition:width .35s ease;
+}
+
+.rating-count{
+  width:28px;
+  text-align:right;
+
+  color:#8D7B70;
+}
+
+@media(max-width:768px){
+
+.rating-summary-card{
+
+grid-template-columns:1fr;
+
+gap:30px;
+
+}
+
+}
+
+
+
+
+
 
 .instructions-input::placeholder{
   color:#A5968D;
@@ -1997,6 +2111,85 @@ body{
               {/* REVIEWS & FEEDBACK MODULE */}
               <div className="option-section">
   <h2 className="option-title">Customer Reviews</h2>
+
+<div className="rating-summary-card">
+
+  <div className="summary-left">
+
+    <div className="summary-rating">
+      {averageRating}
+    </div>
+
+    <div className="summary-stars">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <Star
+          key={index}
+          size={20}
+          fill={
+            index < Math.round(Number(averageRating))
+              ? "#C4956A"
+              : "none"
+          }
+          color="#C4956A"
+        />
+      ))}
+    </div>
+
+    <div className="summary-total">
+      Based on {reviews.length} review
+      {reviews.length !== 1 ? "s" : ""}
+    </div>
+
+  </div>
+
+  <div className="summary-right">
+
+    {[5,4,3,2,1].map((star)=>{
+
+      const count = ratingBreakdown[star];
+
+      const percentage =
+        reviews.length === 0
+          ? 0
+          : (count / reviews.length) * 100;
+
+      return (
+
+        <div
+          key={star}
+          className="rating-row"
+        >
+
+          <span className="rating-label">
+            {star}★
+          </span>
+
+          <div className="rating-bar">
+
+            <div
+              className="rating-fill"
+              style={{
+                width:`${percentage}%`
+              }}
+            />
+
+          </div>
+
+          <span className="rating-count">
+            {count}
+          </span>
+
+        </div>
+
+      );
+
+    })}
+
+  </div>
+
+</div>
+
+                
 
   <div className="write-review-card">
     <h3 className="write-title">Share Your Experience</h3>
