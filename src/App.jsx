@@ -28,6 +28,7 @@ import CouponsAdminPage from "./pages/CouponsAdminPage";
 import ReservationPage from "./pages/ReservationPage";
 import CustomersAdminPage from "./pages/CustomersAdminPage";
 import SettingsAdminPage from "./pages/SettingsAdminPage";
+import AddressPage from "./pages/AddressPage";
 
 
 
@@ -72,6 +73,7 @@ export default function App() {
     "customersadmin",
     "reservation",
     "settingsAdmin",
+    "address",
     
     
   ];
@@ -230,7 +232,9 @@ export default function App() {
           )}
 
            
-          
+          {page==="address" && (
+<AddressPage/>
+)}
 
           
           
