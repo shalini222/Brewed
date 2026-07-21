@@ -57,10 +57,15 @@ export default function ProductPage({
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [quickRequests, setQuickRequests] = useState([]);
   const [reviewSort, setReviewSort] = useState("newest");
-const [showSortMenu, setShowSortMenu] = useState(false);
+  const [reviewFilter, setReviewFilter] = useState("all");
+  const [showSortMenu, setShowSortMenu] = useState(false);
   const [toast, setToast] = useState("");
-
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [reviewFilter, setReviewFilter] = useState("all");
   const [reviews, setReviews] = useState([]);
+
+
+  
   
   const { addToCart } = useCart();
   const { currentUser } = useAuth(); 
@@ -420,8 +425,37 @@ function toggleExtra(extra) {
 }
 
 
-const sortedReviews = [...reviews].sort((a, b) => {
-  switch (reviewSort) {
+const filteredReviews = reviews.filter((review) => {
+  switch (reviewFilter) {
+    case "photos":
+      return review.images?.length > 0;
+
+    case "verified":
+      return review.verifiedPurchase === true;
+
+    case "5":
+      return review.rating === 5;
+
+    case "4":
+      return review.rating === 4;
+
+    case "3":
+      return review.rating === 3;
+
+    case "2":
+      return review.rating === 2;
+
+    case "1":
+      return review.rating === 1;
+
+    default:
+      return true;
+  }
+});
+
+
+const sortedReviews = [...filteredReviews].sort((a, b) => {
+  switch (sortReviewsBy) {
     case "highest":
       return b.rating - a.rating;
 
@@ -442,6 +476,10 @@ const sortedReviews = [...reviews].sort((a, b) => {
       );
   }
 });
+
+
+
+
 
 
 const ratingBreakdown = {
@@ -934,6 +972,47 @@ gap:30px;
   color:#9A8A80;
   margin-top:3px;
 }
+
+
+
+.review-filter{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.review-filter label{
+  font-weight:700;
+  color:#3B1A08;
+}
+
+.review-filter select{
+  padding:12px 16px;
+
+  border:2px solid #EFE5DB;
+
+  border-radius:14px;
+
+  background:white;
+
+  font-size:.95rem;
+
+  cursor:pointer;
+
+  transition:.25s;
+}
+
+.review-filter select:hover{
+  border-color:#C4956A;
+}
+
+.review-filter select:focus{
+  outline:none;
+
+  border-color:#C4956A;
+}
+
+
 .upload-skeleton{
   width:90px;
   height:90px;
@@ -2429,72 +2508,190 @@ gap:30px;
   </div>
 
 
-<div className="review-toolbar">
+
+                
+                
+                <div className="review-toolbar">
 
   <h3>
-    {reviews.length} Reviews
+    {sortedReviews.length} Reviews
   </h3>
 
-  <div className="sort-wrapper">
+  <div
+    style={{
+      display: "flex",
+      gap: "12px",
+      alignItems: "center",
+    }}
+  >
 
-    <button
-      className="sort-btn"
-      onClick={() =>
-        setShowSortMenu(!showSortMenu)
-      }
-    >
-      Sort by
-    </button>
+    {/* Filter */}
 
-    {showSortMenu && (
-      <div className="sort-menu">
+    <div className="sort-wrapper">
 
-        <button
-          className={reviewSort === "newest" ? "active" : ""}
-          onClick={() => {
-            setReviewSort("newest");
-            setShowSortMenu(false);
-          }}
-        >
-          ○ Newest
-        </button>
+      <button
+        className="sort-btn"
+        onClick={() =>
+          setShowFilterMenu(!showFilterMenu)
+        }
+      >
+        Filter
+      </button>
 
-        <button
-          className={reviewSort === "highest" ? "active" : ""}
-          onClick={() => {
-            setReviewSort("highest");
-            setShowSortMenu(false);
-          }}
-        >
-          ○ Highest Rated
-        </button>
+      {showFilterMenu && (
+        <div className="sort-menu">
 
-        <button
-          className={reviewSort === "lowest" ? "active" : ""}
-          onClick={() => {
-            setReviewSort("lowest");
-            setShowSortMenu(false);
-          }}
-        >
-          ○ Lowest Rated
-        </button>
+          <button
+            className={reviewFilter === "all" ? "active" : ""}
+            onClick={() => {
+              setReviewFilter("all");
+              setShowFilterMenu(false);
+            }}
+          >
+            ○ All Reviews
+          </button>
 
-        <button
-          className={reviewSort === "oldest" ? "active" : ""}
-          onClick={() => {
-            setReviewSort("oldest");
-            setShowSortMenu(false);
-          }}
-        >
-          ○ Oldest
-        </button>
+          <button
+            className={reviewFilter === "photos" ? "active" : ""}
+            onClick={() => {
+              setReviewFilter("photos");
+              setShowFilterMenu(false);
+            }}
+          >
+            📷 With Photos
+          </button>
 
-      </div>
-    )}
+          <button
+            className={reviewFilter === "verified" ? "active" : ""}
+            onClick={() => {
+              setReviewFilter("verified");
+              setShowFilterMenu(false);
+            }}
+          >
+            ✔ Verified Purchase
+          </button>
+
+          <button
+            className={reviewFilter === "5" ? "active" : ""}
+            onClick={() => {
+              setReviewFilter("5");
+              setShowFilterMenu(false);
+            }}
+          >
+            ⭐⭐⭐⭐⭐ 5 Stars
+          </button>
+
+          <button
+            className={reviewFilter === "4" ? "active" : ""}
+            onClick={() => {
+              setReviewFilter("4");
+              setShowFilterMenu(false);
+            }}
+          >
+            ⭐⭐⭐⭐ 4 Stars
+          </button>
+
+          <button
+            className={reviewFilter === "3" ? "active" : ""}
+            onClick={() => {
+              setReviewFilter("3");
+              setShowFilterMenu(false);
+            }}
+          >
+            ⭐⭐⭐ 3 Stars
+          </button>
+
+          <button
+            className={reviewFilter === "2" ? "active" : ""}
+            onClick={() => {
+              setReviewFilter("2");
+              setShowFilterMenu(false);
+            }}
+          >
+            ⭐⭐ 2 Stars
+          </button>
+
+          <button
+            className={reviewFilter === "1" ? "active" : ""}
+            onClick={() => {
+              setReviewFilter("1");
+              setShowFilterMenu(false);
+            }}
+          >
+            ⭐ 1 Star
+          </button>
+
+        </div>
+      )}
+
+    </div>
+
+    {/* Sort */}
+
+    <div className="sort-wrapper">
+
+      <button
+        className="sort-btn"
+        onClick={() =>
+          setShowSortMenu(!showSortMenu)
+        }
+      >
+        Sort by
+      </button>
+
+      {showSortMenu && (
+        <div className="sort-menu">
+
+          <button
+            className={reviewSort === "newest" ? "active" : ""}
+            onClick={() => {
+              setReviewSort("newest");
+              setShowSortMenu(false);
+            }}
+          >
+            ○ Newest
+          </button>
+
+          <button
+            className={reviewSort === "highest" ? "active" : ""}
+            onClick={() => {
+              setReviewSort("highest");
+              setShowSortMenu(false);
+            }}
+          >
+            ○ Highest Rated
+          </button>
+
+          <button
+            className={reviewSort === "lowest" ? "active" : ""}
+            onClick={() => {
+              setReviewSort("lowest");
+              setShowSortMenu(false);
+            }}
+          >
+            ○ Lowest Rated
+          </button>
+
+          <button
+            className={reviewSort === "oldest" ? "active" : ""}
+            onClick={() => {
+              setReviewSort("oldest");
+              setShowSortMenu(false);
+            }}
+          >
+            ○ Oldest
+          </button>
+
+        </div>
+      )}
+
+    </div>
 
   </div>
 
 </div>
+    
+
 
 
 
