@@ -215,9 +215,7 @@ export default function App() {
           )}
 
           {page === "admin" && (
-  <div style={{ padding: 40 }}>
-    <h1>ADMIN TEST</h1>
-  </div>
+  <AdminPage setPage={navigateTo} />
 )}
 
           {page === "couponsadmin" && (
