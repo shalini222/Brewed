@@ -233,7 +233,7 @@ export default function App() {
 
            
           {page==="address" && (
-<AddressPage/>
+<AddressPage setPage={setPage}/>
 )}
 
           
