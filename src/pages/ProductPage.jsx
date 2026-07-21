@@ -184,7 +184,25 @@ useEffect(() => {
 }, []);
 
 
+useEffect(() => {
+  if (!currentUser || !product) return;
 
+  const checkFavorite = async () => {
+    const favRef = doc(
+      db,
+      "users",
+      currentUser.uid,
+      "favorites",
+      product.id
+    );
+
+    const snapshot = await getDoc(favRef);
+
+    setFavorite(snapshot.exists());
+  };
+
+  checkFavorite();
+}, [currentUser, product]);
   
   
   const basePrice = product.price;
@@ -516,6 +534,47 @@ const deleteReview = async () => {
   
 
 
+const toggleFavorite = async () => {
+  if (!currentUser) {
+    setPage("login");
+    return;
+  }
+
+  try {
+    const favRef = doc(
+      db,
+      "users",
+      currentUser.uid,
+      "favorites",
+      product.id
+    );
+
+    if (favorite) {
+      await deleteDoc(favRef);
+
+      setFavorite(false);
+
+      showToast("Removed from wishlist");
+    } else {
+      await setDoc(favRef, {
+        ...product,
+        addedAt: serverTimestamp(),
+      });
+
+      setFavorite(true);
+
+      showToast("Added to wishlist ❤️");
+    }
+  } catch (err) {
+    console.error(err);
+    showToast("Something went wrong.");
+  }
+};
+
+
+
+
+  
   
   if (!product) {
   return (
@@ -2254,6 +2313,7 @@ gap:30px;
 )}
               <button className="favorite-btn" onClick={() => setFavorite(!favorite)}>
                 <Heart
+                  onClick={toggleFavorite}
                   size={24}
                   fill={favorite ? "#C4956A" : "none"}
                   color="#C4956A"
