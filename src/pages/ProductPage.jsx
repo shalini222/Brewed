@@ -458,7 +458,14 @@ reviews.forEach((review) => {
   }
 });
 
-
+const recommendationPercentage =
+  reviews.length === 0
+    ? 0
+    : Math.round(
+        (reviews.filter((r) => r.rating >= 4).length /
+          reviews.length) *
+          100
+      );
   
   
 
@@ -912,7 +919,37 @@ gap:30px;
   background:#C4956A;
   color:white;
 }
+.recommend-box{
+  margin-top:22px;
 
+  padding:18px;
+
+  width:100%;
+
+  background:#FFF8F2;
+
+  border:1px solid #F1D9C4;
+
+  border-radius:18px;
+
+  text-align:center;
+}
+
+.recommend-number{
+  font-size:2rem;
+  font-weight:700;
+  color:#C4956A;
+}
+
+.recommend-text{
+  margin-top:6px;
+
+  color:#6B5C53;
+
+  line-height:1.5;
+
+  font-size:.95rem;
+}
 
  
 .preview-grid{
@@ -2139,6 +2176,23 @@ gap:30px;
       Based on {reviews.length} review
       {reviews.length !== 1 ? "s" : ""}
     </div>
+
+
+
+    <div className="recommend-box">
+  <div className="recommend-number">
+    {recommendationPercentage}%
+  </div>
+
+  <div className="recommend-text">
+    of customers recommend this drink
+  </div>
+</div>
+
+
+
+
+    
 
   </div>
 
