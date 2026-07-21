@@ -453,7 +453,58 @@ return (
       ← Back
     </button>
 
-    <h1>Brewed Admin</h1>
+    <h1
+      style={{
+        fontFamily: "Playfair Display",
+        marginTop: 20,
+        marginBottom: 40,
+      }}
+    >
+      Brewed Admin
+    </h1>
+
+    <button onClick={() => setPage("couponsadmin")}>
+      🎟 Manage Coupons
+    </button>
+
+    <button onClick={() => setPage("customersadmin")}>
+      👥 Manage Customers
+    </button>
+
+    <button onClick={() => setPage("settingsAdmin")}>
+      ⚙️ Manage Settings
+    </button>
+
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "flex-end",
+        marginTop: 20,
+      }}
+    >
+      <button
+        onClick={() => setShowNotifications(!showNotifications)}
+      >
+        🔔 {notifications.length + userNotifications.length}
+      </button>
+    </div>
+
+    {showNotifications &&
+      (notifications.length > 0 ||
+        userNotifications.length > 0) && (
+        <div
+          style={{
+            background: "#fff",
+            padding: 20,
+            marginTop: 20,
+            borderRadius: 12,
+          }}
+        >
+          {[...userNotifications, ...notifications].map((n) => (
+            <p key={n.id}>{n.text}</p>
+          ))}
+        </div>
+      )}
   </div>
 );
 }
