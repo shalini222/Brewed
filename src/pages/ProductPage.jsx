@@ -8,7 +8,8 @@ import {
   query,
   where,
   serverTimestamp,
-  orderBy
+  orderBy,
+  limit
 } from "firebase/firestore";
 
 import { db } from "../firebase";
@@ -264,17 +265,42 @@ if (!reviewText.trim() && reviewImages.length === 0) {
     // Upload images to Cloudinary
     const uploadedImages = await uploadReviewImages();
 
+
+
+     // Check if user has purchased this product
+const purchaseQuery = query(
+  collection(db, "orders"),
+  where("userId", "==", currentUser.uid),
+  limit(50)
+);
+
+const purchaseSnapshot = await getDocs(purchaseQuery);
+
+const verifiedPurchase = purchaseSnapshot.docs.some((doc) => {
+  const order = doc.data();
+
+  return (order.items || []).some(
+    (item) => item.id === product.id
+  );
+});
+
+    
+
     // Save review
     await addDoc(collection(db, "reviews"), {
-      productId: product.id,
-      userId: currentUser.uid,
-      name: currentUser.displayName || "Customer",
-      rating: reviewRating,
-      text: reviewText,
-      images: uploadedImages,
-      createdAt: serverTimestamp(),
-    });
+  productId: product.id,
+  userId: currentUser.uid,
+  name: currentUser.displayName || "Customer",
 
+  verifiedPurchase,
+
+  rating: reviewRating,
+  text: reviewText,
+  images: uploadedImages,
+  createdAt: serverTimestamp(),
+});
+
+    
     // Clear form
     setReviewText("");
     setReviewRating(0);
