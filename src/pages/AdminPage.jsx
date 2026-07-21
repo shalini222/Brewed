@@ -2805,7 +2805,7 @@ dietType:e.target.value
       temperatureOptions: item.temperatureOptions || [],
       customExtras: item.customExtras || [],
       customExtrasMaxSelection:
-  item.customExtrasMaxSelection || 3,
+      item.customExtrasMaxSelection || 3,
       sweetnessOptions: item.sweetnessOptions || [],
 
   prepTime: item.prepTime,
