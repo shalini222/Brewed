@@ -467,6 +467,15 @@ const recommendationPercentage =
           100
       );
   
+  const customerPhotos = reviews.flatMap((review) =>
+  (review.images || []).map((image) => ({
+    image,
+    reviewer: review.name,
+    rating: review.rating,
+  }))
+);
+
+
   
 
   return (
@@ -757,6 +766,56 @@ body{
 
 .instructions-input:focus{
   box-shadow:0 0 0 2px #C4956A;
+}
+
+
+.customer-gallery{
+  background:white;
+  border-radius:24px;
+  padding:28px;
+  margin-bottom:35px;
+  box-shadow:0 12px 30px rgba(0,0,0,.06);
+}
+
+.gallery-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+}
+
+.gallery-header h3{
+  margin:0;
+  font-family:'Playfair Display',serif;
+  color:#3B1A08;
+}
+
+.gallery-header span{
+  color:#8D7B70;
+  font-weight:600;
+}
+
+.gallery-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(90px,1fr));
+  gap:14px;
+}
+
+.gallery-photo{
+  width:100%;
+  aspect-ratio:1;
+
+  object-fit:cover;
+
+  border-radius:18px;
+
+  cursor:pointer;
+
+  transition:.25s;
+}
+
+.gallery-photo:hover{
+  transform:scale(1.05);
 }
 
 .rating-summary-card{
@@ -2243,8 +2302,38 @@ gap:30px;
 
 </div>
 
-                
 
+
+                
+       {customerPhotos.length > 0 && (
+  <div className="customer-gallery">
+
+    <div className="gallery-header">
+      <h3>Customer Photos</h3>
+
+      <span>
+        {customerPhotos.length} photo
+        {customerPhotos.length !== 1 ? "s" : ""}
+      </span>
+    </div>
+
+    <div className="gallery-grid">
+      {customerPhotos.map((photo, index) => (
+        <img
+          key={index}
+          src={photo.image}
+          alt=""
+          className="gallery-photo"
+        />
+      ))}
+    </div>
+
+  </div>
+)}         
+
+
+
+                
   <div className="write-review-card">
     <h3 className="write-title">Share Your Experience</h3>
 
