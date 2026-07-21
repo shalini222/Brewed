@@ -14,8 +14,9 @@ import {
   getDoc,
   updateDoc,
   increment,
-  setDoc
-} from "firebase/firestore";
+  setDoc,
+  deleteDoc
+  } from "firebase/firestore";
 
 import { db } from "../firebase";
 
@@ -77,6 +78,17 @@ export default function ProductPage({
   const [reviews, setReviews] = useState([]);
 
 
+
+
+const [editingReview, setEditingReview] = useState(null);
+
+const [editText, setEditText] = useState("");
+
+const [editRating, setEditRating] = useState(0);
+
+const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+const [reviewToDelete, setReviewToDelete] = useState(null);
   
   
   const { addToCart } = useCart();
@@ -400,10 +412,79 @@ const markHelpful = async (reviewId) => {
 };
   
 
+const updateReview = async () => {
+  if (!editingReview) return;
 
+  if (!editText.trim()) {
+    showToast("Review cannot be empty.");
+    return;
+  }
+
+  if (editRating === 0) {
+    showToast("Please select a rating.");
+    return;
+  }
+
+  try {
+    await updateDoc(doc(db, "reviews", editingReview), {
+      text: editText,
+      rating: editRating,
+      edited: true,
+      editedAt: serverTimestamp(),
+    });
+
+    setReviews((prev) =>
+      prev.map((review) =>
+        review.id === editingReview
+          ? {
+              ...review,
+              text: editText,
+              rating: editRating,
+              edited: true,
+            }
+          : review
+      )
+    );
+
+    showToast("Review updated!");
+
+    setEditingReview(null);
+    setEditText("");
+    setEditRating(0);
+
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to update review.");
+  }
+};
   
   
+const deleteReview = async () => {
+  if (!reviewToDelete) return;
 
+  try {
+    await deleteDoc(doc(db, "reviews", reviewToDelete));
+
+    setReviews((prev) =>
+      prev.filter((review) => review.id !== reviewToDelete)
+    );
+
+    showToast("Review deleted.");
+
+    setShowDeleteModal(false);
+    setReviewToDelete(null);
+
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to delete review.");
+  }
+};
+
+
+
+  
+
+  
   const handleAddToCart = () => {
   if (!currentUser) {
     setPage("login");
@@ -1912,6 +1993,153 @@ gap:30px;
   box-shadow:0 18px 35px rgba(0,0,0,.10);
 }
 
+
+.review-actions{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:16px;
+}
+
+.review-owner-actions{
+  display:flex;
+  gap:10px;
+}
+
+.edit-review-btn,
+.delete-review-btn{
+  border:none;
+  background:none;
+  cursor:pointer;
+  font-size:14px;
+  color:#70645C;
+  transition:.2s;
+}
+
+.edit-review-btn:hover{
+  color:#C4956A;
+}
+
+.delete-review-btn:hover{
+  color:#DE6B48;
+}
+
+.review-modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  z-index:9999;
+}
+
+.review-modal{
+  width:min(92%,480px);
+
+  background:#fff;
+
+  border-radius:22px;
+
+  padding:28px;
+}
+
+.review-modal h3{
+  margin-top:0;
+  margin-bottom:20px;
+}
+
+.review-modal-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:12px;
+
+  margin-top:20px;
+}
+
+.cancel-btn,
+.save-btn{
+  border:none;
+
+  padding:10px 18px;
+
+  border-radius:999px;
+
+  cursor:pointer;
+
+  font-weight:600;
+}
+
+.cancel-btn{
+  background:#EFEAE3;
+}
+
+.save-btn{
+  background:#C4956A;
+  color:white;
+}
+
+
+.delete-modal{
+  width:min(90%,420px);
+
+  background:white;
+
+  border-radius:22px;
+
+  padding:30px;
+
+  text-align:center;
+}
+
+.delete-icon{
+  font-size:44px;
+
+  margin-bottom:15px;
+}
+
+.delete-modal h3{
+  margin-bottom:10px;
+}
+
+.delete-modal p{
+  color:#70645C;
+
+  margin-bottom:24px;
+}
+
+.delete-actions{
+  display:flex;
+
+  justify-content:center;
+
+  gap:14px;
+}
+
+.delete-btn{
+  background:#DE6B48;
+
+  color:white;
+
+  border:none;
+
+  padding:11px 22px;
+
+  border-radius:999px;
+
+  cursor:pointer;
+
+  font-weight:600;
+}
+
+.delete-btn:hover{
+  background:#c95837;
+}
+
+
+
 @media(max-width:900px){
   .hero-section{
     grid-template-columns:1fr;
@@ -2940,12 +3168,149 @@ gap:30px;
       <span>({rev.helpfulCount})</span>
     )}
   </button>
+
+  {currentUser?.uid === rev.userId && (
+    <div className="review-owner-actions">
+      <button
+        type="button"
+        className="edit-review-btn"
+        onClick={() => {
+          setEditingReview(rev.id);
+          setEditText(rev.text);
+          setEditRating(rev.rating);
+        }}
+      >
+        ✏ Edit
+      </button>
+
+      <button
+        type="button"
+        className="delete-review-btn"
+        onClick={() => {
+          setReviewToDelete(rev.id);
+          setShowDeleteModal(true);
+        }}
+      >
+        🗑 Delete
+      </button>
+    </div>
+  )}
 </div>
 
 </div>
 ))}
 </div>
 </div>
+
+
+
+{/* EDIT MODAL*/}
+
+{editingReview && (
+  <div
+    className="review-modal-overlay"
+    onClick={() => setEditingReview(null)}
+  >
+    <div
+      className="review-modal"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3>Edit Review</h3>
+
+      <div className="star-picker">
+        {[1,2,3,4,5].map((star)=>(
+          <Star
+            key={star}
+            size={28}
+            fill={star <= editRating ? "#C4956A" : "none"}
+            color="#C4956A"
+            onClick={() => setEditRating(star)}
+            style={{cursor:"pointer"}}
+          />
+        ))}
+      </div>
+
+      <textarea
+        className="review-input"
+        value={editText}
+        onChange={(e)=>setEditText(e.target.value)}
+      />
+
+      <div className="review-modal-actions">
+
+        <button
+          type="button"
+          className="cancel-btn"
+          onClick={() => setEditingReview(null)}
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          className="save-btn"
+          onClick={updateReview}
+        >
+          Save Changes
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
+
+
+
+     {/* DELETE  MODAL*/}         
+
+{showDeleteModal && (
+  <div
+    className="review-modal-overlay"
+    onClick={() => setShowDeleteModal(false)}
+  >
+    <div
+      className="delete-modal"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="delete-icon">
+        🗑️
+      </div>
+
+      <h3>Delete Review?</h3>
+
+      <p>
+        This action cannot be undone.
+      </p>
+
+      <div className="delete-actions">
+
+        <button
+          type="button"
+          className="cancel-btn"
+          onClick={() => {
+            setShowDeleteModal(false);
+            setReviewToDelete(null);
+          }}
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          className="delete-btn"
+          onClick={deleteReview}
+        >
+          Delete Review
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
+
+
+              
+              
 
 {/* LIGHTBOX TRACKER */}
 
