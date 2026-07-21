@@ -32,7 +32,8 @@ import {
 
 import { X } from "lucide-react";
 
-
+import { BadgeCheck
+} from "lucide-react";
 
 export default function ProductPage({
   setPage,
@@ -2213,10 +2214,11 @@ body{
   </div>
 
   {rev.verifiedPurchase && (
-    <div className="verified-badge">
-      ✓ Verified Purchase
-    </div>
-  )}
+  <div className="verified-badge">
+    <BadgeCheck size={15} />
+    Verified Purchase
+  </div>
+)}
 </div>
 
         {rev.images?.length > 0 && (
