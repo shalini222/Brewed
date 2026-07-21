@@ -454,7 +454,7 @@ const filteredReviews = reviews.filter((review) => {
 
 
 const sortedReviews = [...filteredReviews].sort((a, b) => {
-  switch (sortReviewsBy) {
+  switch (reviewSort) {
     case "highest":
       return b.rating - a.rating;
 
@@ -475,6 +475,7 @@ const sortedReviews = [...filteredReviews].sort((a, b) => {
       );
   }
 });
+
 
 
 
