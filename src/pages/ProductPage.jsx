@@ -2311,14 +2311,16 @@ gap:30px;
     {product?.emoji || "☕"}
   </div>
 )}
-              <button className="favorite-btn" onClick={() => setFavorite(!favorite)}>
-                <Heart
-                  onClick={toggleFavorite}
-                  size={24}
-                  fill={favorite ? "#C4956A" : "none"}
-                  color="#C4956A"
-                />
-              </button>
+              <button
+  className="favorite-btn"
+  onClick={toggleFavorite}
+>
+  <Heart
+    size={24}
+    fill={favorite ? "#C4956A" : "none"}
+    color="#C4956A"
+  />
+</button>
             </div>
 
             {/* RIGHT SIDE */}
