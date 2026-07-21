@@ -29,6 +29,7 @@ import ReservationPage from "./pages/ReservationPage";
 import CustomersAdminPage from "./pages/CustomersAdminPage";
 import SettingsAdminPage from "./pages/SettingsAdminPage";
 import SupportPage from "./pages/SupportPage";
+import AddressPage from "./pages/AddressPage";
 
 
 
@@ -72,6 +73,7 @@ export default function App() {
     "reservation",
     "settingsAdmin",
     "support",
+    "address",
   ];
 
   return (
@@ -227,7 +229,12 @@ export default function App() {
             <SettingsAdminPage setPage={navigateTo} />
           )}
 
+           
+          {page === "address" && (
+            <AddressPage setPage={navigateTo} />
+          )}
 
+          
           {page === "support" && (
             <SupportPage setPage={navigateTo} />
           )}
