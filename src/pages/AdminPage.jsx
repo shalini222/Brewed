@@ -577,7 +577,8 @@ return (
     </div>
   ))}
 </div>
-<div
+
+        <div
   style={{
     background: "#fff",
     borderRadius: 24,
@@ -612,7 +613,7 @@ return (
           marginTop: 6,
         }}
       >
-        Revenue and order trends
+        Revenue & Order Trends
       </p>
     </div>
 
@@ -630,7 +631,7 @@ return (
     </select>
   </div>
 
-<div
+  <div
     style={{
       display: "grid",
       gridTemplateColumns: "1fr 1fr",
@@ -638,23 +639,144 @@ return (
     }}
   >
 
-            borderBottom: "1px solid #eee",
+    <div
+      style={{
+        background: "#FAF7F3",
+        padding: 20,
+        borderRadius: 18,
+      }}
+    >
+      <h3 style={{ marginBottom: 15 }}>
+        Revenue
+      </h3>
+
+      <ResponsiveContainer
+        width="100%"
+        height={280}
+      >
+        <LineChart data={analytics}>
+          <CartesianGrid strokeDasharray="3 3" />
+
+          <XAxis dataKey="day" />
+
+          <YAxis />
+
+          <Tooltip />
+
+          <Line
+            type="monotone"
+            dataKey="revenue"
+            stroke="#C4956A"
+            strokeWidth={3}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+
+    <div
+      style={{
+        background: "#FAF7F3",
+        padding: 20,
+        borderRadius: 18,
+      }}
+    >
+      <h3 style={{ marginBottom: 15 }}>
+        Orders
+      </h3>
+
+      <ResponsiveContainer
+        width="100%"
+        height={280}
+      >
+        <BarChart data={analytics}>
+          <CartesianGrid strokeDasharray="3 3" />
+
+          <XAxis dataKey="day" />
+
+          <YAxis />
+
+          <Tooltip />
+
+          <Bar
+            dataKey="orders"
+            fill="#C4956A"
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+
+  </div>
+
+  <h3
+    style={{
+      marginTop: 35,
+      marginBottom: 20,
+      fontFamily: "Playfair Display",
+    }}
+  >
+    🏆 Top Selling Products
+  </h3>
+
+  {topProducts.length === 0 ? (
+    <p>No products sold yet.</p>
+  ) : (
+    topProducts.map((product, index) => (
+      <div
+        key={product.name}
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "16px 0",
+          borderBottom: "1px solid #eee",
         }}
       >
-        <strong>{order.customer?.name}</strong>
-
         <div
           style={{
-            color: "#777",
-            fontSize: 14,
-            marginTop: 4,
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
           }}
         >
-          {order.status} • ₹{order.total}
+          <div style={{ fontSize: 30 }}>
+            {product.img ? (
+              <img
+                src={product.img}
+                alt={product.name}
+                style={{
+                  width: 50,
+                  height: 50,
+                  objectFit: "cover",
+                  borderRadius: 12,
+                }}
+              />
+            ) : (
+              "☕"
+            )}
+          </div>
+
+          <div>
+            <strong>{product.name}</strong>
+
+            <div
+              style={{
+                color: "#777",
+                fontSize: 14,
+              }}
+            >
+              {product.sold} sold
+            </div>
+          </div>
         </div>
+
+        <strong>
+          ₹{product.revenue}
+        </strong>
       </div>
-    ))}
-</div>  
+    ))
+  )}
+</div>
+
       <h2
   style={{
     marginTop: 40,
