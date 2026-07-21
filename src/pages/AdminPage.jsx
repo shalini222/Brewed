@@ -28,8 +28,6 @@ import {
 
 
 
-
-
 export default function AdminPage({ setPage }) {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -201,15 +199,20 @@ useEffect(() => {
   }
 
   orders.forEach((order) => {
-    if (!order.createdAt?.toDate) return;
+    if (!order.createdAt || typeof order.createdAt.toDate !== 'function') {
+      return;
+    }
 
-    const date = order.createdAt.toDate().toDateString();
+    try {
+      const date = order.createdAt.toDate().toDateString();
+      const item = data.find((d) => d.key === date);
 
-    const item = data.find((d) => d.key === date);
-
-    if (item) {
-      item.orders += 1;
-      item.revenue += Number(order.total || 0);
+      if (item) {
+        item.orders += 1;
+        item.revenue += Number(order.total || 0);
+      }
+    } catch (error) {
+      console.error('Error processing order date:', error);
     }
   });
 
@@ -432,20 +435,34 @@ const totalProducts = menu.length;
 const today = new Date().toDateString();
 
 const todaySales = orders
-  .filter(
-    (order) =>
-      order.createdAt?.toDate &&
-      order.createdAt.toDate().toDateString() === today &&
-      order.status !== "Cancelled"
-  )
+  .filter((order) => {
+    if (!order.createdAt || typeof order.createdAt.toDate !== 'function') {
+      return false;
+    }
+    try {
+      return (
+        order.createdAt.toDate().toDateString() === today &&
+        order.status !== "Cancelled"
+      );
+    } catch (error) {
+      return false;
+    }
+  })
   .reduce((sum, order) => sum + (order.total || 0), 0);
 
-const todayOrders = orders.filter(
-  (order) =>
-    order.createdAt?.toDate &&
-    order.createdAt.toDate().toDateString() === today &&
-    order.status !== "Cancelled"
-).length;
+const todayOrders = orders.filter((order) => {
+  if (!order.createdAt || typeof order.createdAt.toDate !== 'function') {
+    return false;
+  }
+  try {
+    return (
+      order.createdAt.toDate().toDateString() === today &&
+      order.status !== "Cancelled"
+    );
+  } catch (error) {
+    return false;
+  }
+}).length;
 
 
 
@@ -2537,8 +2554,8 @@ cursor:"pointer"
         background: "#D32F2F",
         color: "#fff",
         border: "none",
-        padding: "10px 14px#",
-          borderRadius: 8,
+        padding: "10px 14px",
+        borderRadius: 8,
         cursor: "pointer",
       }}
     >
@@ -2668,10 +2685,10 @@ cursor:"pointer"
   <label>
     <input
       type="checkbox"
-      checked={newItem.specialInstructions}
+      checked={editItem.specialInstructions}
       onChange={(e) =>
-        setNewItem({
-          ...newItem,
+        setEditItem({
+          ...editItem,
           specialInstructions: e.target.checked,
         })
       }
@@ -2849,7 +2866,7 @@ dietType:e.target.value
       customExtrasMaxSelection:
   item.customExtrasMaxSelection || 3,
       sweetnessOptions: item.sweetnessOptions || [],
-      specialInstructions: e.target.checked,
+      specialInstructions: item.specialInstructions || false,
 
   prepTime: item.prepTime,
   servedAs: item.servedAs,
