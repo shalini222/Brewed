@@ -61,7 +61,6 @@ export default function ProductPage({
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [toast, setToast] = useState("");
   const [showFilterMenu, setShowFilterMenu] = useState(false);
-  const [reviewFilter, setReviewFilter] = useState("all");
   const [reviews, setReviews] = useState([]);
 
 
