@@ -93,29 +93,6 @@ export default function AdminDashboard({ setPage }) {
   }
 
 
-
-  /* ===========================================
-     LOADING
-  =========================================== */
-
-  if (loading) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          background: "#FDFAF5",
-          fontFamily: "Inter",
-          fontSize: 18,
-        }}
-      >
-        Loading Admin Dashboard...
-      </div>
-    );
-  }
-
   /* ===========================================
    FIREBASE LISTENERS
 =========================================== */
@@ -197,6 +174,30 @@ useEffect(() => {
       lastUserId.current = newest.id;
     }
   );
+
+ /* ===========================================
+     LOADING
+  =========================================== */
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "#FDFAF5",
+          fontFamily: "Inter",
+          fontSize: 18,
+        }}
+      >
+        Loading Admin Dashboard...
+      </div>
+    );
+  }
+
+  
 
   return () => {
     unsubscribeOrders();
