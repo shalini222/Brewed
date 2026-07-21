@@ -442,6 +442,18 @@ const todayOrders = orders.filter(
 ).length;
 
 return (
-  <div>Admin Loaded</div>
+  <div
+    style={{
+      minHeight: "100vh",
+      background: "#FDFAF5",
+      padding: "100px 30px",
+    }}
+  >
+    <button onClick={() => setPage("menu")}>
+      ← Back
+    </button>
+
+    <h1>Brewed Admin</h1>
+  </div>
 );
 }
