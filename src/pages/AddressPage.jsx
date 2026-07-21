@@ -8,7 +8,7 @@ import { Home, Briefcase, MapPin, Plus, Search, Trash2, Edit, CheckCircle, Alert
 
 const addressesCollectionRef = collection(db, 'addresses');
 
-export default function AddressBook() {
+export default function AddressPage({setPage}) {
   const [addresses, setAddresses] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
