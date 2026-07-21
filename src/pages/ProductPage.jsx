@@ -625,6 +625,33 @@ body{
   border-radius: 12px;
   z-index: 9999;
 }
+
+.review-name-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:6px;
+}
+
+.verified-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:5px 10px;
+  border-radius:999px;
+
+  background:#E8F7EC;
+  color:#2E7D32;
+
+  font-size:.75rem;
+  font-weight:700;
+
+  border:1px solid #BFE5C7;
+}
+
+
+
 .preview-item{
   position:relative;
   width:90px;
@@ -2180,9 +2207,17 @@ body{
 </div>
           </div>
 
-        <p className="review-text">
-          {rev.text}
-        </p>
+        <div className="review-name-row">
+  <div className="review-name">
+    {rev.name}
+  </div>
+
+  {rev.verifiedPurchase && (
+    <div className="verified-badge">
+      ✓ Verified Purchase
+    </div>
+  )}
+</div>
 
         {rev.images?.length > 0 && (
           <div className="review-photo-grid">
