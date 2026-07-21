@@ -28,6 +28,8 @@ import {
 
 
 
+
+
 export default function AdminPage({ setPage }) {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,7 +77,6 @@ const [newItem, setNewItem] = useState({
   customExtras: [],
   customExtrasMaxSelection: 3,
   sweetnessOptions: [],
-  specialInstructions: true,
 });
 
   const [editing, setEditing] = useState(null);
@@ -101,7 +102,6 @@ const [editItem, setEditItem] = useState({
   customExtras: [],
   customExtrasMaxSelection: 3,
   sweetnessOptions: [],
-  specialInstructions: true,
 });
 
 useEffect(() => {
@@ -199,20 +199,15 @@ useEffect(() => {
   }
 
   orders.forEach((order) => {
-    if (!order.createdAt || typeof order.createdAt.toDate !== 'function') {
-      return;
-    }
+    if (!order.createdAt?.toDate) return;
 
-    try {
-      const date = order.createdAt.toDate().toDateString();
-      const item = data.find((d) => d.key === date);
+    const date = order.createdAt.toDate().toDateString();
 
-      if (item) {
-        item.orders += 1;
-        item.revenue += Number(order.total || 0);
-      }
-    } catch (error) {
-      console.error('Error processing order date:', error);
+    const item = data.find((d) => d.key === date);
+
+    if (item) {
+      item.orders += 1;
+      item.revenue += Number(order.total || 0);
     }
   });
 
@@ -297,10 +292,7 @@ async function addProduct() {
   customExtrasMaxSelection:
   Number(newItem.customExtrasMaxSelection),
   sweetnessOptions: newItem.sweetnessOptions,
-  specialInstructions: newItem.specialInstructions,
 
-
-    
   salesCount: 0,
   rating: 0,
   reviews: 0,
@@ -381,7 +373,6 @@ async function toggleAvailability(item) {
     customExtrasMaxSelection:
   Number(editItem.customExtrasMaxSelection),
     sweetnessOptions: editItem.sweetnessOptions,
-    specialInstructions: editItem.specialInstructions,
 
 prepTime: editItem.prepTime,
 servedAs: editItem.servedAs,
@@ -435,34 +426,20 @@ const totalProducts = menu.length;
 const today = new Date().toDateString();
 
 const todaySales = orders
-  .filter((order) => {
-    if (!order.createdAt || typeof order.createdAt.toDate !== 'function') {
-      return false;
-    }
-    try {
-      return (
-        order.createdAt.toDate().toDateString() === today &&
-        order.status !== "Cancelled"
-      );
-    } catch (error) {
-      return false;
-    }
-  })
-  .reduce((sum, order) => sum + (order.total || 0), 0);
-
-const todayOrders = orders.filter((order) => {
-  if (!order.createdAt || typeof order.createdAt.toDate !== 'function') {
-    return false;
-  }
-  try {
-    return (
+  .filter(
+    (order) =>
+      order.createdAt?.toDate &&
       order.createdAt.toDate().toDateString() === today &&
       order.status !== "Cancelled"
-    );
-  } catch (error) {
-    return false;
-  }
-}).length;
+  )
+  .reduce((sum, order) => sum + (order.total || 0), 0);
+
+const todayOrders = orders.filter(
+  (order) =>
+    order.createdAt?.toDate &&
+    order.createdAt.toDate().toDateString() === today &&
+    order.status !== "Cancelled"
+).length;
 
 
 
@@ -1874,25 +1851,6 @@ cursor:"pointer"
 
     <br/><br/>
 
-<div className="form-group">
-  <label>
-    <input
-      type="checkbox"
-      checked={newItem.specialInstructions}
-      onChange={(e) =>
-        setNewItem({
-          ...newItem,
-          specialInstructions: e.target.checked,
-        })
-      }
-    />
-    Allow Special Instructions
-  </label>
-</div>
-
-    <br/><br/>
-    
-
 <select
 value={newItem.prepTime}
 onChange={(e)=>
@@ -2554,8 +2512,8 @@ cursor:"pointer"
         background: "#D32F2F",
         color: "#fff",
         border: "none",
-        padding: "10px 14px",
-        borderRadius: 8,
+        padding: "10px 14px#",
+          borderRadius: 8,
         cursor: "pointer",
       }}
     >
@@ -2679,23 +2637,6 @@ cursor:"pointer"
     </button>
   </div>
 ))}
-
-    <br/><br/>
-    <div className="form-group">
-  <label>
-    <input
-      type="checkbox"
-      checked={editItem.specialInstructions}
-      onChange={(e) =>
-        setEditItem({
-          ...editItem,
-          specialInstructions: e.target.checked,
-        })
-      }
-    />
-    Allow Special Instructions
-  </label>
-</div>
 
     <br/><br/>
     
@@ -2866,7 +2807,6 @@ dietType:e.target.value
       customExtrasMaxSelection:
   item.customExtrasMaxSelection || 3,
       sweetnessOptions: item.sweetnessOptions || [],
-      specialInstructions: item.specialInstructions || false,
 
   prepTime: item.prepTime,
   servedAs: item.servedAs,
