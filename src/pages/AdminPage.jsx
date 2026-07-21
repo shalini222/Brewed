@@ -577,6 +577,59 @@ return (
     </div>
   ))}
 </div>
+<div
+  style={{
+    background: "#fff",
+    borderRadius: 24,
+    padding: 30,
+    marginBottom: 40,
+    boxShadow: "0 15px 40px rgba(0,0,0,.08)",
+  }}
+>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 25,
+      flexWrap: "wrap",
+      gap: 15,
+    }}
+  >
+    <div>
+      <h2
+        style={{
+          fontFamily: "Playfair Display",
+          margin: 0,
+        }}
+      >
+        📈 Sales Analytics
+      </h2>
+
+      <p
+        style={{
+          color: "#8A7D73",
+          marginTop: 6,
+        }}
+      >
+        Revenue and order trends
+      </p>
+    </div>
+
+    <select
+      value={range}
+      onChange={(e) => setRange(Number(e.target.value))}
+      style={{
+        padding: "10px 16px",
+        borderRadius: 12,
+        border: "1px solid #ddd",
+      }}
+    >
+      <option value={7}>Last 7 Days</option>
+      <option value={30}>Last 30 Days</option>
+    </select>
+  </div>
+
 
     
   </div>
