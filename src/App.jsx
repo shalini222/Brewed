@@ -28,7 +28,7 @@ import CouponsAdminPage from "./pages/CouponsAdminPage";
 import ReservationPage from "./pages/ReservationPage";
 import CustomersAdminPage from "./pages/CustomersAdminPage";
 import SettingsAdminPage from "./pages/SettingsAdminPage";
-import SupportPage from "./pages/SupportPage";
+
 
 
 
@@ -72,7 +72,7 @@ export default function App() {
     "customersadmin",
     "reservation",
     "settingsAdmin",
-    "support",
+    
     
   ];
 
@@ -215,8 +215,10 @@ export default function App() {
           )}
 
           {page === "admin" && (
-            <AdminPage setPage={navigateTo} />
-          )}
+  <div style={{ padding: 40 }}>
+    <h1>ADMIN TEST</h1>
+  </div>
+)}
 
           {page === "couponsadmin" && (
             <CouponsAdminPage setPage={navigateTo} />
@@ -233,9 +235,7 @@ export default function App() {
           
 
           
-          {page === "support" && (
-            <SupportPage setPage={navigateTo} />
-          )}
+          
           
           <Footer />
         </AuthProvider>
