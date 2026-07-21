@@ -266,6 +266,12 @@ export default function HeadlessNavbar({ currentPage, setPage }) {
                   <span>⭐</span> Rewards
                 </button>
 
+
+                <button
+onClick={()=>setPage("address")}
+>
+<span>🏠</span>My Addresses
+</button>
                 
 
                 <button onClick={() => { setShowMenu(false); setPage("settings"); }}>
