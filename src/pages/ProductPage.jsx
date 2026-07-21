@@ -73,6 +73,7 @@ export default function ProductPage({
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [toast, setToast] = useState("");
   const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [selectedReviewImage, setSelectedReviewImage] = useState(null);
   const [reviews, setReviews] = useState([]);
 
 
@@ -1059,7 +1060,45 @@ gap:30px;
   height:17px;
 }
 
+.review-lightbox{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.9);
 
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  z-index:9999;
+
+  animation:fadeIn .25s;
+}
+
+.lightbox-image{
+  max-width:90%;
+  max-height:90%;
+  border-radius:18px;
+}
+
+.lightbox-close{
+  position:absolute;
+  top:24px;
+  right:24px;
+
+  width:44px;
+  height:44px;
+
+  border:none;
+  border-radius:50%;
+
+  background:white;
+  cursor:pointer;
+}
+
+@keyframes fadeIn{
+  from{opacity:0;}
+  to{opacity:1;}
+}
 
 .instructions-input::placeholder{
   color:#A5968D;
@@ -2506,6 +2545,7 @@ gap:30px;
           src={photo.image}
           alt=""
           className="gallery-photo"
+          onClick={() => setSelectedReviewImage(image)}    
         />
       ))}
     </div>
@@ -2880,6 +2920,7 @@ gap:30px;
         alt={`Review ${index + 1}`}
         className="review-photo"
         loading="lazy"
+        onClick={() => setSelectedReviewImage(image)}    
       />
     ))}
   </div>
@@ -2906,8 +2947,34 @@ gap:30px;
 </div>
 </div>
 
+{/* LIGHTBOX TRACKER */}
 
 
+{selectedReviewImage && (
+  <div
+    className="review-lightbox"
+    onClick={() => setSelectedReviewImage(null)}
+  >
+    <button
+      type="button"
+      className="lightbox-close"
+      onClick={() => setSelectedReviewImage(null)}
+    >
+      <X size={28} />
+    </button>
+
+    <img
+      src={selectedReviewImage}
+      className="lightbox-image"
+      alt=""
+      onClick={(e) => e.stopPropagation()}
+    />
+  </div>
+)}
+
+
+
+              
                          
               
               {/* PERSISTENT BAR TRACKER */}
