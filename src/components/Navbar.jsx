@@ -1,320 +1,399 @@
-import React from 'react';
-import { useState } from "react";
-import { signOut } from "firebase/auth";
-import { auth } from "../firebase";
-import { useAuth } from "../context/AuthContext";
-import { useCart } from "../context/CartContext"; 
-import { Bell } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { 
+  collection, getDocs, addDoc, updateDoc, deleteDoc, doc, 
+  serverTimestamp, query, orderBy, writeBatch 
+} from 'firebase/firestore';
+import { db } from '../firebase';
+import { Home, Briefcase, MapPin, Plus, Search, Trash2, Edit, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 
-export default function HeadlessNavbar({ currentPage, setPage }) {
-  const { currentUser, isAdmin } = useAuth();
-  const { count } = useCart(); 
-  const [showMenu, setShowMenu] = useState(false);
+const addressesCollectionRef = collection(db, 'addresses');
 
-  async function handleLogout() {
-    await signOut(auth);
-    setShowMenu(false);
-    setPage("menu");
-  }
+export default function AddressPage({setPage}) {
+  const [addresses, setAddresses] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState(null);
   
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentAddress, setCurrentAddress] = useState(null); 
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
+  const [selectedCheckoutAddress, setSelectedCheckoutAddress] = useState(
+    localStorage.getItem('lastSelectedAddress') || null
+  );
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const fetchAddresses = async () => {
+    setLoading(true);
+    try {
+      const q = query(addressesCollectionRef, orderBy('isDefault', 'desc'), orderBy('createdAt', 'desc'));
+      const data = await getDocs(q);
+      setAddresses(data.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (err) {
+      showToast('Failed to fetch addresses', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAddresses();
+  }, []);
+
+  const handleSaveAddress = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+
+    if (data.pincode.startsWith('9')) {
+      showToast('Sorry, delivery is not available for this PIN code.', 'error');
+      return; 
+    }
+
+    try {
+      const snapshot = await getDocs(addressesCollectionRef);
+      const isFirstAddress = snapshot.size === 0;
+      const batch = writeBatch(db);
+
+      if (isFirstAddress) {
+        data.isDefault = true;
+      } else if (data.isDefault === 'true' || data.isDefault === true) {
+        snapshot.docs.forEach((docItem) => {
+          if (!currentAddress || docItem.id !== currentAddress.id) {
+            batch.update(docItem.ref, { isDefault: false });
+          }
+        });
+        data.isDefault = true;
+      } else {
+        data.isDefault = false;
+      }
+
+      if (currentAddress) {
+        const docRef = doc(db, 'addresses', currentAddress.id);
+        batch.update(docRef, data);
+        await batch.commit();
+        showToast('Address updated successfully');
+      } else {
+        await batch.commit();
+        await addDoc(addressesCollectionRef, {
+          ...data,
+          createdAt: serverTimestamp()
+        });
+        showToast('Address added successfully');
+      }
+
+      setIsModalOpen(false);
+      setCurrentAddress(null);
+      fetchAddresses();
+    } catch (err) {
+      showToast('Failed to save address', 'error');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const targetDocRef = doc(db, 'addresses', id);
+      const targetAddress = addresses.find(a => a.id === id);
+      
+      await deleteDoc(targetDocRef);
+
+      if (targetAddress?.isDefault) {
+        const remaining = addresses.filter(a => a.id !== id);
+        if (remaining.length > 0) {
+          const nextDefaultRef = doc(db, 'addresses', remaining[0].id);
+          await updateDoc(nextDefaultRef, { isDefault: true });
+        }
+      }
+
+      showToast('Address deleted successfully');
+      setDeleteConfirmId(null);
+      fetchAddresses();
+    } catch (err) {
+      showToast('Could not delete address', 'error');
+    }
+  };
+
+  const handleSetDefault = async (id) => {
+    try {
+      const snapshot = await getDocs(addressesCollectionRef);
+      const batch = writeBatch(db);
+
+      snapshot.docs.forEach((docItem) => {
+        batch.update(docItem.ref, { isDefault: docItem.id === id });
+      });
+
+      await batch.commit();
+      showToast('Default address updated');
+      fetchAddresses();
+    } catch (err) {
+      showToast('Error setting default address', 'error');
+    }
+  };
+
+  const handleSelectForCheckout = (id) => {
+    setSelectedCheckoutAddress(id);
+    localStorage.setItem('lastSelectedAddress', id);
+    showToast('Delivery address selected');
+  };
+
+  const filteredAddresses = addresses.filter(addr => 
+    addr.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    addr.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    addr.pincode?.includes(searchQuery) ||
+    addr.locality?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <>
-      <style>{`
-        /* --- Headless Overlay Architecture --- */
-        .headless-header {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1.5rem 2rem;
-          background: transparent;
-          z-index: 100;
-          box-sizing: border-box;
-        }
-
-        .brand-logo {
-          font-family: 'Playfair Display', serif;
-          font-size: 1.6rem;
-          font-weight: 700;
-          color: #FDFAF5;
-          cursor: pointer;
-          user-select: none;
-          letter-spacing: -0.02em;
-          transition: opacity 0.2s ease;
-        }
-
-        .brand-logo:hover {
-          opacity: 0.9;
-        }
-
-        .nav-icons-group {
-          display: flex;
-          align-items: center;
-          gap: 1.25rem;
-        }
-
-        .nav-icon-btn {
-          background: transparent;
-          border: none;
-          color: #FDFAF5;
-          cursor: pointer;
-          width: 42px;
-          height: 42px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: relative;
-          transition: all 0.2s ease;
-        }
-
-        .nav-icon-btn:hover {
-          color: #C4956A;
-          background-color: rgba(253, 250, 245, 0.08);
-        }
-
-        .nav-icon-btn.active {
-          color: #C4956A;
-          background-color: rgba(253, 250, 245, 0.05);
-        }
-
-        .notification-dot {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: #C4956A;
-          border: 2px solid #3B1A08;
-        }
-
-        /* Fixed palette alignment mapping values */
-        .nav-cart-badge {
-          position: absolute;
-          top: 2px;
-          right: 2px;
-          background-color: #C4956A; 
-          color: #3B1A08;            
-          font-family: 'Inter', sans-serif;
-          font-size: 0.65rem;
-          font-weight: 700;
-          min-width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid #3B1A08; 
-        }
-
-        /* Relative anchor prevents mobile overflow layouts */
-        .account-menu-container {
-          position: relative;
-        }
-
-        .profile-menu {
-          position: absolute;
-          top: 50px;
-          right: 0;
-          width: 240px;
-          background: #FDFAF5;
-          border-radius: 16px;
-          box-shadow: 0 15px 40px rgba(59, 26, 8, 0.15);
-          border: 1px solid rgba(59, 26, 8, 0.06);
-          overflow: hidden;
-          z-index: 999;
-        }
-
-        .profile-header {
-          padding: 16px 18px;
-          border-bottom: 1px solid rgba(59, 26, 8, 0.06);
-          display: flex;
-          flex-direction: column;
-        }
-
-        .profile-header strong {
-          color: #3B1A08;
-          font-size: 14px;
-        }
-
-        .profile-header small {
-          margin-top: 4px;
-          color: #7A726C;
-          font-size: 12px;
-          word-break: break-all;
-        }
-
-        .profile-menu button {
-          width: 100%;
-          background: none;
-          border: none;
-          padding: 12px 18px;
-          text-align: left;
-          cursor: pointer;
-          font-size: 14px;
-          color: #3B342F;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          transition: background 0.15s ease;
-        }
-
-        .profile-menu button:hover {
-          background: #F5EFE7;
-          color: #3B1A08;
-        }
-
-        .profile-menu hr {
-          border: none;
-          border-top: 1px solid rgba(59, 26, 8, 0.06);
-          margin: 4px 0;
-        }
-
-        @media (max-width: 768px) {
-          .headless-header {
-            padding: 1.25rem 1rem;
-          }
-          .nav-icons-group {
-            gap: 0.5rem;
-          }
-        }
-      `}</style>
-
-      <header className="headless-header">
-        <div className="brand-logo" onClick={() => setPage("menu")}>
-          Brewed.
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px', fontFamily: 'system-ui, sans-serif', backgroundColor: '#f8fafc', minHeight: '100vh', boxSizing: 'border-box' }}>
+      
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed', top: '20px', right: '20px', zIndex: 1000,
+          display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px',
+          borderRadius: '12px', color: 'white', fontWeight: 500, fontSize: '14px',
+          backgroundColor: toast.type === 'success' ? '#16a34a' : '#e11d48',
+          boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
+        }}>
+          {toast.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+          <span>{toast.message}</span>
         </div>
+      )}
 
-        <div className="nav-icons-group">
-          {/* Notification Button */}
-          <button
-            className={`nav-icon-btn ${currentPage === "notifications" ? "active" : ""}`}
-            onClick={() => setPage("notifications")}
-            title="Notifications"
+      {/* Header & Controls */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
+        <div>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b', margin: '0 0 4px 0' }}>📍 Address Book</h1>
+          <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Manage your shipping and billing locations</p>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', width: '100% sm:auto' }}>
+          <button 
+            onClick={fetchAddresses} 
+            style={{ padding: '10px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#475569' }}
+            title="Refresh"
           >
-            <Bell size={20} strokeWidth={1.8} />
-            <span className="notification-dot"></span>
+            <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
           </button>
-
-          {/* Location Map Pin Button */}
           <button
-            className={`nav-icon-btn ${currentPage === "locator" ? "active" : ""}`}
-            onClick={() => setPage("locator")}
-            title="Café Locator"
+            onClick={() => { setCurrentAddress(null); setIsModalOpen(true); }}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', backgroundColor: '#4f46e5', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)' }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
+            <Plus size={18} /> Add New Address
           </button>
+        </div>
+      </div>
 
-          {/* Account Profile Button with Safe Container Wrapper */}
-          <div className="account-menu-container">
-            <button
-              className={`nav-icon-btn ${currentPage === "login" || currentPage === "profile" ? "active" : ""}`}
-              onClick={() => {
-                if (currentUser) {
-                  setShowMenu(!showMenu);
-                } else {
-                  setPage("login");
-                }
+      {/* Search Bar */}
+      <div style={{ position: 'relative', marginBottom: '24px' }}>
+        <Search style={{ position: 'absolute', left: '14px', top: '12px', color: '#94a3b8' }} size={18} />
+        <input
+          type="text"
+          placeholder="Search by name, city, locality, or PIN..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{ width: '100%', padding: '10px 14px 10px 42px', backgroundColor: 'white', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+        />
+      </div>
+
+      {/* Empty State */}
+      {filteredAddresses.length === 0 && !loading && (
+        <div style={{ textAlign: 'center', padding: '64px 20px', backgroundColor: 'white', borderRadius: '16px', border: '2px dashed #cbd5e1' }}>
+          <MapPin style={{ margin: '0 auto 12px auto', color: '#cbd5e1' }} size={48} />
+          <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#334155', margin: '0 0 4px 0' }}>No addresses found</h3>
+          <p style={{ fontSize: '14px', color: '#94a3b8', margin: '0 0 16px 0' }}>Add a new delivery address to get started.</p>
+          <button
+            onClick={() => { setCurrentAddress(null); setIsModalOpen(true); }}
+            style={{ backgroundColor: '#e0e7ff', color: '#4f46e5', border: 'none', fontWeight: 500, padding: '8px 16px', borderRadius: '12px', fontSize: '14px', cursor: 'pointer' }}
+          >
+            Add Address
+          </button>
+        </div>
+      )}
+
+      {/* Address Cards Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+        {filteredAddresses.map((addr) => {
+          const isSelected = selectedCheckoutAddress === addr.id;
+          return (
+            <div 
+              key={addr.id} 
+              style={{
+                backgroundColor: isSelected ? '#f5f3ff' : 'white',
+                borderRadius: '16px', padding: '20px',
+                border: addr.isDefault ? '2px solid #4f46e5' : '1px solid #e2e8f0',
+                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                boxSizing: 'border-box'
               }}
-              title="Account Options"
             >
-              {currentUser?.photoURL ? (
-                <img
-                  src={currentUser.photoURL}
-                  alt="profile avatar"
-                  style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover" }}
-                />
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
-              )}
-            </button>
-            
-            {currentUser && showMenu && (
-              <div className="profile-menu">
-                <div className="profile-header">
-                  <strong>👋 Hi, {currentUser.displayName || currentUser.email.split("@")[0]}</strong>
-                  <small>{currentUser.email}</small>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ padding: '6px', backgroundColor: '#f1f5f9', color: '#475569', borderRadius: '8px', display: 'flex' }}>
+                      {addr.label === 'Home' && <Home size={16} />}
+                      {addr.label === 'Work' && <Briefcase size={16} />}
+                      {addr.label === 'Other' && <MapPin size={16} />}
+                    </span>
+                    <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#475569' }}>
+                      {addr.label} {addr.nickname && `(${addr.nickname})`}
+                    </span>
+                  </div>
+                  {addr.isDefault && (
+                    <span style={{ backgroundColor: '#e0e7ff', color: '#4338ca', fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '9999px' }}>
+                      Default
+                    </span>
+                  )}
                 </div>
 
-                <button onClick={() => { setShowMenu(false); setPage("profile"); }}>
-                  <span>👤</span> Profile
-                </button>
+                <h3 style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '15px', margin: '0 0 4px 0' }}>{addr.fullName}</h3>
+                <p style={{ fontSize: '13px', color: '#475569', margin: '0 0 12px 0', lineHeight: 1.5 }}>
+                  {addr.houseNo}, {addr.street}, {addr.landmark ? `${addr.landmark}, ` : ''}
+                  {addr.locality}, {addr.city}, {addr.state} - <strong style={{ color: '#1e293b' }}>{addr.pincode}</strong>
+                </p>
+                <p style={{ fontSize: '12px', fontWeight: 500, color: '#64748b', margin: '0 0 16px 0' }}>Phone: {addr.phone}</p>
+              </div>
 
-                <button onClick={() => { setShowMenu(false); setPage("orders"); }}>
-                  <span>☕</span> My Orders
-                </button>
-
-                <button onClick={() => { setShowMenu(false); setPage("favorites"); }}>
-                  <span>❤️</span> Favorites
-                </button>
-
-                <button onClick={() => { setShowMenu(false); setPage("reservation"); }}>
-                  <span>🗓️</span> Reservation
-                </button>
-
-                <button onClick={() => { setShowMenu(false); setPage("rewards"); }}>
-                  <span>⭐</span> Rewards
-                </button>
-
-                <button onClick={() => { setShowMenu(false); setPage("support"); }}>
-                  <span>🎧</span> Support
-                </button>
-
-                <button onClick={() => { setShowMenu(false); setPage("address"); }}>
-                  <span>🏠</span> Address Book
-                </button>
-
-                <button onClick={() => { setShowMenu(false); setPage("settings"); }}>
-                  <span>⚙️</span> Settings
-                </button>
-                
-                {isAdmin && (
-                  <>
-                    <hr />
-                    <button onClick={() => { setShowMenu(false); setPage("admin"); }} style={{ fontWeight: "600", color: "#4F46E5" }}>
-                      <span>🛠️</span> Admin Panel
+              <div style={{ paddingTop: '12px', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                  {!addr.isDefault ? (
+                    <button 
+                      onClick={() => handleSetDefault(addr.id)}
+                      style={{ background: 'none', border: 'none', color: '#4f46e5', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                    >
+                      Set as Default
                     </button>
-                  </>
-                )}
+                  ) : <span />}
 
-                <hr />    
-                <button onClick={handleLogout} style={{ color: "#C62828" }}>
-                  <span>🚪</span> Logout
+                  <div style={{ display: 'flex', gap: '12px', marginLeft: 'auto' }}>
+                    <button 
+                      onClick={() => { setCurrentAddress(addr); setIsModalOpen(true); }}
+                      style={{ background: 'none', border: 'none', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontWeight: 500, padding: 0 }}
+                    >
+                      <Edit size={13} /> Edit
+                    </button>
+                    <button 
+                      onClick={() => setDeleteConfirmId(addr.id)}
+                      style={{ background: 'none', border: 'none', color: '#e11d48', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontWeight: 500, padding: 0 }}
+                    >
+                      <Trash2 size={13} /> Delete
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleSelectForCheckout(addr.id)}
+                  style={{
+                    width: '100%', padding: '8px', borderRadius: '10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: 'none',
+                    backgroundColor: isSelected ? '#16a34a' : '#f1f5f9',
+                    color: isSelected ? 'white' : '#334155'
+                  }}
+                >
+                  {isSelected ? '✓ Deliver Here (Selected)' : 'Deliver Here'}
                 </button>
               </div>
-            )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Add/Edit Modal */}
+      {isModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '20px', maxWidth: '500px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', maxHeight: '90vh', overflowY: 'auto', boxSizing: 'border-box' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', margin: '0 0 16px 0' }}>
+              {currentAddress ? 'Edit Address' : 'Add New Address'}
+            </h2>
+            <form onSubmit={handleSaveAddress} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Full Name</label>
+                  <input name="fullName" defaultValue={currentAddress?.fullName} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="John Doe" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Phone Number</label>
+                  <input name="phone" defaultValue={currentAddress?.phone} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="9876543210" />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>House / Flat / Apt</label>
+                  <input name="houseNo" defaultValue={currentAddress?.houseNo} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="Flat 402, Block B" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Street / Road</label>
+                  <input name="street" defaultValue={currentAddress?.street} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="Park Street" />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Landmark (Optional)</label>
+                  <input name="landmark" defaultValue={currentAddress?.landmark} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="Near City Mall" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Area / Locality</label>
+                  <input name="locality" defaultValue={currentAddress?.locality} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="Downtown" />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>City</label>
+                  <input name="city" defaultValue={currentAddress?.city} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="Kolkata" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>State</label>
+                  <input name="state" defaultValue={currentAddress?.state} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="WB" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>PIN / ZIP</label>
+                  <input name="pincode" defaultValue={currentAddress?.pincode} required style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="700001" />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Label Type</label>
+                  <select name="label" defaultValue={currentAddress?.label || 'Home'} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', backgroundColor: 'white', boxSizing: 'border-box' }}>
+                    <option value="Home">Home</option>
+                    <option value="Work">Work</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>Nickname (Optional)</label>
+                  <input name="nickname" defaultValue={currentAddress?.nickname} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box' }} placeholder="Mom's House" />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', paddingTop: '12px', borderTop: '1px solid #f1f5f9', marginTop: '4px' }}>
+                <button type="button" onClick={() => setIsModalOpen(false)} style={{ padding: '8px 16px', fontSize: '13px', color: '#475569', background: '#f1f5f9', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 600, backgroundColor: '#4f46e5', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)' }}>Save Address</button>
+              </div>
+            </form>
           </div>
-
-          {/* Cart Bag Button */}
-          <button
-            className={`nav-icon-btn ${currentPage === "cart" ? "active" : ""}`}
-            onClick={() => setPage("cart")}
-            title="View Cart"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
-              <path d="M3 6h18M16 10a4 4 0 0 1-8 0"/>
-            </svg>
-
-            {count > 0 && (
-              <span className="nav-cart-badge">
-                {count}
-              </span>
-            )}
-          </button>
-
         </div>
-      </header>
-    </>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '20px', maxWidth: '360px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', textAlign: 'center', boxSizing: 'border-box' }}>
+            <h3 style={{ fontSize: '17px', fontWeight: 'bold', color: '#1e293b', margin: '0 0 8px 0' }}>Delete Address?</h3>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 20px 0' }}>Are you sure you want to remove this delivery address?</p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={() => setDeleteConfirmId(null)} style={{ flex: 1, padding: '9px', fontSize: '13px', color: '#475569', backgroundColor: '#f1f5f9', border: 'none', borderRadius: '10px', fontWeight: 500, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => handleDelete(deleteConfirmId)} style={{ flex: 1, padding: '9px', fontSize: '13px', color: 'white', backgroundColor: '#e11d48', border: 'none', borderRadius: '10px', fontWeight: 500, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(225, 29, 72, 0.2)' }}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
   );
 }
