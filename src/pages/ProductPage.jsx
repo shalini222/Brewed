@@ -529,6 +529,14 @@ const sortedReviews = [...filteredReviews].sort((a, b) => {
         (b.createdAt?.seconds || 0)
       );
 
+    case "helpful":
+  return (
+    (b.helpfulCount || 0) -
+    (a.helpfulCount || 0)
+  );
+
+
+      
     case "newest":
     default:
       return (
@@ -2737,6 +2745,20 @@ gap:30px;
       {showSortMenu && (
         <div className="sort-menu">
 
+         
+          <button
+  className={reviewSort === "helpful" ? "active" : ""}
+  onClick={() => {
+    setReviewSort("helpful");
+    setShowSortMenu(false);
+  }}
+>
+  ○ Most Helpful
+</button>
+          
+          
+          
+          
           <button
             className={reviewSort === "newest" ? "active" : ""}
             onClick={() => {
