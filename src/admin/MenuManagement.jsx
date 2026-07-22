@@ -18,6 +18,7 @@ export default function AdminPage({ setPage, setActivePage }) {
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("featured");
   const [orders, setOrders] = useState([]);
   const [orderLoading, setOrderLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
@@ -162,6 +163,7 @@ export default function AdminPage({ setPage, setActivePage }) {
       price: Number(newItem.price),
       available: newItem.available,
       isFeatured: newItem.isFeatured,
+      createdAt: new Date(),
       sizes: newItem.sizes,
       prepTime: newItem.prepTime,
       servedAs: newItem.servedAs,
@@ -376,13 +378,13 @@ export default function AdminPage({ setPage, setActivePage }) {
                 fontSize: "13px",
               }}
             >
-              Dashboard
+              ← Dashboard
             </button>
           )}
 
           {setPage && (
             <button
-              onClick={() => setPage("menu")}
+              onClick={() => setPage("home")}
               style={{
                 padding: "10px 20px",
                 backgroundColor: "#3B1A08",
@@ -395,7 +397,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                 boxShadow: "0 4px 14px rgba(59, 26, 8, 0.15)",
               }}
             >
-              Menu Page
+              Exit to Store →
             </button>
           )}
         </div>
@@ -462,50 +464,78 @@ export default function AdminPage({ setPage, setActivePage }) {
         </button>
       </div>
 
-      {/* Search & Polished Filter Pills */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "32px" }}>
-        <div style={{ position: "relative", maxWidth: "440px" }}>
-          <input
-            type="text"
-            placeholder="Search items by name or category..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "14px 18px 14px 44px",
-              borderRadius: "12px",
-              border: "1px solid #D8C8B8",
-              fontSize: "14px",
-              outline: "none",
-              background: "#FFFFFF",
-              boxShadow: "0 2px 10px rgba(59, 26, 8, 0.02)",
-              color: "#2C1810",
-            }}
-          />
-          <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#6E523D", fontSize: "16px" }}>🔍</span>
-        </div>
-        
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          {["All", "Coffee", "Non-Coffee", "Food"].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategoryFilter(cat)}
+      {/* Search & Categories Filter + Sort Option Bar */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px", flexWrap: "wrap", gap: "20px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px", flex: 1, minWidth: "280px" }}>
+          <div style={{ position: "relative", maxWidth: "440px" }}>
+            <input
+              type="text"
+              placeholder="Search items by name or category..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               style={{
-                padding: "8px 20px",
-                borderRadius: "30px",
-                border: categoryFilter === cat ? "1px solid #3B1A08" : "1px solid #D8C8B8",
-                cursor: "pointer",
-                background: categoryFilter === cat ? "#3B1A08" : "#FFFFFF",
-                color: categoryFilter === cat ? "#FFF" : "#4A3B32",
-                fontWeight: 600,
-                fontSize: "13px",
-                boxShadow: categoryFilter === cat ? "0 4px 12px rgba(59, 26, 8, 0.15)" : "0 1px 3px rgba(0,0,0,0.02)",
-                transition: "all 0.2s ease",
+                width: "100%",
+                padding: "14px 18px 14px 44px",
+                borderRadius: "12px",
+                border: "1px solid #D8C8B8",
+                fontSize: "14px",
+                outline: "none",
+                background: "#FFFFFF",
+                boxShadow: "0 2px 10px rgba(59, 26, 8, 0.02)",
+                color: "#2C1810",
               }}
-            >
-              {cat}
-            </button>
-          ))}
+            />
+            <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#6E523D", fontSize: "16px" }}>🔍</span>
+          </div>
+          
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            {["All", "Coffee", "Non-Coffee", "Food"].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: "30px",
+                  border: categoryFilter === cat ? "1px solid #3B1A08" : "1px solid #D8C8B8",
+                  cursor: "pointer",
+                  background: categoryFilter === cat ? "#3B1A08" : "#FFFFFF",
+                  color: categoryFilter === cat ? "#FFF" : "#4A3B32",
+                  fontWeight: 600,
+                  fontSize: "13px",
+                  boxShadow: categoryFilter === cat ? "0 4px 12px rgba(59, 26, 8, 0.15)" : "0 1px 3px rgba(0,0,0,0.02)",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Sort Option (Right side above menu cards) */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "#FFFFFF", padding: "10px 16px", borderRadius: "12px", border: "1px solid #E8DFD5", boxShadow: "0 2px 8px rgba(59, 26, 8, 0.02)" }}>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: "#6E523D", textTransform: "uppercase", letterSpacing: "0.5px" }}>Sort By:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "8px",
+              border: "1px solid #D8C8B8",
+              fontSize: "13px",
+              outline: "none",
+              background: "#FAF7F2",
+              color: "#3B1A08",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            <option value="featured">Featured First</option>
+            <option value="low-to-high">Price: Low to High</option>
+            <option value="high-to-low">Price: High to Low</option>
+            <option value="new-to-old">New to Old</option>
+            <option value="old-to-new">Old to New</option>
+          </select>
         </div>
       </div>
 
@@ -1008,7 +1038,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         </div>
       )}
 
-      {/* Menu Cards Grid with distinct borders and drop shadows */}
+      {/* Menu Cards Grid with sorting logic applied */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "24px" }}>
         {menu
           .filter((item) => {
@@ -1018,6 +1048,28 @@ export default function AdminPage({ setPage, setActivePage }) {
             const matchesCategory =
               categoryFilter === "All" || item.category === categoryFilter;
             return matchesSearch && matchesCategory;
+          })
+          .sort((a, b) => {
+            if (sortBy === "low-to-high") {
+              return Number(a.price || 0) - Number(b.price || 0);
+            }
+            if (sortBy === "high-to-low") {
+              return Number(b.price || 0) - Number(a.price || 0);
+            }
+            if (sortBy === "featured") {
+              return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
+            }
+            if (sortBy === "new-to-old") {
+              const timeA = a.createdAt?.seconds || (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
+              const timeB = b.createdAt?.seconds || (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
+              return timeB - timeA;
+            }
+            if (sortBy === "old-to-new") {
+              const timeA = a.createdAt?.seconds || (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
+              const timeB = b.createdAt?.seconds || (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
+              return timeA - timeB;
+            }
+            return 0;
           })
           .map((item) => (
             <div
