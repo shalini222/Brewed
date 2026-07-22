@@ -386,7 +386,7 @@ export default function MenuManagement({ setPage , setActivePage }) {
             )}
           </button>
           <button
-            onClick={() => setPage("home")}
+            onClick={() => setPage("dashboard")}
             style={{
               padding: "10px 20px",
               backgroundColor: "#333",
@@ -396,7 +396,7 @@ export default function MenuManagement({ setPage , setActivePage }) {
               cursor: "pointer",
             }}
           >
-            Exit to Store
+           Back To Dashboard 
           </button>
         </div>
       </header>
