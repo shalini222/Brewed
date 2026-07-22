@@ -561,7 +561,7 @@ return (
       {[
         {
           title: "🍽 Menu",
-          page: "menuadmin",
+          page: "menu",
         },
         {
           title: "📦 Orders",
