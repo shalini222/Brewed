@@ -26,6 +26,16 @@ export default function AdminPage({ setPage, setActivePage }) {
   const [userNotifications, setUserNotifications] = useState([]);
   const lastUserId = useRef(null);
 
+  // Toast notification state
+  const [toast, setToast] = useState(null);
+
+  function triggerToast(message) {
+    setToast(message);
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  }
+
   const [newItem, setNewItem] = useState({
     name: "",
     category: "Coffee",
@@ -93,6 +103,7 @@ export default function AdminPage({ setPage, setActivePage }) {
             },
             ...prev,
           ]);
+          triggerToast(`New order received from ${newest.customer?.name || "Customer"}!`);
         }
         lastOrderId.current = newest.id;
       }
@@ -188,6 +199,7 @@ export default function AdminPage({ setPage, setActivePage }) {
     });
     setShowAdd(false);
     loadMenu();
+    triggerToast("Product successfully created!");
   }
 
   async function deleteProduct(id) {
@@ -195,13 +207,16 @@ export default function AdminPage({ setPage, setActivePage }) {
     if (!confirmed) return;
     await deleteDoc(doc(db, "menu", id));
     loadMenu();
+    triggerToast("Product successfully deleted!");
   }
 
   async function toggleAvailability(item) {
+    const nextStatus = item.available === false ? true : false;
     await updateDoc(doc(db, "menu", item.firestoreId), {
-      available: item.available === false ? true : false,
+      available: nextStatus,
     });
     loadMenu();
+    triggerToast(`Item is now ${nextStatus ? "In Stock" : "Out of Stock"}!`);
   }
 
   async function updateProduct() {
@@ -226,29 +241,13 @@ export default function AdminPage({ setPage, setActivePage }) {
         servedAs: editItem.servedAs,
         dietType: editItem.dietType,
       });
-      alert("Product Updated Successfully!");
       setEditing(null);
       loadMenu();
+      triggerToast("Product successfully edited!");
     } catch (e) {
       alert("Error updating product:\n" + String(e));
     }
   }
-
-  const today = new Date().toDateString();
-  const todaySales = orders
-    .filter(
-      (order) =>
-        order.createdAt?.toDate &&
-        order.createdAt.toDate().toDateString() === today &&
-        order.status !== "Cancelled"
-    )
-    .reduce((sum, order) => sum + (order.total || 0), 0);
-  const todayOrders = orders.filter(
-    (order) =>
-      order.createdAt?.toDate &&
-      order.createdAt.toDate().toDateString() === today &&
-      order.status !== "Cancelled"
-  ).length;
 
   const totalProductsCount = menu.length;
   const featuredCount = menu.filter((i) => i.isFeatured).length;
@@ -256,15 +255,41 @@ export default function AdminPage({ setPage, setActivePage }) {
   const outOfStockCount = menu.filter((i) => i.available === false).length;
 
   return (
-    <div style={{ padding: "48px 40px", fontFamily: "'Inter', sans-serif", background: "#FDFBF7", minHeight: "100vh", color: "#2C1810" }}>
+    <div style={{ padding: "48px 40px", fontFamily: "'Inter', sans-serif", background: "#FDFBF7", minHeight: "100vh", color: "#2C1810", position: "relative" }}>
       
-      {/* Header Section */}
+      {/* Toast Notification Container */}
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "30px",
+            right: "30px",
+            background: "#2C1810",
+            color: "#FFF9F0",
+            padding: "16px 24px",
+            borderRadius: "14px",
+            boxShadow: "0 10px 30px rgba(44, 24, 16, 0.25)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            fontWeight: 600,
+            fontSize: "14px",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            animation: "fadeIn 0.3s ease",
+          }}
+        >
+          <span>☕</span> {toast}
+        </div>
+      )}
+
+      {/* Header Section with tight margins and clean alignment */}
       <header
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "35px",
+          marginBottom: "28px",
           background: "#FFFFFF",
           padding: "24px 36px",
           borderRadius: "20px",
@@ -278,11 +303,14 @@ export default function AdminPage({ setPage, setActivePage }) {
           </div>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <h1 style={{ margin: 0, fontSize: "28px", fontWeight: "700", fontFamily: "'Playfair Display', serif", color: "#3B1A08", letterSpacing: "-0.5px" }}>
+              <h1 style={{ margin: 0, fontSize: "28px", fontWeight: "700", fontFamily: "'Playfair Display', serif", color: "#3B1A08", letterSpacing: "-0.5px", lineHeight: "1.2" }}>
                 Brewed
               </h1>
+              <span style={{ fontSize: "11px", fontWeight: 700, background: "#F4ECE4", color: "#8C6D53", padding: "3px 8px", borderRadius: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Menu Management
+              </span>
             </div>
-            <p style={{ margin: "4px 0 0 0", color: "#8C7A6B", fontSize: "14px", fontWeight: "400" }}>
+            <p style={{ margin: "2px 0 0 0", color: "#8C7A6B", fontSize: "14px", fontWeight: "400", lineHeight: "1.4" }}>
               Curate exquisite offerings, adjust pricing, and control item availability seamlessly.
             </p>
           </div>
@@ -352,7 +380,7 @@ export default function AdminPage({ setPage, setActivePage }) {
 
           {setPage && (
             <button
-              onClick={() => setPage("menu")}
+              onClick={() => setPage("home")}
               style={{
                 padding: "12px 22px",
                 backgroundColor: "#3B1A08",
@@ -406,8 +434,8 @@ export default function AdminPage({ setPage, setActivePage }) {
         </div>
       </div>
 
-      
-
+      {/* Action Trigger Section */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "36px" }}>
         <button
           onClick={() => setShowAdd(!showAdd)}
           style={{
