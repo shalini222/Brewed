@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import AdminDashboard from "../admin/AdminDashboard";
+import MenuManagement from "../admin/MenuManagement";
 
 export default function AdminPage({ setPage }) {
   // Which admin page is currently active
@@ -29,13 +30,13 @@ export default function AdminPage({ setPage }) {
           MENU MANAGEMENT
       ========================= */}
 
-      {/* {activePage === "menu" && (
+      {activePage === "menu" && (
         <MenuManagement
           setPage={setPage}
           activePage={activePage}
           setActivePage={setActivePage}
         />
-      )} */}
+      )} 
 
       {/* Future pages will go here */}
     </div>
