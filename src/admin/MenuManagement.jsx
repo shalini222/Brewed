@@ -11,19 +11,8 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  BarChart,
-  Bar,
-} from "recharts";
 
-export default function AdminPage({ setPage }) {
+export default function AdminPage({ setPage, setActivePage }) {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -31,11 +20,6 @@ export default function AdminPage({ setPage }) {
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [orders, setOrders] = useState([]);
   const [orderLoading, setOrderLoading] = useState(true);
-  const [orderSearch, setOrderSearch] = useState("");
-  const [orderFilter, setOrderFilter] = useState("All");
-  const [analytics, setAnalytics] = useState([]);
-  const [range, setRange] = useState(7);
-  const [topProducts, setTopProducts] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const lastOrderId = useRef(null);
@@ -64,6 +48,7 @@ export default function AdminPage({ setPage }) {
     customExtrasMaxSelection: 3,
     sweetnessOptions: [],
   });
+
   const [editing, setEditing] = useState(null);
   const [editItem, setEditItem] = useState({
     name: "",
@@ -98,7 +83,8 @@ export default function AdminPage({ setPage }) {
       if (data.length > 0) {
         const newest = [...data].sort(
           (a, b) =>
-            (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+            (b.createdAt?.seconds || 0) -
+            (a.createdAt?.seconds || 0)
         )[0];
         if (lastOrderId.current && newest.id !== lastOrderId.current) {
           setNotifications((prev) => [
@@ -138,57 +124,6 @@ export default function AdminPage({ setPage }) {
       unsubscribeUsers();
     };
   }, []);
-
-  useEffect(() => {
-    const today = new Date();
-    const data = [];
-    for (let i = range - 1; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      data.push({
-        key: d.toDateString(),
-        day: d.toLocaleDateString("en-US", {
-          weekday: "short",
-        }),
-        revenue: 0,
-        orders: 0,
-      });
-    }
-    orders.forEach((order) => {
-      if (!order.createdAt?.toDate) return;
-      const date = order.createdAt.toDate().toDateString();
-      const item = data.find((d) => d.key === date);
-      if (item) {
-        item.orders += 1;
-        item.revenue += Number(order.total || 0);
-      }
-    });
-    setAnalytics(data);
-  }, [orders, range]);
-
-  useEffect(() => {
-    const stats = {};
-    orders.forEach((order) => {
-      order.items?.forEach((item) => {
-        const name = item.name;
-        if (!stats[name]) {
-          stats[name] = {
-            name,
-            img: item.img || "",
-            sold: 0,
-            revenue: 0,
-          };
-        }
-        const qty = item.qty || item.quantity || 1;
-        stats[name].sold += qty;
-        stats[name].revenue += qty * Number(item.price || 0);
-      });
-    });
-    const ranked = Object.values(stats)
-      .sort((a, b) => b.sold - a.sold)
-      .slice(0, 3);
-    setTopProducts(ranked);
-  }, [orders]);
 
   async function loadMenu() {
     const snapshot = await getDocs(collection(db, "menu"));
@@ -240,7 +175,6 @@ export default function AdminPage({ setPage }) {
       img: "",
       available: true,
       isFeatured: false,
-      isBestSeller: false,
       prepTime: "5–8 mins",
       servedAs: "Hot",
       dietType: "Vegetarian",
@@ -249,13 +183,17 @@ export default function AdminPage({ setPage }) {
       reviews: 0,
       sizes: [],
       milkOptions: [],
+      temperatureOptions: [],
+      customExtras: [],
+      customExtrasMaxSelection: 3,
+      sweetnessOptions: [],
     });
     setShowAdd(false);
     loadMenu();
   }
 
   async function deleteProduct(id) {
-    const confirmed = window.confirm("Delete this product?");
+    const confirmed = window.confirm("Are you sure you want to delete this product?");
     if (!confirmed) return;
     await deleteDoc(doc(db, "menu", id));
     loadMenu();
@@ -290,37 +228,14 @@ export default function AdminPage({ setPage }) {
         servedAs: editItem.servedAs,
         dietType: editItem.dietType,
       });
-      alert("Updated!");
+      alert("Product Updated Successfully!");
       setEditing(null);
       loadMenu();
     } catch (e) {
-      alert("Error:\n" + String(e));
+      alert("Error updating product:\n" + String(e));
     }
   }
 
-  async function updateOrderStatus(id, status) {
-    if (status === "Cancelled") {
-      const confirmed = window.confirm(
-        "Are you sure you want to cancel this order?"
-      );
-      if (!confirmed) return;
-    }
-    await updateDoc(doc(db, "orders", id), {
-      status,
-    });
-  }
-
-  const totalOrders = orders.length;
-  const pendingOrders = orders.filter(
-    (o) =>
-      o.status === "New" ||
-      o.status === "Preparing" ||
-      o.status === "Ready"
-  ).length;
-  const totalRevenue = orders
-    .filter((o) => o.status === "Delivered")
-    .reduce((sum, o) => sum + (o.total || 0), 0);
-  const totalProducts = menu.length;
   const today = new Date().toDateString();
   const todaySales = orders
     .filter(
@@ -337,44 +252,68 @@ export default function AdminPage({ setPage }) {
       order.status !== "Cancelled"
   ).length;
 
+  // Stat counts for overview banner
+  const totalProductsCount = menu.length;
+  const featuredCount = menu.filter((i) => i.isFeatured).length;
+  const inStockCount = menu.filter((i) => i.available !== false).length;
+  const outOfStockCount = menu.filter((i) => i.available === false).length;
+
   return (
     <div style={{ padding: "48px 40px", fontFamily: "'Inter', sans-serif", background: "#FDFBF7", minHeight: "100vh", color: "#2C1810" }}>
+      
       {/* Header Section */}
       <header
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "40px",
-          borderBottom: "1px solid #E8DFD5",
-          paddingBottom: "24px",
+          marginBottom: "35px",
+          background: "#FFFFFF",
+          padding: "24px 36px",
+          borderRadius: "20px",
+          border: "1px solid #E8DFD5",
+          boxShadow: "0 10px 30px rgba(59, 26, 8, 0.04)",
         }}
       >
-        <div>
-          <h1 style={{ margin: 0, fontSize: "36px", fontWeight: "700", fontFamily: "'Playfair Display', serif", color: "#3B1A08", letterSpacing: "-0.5px" }}>
-            ☕ Brewed Admin Dashboard
-          </h1>
-          <p style={{ margin: "6px 0 0 0", color: "#8C7A6B", fontSize: "15px", fontWeight: "400" }}>
-            Manage your cafe menu, orders, and view real-time sales performance.
-          </p>
+        <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
+          <div style={{ width: "52px", height: "52px", borderRadius: "14px", background: "linear-gradient(135deg, #3B1A08 0%, #59290C 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px", boxShadow: "0 6px 16px rgba(59, 26, 8, 0.15)" }}>
+            ☕
+          </div>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <h1 style={{ margin: 0, fontSize: "28px", fontWeight: "700", fontFamily: "'Playfair Display', serif", color: "#3B1A08", letterSpacing: "-0.5px" }}>
+                Brewed
+              </h1>
+              <span style={{ fontSize: "11px", fontWeight: 700, background: "#F4ECE4", color: "#8C6D53", padding: "3px 8px", borderRadius: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Menu Management
+              </span>
+            </div>
+            <p style={{ margin: "4px 0 0 0", color: "#8C7A6B", fontSize: "14px", fontWeight: "400" }}>
+              Curate exquisite offerings, adjust pricing, and control item availability seamlessly.
+            </p>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+
+        <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
           <button
             onClick={() => setShowNotifications(!showNotifications)}
             style={{
               position: "relative",
-              padding: "12px 20px",
-              backgroundColor: "#FFFFFF",
+              padding: "12px 18px",
+              backgroundColor: "#FAF7F2",
               border: "1px solid #E2D5C9",
               borderRadius: "12px",
               cursor: "pointer",
               fontWeight: 600,
               fontSize: "14px",
               color: "#3B1A08",
-              boxShadow: "0 2px 10px rgba(59, 26, 8, 0.02)",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              transition: "all 0.2s ease",
             }}
           >
-            🔔 Notifications
+            <span>🔔</span> Notifications
             {(notifications.length > 0 || userNotifications.length > 0) && (
               <span
                 style={{
@@ -384,33 +323,94 @@ export default function AdminPage({ setPage }) {
                   background: "#C0392B",
                   color: "white",
                   borderRadius: "50%",
-                  padding: "3px 7px",
+                  width: "20px",
+                  height: "20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   fontSize: "11px",
                   fontWeight: "bold",
+                  boxShadow: "0 2px 6px rgba(192, 57, 43, 0.4)",
                 }}
               >
                 {notifications.length + userNotifications.length}
               </span>
             )}
           </button>
-          <button
-            onClick={() => setPage("home")}
-            style={{
-              padding: "12px 22px",
-              backgroundColor: "#3B1A08",
-              color: "#FFFFFF",
-              border: "none",
-              borderRadius: "12px",
-              cursor: "pointer",
-              fontWeight: 600,
-              fontSize: "14px",
-              boxShadow: "0 4px 14px rgba(59, 26, 8, 0.15)",
-            }}
-          >
-            Exit to Store
-          </button>
+
+          {setActivePage && (
+            <button
+              onClick={() => setActivePage("dashboard")}
+              style={{
+                padding: "12px 20px",
+                backgroundColor: "#FAF7F2",
+                color: "#3B1A08",
+                border: "1px solid #E2D5C9",
+                borderRadius: "12px",
+                cursor: "pointer",
+                fontWeight: 600,
+                fontSize: "14px",
+              }}
+            >
+              ← Dashboard
+            </button>
+          )}
+
+          {setPage && (
+            <button
+              onClick={() => setPage("home")}
+              style={{
+                padding: "12px 22px",
+                backgroundColor: "#3B1A08",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: "12px",
+                cursor: "pointer",
+                fontWeight: 600,
+                fontSize: "14px",
+                boxShadow: "0 4px 14px rgba(59, 26, 8, 0.15)",
+              }}
+            >
+              Exit to Store →
+            </button>
+          )}
         </div>
       </header>
+
+      {/* 8. Header Stats Overview Banner */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "30px" }}>
+        <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", boxShadow: "0 4px 16px rgba(59, 26, 8, 0.02)", display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{ fontSize: "24px", background: "#FAF7F2", padding: "10px", borderRadius: "12px" }}>☕</div>
+          <div>
+            <span style={{ fontSize: "12px", color: "#8C7A6B", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px" }}>Products</span>
+            <h3 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: 800, color: "#3B1A08", fontFamily: "'Playfair Display', serif" }}>{totalProductsCount}</h3>
+          </div>
+        </div>
+
+        <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", boxShadow: "0 4px 16px rgba(59, 26, 8, 0.02)", display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{ fontSize: "24px", background: "#FFF9E6", padding: "10px", borderRadius: "12px" }}>⭐</div>
+          <div>
+            <span style={{ fontSize: "12px", color: "#8C7A6B", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px" }}>Featured</span>
+            <h3 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: 800, color: "#D4AC0D", fontFamily: "'Playfair Display', serif" }}>{featuredCount}</h3>
+          </div>
+        </div>
+
+        <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", boxShadow: "0 4px 16px rgba(59, 26, 8, 0.02)", display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{ fontSize: "24px", background: "#E8F5E9", padding: "10px", borderRadius: "12px" }}>✅</div>
+          <div>
+            <span style={{ fontSize: "12px", color: "#8C7A6B", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px" }}>In Stock</span>
+            <h3 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: 800, color: "#2E7D32", fontFamily: "'Playfair Display', serif" }}>{inStockCount}</h3>
+          </div>
+        </div>
+
+        <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", boxShadow: "0 4px 16px rgba(59, 26, 8, 0.02)", display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{ fontSize: "24px", background: "#FFEBEE", padding: "10px", borderRadius: "12px" }}>🚫</div>
+          <div>
+            <span style={{ fontSize: "12px", color: "#8C7A6B", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px" }}>Out of Stock</span>
+            <h3 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: 800, color: "#C62828", fontFamily: "'Playfair Display', serif" }}>{outOfStockCount}</h3>
+          </div>
+        </div>
+      </div>
 
       {/* Metrics Bar & Action Trigger */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "36px", flexWrap: "wrap", gap: "20px" }}>
@@ -420,22 +420,14 @@ export default function AdminPage({ setPage }) {
           </div>
           <div>
             <span style={{ fontSize: "12px", color: "#8C7A6B", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 700 }}>Today's Performance</span>
-            <h1
-              style={{
-                color: "#C4956A",
-                margin: "2px 0 0 0",
-                fontSize: "26px",
-                fontWeight: 800,
-                fontFamily: "'Playfair Display', serif",
-              }}
-            >
+            <h2 style={{ color: "#C4956A", margin: "2px 0 0 0", fontSize: "26px", fontWeight: 800, fontFamily: "'Playfair Display', serif" }}>
               ₹{todaySales} <span style={{ fontSize: "14px", color: "#8C7A6B", fontWeight: 500, fontFamily: "'Inter', sans-serif" }}>({todayOrders} Orders Today)</span>
-            </h1>
+            </h2>
           </div>
         </div>
 
         <button
-          onClick={() => setShowAdd(true)}
+          onClick={() => setShowAdd(!showAdd)}
           style={{
             background: "#3B1A08",
             color: "white",
@@ -452,7 +444,7 @@ export default function AdminPage({ setPage }) {
             transition: "transform 0.2s ease",
           }}
         >
-          <span style={{ fontSize: "18px" }}>+</span> Add Product
+          <span style={{ fontSize: "18px" }}>+</span> Add New Product
         </button>
       </div>
 
@@ -461,7 +453,7 @@ export default function AdminPage({ setPage }) {
         <div style={{ position: "relative", maxWidth: "440px" }}>
           <input
             type="text"
-            placeholder="Search products..."
+            placeholder="Search items by name or category..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{
@@ -478,14 +470,8 @@ export default function AdminPage({ setPage }) {
           />
           <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#8C7A6B", fontSize: "16px" }}>🔍</span>
         </div>
-
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
+        
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
           {["All", "Coffee", "Non-Coffee", "Food"].map((cat) => (
             <button
               key={cat}
@@ -495,10 +481,8 @@ export default function AdminPage({ setPage }) {
                 borderRadius: "30px",
                 border: categoryFilter === cat ? "1px solid #3B1A08" : "1px solid #E2D5C9",
                 cursor: "pointer",
-                background:
-                  categoryFilter === cat ? "#3B1A08" : "#FFFFFF",
-                color:
-                  categoryFilter === cat ? "#fff" : "#5C4A3E",
+                background: categoryFilter === cat ? "#3B1A08" : "#FFFFFF",
+                color: categoryFilter === cat ? "#FFF" : "#5C4A3E",
                 fontWeight: 600,
                 fontSize: "13px",
                 boxShadow: categoryFilter === cat ? "0 4px 12px rgba(59, 26, 8, 0.15)" : "none",
@@ -511,6 +495,7 @@ export default function AdminPage({ setPage }) {
         </div>
       </div>
 
+      {/* Add Product Modal Drawer */}
       {showAdd && (
         <div
           style={{
@@ -528,16 +513,14 @@ export default function AdminPage({ setPage }) {
             </h2>
             <button onClick={() => setShowAdd(false)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#8C7A6B" }}>✕</button>
           </div>
-
+          
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "20px" }}>
             <div>
               <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Product Name</label>
               <input
-                placeholder="Name"
+                placeholder="e.g. Vanilla Velvet Latte"
                 value={newItem.name}
-                onChange={(e) =>
-                  setNewItem({ ...newItem, name: e.target.value })
-                }
+                onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
                 style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2" }}
               />
             </div>
@@ -545,12 +528,7 @@ export default function AdminPage({ setPage }) {
               <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Category</label>
               <select
                 value={newItem.category}
-                onChange={(e) =>
-                  setNewItem({
-                    ...newItem,
-                    category: e.target.value,
-                  })
-                }
+                onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
                 style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2" }}
               >
                 <option>Coffee</option>
@@ -561,29 +539,19 @@ export default function AdminPage({ setPage }) {
             <div>
               <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Price (₹)</label>
               <input
-                placeholder="Price"
+                placeholder="160"
                 type="number"
                 value={newItem.price}
-                onChange={(e) =>
-                  setNewItem({
-                    ...newItem,
-                    price: e.target.value,
-                  })
-                }
+                onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
                 style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2" }}
               />
             </div>
             <div>
               <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Emoji</label>
               <input
-                placeholder="Emoji (optional)"
+                placeholder="☕"
                 value={newItem.emoji}
-                onChange={(e) =>
-                  setNewItem({
-                    ...newItem,
-                    emoji: e.target.value,
-                  })
-                }
+                onChange={(e) => setNewItem({ ...newItem, emoji: e.target.value })}
                 style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2" }}
               />
             </div>
@@ -592,14 +560,9 @@ export default function AdminPage({ setPage }) {
           <div style={{ marginBottom: "20px" }}>
             <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Description</label>
             <textarea
-              placeholder="Description"
+              placeholder="Rich, velvety espresso blended with steamed microfoam and gourmet vanilla essence..."
               value={newItem.desc}
-              onChange={(e) =>
-                setNewItem({
-                  ...newItem,
-                  desc: e.target.value,
-                })
-              }
+              onChange={(e) => setNewItem({ ...newItem, desc: e.target.value })}
               style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", minHeight: "90px", resize: "vertical", background: "#FAF7F2" }}
             />
           </div>
@@ -607,750 +570,41 @@ export default function AdminPage({ setPage }) {
           <div style={{ marginBottom: "24px" }}>
             <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Cloudinary Image URL</label>
             <input
-              placeholder="Cloudinary Image URL"
+              placeholder="https://res.cloudinary.com/..."
               value={newItem.img}
-              onChange={(e) =>
-                setNewItem({
-                  ...newItem,
-                  img: e.target.value,
-                })
-              }
+              onChange={(e) => setNewItem({ ...newItem, img: e.target.value })}
               style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2" }}
             />
           </div>
 
-          <h3
-            style={{
-              marginTop: 30,
-              marginBottom: 15,
-              fontSize: "16px",
-              color: "#3B1A08",
-              fontFamily: "'Playfair Display', serif"
-            }}
-          >
-            Product Sizes
-          </h3>
-          <button
-            type="button"
-            onClick={() =>
-              setNewItem({
-                ...newItem,
-                sizes: [
-                  ...newItem.sizes,
-                  {
-                    name: "",
-                    volume: "",
-                    price: 0,
-                  },
-                ],
-              })
-            }
-            style={{
-              padding: "10px 18px",
-              background: "#C4956A",
-              border: "none",
-              color: "#fff",
-              borderRadius: 10,
-              cursor: "pointer",
-              marginBottom: 20,
-              fontWeight: 600,
-            }}
-          >
-            ➕ Add Size
-          </button>
-          {newItem.sizes.map((size, index) => (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                gap: 10,
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-            >
-              <input
-                placeholder="Size Name"
-                value={size.name}
-                onChange={(e) => {
-                  const updated = [...newItem.sizes];
-                  updated[index].name = e.target.value;
-                  setNewItem({
-                    ...newItem,
-                    sizes: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-              <input
-                placeholder="Volume"
-                value={size.volume}
-                onChange={(e) => {
-                  const updated = [...newItem.sizes];
-                  updated[index].volume = e.target.value;
-                  setNewItem({
-                    ...newItem,
-                    sizes: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-              <input
-                type="number"
-                placeholder="Price Difference"
-                value={size.price}
-                onChange={(e) => {
-                  const updated = [...newItem.sizes];
-                  updated[index].price = Number(e.target.value);
-                  setNewItem({
-                    ...newItem,
-                    sizes: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", width: "120px" }}
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setNewItem({
-                    ...newItem,
-                    sizes: newItem.sizes.filter(
-                      (_, i) => i !== index
-                    ),
-                  });
-                }}
-                style={{
-                  background: "#D32F2F",
-                  color: "#fff",
-                  border: "none",
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                }}
-              >
-                🗑
-              </button>
-            </div>
-          ))}
-
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginTop: 20,
-              fontWeight: 600,
-              color: "#3B1A08",
-            }}
-          >
+          <label style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "25px", fontWeight: 600, color: "#3B1A08", cursor: "pointer" }}>
             <input
               type="checkbox"
               checked={newItem.isFeatured}
-              onChange={(e) =>
-                setNewItem({
-                  ...newItem,
-                  isFeatured: e.target.checked,
-                })
-              }
+              onChange={(e) => setNewItem({ ...newItem, isFeatured: e.target.checked })}
               style={{ width: "18px", height: "18px", accentColor: "#3B1A08" }}
             />
-            Featured Product
+            Highlight as Featured Menu Item
           </label>
-          <br />
-          <br />
-          <h3
-            style={{
-              marginTop: 30,
-              marginBottom: 15,
-              fontSize: "16px",
-              color: "#3B1A08",
-              fontFamily: "'Playfair Display', serif"
-            }}
-          >
-            Milk Options
-          </h3>
-          <button
-            type="button"
-            onClick={() =>
-              setNewItem({
-                ...newItem,
-                milkOptions: [
-                  ...newItem.milkOptions,
-                  {
-                    name: "",
-                    price: 0,
-                    icon: "",
-                  },
-                ],
-              })
-            }
-            style={{
-              padding: "10px 18px",
-              background: "#C4956A",
-              color: "#fff",
-              border: "none",
-              borderRadius: 10,
-              cursor: "pointer",
-              marginBottom: 20,
-              fontWeight: 600,
-            }}
-          >
-            🥛 Add Milk Option
-          </button>
 
-          {newItem.milkOptions?.map((milk, index) => (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                gap: 10,
-                alignItems: "center",
-                marginBottom: 12,
-              }}
+          <div style={{ display: "flex", gap: "15px" }}>
+            <button
+              onClick={addProduct}
+              style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "14px 28px", borderRadius: "12px", fontWeight: 600, fontSize: "14px", cursor: "pointer" }}
             >
-              <input
-                placeholder="Milk Name"
-                value={milk.name}
-                onChange={(e) => {
-                  const updated = [...newItem.milkOptions];
-                  updated[index].name = e.target.value;
-                  setNewItem({
-                    ...newItem,
-                    milkOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                type="number"
-                placeholder="Extra Price"
-                value={milk.price}
-                onChange={(e) => {
-                  const updated = [...newItem.milkOptions];
-                  updated[index].price = Number(e.target.value);
-
-                  setNewItem({
-                    ...newItem,
-                    milkOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", width: "120px" }}
-              />
-
-              <input
-                placeholder="Icon (🥛 🌾 🫘 🥥 or image URL)"
-                value={milk.icon}
-                onChange={(e) => {
-                  const updated = [...newItem.milkOptions];
-                  updated[index].icon = e.target.value;
-
-                  setNewItem({
-                    ...newItem,
-                    milkOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-              <button
-                type="button"
-                onClick={() =>
-                  setNewItem({
-                    ...newItem,
-                    milkOptions: newItem.milkOptions.filter(
-                      (_, i) => i !== index
-                    ),
-                  })
-                }
-                style={{
-                  background: "#D32F2F",
-                  color: "#fff",
-                  border: "none",
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                }}
-              >
-                🗑
-              </button>
-            </div>
-          ))}
-          <br />
-          <br />
-
-          <h3
-            style={{
-              marginTop: 30,
-              marginBottom: 15,
-              fontSize: "16px",
-              color: "#3B1A08",
-              fontFamily: "'Playfair Display', serif"
-            }}
-          >
-            Temperature Options
-          </h3>
-          <button
-            type="button"
-            onClick={() =>
-              setNewItem({
-                ...newItem,
-                temperatureOptions: [
-                  ...newItem.temperatureOptions,
-                  {
-                    name: "",
-                    description: "",
-                    icon: "",
-                  },
-                ],
-              })
-            }
-            style={{
-              padding: "10px 18px",
-              background: "#C4956A",
-              color: "#fff",
-              border: "none",
-              borderRadius: 10,
-              cursor: "pointer",
-              marginBottom: 20,
-              fontWeight: 600,
-            }}
-          >
-            🌡 Add Temperature
-          </button>
-
-          {newItem.temperatureOptions?.map((temp, index) => (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                gap: 10,
-                alignItems: "center",
-                marginBottom: 12,
-              }}
+              Save Product
+            </button>
+            <button
+              onClick={() => setShowAdd(false)}
+              style={{ background: "#E8DFD5", color: "#3B1A08", border: "none", padding: "14px 28px", borderRadius: "12px", fontWeight: 600, fontSize: "14px", cursor: "pointer" }}
             >
-              <input
-                placeholder="Temperature Name"
-                value={temp.name}
-                onChange={(e) => {
-                  const updated = [...newItem.temperatureOptions];
-                  updated[index].name = e.target.value;
-
-                  setNewItem({
-                    ...newItem,
-                    temperatureOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                placeholder="Description"
-                value={temp.description}
-                onChange={(e) => {
-                  const updated = [...newItem.temperatureOptions];
-                  updated[index].description = e.target.value;
-
-                  setNewItem({
-                    ...newItem,
-                    temperatureOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                placeholder="Icon (🔥 ❄️ or image/SVG URL)"
-                value={temp.icon}
-                onChange={(e) => {
-                  const updated = [...newItem.temperatureOptions];
-                  updated[index].icon = e.target.value;
-
-                  setNewItem({
-                    ...newItem,
-                    temperatureOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <button
-                type="button"
-                onClick={() =>
-                  setNewItem({
-                    ...newItem,
-                    temperatureOptions: newItem.temperatureOptions.filter(
-                      (_, i) => i !== index
-                    ),
-                  })
-                }
-                style={{
-                  background: "#D32F2F",
-                  color: "#fff",
-                  border: "none",
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                }}
-              >
-                🗑
-              </button>
-            </div>
-          ))}
-          <br />
-          <br />
-
-          <h4
-            style={{
-              marginTop: 30,
-              marginBottom: 10,
-              fontSize: "14px",
-              color: "#3B1A08",
-              fontWeight: 700,
-            }}
-          >
-            Maximum Extras Allowed
-          </h4>
-          <input
-            type="number"
-            min={1}
-            value={newItem.customExtrasMaxSelection}
-            onChange={(e) =>
-              setNewItem({
-                ...newItem,
-                customExtrasMaxSelection: Math.max(
-                  1,
-                  Number(e.target.value)
-                ),
-              })
-            }
-            style={{
-              width: 100,
-              padding: 10,
-              borderRadius: 10,
-              border: "1px solid #ddd",
-              marginBottom: 20,
-            }}
-          />
-
-          <h3
-            style={{
-              marginTop: 30,
-              marginBottom: 15,
-              fontSize: "16px",
-              color: "#3B1A08",
-              fontFamily: "'Playfair Display', serif"
-            }}
-          >
-            Custom Extras
-          </h3>
-          <button
-            type="button"
-            onClick={() =>
-              setNewItem({
-                ...newItem,
-                customExtras: [
-                  ...newItem.customExtras,
-                  {
-                    name: "",
-                    description: "",
-                    price: 0,
-                    icon: "",
-                  },
-                ],
-              })
-            }
-            style={{
-              padding: "10px 18px",
-              background: "#C4956A",
-              color: "#fff",
-              border: "none",
-              borderRadius: 10,
-              cursor: "pointer",
-              marginBottom: 20,
-              fontWeight: 600,
-            }}
-          >
-            ➕ Add Extra
-          </button>
-
-          {newItem.customExtras?.map((extra, index) => (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                gap: 10,
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-            >
-              <input
-                placeholder="Extra Name"
-                value={extra.name}
-                onChange={(e) => {
-                  const updated = [...newItem.customExtras];
-                  updated[index].name = e.target.value;
-                  setNewItem({
-                    ...newItem,
-                    customExtras: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                placeholder="Description"
-                value={extra.description}
-                onChange={(e) => {
-                  const updated = [...newItem.customExtras];
-                  updated[index].description = e.target.value;
-
-                  setNewItem({
-                    ...newItem,
-                    customExtras: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                type="number"
-                placeholder="Price"
-                value={extra.price}
-                onChange={(e) => {
-                  const updated = [...newItem.customExtras];
-                  updated[index].price = Number(e.target.value);
-
-                  setNewItem({
-                    ...newItem,
-                    customExtras: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", width: "100px" }}
-              />
-
-              <input
-                placeholder="Icon (🍫 or image/SVG URL)"
-                value={extra.icon}
-                onChange={(e) => {
-                  const updated = [...newItem.customExtras];
-                  updated[index].icon = e.target.value;
-
-                  setNewItem({
-                    ...newItem,
-                    customExtras: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <button
-                type="button"
-                onClick={() =>
-                  setNewItem({
-                    ...newItem,
-                    customExtras: newItem.customExtras.filter(
-                      (_, i) => i !== index
-                    ),
-                  })
-                }
-                style={{
-                  background: "#D32F2F",
-                  color: "#fff",
-                  border: "none",
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                }}
-              >
-                🗑
-              </button>
-            </div>
-          ))}
-          <br />
-          <br />
-
-          <h3
-            style={{
-              marginTop: 30,
-              marginBottom: 15,
-              fontSize: "16px",
-              color: "#3B1A08",
-              fontFamily: "'Playfair Display', serif"
-            }}
-          >
-            Sweetness Options
-          </h3>
-          <button
-            type="button"
-            onClick={() =>
-              setNewItem({
-                ...newItem,
-                sweetnessOptions: [
-                  ...newItem.sweetnessOptions,
-                  {
-                    name: "",
-                    description: "",
-                    icon: "",
-                  },
-                ],
-              })
-            }
-            style={{
-              padding: "10px 18px",
-              background: "#C4956A",
-              color: "#fff",
-              border: "none",
-              borderRadius: 10,
-              cursor: "pointer",
-              marginBottom: 20,
-              fontWeight: 600,
-            }}
-          >
-            🍬 Add Sweetness
-          </button>
-
-          {newItem.sweetnessOptions?.map((sweet, index) => (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                gap: 10,
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-            >
-              <input
-                placeholder="Name"
-                value={sweet.name}
-                onChange={(e) => {
-                  const updated = [...newItem.sweetnessOptions];
-                  updated[index].name = e.target.value;
-                  setNewItem({
-                    ...newItem,
-                    sweetnessOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                placeholder="Description"
-                value={sweet.description}
-                onChange={(e) => {
-                  const updated = [...newItem.sweetnessOptions];
-                  updated[index].description = e.target.value;
-
-                  setNewItem({
-                    ...newItem,
-                    sweetnessOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                placeholder="Icon (🍬 or image/SVG URL)"
-                value={sweet.icon}
-                onChange={(e) => {
-                  const updated = [...newItem.sweetnessOptions];
-                  updated[index].icon = e.target.value;
-
-                  setNewItem({
-                    ...newItem,
-                    sweetnessOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <button
-                type="button"
-                onClick={() =>
-                  setNewItem({
-                    ...newItem,
-                    sweetnessOptions: newItem.sweetnessOptions.filter(
-                      (_, i) => i !== index
-                    ),
-                  })
-                }
-                style={{
-                  background: "#D32F2F",
-                  color: "#fff",
-                  border: "none",
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                }}
-              >
-                🗑
-              </button>
-            </div>
-          ))}
-          <br />
-          <br />
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "30px" }}>
-            <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Prep Time</label>
-              <select
-                value={newItem.prepTime}
-                onChange={(e) =>
-                  setNewItem({
-                    ...newItem,
-                    prepTime: e.target.value,
-                  })
-                }
-                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", background: "#FAF7F2" }}
-              >
-                <option>2–4 mins</option>
-                <option>5–8 mins</option>
-                <option>8–12 mins</option>
-                <option>10–15 mins</option>
-                <option>Ready to Serve</option>
-              </select>
-            </div>
-
-            <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Served As</label>
-              <select
-                value={newItem.servedAs}
-                onChange={(e) =>
-                  setNewItem({
-                    ...newItem,
-                    servedAs: e.target.value,
-                  })
-                }
-                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", background: "#FAF7F2" }}
-              >
-                <option>Hot</option>
-                <option>Cold</option>
-                <option>Hot / Cold</option>
-                <option>Room Temperature</option>
-              </select>
-            </div>
-
-            <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Diet Type</label>
-              <select
-                value={newItem.dietType}
-                onChange={(e) =>
-                  setNewItem({
-                    ...newItem,
-                    dietType: e.target.value,
-                  })
-                }
-                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", background: "#FAF7F2" }}
-              >
-                <option>Vegetarian</option>
-                <option>Vegan</option>
-                <option>Non-Vegetarian</option>
-              </select>
-            </div>
+              Cancel
+            </button>
           </div>
-
-          <button onClick={addProduct} style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "14px 28px", borderRadius: "12px", fontWeight: 600, fontSize: "14px", cursor: "pointer" }}>Save Product</button>
         </div>
       )}
 
+      {/* Editing State Modal / Drawer */}
       {editing && (
         <div
           style={{
@@ -1368,19 +622,13 @@ export default function AdminPage({ setPage }) {
             </h2>
             <button onClick={() => setEditing(null)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#8C7A6B" }}>✕</button>
           </div>
-
+          
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "20px" }}>
             <div>
               <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Name</label>
               <input
-                placeholder="Name"
                 value={editItem.name}
-                onChange={(e) =>
-                  setEditItem({
-                    ...editItem,
-                    name: e.target.value,
-                  })
-                }
+                onChange={(e) => setEditItem({ ...editItem, name: e.target.value })}
                 style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2" }}
               />
             </div>
@@ -1388,12 +636,7 @@ export default function AdminPage({ setPage }) {
               <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Category</label>
               <select
                 value={editItem.category}
-                onChange={(e) =>
-                  setEditItem({
-                    ...editItem,
-                    category: e.target.value,
-                  })
-                }
+                onChange={(e) => setEditItem({ ...editItem, category: e.target.value })}
                 style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2" }}
               >
                 <option>Coffee</option>
@@ -1405,28 +648,16 @@ export default function AdminPage({ setPage }) {
               <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Price (₹)</label>
               <input
                 type="number"
-                placeholder="Price"
                 value={editItem.price}
-                onChange={(e) =>
-                  setEditItem({
-                    ...editItem,
-                    price: e.target.value,
-                  })
-                }
+                onChange={(e) => setEditItem({ ...editItem, price: e.target.value })}
                 style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2" }}
               />
             </div>
             <div>
               <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Emoji</label>
               <input
-                placeholder="Emoji"
                 value={editItem.emoji}
-                onChange={(e) =>
-                  setEditItem({
-                    ...editItem,
-                    emoji: e.target.value,
-                  })
-                }
+                onChange={(e) => setEditItem({ ...editItem, emoji: e.target.value })}
                 style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2" }}
               />
             </div>
@@ -1435,14 +666,8 @@ export default function AdminPage({ setPage }) {
           <div style={{ marginBottom: "20px" }}>
             <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Description</label>
             <textarea
-              placeholder="Description"
               value={editItem.desc}
-              onChange={(e) =>
-                setEditItem({
-                  ...editItem,
-                  desc: e.target.value,
-                })
-              }
+              onChange={(e) => setEditItem({ ...editItem, desc: e.target.value })}
               style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", minHeight: "90px", background: "#FAF7F2" }}
             />
           </div>
@@ -1450,780 +675,32 @@ export default function AdminPage({ setPage }) {
           <div style={{ marginBottom: "24px" }}>
             <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Cloudinary URL</label>
             <input
-              placeholder="Cloudinary URL"
               value={editItem.img}
-              onChange={(e) =>
-                setEditItem({
-                  ...editItem,
-                  img: e.target.value,
-                })
-              }
+              onChange={(e) => setEditItem({ ...editItem, img: e.target.value })}
               style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2" }}
             />
           </div>
 
-          <h3
-            style={{
-              marginTop: 30,
-              marginBottom: 15,
-              fontSize: "16px",
-              color: "#3B1A08",
-              fontFamily: "'Playfair Display', serif"
-            }}
-          >
-            Product Sizes
-          </h3>
-          <button
-            type="button"
-            onClick={() =>
-              setEditItem({
-                ...editItem,
-                sizes: [
-                  ...editItem.sizes,
-                  {
-                    name: "",
-                    volume: "",
-                    price: 0,
-                  },
-                ],
-              })
-            }
-            style={{
-              padding: "10px 18px",
-              background: "#C4956A",
-              color: "#fff",
-              border: "none",
-              borderRadius: 10,
-              cursor: "pointer",
-              marginBottom: 20,
-              fontWeight: 600,
-            }}
-          >
-            ➕ Add Size
-          </button>
-
-          {editItem.sizes.map((size, index) => (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                gap: 10,
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-            >
-              <input
-                placeholder="Size Name"
-                value={size.name}
-                onChange={(e) => {
-                  const updated = [...editItem.sizes];
-                  updated[index].name = e.target.value;
-                  setEditItem({
-                    ...editItem,
-                    sizes: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                placeholder="Volume"
-                value={size.volume}
-                onChange={(e) => {
-                  const updated = [...editItem.sizes];
-                  updated[index].volume = e.target.value;
-                  setEditItem({
-                    ...editItem,
-                    sizes: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                type="number"
-                placeholder="Price Difference"
-                value={size.price}
-                onChange={(e) => {
-                  const updated = [...editItem.sizes];
-                  updated[index].price = Number(e.target.value);
-                  setEditItem({
-                    ...editItem,
-                    sizes: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", width: "120px" }}
-              />
-
-              <button
-                type="button"
-                onClick={() => {
-                  setEditItem({
-                    ...editItem,
-                    sizes: editItem.sizes.filter(
-                      (_, i) => i !== index
-                    ),
-                  });
-                }}
-                style={{
-                  background: "#D32F2F",
-                  color: "#fff",
-                  border: "none",
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                }}
-              >
-                🗑
-              </button>
-            </div>
-          ))}
-          <br />
-          <br />
-
-          <h3
-            style={{
-              marginTop: 30,
-              marginBottom: 15,
-              fontSize: "16px",
-              color: "#3B1A08",
-              fontFamily: "'Playfair Display', serif"
-            }}
-          >
-            Milk Options
-          </h3>
-          <button
-            type="button"
-            onClick={() =>
-              setEditItem({
-                ...editItem,
-                milkOptions: [
-                  ...editItem.milkOptions,
-                  {
-                    name: "",
-                    price: 0,
-                    icon: "",
-                  },
-                ],
-              })
-            }
-            style={{
-              padding: "10px 18px",
-              background: "#C4956A",
-              color: "#fff",
-              border: "none",
-              borderRadius: 10,
-              cursor: "pointer",
-              marginBottom: 20,
-              fontWeight: 600,
-            }}
-          >
-            🥛 Add Milk Option
-          </button>
-
-          {editItem.milkOptions?.map((milk, index) => (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                gap: 10,
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-            >
-              <input
-                placeholder="Milk Name"
-                value={milk.name}
-                onChange={(e) => {
-                  const updated = [...editItem.milkOptions];
-                  updated[index].name = e.target.value;
-                  setEditItem({
-                    ...editItem,
-                    milkOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                type="number"
-                placeholder="Extra Price"
-                value={milk.price}
-                onChange={(e) => {
-                  const updated = [...editItem.milkOptions];
-                  updated[index].price = Number(e.target.value);
-
-                  setEditItem({
-                    ...editItem,
-                    milkOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", width: "120px" }}
-              />
-
-              <input
-                placeholder="Icon (🥛 🌾 🫘 🥥 or image URL)"
-                value={milk.icon}
-                onChange={(e) => {
-                  const updated = [...editItem.milkOptions];
-                  updated[index].icon = e.target.value;
-
-                  setEditItem({
-                    ...editItem,
-                    milkOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-              <button
-                type="button"
-                onClick={() =>
-                  setEditItem({
-                    ...editItem,
-                    milkOptions: editItem.milkOptions.filter(
-                      (_, i) => i !== index
-                    ),
-                  })
-                }
-                style={{
-                  background: "#D32F2F",
-                  color: "#fff",
-                  border: "none",
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                }}
-              >
-                🗑
-              </button>
-            </div>
-          ))}
-          <br />
-          <br />
-
-          <h3
-            style={{
-              marginTop: 30,
-              marginBottom: 15,
-              fontSize: "16px",
-              color: "#3B1A08",
-              fontFamily: "'Playfair Display', serif"
-            }}
-          >
-            Temperature Options
-          </h3>
-          <button
-            type="button"
-            onClick={() =>
-              setEditItem({
-                ...editItem,
-                temperatureOptions: [
-                  ...editItem.temperatureOptions,
-                  {
-                    name: "",
-                    description: "",
-                    icon: "",
-                  },
-                ],
-              })
-            }
-            style={{
-              padding: "10px 18px",
-              background: "#C4956A",
-              color: "#fff",
-              border: "none",
-              borderRadius: 10,
-              cursor: "pointer",
-              marginBottom: 20,
-              fontWeight: 600,
-            }}
-          >
-            🌡 Add Temperature
-          </button>
-
-          {editItem.temperatureOptions?.map((temp, index) => (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                gap: 10,
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-            >
-              <input
-                placeholder="Temperature Name"
-                value={temp.name}
-                onChange={(e) => {
-                  const updated = [...editItem.temperatureOptions];
-                  updated[index].name = e.target.value;
-                  setEditItem({
-                    ...editItem,
-                    temperatureOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                placeholder="Description"
-                value={temp.description}
-                onChange={(e) => {
-                  const updated = [...editItem.temperatureOptions];
-                  updated[index].description = e.target.value;
-
-                  setEditItem({
-                    ...editItem,
-                    temperatureOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                placeholder="Icon (🔥 ❄️ or image/SVG URL)"
-                value={temp.icon}
-                onChange={(e) => {
-                  const updated = [...editItem.temperatureOptions];
-                  updated[index].icon = e.target.value;
-
-                  setEditItem({
-                    ...editItem,
-                    temperatureOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <button
-                type="button"
-                onClick={() =>
-                  setEditItem({
-                    ...editItem,
-                    temperatureOptions: editItem.temperatureOptions.filter(
-                      (_, i) => i !== index
-                    ),
-                  })
-                }
-                style={{
-                  background: "#D32F2F",
-                  color: "#fff",
-                  border: "none",
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                }}
-              >
-                🗑
-              </button>
-            </div>
-          ))}
-          <br />
-          <br />
-
-          <h4
-            style={{
-              marginTop: 30,
-              marginBottom: 10,
-              fontSize: "14px",
-              color: "#3B1A08",
-              fontWeight: 700,
-            }}
-          >
-            Maximum Extras Allowed
-          </h4>
-          <input
-            type="number"
-            min={1}
-            value={editItem.customExtrasMaxSelection}
-            onChange={(e) =>
-              setEditItem({
-                ...editItem,
-                customExtrasMaxSelection: Math.max(
-                  1,
-                  Number(e.target.value)
-                ),
-              })
-            }
-            style={{
-              width: 100,
-              padding: 10,
-              borderRadius: 10,
-              border: "1px solid #ddd",
-              marginBottom: 20,
-            }}
-          />
-
-          <h3
-            style={{
-              marginTop: 30,
-              marginBottom: 15,
-              fontSize: "16px",
-              color: "#3B1A08",
-              fontFamily: "'Playfair Display', serif"
-            }}
-          >
-            Custom Extras
-          </h3>
-          <button
-            type="button"
-            onClick={() =>
-              setEditItem({
-                ...editItem,
-                customExtras: [
-                  ...editItem.customExtras,
-                  {
-                    name: "",
-                    description: "",
-                    price: 0,
-                    icon: "",
-                  },
-                ],
-              })
-            }
-            style={{
-              padding: "10px 18px",
-              background: "#C4956A",
-              color: "#fff",
-              border: "none",
-              borderRadius: 10,
-              cursor: "pointer",
-              marginBottom: 20,
-              fontWeight: 600,
-            }}
-          >
-            ➕ Add Extra
-          </button>
-
-          {editItem.customExtras?.map((extra, index) => (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                gap: 10,
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-            >
-              <input
-                placeholder="Extra Name"
-                value={extra.name}
-                onChange={(e) => {
-                  const updated = [...editItem.customExtras];
-                  updated[index].name = e.target.value;
-                  setEditItem({
-                    ...editItem,
-                    customExtras: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                placeholder="Description"
-                value={extra.description}
-                onChange={(e) => {
-                  const updated = [...editItem.customExtras];
-                  updated[index].description = e.target.value;
-
-                  setEditItem({
-                    ...editItem,
-                    customExtras: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                type="number"
-                placeholder="Price"
-                value={extra.price}
-                onChange={(e) => {
-                  const updated = [...editItem.customExtras];
-                  updated[index].price = Number(e.target.value);
-
-                  setEditItem({
-                    ...editItem,
-                    customExtras: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", width: "100px" }}
-              />
-
-              <input
-                placeholder="Icon (🍫 or image/SVG URL)"
-                value={extra.icon}
-                onChange={(e) => {
-                  const updated = [...editItem.customExtras];
-                  updated[index].icon = e.target.value;
-
-                  setEditItem({
-                    ...editItem,
-                    customExtras: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <button
-                type="button"
-                onClick={() =>
-                  setEditItem({
-                    ...editItem,
-                    customExtras: editItem.customExtras.filter(
-                      (_, i) => i !== index
-                    ),
-                  })
-                }
-                style={{
-                  background: "#D32F2F",
-                  color: "#fff",
-                  border: "none",
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                }}
-              >
-                🗑
-              </button>
-            </div>
-          ))}
-          <br />
-          <br />
-
-          <h3
-            style={{
-              marginTop: 30,
-              marginBottom: 15,
-              fontSize: "16px",
-              color: "#3B1A08",
-              fontFamily: "'Playfair Display', serif"
-            }}
-          >
-            Sweetness Options
-          </h3>
-          <button
-            type="button"
-            onClick={() =>
-              setEditItem({
-                ...editItem,
-                sweetnessOptions: [
-                  ...(editItem.sweetnessOptions || []),
-                  {
-                    name: "",
-                    description: "",
-                    icon: "",
-                  },
-                ],
-              })
-            }
-            style={{
-              padding: "10px 18px",
-              background: "#C4956A",
-              color: "#fff",
-              border: "none",
-              borderRadius: 10,
-              cursor: "pointer",
-              marginBottom: 20,
-              fontWeight: 600,
-            }}
-          >
-            🍬 Add Sweetness
-          </button>
-
-          {editItem.sweetnessOptions?.map((sweet, index) => (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                gap: 10,
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-            >
-              <input
-                placeholder="Name"
-                value={sweet.name}
-                onChange={(e) => {
-                  const updated = [...editItem.sweetnessOptions];
-                  updated[index].name = e.target.value;
-                  setEditItem({
-                    ...editItem,
-                    sweetnessOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                placeholder="Description"
-                value={sweet.description}
-                onChange={(e) => {
-                  const updated = [...editItem.sweetnessOptions];
-                  updated[index].description = e.target.value;
-
-                  setEditItem({
-                    ...editItem,
-                    sweetnessOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <input
-                placeholder="Icon (🍬 or image/SVG URL)"
-                value={sweet.icon}
-                onChange={(e) => {
-                  const updated = [...editItem.sweetnessOptions];
-                  updated[index].icon = e.target.value;
-
-                  setEditItem({
-                    ...editItem,
-                    sweetnessOptions: updated,
-                  });
-                }}
-                style={{ padding: "10px", borderRadius: "8px", border: "1px solid #ddd", flex: 1 }}
-              />
-
-              <button
-                type="button"
-                onClick={() =>
-                  setEditItem({
-                    ...editItem,
-                    sweetnessOptions:
-                      editItem.sweetnessOptions.filter(
-                        (_, i) => i !== index
-                      ),
-                  })
-                }
-                style={{
-                  background: "#D32F2F",
-                  color: "#fff",
-                  border: "none",
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                }}
-              >
-                🗑
-              </button>
-            </div>
-          ))}
-          <br />
-          <br />
-
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginTop: 20,
-              fontWeight: 600,
-              color: "#3B1A08",
-            }}
-          >
+          <label style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "25px", fontWeight: 600, color: "#3B1A08", cursor: "pointer" }}>
             <input
               type="checkbox"
               checked={editItem.isFeatured}
-              onChange={(e) =>
-                setEditItem({
-                  ...editItem,
-                  isFeatured: e.target.checked,
-                })
-              }
+              onChange={(e) => setEditItem({ ...editItem, isFeatured: e.target.checked })}
               style={{ width: "18px", height: "18px", accentColor: "#3B1A08" }}
             />
-            Featured Product
+            Highlight as Featured Menu Item
           </label>
-
-          <br />
-          <br />
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "30px" }}>
-            <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Prep Time</label>
-              <select
-                value={editItem.prepTime}
-                onChange={(e) =>
-                  setEditItem({
-                    ...editItem,
-                    prepTime: e.target.value,
-                  })
-                }
-                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", background: "#FAF7F2" }}
-              >
-                <option>2–4 mins</option>
-                <option>5–8 mins</option>
-                <option>8–12 mins</option>
-                <option>10–15 mins</option>
-                <option>Ready to Serve</option>
-              </select>
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Served As</label>
-              <select
-                value={editItem.servedAs}
-                onChange={(e) =>
-                  setEditItem({
-                    ...editItem,
-                    servedAs: e.target.value,
-                  })
-                }
-                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", background: "#FAF7F2" }}
-              >
-                <option>Hot</option>
-                <option>Cold</option>
-                <option>Hot / Cold</option>
-                <option>Room Temperature</option>
-              </select>
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Diet Type</label>
-              <select
-                value={editItem.dietType}
-                onChange={(e) =>
-                  setEditItem({
-                    ...editItem,
-                    dietType: e.target.value,
-                  })
-                }
-                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", background: "#FAF7F2" }}
-              >
-                <option>Vegetarian</option>
-                <option>Vegan</option>
-                <option>Non-Vegetarian</option>
-              </select>
-            </div>
-          </div>
 
           <div style={{ display: "flex", gap: "15px" }}>
             <button
               onClick={updateProduct}
-              style={{
-                background: "#2E7D32",
-                color: "#FFF",
-                border: "none",
-                padding: "14px 28px",
-                borderRadius: "12px",
-                fontWeight: 600,
-                fontSize: "14px",
-                cursor: "pointer",
-              }}
+              style={{ background: "#2E7D32", color: "#FFF", border: "none", padding: "14px 28px", borderRadius: "12px", fontWeight: 600, fontSize: "14px", cursor: "pointer" }}
             >
               💾 Save Changes
             </button>
-            <button 
+            <button
               onClick={() => setEditing(null)}
-              style={{
-                background: "#E8DFD5",
-                color: "#3B1A08",
-                border: "none",
-                padding: "14px 28px",
-                borderRadius: "12px",
-                fontWeight: 600,
-                fontSize: "14px",
-                cursor: "pointer",
-              }}
+              style={{ background: "#E8DFD5", color: "#3B1A08", border: "none", padding: "14px 28px", borderRadius: "12px", fontWeight: 600, fontSize: "14px", cursor: "pointer" }}
             >
               Cancel
             </button>
@@ -2231,16 +708,15 @@ export default function AdminPage({ setPage }) {
         </div>
       )}
 
-      {/* Menu Cards Grid */}
+      {/* Menu Cards Grid with all professional enhancements */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "24px" }}>
         {menu
           .filter((item) => {
             const matchesSearch =
-              item.name.toLowerCase().includes(search.toLowerCase()) ||
-              item.category.toLowerCase().includes(search.toLowerCase());
+              (item.name || "").toLowerCase().includes(search.toLowerCase()) ||
+              (item.category || "").toLowerCase().includes(search.toLowerCase());
             const matchesCategory =
-              categoryFilter === "All" ||
-              item.category === categoryFilter;
+              categoryFilter === "All" || item.category === categoryFilter;
             return matchesSearch && matchesCategory;
           })
           .map((item) => (
@@ -2255,35 +731,63 @@ export default function AdminPage({ setPage }) {
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
-                transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                transform: "translateY(0)",
+                transition: "all 0.25s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 14px 35px rgba(59, 26, 8, 0.08)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 8px 30px rgba(59, 26, 8, 0.04)";
               }}
             >
               <div>
-                {item.img && (
-                  <div style={{ width: "100%", height: "160px", overflow: "hidden", background: "#F2ECE4" }}>
+                {/* 7. Rich Thumbnail Image or Emoji Fallback */}
+                <div style={{ width: "100%", height: "160px", overflow: "hidden", background: "#F2ECE4", position: "relative" }}>
+                  {item.img ? (
                     <img src={item.img} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  </div>
-                )}
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "48px" }}>
+                      {item.emoji || "☕"}
+                    </div>
+                  )}
+
+                  {/* 6. Featured Badge ⭐ */}
+                  {item.isFeatured && (
+                    <div style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(212, 172, 13, 0.95)", color: "#FFFFFF", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", backdropFilter: "blur(4px)" }}>
+                      ⭐ Featured
+                    </div>
+                  )}
+                </div>
                 
-                <div style={{ padding: "24px 24px 16px 24px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
+                <div style={{ padding: "20px 24px 12px 24px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                     <div>
                       <span style={{ fontSize: "11px", fontWeight: 700, background: "#F2ECE4", color: "#7A6558", padding: "4px 10px", borderRadius: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                         {item.category || "General"}
                       </span>
-                      <h3 style={{ margin: "10px 0 4px 0", fontSize: "20px", fontWeight: 700, color: "#3B1A08", fontFamily: "'Playfair Display', serif" }}>
-                        {item.emoji} {item.name}
+                      <h3 style={{ margin: "8px 0 4px 0", fontSize: "20px", fontWeight: 700, color: "#3B1A08", fontFamily: "'Playfair Display', serif" }}>
+                        {item.name || "Unnamed Product"}
                       </h3>
                     </div>
-                    <strong style={{ fontSize: "18px", color: "#C4956A", fontWeight: 800 }}>₹{item.price}</strong>
+                    {/* 2. Premium Typography Price */}
+                    <strong style={{ fontSize: "34px", color: "#A9784E", fontWeight: 700, lineHeight: 1, fontFamily: "'Playfair Display', serif" }}>
+                      ₹{item.price || 0}
+                    </strong>
                   </div>
-                  <p style={{ color: "#7A6558", fontSize: "13px", margin: "0", lineHeight: "1.6", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+
+                  {/* 1. Minimum Height Description for Uniform Card Alignment */}
+                  <p style={{ color: "#7A6558", fontSize: "13px", margin: "0", lineHeight: "1.6", minHeight: "42px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                     {item.desc || "No description provided."}
                   </p>
                 </div>
               </div>
 
+              {/* Action Buttons Footer */}
               <div style={{ padding: "16px 24px", background: "#FAF7F2", borderTop: "1px solid #F2ECE4", display: "flex", gap: "8px", alignItems: "center" }}>
+                {/* 3. Filled Styled Edit Button */}
                 <button
                   onClick={() => {
                     setEditing(item);
@@ -2295,24 +799,23 @@ export default function AdminPage({ setPage }) {
                       emoji: item.emoji || "",
                       img: item.img || "",
                       isFeatured: item.isFeatured || false,
-                      available: item.available,
+                      available: item.available ?? true,
                       sizes: item.sizes || [],
                       milkOptions: item.milkOptions || [],
                       temperatureOptions: item.temperatureOptions || [],
                       customExtras: item.customExtras || [],
-                      customExtrasMaxSelection:
-                        item.customExtrasMaxSelection || 3,
+                      customExtrasMaxSelection: item.customExtrasMaxSelection || 3,
                       sweetnessOptions: item.sweetnessOptions || [],
-                      prepTime: item.prepTime,
-                      servedAs: item.servedAs,
-                      dietType: item.dietType,
+                      prepTime: item.prepTime || "5–8 mins",
+                      servedAs: item.servedAs || "Hot",
+                      dietType: item.dietType || "Vegetarian",
                     });
                   }}
                   style={{
                     flex: 1,
-                    background: "#FFFFFF",
+                    background: "#F7F2EC",
                     color: "#3B1A08",
-                    border: "1px solid #E2D5C9",
+                    border: "1px solid #E7D8C8",
                     padding: "10px",
                     borderRadius: "10px",
                     cursor: "pointer",
@@ -2321,29 +824,38 @@ export default function AdminPage({ setPage }) {
                     transition: "all 0.2s ease",
                   }}
                 >
-                  ✏ Edit
+                  ✏️ Edit
                 </button>
+
+                {/* 4. Refined Square Delete Button */}
                 <button
                   onClick={() => deleteProduct(item.firestoreId)}
                   style={{
-                    background: "#FCE8E6",
+                    background: "#FFF1F1",
                     color: "#C62828",
-                    border: "none",
-                    padding: "10px 14px",
+                    border: "1px solid #F5C6CB",
+                    width: "40px",
+                    height: "38px",
                     borderRadius: "10px",
                     cursor: "pointer",
-                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "16px",
+                    transition: "all 0.2s ease",
                   }}
                   title="Delete Product"
                 >
                   🗑
                 </button>
+
+                {/* Stock status toggle button */}
                 <button
                   onClick={() => toggleAvailability(item)}
                   style={{
                     flex: 1.2,
                     background: item.available === false ? "#777777" : "#2E7D32",
-                    color: "#fff",
+                    color: "#FFFFFF",
                     border: "none",
                     padding: "10px",
                     borderRadius: "10px",
