@@ -578,15 +578,13 @@ return (
         },
         {
           title: "⚙ Settings",
-          page: "settingsAdmin",
+          page: "settingsadmin",
         },
       ].map((item) => (
 
         <button
           key={item.title}
-          onClick={() =>
-            setPage(item.page)
-          }
+          onClick={() => setActivePage(item.page)}
           style={{
             padding: 20,
             background: "#fff",
