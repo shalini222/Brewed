@@ -23,7 +23,7 @@ import {
   Bar,
 } from "recharts";
 
-export default function MenuManagment({ setPage }) {
+export default function MenuManagement({ setPage }) {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
