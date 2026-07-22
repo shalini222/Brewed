@@ -32,7 +32,7 @@ export default function AdminPage({ setPage }) {
           MENU MANAGEMENT
       ========================= */}
 
-      {activePage === "menu" && (
+      {activePage === "menuadmin" && (
         <MenuManagement
           setPage={setPage}
           activePage={activePage}
