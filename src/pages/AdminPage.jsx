@@ -5,7 +5,7 @@ import MenuManagement from "../admin/MenuManagement";
 
 
 export default function AdminPage({ setPage }) {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activePage, setActivePage] = useState("dashboard");
     // Which admin page is currently active
   
 
