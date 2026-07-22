@@ -25,7 +25,7 @@ import {
 
 export default function MenuManagement({ setPage , setActivePage }) {
   const [menu, setMenu] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
