@@ -257,16 +257,17 @@ export default function AdminPage({ setPage, setActivePage }) {
   return (
     <div style={{ padding: "40px 32px", fontFamily: "'Inter', sans-serif", background: "#FDFBF7", minHeight: "100vh", color: "#2C1810", position: "relative" }}>
       
-      {/* Toast Notification Container */}
+      {/* Toast Notification Container (Bottom Middle) */}
       {toast && (
         <div
           style={{
             position: "fixed",
             bottom: "30px",
-            right: "30px",
+            left: "50%",
+            transform: "translateX(-50%)",
             background: "#2C1810",
             color: "#FFF9F0",
-            padding: "16px 24px",
+            padding: "16px 28px",
             borderRadius: "14px",
             boxShadow: "0 10px 30px rgba(44, 24, 16, 0.25)",
             zIndex: 9999,
@@ -277,13 +278,14 @@ export default function AdminPage({ setPage, setActivePage }) {
             fontSize: "14px",
             border: "1px solid rgba(255, 255, 255, 0.1)",
             animation: "fadeIn 0.3s ease",
+            whiteSpace: "nowrap",
           }}
         >
           <span>☕</span> {toast}
         </div>
       )}
 
-      {/* 1. Header & Navigation Refinement (Tightened padding & brand logo alignment) */}
+      {/* Header & Navigation Refinement */}
       <header
         style={{
           display: "flex",
@@ -316,7 +318,6 @@ export default function AdminPage({ setPage, setActivePage }) {
           </div>
         </div>
 
-        {/* Unified Primary/Secondary Button hierarchy */}
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
           <button
             onClick={() => setShowNotifications(!showNotifications)}
@@ -400,7 +401,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         </div>
       </header>
 
-      {/* 2. Standardized Metric Cards Consistency (Consistent line icon rounded plates & sharp serif numbers with contrast tracking) */}
+      {/* Metric Cards Consistency */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "28px" }}>
         
         <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", boxShadow: "0 4px 16px rgba(59, 26, 8, 0.02)", display: "flex", alignItems: "center", gap: "16px" }}>
@@ -437,7 +438,7 @@ export default function AdminPage({ setPage, setActivePage }) {
 
       </div>
 
-      {/* 3. Primary CTA Alignment (Action Trigger Section) */}
+      {/* Action Trigger Section */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "28px" }}>
         <button
           onClick={() => setShowAdd(!showAdd)}
@@ -484,7 +485,6 @@ export default function AdminPage({ setPage, setActivePage }) {
           <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#6E523D", fontSize: "16px" }}>🔍</span>
         </div>
         
-        {/* Inactive pills refined with crisp borders and subtle hover state definition */}
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
           {["All", "Coffee", "Non-Coffee", "Food"].map((cat) => (
             <button
