@@ -19,6 +19,9 @@ export default function AdminPage({ setPage, setActivePage }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [sortBy, setSortBy] = useState("featured");
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const sortDropdownRef = useRef(null);
+
   const [orders, setOrders] = useState([]);
   const [orderLoading, setOrderLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
@@ -83,6 +86,15 @@ export default function AdminPage({ setPage, setActivePage }) {
 
   useEffect(() => {
     loadMenu();
+
+    // Close sort dropdown when clicking outside
+    function handleClickOutside(event) {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target)) {
+        setShowSortDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+
     const unsubscribe = onSnapshot(collection(db, "orders"), (snapshot) => {
       const data = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -130,6 +142,7 @@ export default function AdminPage({ setPage, setActivePage }) {
     );
 
     return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
       unsubscribe();
       unsubscribeUsers();
     };
@@ -259,6 +272,18 @@ export default function AdminPage({ setPage, setActivePage }) {
   const featuredCount = menu.filter((i) => i.isFeatured).length;
   const inStockCount = menu.filter((i) => i.available !== false).length;
   const outOfStockCount = menu.filter((i) => i.available === false).length;
+
+  const sortOptions = [
+    { id: "featured", label: "Featured First" },
+    { id: "high-to-low", label: "Highest to Lowest" },
+    { id: "low-to-high", label: "Lowest to Highest" },
+    { id: "best-selling", label: "Best Selling" },
+    { id: "new-to-old", label: "New to Old" },
+    { id: "old-to-new", label: "Old to New" },
+    { id: "last-edited", label: "Last Edited" },
+  ];
+
+  const currentSortLabel = sortOptions.find((o) => o.id === sortBy)?.label || "Sort";
 
   return (
     <div style={{ padding: "40px 32px", fontFamily: "'Inter', sans-serif", background: "#FDFBF7", minHeight: "100vh", color: "#2C1810", position: "relative" }}>
@@ -468,9 +493,11 @@ export default function AdminPage({ setPage, setActivePage }) {
         </button>
       </div>
 
-      {/* Search Bar & Sort Option Bar (Aligned at the exact same level) */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "20px" }}>
-        <div style={{ position: "relative", maxWidth: "440px", flex: 1, minWidth: "280px" }}>
+      {/* Search Bar & Custom Dropdown Sort Bar (Aligned at exact same eye level via padding-top adjustments) */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px", flexWrap: "wrap", gap: "20px" }}>
+        
+        {/* Search input container with top padding matching the sort wrapper alignment */}
+        <div style={{ position: "relative", maxWidth: "440px", flex: 1, minWidth: "280px", paddingTop: "2px" }}>
           <input
             type="text"
             placeholder="Search items by name or category..."
@@ -489,35 +516,78 @@ export default function AdminPage({ setPage, setActivePage }) {
               boxSizing: "border-box",
             }}
           />
-          <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#6E523D", fontSize: "16px" }}>🔍</span>
+          <span style={{ position: "absolute", left: "16px", top: "calc(50% + 1px)", transform: "translateY(-50%)", color: "#6E523D", fontSize: "16px" }}>🔍</span>
         </div>
 
-        {/* Sort Option (Aligned precisely with search bar on the right) */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "#FFFFFF", padding: "10px 16px", borderRadius: "12px", border: "1px solid #E8DFD5", boxShadow: "0 2px 8px rgba(59, 26, 8, 0.02)" }}>
-          <span style={{ fontSize: "13px", fontWeight: 700, color: "#6E523D", textTransform: "uppercase", letterSpacing: "0.5px" }}>Sort By:</span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+        {/* Custom Dropdown Sort Button & Menu (Aligned precisely with padding-top) */}
+        <div ref={sortDropdownRef} style={{ position: "relative", paddingTop: "2px" }}>
+          <button
+            onClick={() => setShowSortDropdown(!showSortDropdown)}
             style={{
-              padding: "8px 12px",
-              borderRadius: "8px",
+              padding: "13px 20px",
+              backgroundColor: "#FFFFFF",
               border: "1px solid #D8C8B8",
-              fontSize: "13px",
-              outline: "none",
-              background: "#FAF7F2",
-              color: "#3B1A08",
-              fontWeight: 600,
+              borderRadius: "12px",
               cursor: "pointer",
+              fontWeight: 600,
+              fontSize: "14px",
+              color: "#3B1A08",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              boxShadow: "0 2px 10px rgba(59, 26, 8, 0.02)",
+              whiteSpace: "nowrap",
             }}
           >
-            <option value="featured">Featured First</option>
-            <option value="high-to-low">Highest to Lowest</option>
-            <option value="low-to-high">Lowest to Highest</option>
-            <option value="best-selling">Best Selling</option>
-            <option value="new-to-old">New to Old</option>
-            <option value="old-to-new">Old to New</option>
-            <option value="last-edited">Last Edited</option>
-          </select>
+            <span style={{ color: "#6E523D", fontSize: "12px", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px" }}>Sort:</span>
+            <span>{currentSortLabel}</span>
+            <span style={{ fontSize: "10px", color: "#6E523D", marginLeft: "4px" }}>▼</span>
+          </button>
+
+          {showSortDropdown && (
+            <div
+              style={{
+                position: "absolute",
+                right: 0,
+                top: "calc(100% + 6px)",
+                background: "#FFFFFF",
+                borderRadius: "14px",
+                boxShadow: "0 10px 30px rgba(44, 24, 16, 0.12)",
+                border: "1px solid #E8DFD5",
+                zIndex: 1000,
+                minWidth: "200px",
+                overflow: "hidden",
+                padding: "6px 0",
+              }}
+            >
+              {sortOptions.map((option) => (
+                <div
+                  key={option.id}
+                  onClick={() => {
+                    setSortBy(option.id);
+                    setShowSortDropdown(false);
+                  }}
+                  style={{
+                    padding: "10px 18px",
+                    fontSize: "13px",
+                    fontWeight: sortBy === option.id ? 700 : 500,
+                    color: sortBy === option.id ? "#3B1A08" : "#5C4A3E",
+                    background: sortBy === option.id ? "#FAF7F2" : "transparent",
+                    cursor: "pointer",
+                    transition: "background 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (sortBy !== option.id) e.currentTarget.style.background = "#FDFBF7";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (sortBy !== option.id) e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  {option.label}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
