@@ -464,55 +464,31 @@ export default function AdminPage({ setPage, setActivePage }) {
         </button>
       </div>
 
-      {/* Search & Categories Filter + Sort Option Bar */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px", flexWrap: "wrap", gap: "20px" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px", flex: 1, minWidth: "280px" }}>
-          <div style={{ position: "relative", maxWidth: "440px" }}>
-            <input
-              type="text"
-              placeholder="Search items by name or category..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "14px 18px 14px 44px",
-                borderRadius: "12px",
-                border: "1px solid #D8C8B8",
-                fontSize: "14px",
-                outline: "none",
-                background: "#FFFFFF",
-                boxShadow: "0 2px 10px rgba(59, 26, 8, 0.02)",
-                color: "#2C1810",
-              }}
-            />
-            <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#6E523D", fontSize: "16px" }}>🔍</span>
-          </div>
-          
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            {["All", "Coffee", "Non-Coffee", "Food"].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setCategoryFilter(cat)}
-                style={{
-                  padding: "8px 20px",
-                  borderRadius: "30px",
-                  border: categoryFilter === cat ? "1px solid #3B1A08" : "1px solid #D8C8B8",
-                  cursor: "pointer",
-                  background: categoryFilter === cat ? "#3B1A08" : "#FFFFFF",
-                  color: categoryFilter === cat ? "#FFF" : "#4A3B32",
-                  fontWeight: 600,
-                  fontSize: "13px",
-                  boxShadow: categoryFilter === cat ? "0 4px 12px rgba(59, 26, 8, 0.15)" : "0 1px 3px rgba(0,0,0,0.02)",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+      {/* Search Bar & Sort Option Bar (Aligned at the exact same level) */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "20px" }}>
+        <div style={{ position: "relative", maxWidth: "440px", flex: 1, minWidth: "280px" }}>
+          <input
+            type="text"
+            placeholder="Search items by name or category..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "14px 18px 14px 44px",
+              borderRadius: "12px",
+              border: "1px solid #D8C8B8",
+              fontSize: "14px",
+              outline: "none",
+              background: "#FFFFFF",
+              boxShadow: "0 2px 10px rgba(59, 26, 8, 0.02)",
+              color: "#2C1810",
+              boxSizing: "border-box",
+            }}
+          />
+          <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#6E523D", fontSize: "16px" }}>🔍</span>
         </div>
 
-        {/* Sort Option (Right side above menu cards) */}
+        {/* Sort Option (Aligned precisely with search bar on the right) */}
         <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "#FFFFFF", padding: "10px 16px", borderRadius: "12px", border: "1px solid #E8DFD5", boxShadow: "0 2px 8px rgba(59, 26, 8, 0.02)" }}>
           <span style={{ fontSize: "13px", fontWeight: 700, color: "#6E523D", textTransform: "uppercase", letterSpacing: "0.5px" }}>Sort By:</span>
           <select
@@ -537,6 +513,30 @@ export default function AdminPage({ setPage, setActivePage }) {
             <option value="old-to-new">Old to New</option>
           </select>
         </div>
+      </div>
+
+      {/* Categories Filter Pills */}
+      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "32px" }}>
+        {["All", "Coffee", "Non-Coffee", "Food"].map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setCategoryFilter(cat)}
+            style={{
+              padding: "8px 20px",
+              borderRadius: "30px",
+              border: categoryFilter === cat ? "1px solid #3B1A08" : "1px solid #D8C8B8",
+              cursor: "pointer",
+              background: categoryFilter === cat ? "#3B1A08" : "#FFFFFF",
+              color: categoryFilter === cat ? "#FFF" : "#4A3B32",
+              fontWeight: 600,
+              fontSize: "13px",
+              boxShadow: categoryFilter === cat ? "0 4px 12px rgba(59, 26, 8, 0.15)" : "0 1px 3px rgba(0,0,0,0.02)",
+              transition: "all 0.2s ease",
+            }}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
 
       {/* Add Product Modal Drawer */}
