@@ -255,7 +255,7 @@ export default function AdminPage({ setPage, setActivePage }) {
   const outOfStockCount = menu.filter((i) => i.available === false).length;
 
   return (
-    <div style={{ padding: "48px 40px", fontFamily: "'Inter', sans-serif", background: "#FDFBF7", minHeight: "100vh", color: "#2C1810", position: "relative" }}>
+    <div style={{ padding: "40px 32px", fontFamily: "'Inter', sans-serif", background: "#FDFBF7", minHeight: "100vh", color: "#2C1810", position: "relative" }}>
       
       {/* Toast Notification Container */}
       {toast && (
@@ -283,7 +283,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         </div>
       )}
 
-      {/* Header Section with tight margins and clean alignment */}
+      {/* 1. Header & Navigation Refinement (Tightened padding & brand logo alignment) */}
       <header
         style={{
           display: "flex",
@@ -291,47 +291,48 @@ export default function AdminPage({ setPage, setActivePage }) {
           alignItems: "center",
           marginBottom: "28px",
           background: "#FFFFFF",
-          padding: "24px 36px",
+          padding: "20px 28px",
           borderRadius: "20px",
           border: "1px solid #E8DFD5",
           boxShadow: "0 10px 30px rgba(59, 26, 8, 0.04)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
-          <div style={{ width: "52px", height: "52px", borderRadius: "14px", background: "linear-gradient(135deg, #3B1A08 0%, #59290C 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px", boxShadow: "0 6px 16px rgba(59, 26, 8, 0.15)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{ width: "46px", height: "46px", borderRadius: "12px", background: "linear-gradient(135deg, #3B1A08 0%, #59290C 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", boxShadow: "0 4px 12px rgba(59, 26, 8, 0.15)" }}>
             ☕
           </div>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <h1 style={{ margin: 0, fontSize: "28px", fontWeight: "700", fontFamily: "'Playfair Display', serif", color: "#3B1A08", letterSpacing: "-0.5px", lineHeight: "1.2" }}>
+              <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "700", fontFamily: "'Playfair Display', serif", color: "#3B1A08", letterSpacing: "-0.5px", lineHeight: "1.2" }}>
                 Brewed
               </h1>
-              <span style={{ fontSize: "11px", fontWeight: 700, background: "#F4ECE4", color: "#8C6D53", padding: "3px 8px", borderRadius: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, background: "#F4ECE4", color: "#6E523D", padding: "3px 8px", borderRadius: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                 Menu Management
               </span>
             </div>
-            <p style={{ margin: "2px 0 0 0", color: "#8C7A6B", fontSize: "14px", fontWeight: "400", lineHeight: "1.4" }}>
+            <p style={{ margin: "2px 0 0 0", color: "#6E523D", fontSize: "13px", fontWeight: "400", lineHeight: "1.4" }}>
               Curate exquisite offerings, adjust pricing, and control item availability seamlessly.
             </p>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
+        {/* Unified Primary/Secondary Button hierarchy */}
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
           <button
             onClick={() => setShowNotifications(!showNotifications)}
             style={{
               position: "relative",
-              padding: "12px 18px",
+              padding: "10px 16px",
               backgroundColor: "#FAF7F2",
               border: "1px solid #E2D5C9",
-              borderRadius: "12px",
+              borderRadius: "10px",
               cursor: "pointer",
               fontWeight: 600,
-              fontSize: "14px",
-              color: "#3B1A08",
+              fontSize: "13px",
+              color: "#5C4A3E",
               display: "flex",
               alignItems: "center",
-              gap: "8px",
+              gap: "6px",
               transition: "all 0.2s ease",
             }}
           >
@@ -345,12 +346,12 @@ export default function AdminPage({ setPage, setActivePage }) {
                   background: "#C0392B",
                   color: "white",
                   borderRadius: "50%",
-                  width: "20px",
-                  height: "20px",
+                  width: "18px",
+                  height: "18px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "11px",
+                  fontSize: "10px",
                   fontWeight: "bold",
                   boxShadow: "0 2px 6px rgba(192, 57, 43, 0.4)",
                 }}
@@ -364,14 +365,14 @@ export default function AdminPage({ setPage, setActivePage }) {
             <button
               onClick={() => setActivePage("dashboard")}
               style={{
-                padding: "12px 20px",
+                padding: "10px 16px",
                 backgroundColor: "#FAF7F2",
-                color: "#3B1A08",
+                color: "#5C4A3E",
                 border: "1px solid #E2D5C9",
-                borderRadius: "12px",
+                borderRadius: "10px",
                 cursor: "pointer",
                 fontWeight: 600,
-                fontSize: "14px",
+                fontSize: "13px",
               }}
             >
               ← Dashboard
@@ -382,14 +383,14 @@ export default function AdminPage({ setPage, setActivePage }) {
             <button
               onClick={() => setPage("home")}
               style={{
-                padding: "12px 22px",
+                padding: "10px 20px",
                 backgroundColor: "#3B1A08",
                 color: "#FFFFFF",
                 border: "none",
-                borderRadius: "12px",
+                borderRadius: "10px",
                 cursor: "pointer",
                 fontWeight: 600,
-                fontSize: "14px",
+                fontSize: "13px",
                 boxShadow: "0 4px 14px rgba(59, 26, 8, 0.15)",
               }}
             >
@@ -399,54 +400,56 @@ export default function AdminPage({ setPage, setActivePage }) {
         </div>
       </header>
 
-      {/* Header Stats Overview Banner */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "30px" }}>
+      {/* 2. Standardized Metric Cards Consistency (Consistent line icon rounded plates & sharp serif numbers with contrast tracking) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "28px" }}>
+        
         <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", boxShadow: "0 4px 16px rgba(59, 26, 8, 0.02)", display: "flex", alignItems: "center", gap: "16px" }}>
-          <div style={{ fontSize: "24px", background: "#FAF7F2", padding: "10px", borderRadius: "12px" }}>☕</div>
+          <div style={{ width: "42px", height: "42px", background: "#FAF7F2", border: "1px solid #EFE6DC", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>☕</div>
           <div>
-            <span style={{ fontSize: "12px", color: "#8C7A6B", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px" }}>Products</span>
+            <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>Products</span>
             <h3 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: 800, color: "#3B1A08", fontFamily: "'Playfair Display', serif" }}>{totalProductsCount}</h3>
           </div>
         </div>
 
         <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", boxShadow: "0 4px 16px rgba(59, 26, 8, 0.02)", display: "flex", alignItems: "center", gap: "16px" }}>
-          <div style={{ fontSize: "24px", background: "#FFF9E6", padding: "10px", borderRadius: "12px" }}>⭐</div>
+          <div style={{ width: "42px", height: "42px", background: "#FFF9E6", border: "1px solid #FDF3CD", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>⭐</div>
           <div>
-            <span style={{ fontSize: "12px", color: "#8C7A6B", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px" }}>Featured</span>
+            <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>Featured</span>
             <h3 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: 800, color: "#D4AC0D", fontFamily: "'Playfair Display', serif" }}>{featuredCount}</h3>
           </div>
         </div>
 
         <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", boxShadow: "0 4px 16px rgba(59, 26, 8, 0.02)", display: "flex", alignItems: "center", gap: "16px" }}>
-          <div style={{ fontSize: "24px", background: "#E8F5E9", padding: "10px", borderRadius: "12px" }}>✅</div>
+          <div style={{ width: "42px", height: "42px", background: "#E8F5E9", border: "1px solid #D1EED3", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>✅</div>
           <div>
-            <span style={{ fontSize: "12px", color: "#8C7A6B", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px" }}>In Stock</span>
+            <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>In Stock</span>
             <h3 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: 800, color: "#2E7D32", fontFamily: "'Playfair Display', serif" }}>{inStockCount}</h3>
           </div>
         </div>
 
         <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", boxShadow: "0 4px 16px rgba(59, 26, 8, 0.02)", display: "flex", alignItems: "center", gap: "16px" }}>
-          <div style={{ fontSize: "24px", background: "#FFEBEE", padding: "10px", borderRadius: "12px" }}>🚫</div>
+          <div style={{ width: "42px", height: "42px", background: "#FFEBEE", border: "1px solid #FADBD8", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>🚫</div>
           <div>
-            <span style={{ fontSize: "12px", color: "#8C7A6B", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px" }}>Out of Stock</span>
+            <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>Out of Stock</span>
             <h3 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: 800, color: "#C62828", fontFamily: "'Playfair Display', serif" }}>{outOfStockCount}</h3>
           </div>
         </div>
+
       </div>
 
-      {/* Action Trigger Section */}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "36px" }}>
+      {/* 3. Primary CTA Alignment (Action Trigger Section) */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "28px" }}>
         <button
           onClick={() => setShowAdd(!showAdd)}
           style={{
             background: "#3B1A08",
             color: "white",
             border: "none",
-            padding: "16px 28px",
-            borderRadius: "14px",
+            padding: "14px 24px",
+            borderRadius: "12px",
             cursor: "pointer",
             fontWeight: 600,
-            fontSize: "15px",
+            fontSize: "14px",
             boxShadow: "0 6px 20px rgba(59, 26, 8, 0.18)",
             display: "flex",
             alignItems: "center",
@@ -454,12 +457,12 @@ export default function AdminPage({ setPage, setActivePage }) {
             transition: "transform 0.2s ease",
           }}
         >
-          <span style={{ fontSize: "18px" }}>+</span> Add New Product
+          <span style={{ fontSize: "16px" }}>+</span> Add New Product
         </button>
       </div>
 
-      {/* Search & Categories Filter */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginBottom: "36px" }}>
+      {/* Search & Polished Filter Pills */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "32px" }}>
         <div style={{ position: "relative", maxWidth: "440px" }}>
           <input
             type="text"
@@ -468,9 +471,9 @@ export default function AdminPage({ setPage, setActivePage }) {
             onChange={(e) => setSearch(e.target.value)}
             style={{
               width: "100%",
-              padding: "15px 18px 15px 44px",
-              borderRadius: "14px",
-              border: "1px solid #E2D5C9",
+              padding: "14px 18px 14px 44px",
+              borderRadius: "12px",
+              border: "1px solid #D8C8B8",
               fontSize: "14px",
               outline: "none",
               background: "#FFFFFF",
@@ -478,24 +481,25 @@ export default function AdminPage({ setPage, setActivePage }) {
               color: "#2C1810",
             }}
           />
-          <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#8C7A6B", fontSize: "16px" }}>🔍</span>
+          <span style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "#6E523D", fontSize: "16px" }}>🔍</span>
         </div>
         
+        {/* Inactive pills refined with crisp borders and subtle hover state definition */}
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
           {["All", "Coffee", "Non-Coffee", "Food"].map((cat) => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
               style={{
-                padding: "10px 22px",
+                padding: "8px 20px",
                 borderRadius: "30px",
-                border: categoryFilter === cat ? "1px solid #3B1A08" : "1px solid #E2D5C9",
+                border: categoryFilter === cat ? "1px solid #3B1A08" : "1px solid #D8C8B8",
                 cursor: "pointer",
                 background: categoryFilter === cat ? "#3B1A08" : "#FFFFFF",
-                color: categoryFilter === cat ? "#FFF" : "#5C4A3E",
+                color: categoryFilter === cat ? "#FFF" : "#4A3B32",
                 fontWeight: 600,
                 fontSize: "13px",
-                boxShadow: categoryFilter === cat ? "0 4px 12px rgba(59, 26, 8, 0.15)" : "none",
+                boxShadow: categoryFilter === cat ? "0 4px 12px rgba(59, 26, 8, 0.15)" : "0 1px 3px rgba(0,0,0,0.02)",
                 transition: "all 0.2s ease",
               }}
             >
@@ -521,12 +525,12 @@ export default function AdminPage({ setPage, setActivePage }) {
             <h2 style={{ margin: 0, color: "#3B1A08", fontSize: "24px", fontFamily: "'Playfair Display', serif" }}>
               Craft New Menu Product
             </h2>
-            <button onClick={() => setShowAdd(false)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#8C7A6B" }}>✕</button>
+            <button onClick={() => setShowAdd(false)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#6E523D" }}>✕</button>
           </div>
           
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "20px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Product Name</label>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Product Name</label>
               <input
                 placeholder="e.g. Vanilla Velvet Latte"
                 value={newItem.name}
@@ -535,7 +539,7 @@ export default function AdminPage({ setPage, setActivePage }) {
               />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Category</label>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Category</label>
               <select
                 value={newItem.category}
                 onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
@@ -547,7 +551,7 @@ export default function AdminPage({ setPage, setActivePage }) {
               </select>
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Price (₹)</label>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Price (₹)</label>
               <input
                 placeholder="160"
                 type="number"
@@ -557,7 +561,7 @@ export default function AdminPage({ setPage, setActivePage }) {
               />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Emoji</label>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Emoji</label>
               <input
                 placeholder="☕"
                 value={newItem.emoji}
@@ -568,7 +572,7 @@ export default function AdminPage({ setPage, setActivePage }) {
           </div>
 
           <div style={{ marginBottom: "20px" }}>
-            <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Description</label>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Description</label>
             <textarea
               placeholder="Rich, velvety espresso blended with steamed microfoam and gourmet vanilla essence..."
               value={newItem.desc}
@@ -578,7 +582,7 @@ export default function AdminPage({ setPage, setActivePage }) {
           </div>
 
           <div style={{ marginBottom: "24px" }}>
-            <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Cloudinary Image URL</label>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Cloudinary Image URL</label>
             <input
               placeholder="https://res.cloudinary.com/..."
               value={newItem.img}
@@ -691,7 +695,7 @@ export default function AdminPage({ setPage, setActivePage }) {
           {/* Prep Time, Served As, and Diet Type Selections */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "30px", marginTop: "20px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Prep Time</label>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Prep Time</label>
               <select value={newItem.prepTime} onChange={(e) => setNewItem({ ...newItem, prepTime: e.target.value })} style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", background: "#FAF7F2" }}>
                 <option>2–4 mins</option>
                 <option>5–8 mins</option>
@@ -701,7 +705,7 @@ export default function AdminPage({ setPage, setActivePage }) {
               </select>
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Served As</label>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Served As</label>
               <select value={newItem.servedAs} onChange={(e) => setNewItem({ ...newItem, servedAs: e.target.value })} style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", background: "#FAF7F2" }}>
                 <option>Hot</option>
                 <option>Cold</option>
@@ -710,7 +714,7 @@ export default function AdminPage({ setPage, setActivePage }) {
               </select>
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Diet Type (Veg / Non-Veg / Vegan)</label>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Diet Type (Veg / Non-Veg / Vegan)</label>
               <select value={newItem.dietType} onChange={(e) => setNewItem({ ...newItem, dietType: e.target.value })} style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", background: "#FAF7F2" }}>
                 <option>Vegetarian</option>
                 <option>Vegan</option>
@@ -762,12 +766,12 @@ export default function AdminPage({ setPage, setActivePage }) {
             <h2 style={{ margin: 0, color: "#3B1A08", fontSize: "24px", fontFamily: "'Playfair Display', serif" }}>
               Editing: {editing.name}
             </h2>
-            <button onClick={() => setEditing(null)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#8C7A6B" }}>✕</button>
+            <button onClick={() => setEditing(null)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#6E523D" }}>✕</button>
           </div>
           
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "20px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Name</label>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Name</label>
               <input
                 value={editItem.name}
                 onChange={(e) => setEditItem({ ...editItem, name: e.target.value })}
@@ -775,7 +779,7 @@ export default function AdminPage({ setPage, setActivePage }) {
               />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Category</label>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Category</label>
               <select
                 value={editItem.category}
                 onChange={(e) => setEditItem({ ...editItem, category: e.target.value })}
@@ -787,7 +791,7 @@ export default function AdminPage({ setPage, setActivePage }) {
               </select>
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Price (₹)</label>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Price (₹)</label>
               <input
                 type="number"
                 value={editItem.price}
@@ -796,7 +800,7 @@ export default function AdminPage({ setPage, setActivePage }) {
               />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Emoji</label>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Emoji</label>
               <input
                 value={editItem.emoji}
                 onChange={(e) => setEditItem({ ...editItem, emoji: e.target.value })}
@@ -806,7 +810,7 @@ export default function AdminPage({ setPage, setActivePage }) {
           </div>
 
           <div style={{ marginBottom: "20px" }}>
-            <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Description</label>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Description</label>
             <textarea
               value={editItem.desc}
               onChange={(e) => setEditItem({ ...editItem, desc: e.target.value })}
@@ -815,7 +819,7 @@ export default function AdminPage({ setPage, setActivePage }) {
           </div>
 
           <div style={{ marginBottom: "24px" }}>
-            <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Cloudinary URL</label>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Cloudinary URL</label>
             <input
               value={editItem.img}
               onChange={(e) => setEditItem({ ...editItem, img: e.target.value })}
@@ -927,7 +931,7 @@ export default function AdminPage({ setPage, setActivePage }) {
           {/* Edit Prep Time, Served As, Diet Type */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "30px", marginTop: "20px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Prep Time</label>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Prep Time</label>
               <select value={editItem.prepTime} onChange={(e) => setEditItem({ ...editItem, prepTime: e.target.value })} style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", background: "#FAF7F2" }}>
                 <option>2–4 mins</option>
                 <option>5–8 mins</option>
@@ -937,7 +941,7 @@ export default function AdminPage({ setPage, setActivePage }) {
               </select>
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Served As</label>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Served As</label>
               <select value={editItem.servedAs} onChange={(e) => setEditItem({ ...editItem, servedAs: e.target.value })} style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", background: "#FAF7F2" }}>
                 <option>Hot</option>
                 <option>Cold</option>
@@ -946,7 +950,7 @@ export default function AdminPage({ setPage, setActivePage }) {
               </select>
             </div>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#8C7A6B", marginBottom: "8px", textTransform: "uppercase" }}>Diet Type (Veg / Non-Veg / Vegan)</label>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Diet Type (Veg / Non-Veg / Vegan)</label>
               <select value={editItem.dietType} onChange={(e) => setEditItem({ ...editItem, dietType: e.target.value })} style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", background: "#FAF7F2" }}>
                 <option>Vegetarian</option>
                 <option>Vegan</option>
@@ -982,7 +986,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         </div>
       )}
 
-      {/* Menu Cards Grid */}
+      {/* Menu Cards Grid with distinct borders and drop shadows */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "24px" }}>
         {menu
           .filter((item) => {
@@ -1037,7 +1041,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                 <div style={{ padding: "20px 24px 12px 24px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                     <div>
-                      <span style={{ fontSize: "11px", fontWeight: 700, background: "#F2ECE4", color: "#7A6558", padding: "4px 10px", borderRadius: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      <span style={{ fontSize: "11px", fontWeight: 700, background: "#F2ECE4", color: "#6E523D", padding: "4px 10px", borderRadius: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                         {item.category || "General"}
                       </span>
                       <h3 style={{ margin: "8px 0 4px 0", fontSize: "20px", fontWeight: 700, color: "#3B1A08", fontFamily: "'Playfair Display', serif" }}>
@@ -1049,7 +1053,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                     </strong>
                   </div>
 
-                  <p style={{ color: "#7A6558", fontSize: "13px", margin: "0", lineHeight: "1.6", minHeight: "42px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                  <p style={{ color: "#6E523D", fontSize: "13px", margin: "0", lineHeight: "1.6", minHeight: "42px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                     {item.desc || "No description provided."}
                   </p>
                 </div>
