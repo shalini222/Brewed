@@ -281,9 +281,6 @@ export default function AdminPage({ setPage, setActivePage }) {
               <h1 style={{ margin: 0, fontSize: "28px", fontWeight: "700", fontFamily: "'Playfair Display', serif", color: "#3B1A08", letterSpacing: "-0.5px" }}>
                 Brewed
               </h1>
-              <span style={{ fontSize: "11px", fontWeight: 700, background: "#F4ECE4", color: "#8C6D53", padding: "3px 8px", borderRadius: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                Menu Management
-              </span>
             </div>
             <p style={{ margin: "4px 0 0 0", color: "#8C7A6B", fontSize: "14px", fontWeight: "400" }}>
               Curate exquisite offerings, adjust pricing, and control item availability seamlessly.
@@ -355,7 +352,7 @@ export default function AdminPage({ setPage, setActivePage }) {
 
           {setPage && (
             <button
-              onClick={() => setPage("home")}
+              onClick={() => setPage("menu")}
               style={{
                 padding: "12px 22px",
                 backgroundColor: "#3B1A08",
@@ -409,19 +406,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         </div>
       </div>
 
-      {/* Metrics Bar & Action Trigger */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "36px", flexWrap: "wrap", gap: "20px" }}>
-        <div style={{ background: "#FFFFFF", padding: "20px 28px", borderRadius: "16px", border: "1px solid #E8DFD5", boxShadow: "0 4px 20px rgba(59, 26, 8, 0.03)", display: "flex", alignItems: "center", gap: "20px" }}>
-          <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "#F7F2EB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px" }}>
-            💰
-          </div>
-          <div>
-            <span style={{ fontSize: "12px", color: "#8C7A6B", textTransform: "uppercase", letterSpacing: "1px", fontWeight: 700 }}>Today's Performance</span>
-            <h2 style={{ color: "#C4956A", margin: "2px 0 0 0", fontSize: "26px", fontWeight: 800, fontFamily: "'Playfair Display', serif" }}>
-              ₹{todaySales} <span style={{ fontSize: "14px", color: "#8C7A6B", fontWeight: 500, fontFamily: "'Inter', sans-serif" }}>({todayOrders} Orders Today)</span>
-            </h2>
-          </div>
-        </div>
+      
 
         <button
           onClick={() => setShowAdd(!showAdd)}
