@@ -3,7 +3,12 @@ import { useState } from "react";
 import AdminDashboard from "../admin/AdminDashboard";
 import MenuManagement from "../admin/MenuManagement";
 
-export default function AdminPage({ setPage, setActivePage }) {
+
+export default function AdminDashboard({
+  setPage,
+  setActivePage,
+}) {
+
   // Which admin page is currently active
   
 
