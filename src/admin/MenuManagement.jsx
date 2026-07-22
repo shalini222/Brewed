@@ -376,13 +376,13 @@ export default function AdminPage({ setPage, setActivePage }) {
                 fontSize: "13px",
               }}
             >
-              ← Dashboard
+              Dashboard
             </button>
           )}
 
           {setPage && (
             <button
-              onClick={() => setPage("home")}
+              onClick={() => setPage("menu")}
               style={{
                 padding: "10px 20px",
                 backgroundColor: "#3B1A08",
@@ -395,7 +395,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                 boxShadow: "0 4px 14px rgba(59, 26, 8, 0.15)",
               }}
             >
-              Exit to Store →
+              Menu Page
             </button>
           )}
         </div>
