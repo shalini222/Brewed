@@ -21,7 +21,10 @@ import {
   Bar,
 } from "recharts";
 
-export default function AdminDashboard({ setPage }) {
+export default function AdminDashboard({
+  setPage,
+  setActivePage,
+}) {
 
   /* ===========================================
      STATE
