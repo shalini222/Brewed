@@ -182,25 +182,7 @@ useEffect(() => {
      LOADING
   =========================================== */
 
-  if (loading) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          background: "#FDFAF5",
-          fontFamily: "Inter",
-          fontSize: 18,
-        }}
-      >
-        Loading Admin Dashboard...
-      </div>
-    );
-  }
-
-  
+ 
 
   return () => {
     unsubscribeOrders();
@@ -411,6 +393,29 @@ const dashboardCards = [
     color: "#C4956A",
   },
 ];
+
+
+
+
+
+
+    if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "#FDFAF5",
+          fontFamily: "Inter",
+          fontSize: 18,
+        }}
+      >
+        Loading Admin Dashboard...
+      </div>
+    );
+    }
 
   /* ===========================================
    RENDER
