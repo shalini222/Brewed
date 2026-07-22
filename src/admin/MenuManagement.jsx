@@ -158,12 +158,14 @@ export default function AdminPage({ setPage, setActivePage }) {
       alert("Please fill in the product name and price.");
       return;
     }
+    const now = new Date();
     await addDoc(collection(db, "menu"), {
       ...newItem,
       price: Number(newItem.price),
       available: newItem.available,
       isFeatured: newItem.isFeatured,
-      createdAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
       sizes: newItem.sizes,
       prepTime: newItem.prepTime,
       servedAs: newItem.servedAs,
@@ -216,6 +218,7 @@ export default function AdminPage({ setPage, setActivePage }) {
     const nextStatus = item.available === false ? true : false;
     await updateDoc(doc(db, "menu", item.firestoreId), {
       available: nextStatus,
+      updatedAt: new Date(),
     });
     loadMenu();
     triggerToast(`Item is now ${nextStatus ? "In Stock" : "Out of Stock"}!`);
@@ -233,6 +236,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         img: editItem.img,
         available: editItem.available,
         isFeatured: editItem.isFeatured,
+        updatedAt: new Date(),
         sizes: editItem.sizes,
         milkOptions: editItem.milkOptions,
         temperatureOptions: editItem.temperatureOptions,
@@ -507,10 +511,12 @@ export default function AdminPage({ setPage, setActivePage }) {
             }}
           >
             <option value="featured">Featured First</option>
-            <option value="low-to-high">Price: Low to High</option>
-            <option value="high-to-low">Price: High to Low</option>
+            <option value="high-to-low">Highest to Lowest</option>
+            <option value="low-to-high">Lowest to Highest</option>
+            <option value="best-selling">Best Selling</option>
             <option value="new-to-old">New to Old</option>
             <option value="old-to-new">Old to New</option>
+            <option value="last-edited">Last Edited</option>
           </select>
         </div>
       </div>
@@ -1050,14 +1056,17 @@ export default function AdminPage({ setPage, setActivePage }) {
             return matchesSearch && matchesCategory;
           })
           .sort((a, b) => {
-            if (sortBy === "low-to-high") {
-              return Number(a.price || 0) - Number(b.price || 0);
-            }
             if (sortBy === "high-to-low") {
               return Number(b.price || 0) - Number(a.price || 0);
             }
+            if (sortBy === "low-to-high") {
+              return Number(a.price || 0) - Number(b.price || 0);
+            }
             if (sortBy === "featured") {
               return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
+            }
+            if (sortBy === "best-selling") {
+              return Number(b.salesCount || 0) - Number(a.salesCount || 0);
             }
             if (sortBy === "new-to-old") {
               const timeA = a.createdAt?.seconds || (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
@@ -1068,6 +1077,11 @@ export default function AdminPage({ setPage, setActivePage }) {
               const timeA = a.createdAt?.seconds || (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
               const timeB = b.createdAt?.seconds || (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
               return timeA - timeB;
+            }
+            if (sortBy === "last-edited") {
+              const timeA = a.updatedAt?.seconds || (a.updatedAt ? new Date(a.updatedAt).getTime() / 1000 : 0);
+              const timeB = b.updatedAt?.seconds || (b.updatedAt ? new Date(b.updatedAt).getTime() / 1000 : 0);
+              return timeB - timeA;
             }
             return 0;
           })
