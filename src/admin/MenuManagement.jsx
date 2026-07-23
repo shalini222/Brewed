@@ -1635,7 +1635,7 @@ export default function MenuManagement({ setPage, setActivePage }) {
                   </button>
                 </div>
                );
-              ))}
+        })}
             </div>
 
             {/* 4. SPECIAL REQUESTS BUILDER */}
