@@ -152,8 +152,9 @@ export default function ProductPage({
     checkFavorite();
   }, [currentUser, product]);
   
-  const basePrice = product?.price || 0;
+  const basePrice = Number(product?.price || 0);
   const selectedSize = product?.sizes?.find(s => s.name === size);
+  const sizePrice = Number(selectedSize?.price || 0);
   
   const milkPrices = Object.fromEntries(
     (product?.milkOptions || []).map((m) => [
@@ -161,18 +162,14 @@ export default function ProductPage({
       Number(m.price || 0),
     ])
   );
+  const milkPrice = milkPrices[milk] || 0;
 
   const extrasTotal = selectedExtras.reduce(
     (sum, extra) => sum + Number(extra.price || 0),
     0
   );
   
-  const singlePrice =
-    basePrice +
-    (selectedSize?.price || 0) +
-    (milkPrices[milk] || 0) +
-    extrasTotal;
-  
+  const singlePrice = basePrice + sizePrice + milkPrice + extrasTotal;
   const totalPrice = singlePrice * quantity;
 
   const MAX_REVIEW_PHOTOS = 5;
