@@ -15,9 +15,10 @@ import { db } from "../firebase";
 
 const DEFAULT_COFFEE_PRESETS = {
   sizes: [
-    { name: "Small", priceAdd: 0 },
-    { name: "Medium", priceAdd: 30 },
-    { name: "Large", priceAdd: 60 }
+    { name: "Small", desc: "180 ml", priceAdd: 30 },
+    { name: "Regular", desc: "210 ml", priceAdd: 50 },
+    { name: "Large", desc: "260 ml", priceAdd: 80 },
+    { name: "Extra Large", desc: "320 ml", priceAdd: 120 }
   ],
   milkOptions: ["Whole", "Skim", "Oat", "Soy", "Almond"],
   temperatureOptions: ["Hot", "Iced"],
@@ -29,7 +30,7 @@ const DEFAULT_COFFEE_PRESETS = {
     { name: "Whipped Cream", price: 30 }
   ],
   customExtrasMaxSelection: 3,
-  prepTime: "5–8 mins",
+  prepTime: "8-10 mins",
   servedAs: "Hot",
   dietType: "Vegetarian"
 };
@@ -53,8 +54,8 @@ export default function AdminPage({ setPage, setActivePage }) {
   // Bulk Input Modal State
   const [bulkModal, setBulkModal] = useState({ show: false, type: null });
   const [bulkInputValue, setBulkInputValue] = useState("");
-  const [discountType, setDiscountType] = useState("percentage"); // "percentage" or "fixed"
-  const [exportFormat, setExportFormat] = useState("xlsx"); // "xlsx" or "csv"
+  const [discountType, setDiscountType] = useState("percentage");
+  const [exportFormat, setExportFormat] = useState("xlsx");
 
   const [orders, setOrders] = useState([]);
   const [orderLoading, setOrderLoading] = useState(true);
@@ -84,7 +85,7 @@ export default function AdminPage({ setPage, setActivePage }) {
     available: true,
     archived: false,
     isFeatured: false,
-    prepTime: "5–8 mins",
+    prepTime: "8-10 mins",
     servedAs: "Hot",
     dietType: "Vegetarian",
     salesCount: 0,
@@ -109,7 +110,7 @@ export default function AdminPage({ setPage, setActivePage }) {
     available: true,
     archived: false,
     isFeatured: false,
-    prepTime: "5–8 mins",
+    prepTime: "8-10 mins",
     servedAs: "Hot",
     dietType: "Vegetarian",
     sizes: [],
@@ -123,7 +124,6 @@ export default function AdminPage({ setPage, setActivePage }) {
   useEffect(() => {
     loadMenu();
 
-    // Close dropdowns when clicking outside
     function handleClickOutside(event) {
       if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target)) {
         setShowSortDropdown(false);
@@ -242,7 +242,7 @@ export default function AdminPage({ setPage, setActivePage }) {
       available: true,
       archived: false,
       isFeatured: false,
-      prepTime: "5–8 mins",
+      prepTime: "8-10 mins",
       servedAs: "Hot",
       dietType: "Vegetarian",
       salesCount: 0,
@@ -328,7 +328,6 @@ export default function AdminPage({ setPage, setActivePage }) {
 
   const currentSortLabel = sortOptions.find((o) => o.id === sortBy)?.label || "Sort";
 
-  // Filtered and sorted menu computation
   const filteredAndSortedMenu = menu
     .filter((item) => {
       const matchesSearch =
@@ -382,7 +381,6 @@ export default function AdminPage({ setPage, setActivePage }) {
     }
   }
 
-  // Trigger bulk execution or open modal for input actions
   function handleBulkActionTrigger() {
     if (selectedItems.length === 0 || !bulkAction) return;
 
@@ -401,7 +399,6 @@ export default function AdminPage({ setPage, setActivePage }) {
     executeBulkActionConfirmed();
   }
 
-  // Bulk action execution handler
   async function executeBulkActionConfirmed(modalInputOverride = null) {
     const actionToRun = bulkAction;
     if (selectedItems.length === 0 || !actionToRun) return;
@@ -530,7 +527,7 @@ export default function AdminPage({ setPage, setActivePage }) {
   return (
     <div style={{ padding: "40px 32px", fontFamily: "'Inter', sans-serif", background: "#FDFBF7", minHeight: "100vh", color: "#2C1810", position: "relative" }}>
       
-      {/* Toast Notification Container */}
+      {/* Toast Notification */}
       {toast && (
         <div
           style={{
@@ -550,7 +547,6 @@ export default function AdminPage({ setPage, setActivePage }) {
             fontWeight: 600,
             fontSize: "14px",
             border: "1px solid rgba(255, 255, 255, 0.1)",
-            animation: "fadeIn 0.3s ease",
             whiteSpace: "nowrap",
           }}
         >
@@ -558,7 +554,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         </div>
       )}
 
-      {/* Centered Bulk Action Input Modal */}
+      {/* Bulk Input Modal */}
       {bulkModal.show && (
         <div
           style={{
@@ -645,7 +641,6 @@ export default function AdminPage({ setPage, setActivePage }) {
                 <div style={{ position: "relative", marginBottom: "24px" }}>
                   <input
                     type="number"
-                    placeholder={discountType === "percentage" ? "e.g. 15" : "e.g. 50"}
                     value={bulkInputValue}
                     onChange={(e) => setBulkInputValue(e.target.value)}
                     style={{
@@ -707,10 +702,6 @@ export default function AdminPage({ setPage, setActivePage }) {
                     fontWeight: 600,
                     fontSize: "13px",
                     cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
                   }}
                 >
                   📊 Excel (.xlsx)
@@ -727,10 +718,6 @@ export default function AdminPage({ setPage, setActivePage }) {
                     fontWeight: 600,
                     fontSize: "13px",
                     cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
                   }}
                 >
                   📄 CSV (.csv)
@@ -776,7 +763,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         </div>
       )}
 
-      {/* Header & Navigation */}
+      {/* Header */}
       <header
         style={{
           display: "flex",
@@ -796,14 +783,14 @@ export default function AdminPage({ setPage, setActivePage }) {
           </div>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "700", fontFamily: "'Playfair Display', serif", color: "#3B1A08", letterSpacing: "-0.5px", lineHeight: "1.2" }}>
+              <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "700", fontFamily: "'Playfair Display', serif", color: "#3B1A08" }}>
                 Brewed
               </h1>
-              <span style={{ fontSize: "11px", fontWeight: 700, background: "#F4ECE4", color: "#6E523D", padding: "3px 8px", borderRadius: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, background: "#F4ECE4", color: "#6E523D", padding: "3px 8px", borderRadius: "6px", textTransform: "uppercase" }}>
                 Menu Management
               </span>
             </div>
-            <p style={{ margin: "2px 0 0 0", color: "#6E523D", fontSize: "13px", fontWeight: "400", lineHeight: "1.4" }}>
+            <p style={{ margin: "2px 0 0 0", color: "#6E523D", fontSize: "13px" }}>
               Curate exquisite offerings, adjust pricing, and control item availability seamlessly.
             </p>
           </div>
@@ -894,7 +881,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ width: "42px", height: "42px", background: "#FAF7F2", border: "1px solid #EFE6DC", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>☕</div>
           <div>
-            <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>Products</span>
+            <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700 }}>Products</span>
             <h3 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: 800, color: "#3B1A08", fontFamily: "'Playfair Display', serif" }}>{totalProductsCount}</h3>
           </div>
         </div>
@@ -902,7 +889,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ width: "42px", height: "42px", background: "#FFF9E6", border: "1px solid #FDF3CD", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>⭐</div>
           <div>
-            <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>Featured</span>
+            <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700 }}>Featured</span>
             <h3 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: 800, color: "#D4AC0D", fontFamily: "'Playfair Display', serif" }}>{featuredCount}</h3>
           </div>
         </div>
@@ -910,7 +897,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ width: "42px", height: "42px", background: "#E8F5E9", border: "1px solid #D1EED3", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>✅</div>
           <div>
-            <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>In Stock</span>
+            <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700 }}>In Stock</span>
             <h3 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: 800, color: "#2E7D32", fontFamily: "'Playfair Display', serif" }}>{inStockCount}</h3>
           </div>
         </div>
@@ -918,7 +905,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ width: "42px", height: "42px", background: "#FFEBEE", border: "1px solid #FADBD8", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>🚫</div>
           <div>
-            <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>Out of Stock</span>
+            <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700 }}>Out of Stock</span>
             <h3 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: 800, color: "#C62828", fontFamily: "'Playfair Display', serif" }}>{outOfStockCount}</h3>
           </div>
         </div>
@@ -926,13 +913,13 @@ export default function AdminPage({ setPage, setActivePage }) {
         <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ width: "42px", height: "42px", background: "#F5EEF8", border: "1px solid #E8DAEF", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>📦</div>
           <div>
-            <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>Archived</span>
+            <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700 }}>Archived</span>
             <h3 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: 800, color: "#8E44AD", fontFamily: "'Playfair Display', serif" }}>{archivedCount}</h3>
           </div>
         </div>
       </div>
 
-      {/* Action Trigger Section */}
+      {/* Action Trigger */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "28px" }}>
         <button
           onClick={() => setShowAdd(!showAdd)}
@@ -955,7 +942,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         </button>
       </div>
 
-      {/* Search Bar & Custom Dropdown Sort Bar */}
+      {/* Search & Sort Bar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px", flexWrap: "wrap", gap: "20px" }}>
         <div style={{ position: "relative", maxWidth: "440px", flex: 1, minWidth: "280px", paddingTop: "2px" }}>
           <input
@@ -971,7 +958,6 @@ export default function AdminPage({ setPage, setActivePage }) {
               fontSize: "14px",
               outline: "none",
               background: "#FFFFFF",
-              boxShadow: "0 2px 10px rgba(59, 26, 8, 0.02)",
               color: "#2C1810",
               boxSizing: "border-box",
             }}
@@ -994,11 +980,10 @@ export default function AdminPage({ setPage, setActivePage }) {
               display: "flex",
               alignItems: "center",
               gap: "10px",
-              boxShadow: "0 2px 10px rgba(59, 26, 8, 0.02)",
               whiteSpace: "nowrap",
             }}
           >
-            <span style={{ color: "#6E523D", fontSize: "12px", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px" }}>Sort:</span>
+            <span style={{ color: "#6E523D", fontSize: "12px", textTransform: "uppercase", fontWeight: 700 }}>Sort:</span>
             <span>{currentSortLabel}</span>
             <span style={{ fontSize: "10px", color: "#6E523D", marginLeft: "4px" }}>▼</span>
           </button>
@@ -1015,7 +1000,6 @@ export default function AdminPage({ setPage, setActivePage }) {
                 border: "1px solid #E8DFD5",
                 zIndex: 1000,
                 minWidth: "200px",
-                overflow: "hidden",
                 padding: "6px 0",
               }}
             >
@@ -1043,7 +1027,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         </div>
       </div>
 
-      {/* Categories Filter Pills */}
+      {/* Category Pills */}
       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "20px" }}>
         {["All", "Coffee", "Non-Coffee", "Food", "Archived"].map((cat) => (
           <button
@@ -1058,7 +1042,6 @@ export default function AdminPage({ setPage, setActivePage }) {
               color: categoryFilter === cat ? "#FFF" : "#4A3B32",
               fontWeight: 600,
               fontSize: "13px",
-              boxShadow: categoryFilter === cat ? "0 4px 12px rgba(59, 26, 8, 0.15)" : "0 1px 3px rgba(0,0,0,0.02)",
             }}
           >
             {cat}
@@ -1066,7 +1049,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         ))}
       </div>
 
-      {/* Bulk Actions Toolbar (Appears only when at least one item is selected) */}
+      {/* Bulk Actions Toolbar */}
       {selectedItems.length > 0 && (
         <div
           style={{
@@ -1079,7 +1062,6 @@ export default function AdminPage({ setPage, setActivePage }) {
             border: "1px solid #E8DFD5",
             marginBottom: "32px",
             boxShadow: "0 4px 15px rgba(59, 26, 8, 0.06)",
-            animation: "fadeIn 0.2s ease",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
@@ -1148,12 +1130,6 @@ export default function AdminPage({ setPage, setActivePage }) {
                         background: bulkAction === action.id ? "#FAF7F2" : "transparent",
                         cursor: "pointer",
                       }}
-                      onMouseEnter={(e) => {
-                        if (bulkAction !== action.id) e.currentTarget.style.background = "#FDFBF7";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (bulkAction !== action.id) e.currentTarget.style.background = "transparent";
-                      }}
                     >
                       {action.label}
                     </div>
@@ -1174,13 +1150,11 @@ export default function AdminPage({ setPage, setActivePage }) {
                 cursor: selectedItems.length > 0 && bulkAction ? "pointer" : "not-allowed",
                 fontWeight: 600,
                 fontSize: "13px",
-                boxShadow: selectedItems.length > 0 && bulkAction ? "0 4px 12px rgba(59, 26, 8, 0.15)" : "none",
               }}
             >
               Apply
             </button>
 
-            {/* Cancel Button to Exit Bulk Selection Mode */}
             <button
               onClick={() => {
                 setSelectedItems([]);
@@ -1203,7 +1177,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         </div>
       )}
 
-      {/* Add Product Modal Drawer */}
+      {/* Add Product Drawer */}
       {showAdd && (
         <div
           style={{
@@ -1316,28 +1290,34 @@ export default function AdminPage({ setPage, setActivePage }) {
             />
           </div>
 
-          {/* Expanded Configuration Section: Sizes, Milk, Temperature, Sweetness, Extras, Diet, Prep Time, Served As */}
-          <div style={{ background: "#FAF7F2", padding: "20px", borderRadius: "16px", border: "1px solid #E8DFD5", marginBottom: "20px" }}>
-            <h4 style={{ margin: "0 0 16px 0", color: "#3B1A08", fontSize: "15px", fontFamily: "'Playfair Display', serif" }}>
+          {/* Configuration Section with Detailed Dynamic Fields */}
+          <div style={{ background: "#FAF7F2", padding: "24px", borderRadius: "16px", border: "1px solid #E8DFD5", marginBottom: "20px" }}>
+            <h4 style={{ margin: "0 0 16px 0", color: "#3B1A08", fontSize: "16px", fontFamily: "'Playfair Display', serif" }}>
               ☕ Coffee Customization & Options Setup
             </h4>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px", marginBottom: "16px" }}>
+            {/* General Settings */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "24px" }}>
               <div>
                 <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Prep Time</label>
-                <input
-                  placeholder="e.g. 5–8 mins"
+                <select
                   value={newItem.prepTime}
                   onChange={(e) => setNewItem({ ...newItem, prepTime: e.target.value })}
-                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
-                />
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box", fontWeight: 600, color: "#3B1A08" }}
+                >
+                  <option value="8-10 mins">8-10 mins</option>
+                  <option value="12-15 mins">12-15 mins</option>
+                  <option value="15-20 mins">15-20 mins</option>
+                  <option value="30-40 mins">30-40 mins</option>
+                  <option value="Ready to serve">Ready to serve</option>
+                </select>
               </div>
               <div>
                 <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Served As</label>
                 <select
                   value={newItem.servedAs}
                   onChange={(e) => setNewItem({ ...newItem, servedAs: e.target.value })}
-                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box", fontWeight: 600, color: "#3B1A08" }}
                 >
                   <option value="Hot">Hot</option>
                   <option value="Iced">Iced</option>
@@ -1350,7 +1330,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                 <select
                   value={newItem.dietType}
                   onChange={(e) => setNewItem({ ...newItem, dietType: e.target.value })}
-                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box", fontWeight: 600, color: "#3B1A08" }}
                 >
                   <option value="Vegetarian">Vegetarian</option>
                   <option value="Vegan">Vegan</option>
@@ -1358,70 +1338,225 @@ export default function AdminPage({ setPage, setActivePage }) {
                   <option value="Gluten-Free">Gluten-Free</option>
                 </select>
               </div>
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Max Extra Custom Selections</label>
-                <input
-                  type="number"
-                  value={newItem.customExtrasMaxSelection}
-                  onChange={(e) => setNewItem({ ...newItem, customExtrasMaxSelection: e.target.value })}
-                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
-                />
-              </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Sizes (JSON / Comma formatted list)</label>
-                <input
-                  placeholder="Small (+₹0), Medium (+₹30), Large (+₹60)"
-                  value={newItem.sizes.map(s => typeof s === 'object' ? `${s.name} (+₹${s.priceAdd})` : s).join(", ")}
-                  onChange={(e) => {
-                    const parsed = e.target.value.split(",").map(item => {
-                      const trimmed = item.trim();
-                      return { name: trimmed, priceAdd: 0 };
+            {/* 1. SIZES BUILDER */}
+            <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Select Size +</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewItem({
+                      ...newItem,
+                      sizes: [...newItem.sizes, { name: "", desc: "", priceAdd: 0 }]
                     });
-                    setNewItem({ ...newItem, sizes: parsed });
                   }}
-                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
-                />
+                  style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+                >
+                  + Add Size
+                </button>
               </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>🥛 Milk Options (Comma separated)</label>
-                <input
-                  placeholder="Whole, Skim, Oat, Soy, Almond"
-                  value={newItem.milkOptions.join(", ")}
-                  onChange={(e) => setNewItem({ ...newItem, milkOptions: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
-                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>🍬 Sweetness Options (Comma separated)</label>
-                <input
-                  placeholder="0%, 25%, 50%, 100%"
-                  value={newItem.sweetnessOptions.join(", ")}
-                  onChange={(e) => setNewItem({ ...newItem, sweetnessOptions: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
-                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>✨ Common Extras / Toppings (Comma separated)</label>
-                <input
-                  placeholder="Extra Espresso Shot, Vanilla Syrup, Whipped Cream"
-                  value={newItem.customExtras.map(ex => typeof ex === 'object' ? `${ex.name} (+₹${ex.price})` : ex).join(", ")}
-                  onChange={(e) => {
-                    const parsed = e.target.value.split(",").map(item => {
-                      const trimmed = item.trim();
-                      return { name: trimmed, price: 25 };
-                    });
-                    setNewItem({ ...newItem, customExtras: parsed });
-                  }}
-                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
-                />
-              </div>
+              {newItem.sizes.map((sz, idx) => (
+                <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                  <input
+                    placeholder="Size name (e.g. Small)"
+                    value={sz.name || ""}
+                    onChange={(e) => {
+                      const updated = [...newItem.sizes];
+                      updated[idx].name = e.target.value;
+                      setNewItem({ ...newItem, sizes: updated });
+                    }}
+                    style={{ flex: 1.5, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                  />
+                  <input
+                    placeholder="Volume (e.g. 180 ml)"
+                    value={sz.desc || ""}
+                    onChange={(e) => {
+                      const updated = [...newItem.sizes];
+                      updated[idx].desc = e.target.value;
+                      setNewItem({ ...newItem, sizes: updated });
+                    }}
+                    style={{ flex: 1.5, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Price (₹)"
+                    value={sz.priceAdd ?? 0}
+                    onChange={(e) => {
+                      const updated = [...newItem.sizes];
+                      updated[idx].priceAdd = Number(e.target.value);
+                      setNewItem({ ...newItem, sizes: updated });
+                    }}
+                    style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = newItem.sizes.filter((_, i) => i !== idx);
+                      setNewItem({ ...newItem, sizes: updated });
+                    }}
+                    style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
+                    title="Delete Size"
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              ))}
             </div>
+
+            {/* 2. MILK OPTIONS BUILDER */}
+            <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Milk Option +</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewItem({
+                      ...newItem,
+                      milkOptions: [...newItem.milkOptions, ""]
+                    });
+                  }}
+                  style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+                >
+                  + Add Milk
+                </button>
+              </div>
+              {newItem.milkOptions.map((milk, idx) => (
+                <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                  <input
+                    placeholder="Milk type (e.g. Oat Milk)"
+                    value={milk}
+                    onChange={(e) => {
+                      const updated = [...newItem.milkOptions];
+                      updated[idx] = e.target.value;
+                      setNewItem({ ...newItem, milkOptions: updated });
+                    }}
+                    style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = newItem.milkOptions.filter((_, i) => i !== idx);
+                      setNewItem({ ...newItem, milkOptions: updated });
+                    }}
+                    style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
+                    title="Delete Milk Option"
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* 3. SWEETNESS OPTIONS BUILDER */}
+            <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Sweetness Option +</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewItem({
+                      ...newItem,
+                      sweetnessOptions: [...newItem.sweetnessOptions, ""]
+                    });
+                  }}
+                  style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+                >
+                  + Add Sweetness
+                </button>
+              </div>
+              {newItem.sweetnessOptions.map((sweet, idx) => (
+                <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                  <input
+                    placeholder="Sweetness level (e.g. 50% Regular)"
+                    value={sweet}
+                    onChange={(e) => {
+                      const updated = [...newItem.sweetnessOptions];
+                      updated[idx] = e.target.value;
+                      setNewItem({ ...newItem, sweetnessOptions: updated });
+                    }}
+                    style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = newItem.sweetnessOptions.filter((_, i) => i !== idx);
+                      setNewItem({ ...newItem, sweetnessOptions: updated });
+                    }}
+                    style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
+                    title="Delete Sweetness Option"
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* 4. EXTRA CUSTOMS / TOPPINGS & MAX SELECTION BUILDER */}
+            <div style={{ background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "10px" }}>
+                <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Extra Customs / Toppings +</label>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#6E523D", textTransform: "uppercase" }}>Max Selection:</span>
+                  <input
+                    type="number"
+                    value={newItem.customExtrasMaxSelection}
+                    onChange={(e) => setNewItem({ ...newItem, customExtrasMaxSelection: e.target.value })}
+                    style={{ width: "60px", padding: "6px", borderRadius: "6px", border: "1px solid #D8C8B8", fontSize: "13px", textAlign: "center", outline: "none", background: "#FAF7F2", fontWeight: 600 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewItem({
+                        ...newItem,
+                        customExtras: [...newItem.customExtras, { name: "", price: 25 }]
+                      });
+                    }}
+                    style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+                  >
+                    + Add Extra
+                  </button>
+                </div>
+              </div>
+              {newItem.customExtras.map((ex, idx) => (
+                <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                  <input
+                    placeholder="Extra name (e.g. Vanilla Syrup)"
+                    value={ex.name || ""}
+                    onChange={(e) => {
+                      const updated = [...newItem.customExtras];
+                      updated[idx].name = e.target.value;
+                      setNewItem({ ...newItem, customExtras: updated });
+                    }}
+                    style={{ flex: 2, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Price (₹)"
+                    value={ex.price ?? 25}
+                    onChange={(e) => {
+                      const updated = [...newItem.customExtras];
+                      updated[idx].price = Number(e.target.value);
+                      setNewItem({ ...newItem, customExtras: updated });
+                    }}
+                    style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = newItem.customExtras.filter((_, i) => i !== idx);
+                      setNewItem({ ...newItem, customExtras: updated });
+                    }}
+                    style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
+                    title="Delete Extra"
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+
           </div>
 
           <label style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "25px", fontWeight: 600, color: "#3B1A08", cursor: "pointer" }}>
@@ -1549,27 +1684,33 @@ export default function AdminPage({ setPage, setActivePage }) {
               />
             </div>
 
-            {/* Edit Modal Customization Config */}
-            <div style={{ background: "#FAF7F2", padding: "20px", borderRadius: "16px", border: "1px solid #E8DFD5", marginBottom: "20px" }}>
-              <h4 style={{ margin: "0 0 16px 0", color: "#3B1A08", fontSize: "15px", fontFamily: "'Playfair Display', serif" }}>
+            {/* Edit Modal Configuration Section */}
+            <div style={{ background: "#FAF7F2", padding: "24px", borderRadius: "16px", border: "1px solid #E8DFD5", marginBottom: "20px" }}>
+              <h4 style={{ margin: "0 0 16px 0", color: "#3B1A08", fontSize: "16px", fontFamily: "'Playfair Display', serif" }}>
                 ☕ Coffee Customization & Options Setup
               </h4>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px", marginBottom: "16px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "24px" }}>
                 <div>
                   <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Prep Time</label>
-                  <input
+                  <select
                     value={editItem.prepTime}
                     onChange={(e) => setEditItem({ ...editItem, prepTime: e.target.value })}
-                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
-                  />
+                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box", fontWeight: 600, color: "#3B1A08" }}
+                  >
+                    <option value="8-10 mins">8-10 mins</option>
+                    <option value="12-15 mins">12-15 mins</option>
+                    <option value="15-20 mins">15-20 mins</option>
+                    <option value="30-40 mins">30-40 mins</option>
+                    <option value="Ready to serve">Ready to serve</option>
+                  </select>
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Served As</label>
                   <select
                     value={editItem.servedAs}
                     onChange={(e) => setEditItem({ ...editItem, servedAs: e.target.value })}
-                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box", fontWeight: 600, color: "#3B1A08" }}
                   >
                     <option value="Hot">Hot</option>
                     <option value="Iced">Iced</option>
@@ -1582,7 +1723,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                   <select
                     value={editItem.dietType}
                     onChange={(e) => setEditItem({ ...editItem, dietType: e.target.value })}
-                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box", fontWeight: 600, color: "#3B1A08" }}
                   >
                     <option value="Vegetarian">Vegetarian</option>
                     <option value="Vegan">Vegan</option>
@@ -1590,66 +1731,221 @@ export default function AdminPage({ setPage, setActivePage }) {
                     <option value="Gluten-Free">Gluten-Free</option>
                   </select>
                 </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Max Extra Custom Selections</label>
-                  <input
-                    type="number"
-                    value={editItem.customExtrasMaxSelection}
-                    onChange={(e) => setEditItem({ ...editItem, customExtrasMaxSelection: e.target.value })}
-                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
-                  />
-                </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Sizes</label>
-                  <input
-                    value={editItem.sizes.map(s => typeof s === 'object' ? `${s.name} (+₹${s.priceAdd})` : s).join(", ")}
-                    onChange={(e) => {
-                      const parsed = e.target.value.split(",").map(item => {
-                        const trimmed = item.trim();
-                        return { name: trimmed, priceAdd: 0 };
+              {/* Edit Size Builder */}
+              <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Select Size +</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditItem({
+                        ...editItem,
+                        sizes: [...editItem.sizes, { name: "", desc: "", priceAdd: 0 }]
                       });
-                      setEditItem({ ...editItem, sizes: parsed });
                     }}
-                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
-                  />
+                    style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+                  >
+                    + Add Size
+                  </button>
                 </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>🥛 Milk Options</label>
-                  <input
-                    value={editItem.milkOptions.join(", ")}
-                    onChange={(e) => setEditItem({ ...editItem, milkOptions: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
-                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>🍬 Sweetness Options</label>
-                  <input
-                    value={editItem.sweetnessOptions.join(", ")}
-                    onChange={(e) => setEditItem({ ...editItem, sweetnessOptions: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
-                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>✨ Common Extras / Toppings</label>
-                  <input
-                    value={editItem.customExtras.map(ex => typeof ex === 'object' ? `${ex.name} (+₹${ex.price})` : ex).join(", ")}
-                    onChange={(e) => {
-                      const parsed = e.target.value.split(",").map(item => {
-                        const trimmed = item.trim();
-                        return { name: trimmed, price: 25 };
-                      });
-                      setEditItem({ ...editItem, customExtras: parsed });
-                    }}
-                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
-                  />
-                </div>
+                {editItem.sizes.map((sz, idx) => (
+                  <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                    <input
+                      placeholder="Size name"
+                      value={sz.name || ""}
+                      onChange={(e) => {
+                        const updated = [...editItem.sizes];
+                        updated[idx].name = e.target.value;
+                        setEditItem({ ...editItem, sizes: updated });
+                      }}
+                      style={{ flex: 1.5, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                    />
+                    <input
+                      placeholder="Volume (e.g. 180 ml)"
+                      value={sz.desc || ""}
+                      onChange={(e) => {
+                        const updated = [...editItem.sizes];
+                        updated[idx].desc = e.target.value;
+                        setEditItem({ ...editItem, sizes: updated });
+                      }}
+                      style={{ flex: 1.5, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Price (₹)"
+                      value={sz.priceAdd ?? 0}
+                      onChange={(e) => {
+                        const updated = [...editItem.sizes];
+                        updated[idx].priceAdd = Number(e.target.value);
+                        setEditItem({ ...editItem, sizes: updated });
+                      }}
+                      style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = editItem.sizes.filter((_, i) => i !== idx);
+                        setEditItem({ ...editItem, sizes: updated });
+                      }}
+                      style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                ))}
               </div>
+
+              {/* Edit Milk Builder */}
+              <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Milk Option +</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditItem({
+                        ...editItem,
+                        milkOptions: [...editItem.milkOptions, ""]
+                      });
+                    }}
+                    style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+                  >
+                    + Add Milk
+                  </button>
+                </div>
+                {editItem.milkOptions.map((milk, idx) => (
+                  <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                    <input
+                      placeholder="Milk type"
+                      value={milk}
+                      onChange={(e) => {
+                        const updated = [...editItem.milkOptions];
+                        updated[idx] = e.target.value;
+                        setEditItem({ ...editItem, milkOptions: updated });
+                      }}
+                      style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = editItem.milkOptions.filter((_, i) => i !== idx);
+                        setEditItem({ ...editItem, milkOptions: updated });
+                      }}
+                      style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Edit Sweetness Builder */}
+              <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Sweetness Option +</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditItem({
+                        ...editItem,
+                        sweetnessOptions: [...editItem.sweetnessOptions, ""]
+                      });
+                    }}
+                    style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+                  >
+                    + Add Sweetness
+                  </button>
+                </div>
+                {editItem.sweetnessOptions.map((sweet, idx) => (
+                  <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                    <input
+                      placeholder="Sweetness level"
+                      value={sweet}
+                      onChange={(e) => {
+                        const updated = [...editItem.sweetnessOptions];
+                        updated[idx] = e.target.value;
+                        setEditItem({ ...editItem, sweetnessOptions: updated });
+                      }}
+                      style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = editItem.sweetnessOptions.filter((_, i) => i !== idx);
+                        setEditItem({ ...editItem, sweetnessOptions: updated });
+                      }}
+                      style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Edit Extras & Max Selection Builder */}
+              <div style={{ background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "10px" }}>
+                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Extra Customs / Toppings +</label>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 700, color: "#6E523D", textTransform: "uppercase" }}>Max Selection:</span>
+                    <input
+                      type="number"
+                      value={editItem.customExtrasMaxSelection}
+                      onChange={(e) => setEditItem({ ...editItem, customExtrasMaxSelection: e.target.value })}
+                      style={{ width: "60px", padding: "6px", borderRadius: "6px", border: "1px solid #D8C8B8", fontSize: "13px", textAlign: "center", outline: "none", background: "#FAF7F2", fontWeight: 600 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditItem({
+                          ...editItem,
+                          customExtras: [...editItem.customExtras, { name: "", price: 25 }]
+                        });
+                      }}
+                      style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+                    >
+                      + Add Extra
+                    </button>
+                  </div>
+                </div>
+                {editItem.customExtras.map((ex, idx) => (
+                  <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                    <input
+                      placeholder="Extra name"
+                      value={ex.name || ""}
+                      onChange={(e) => {
+                        const updated = [...editItem.customExtras];
+                        updated[idx].name = e.target.value;
+                        setEditItem({ ...editItem, customExtras: updated });
+                      }}
+                      style={{ flex: 2, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Price (₹)"
+                      value={ex.price ?? 25}
+                      onChange={(e) => {
+                        const updated = [...editItem.customExtras];
+                        updated[idx].price = Number(e.target.value);
+                        setEditItem({ ...editItem, customExtras: updated });
+                      }}
+                      style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = editItem.customExtras.filter((_, i) => i !== idx);
+                        setEditItem({ ...editItem, customExtras: updated });
+                      }}
+                      style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+
             </div>
 
             <label style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "25px", fontWeight: 600, color: "#3B1A08", cursor: "pointer" }}>
@@ -1697,34 +1993,9 @@ export default function AdminPage({ setPage, setActivePage }) {
                 flexDirection: "column",
                 justifyContent: "space-between",
                 position: "relative",
-                transform: "translateY(0)",
-                transition: "all 0.25s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 14px 35px rgba(59, 26, 8, 0.08)";
-                const cb = e.currentTarget.querySelector(".card-checkbox");
-                if (cb) cb.style.opacity = "1";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 8px 30px rgba(59, 26, 8, 0.04)";
-                const cb = e.currentTarget.querySelector(".card-checkbox");
-                if (cb && !isSelected) cb.style.opacity = "0";
               }}
             >
-              {/* Product Card Checkbox (Hidden by default, reveals on hover or when checked) */}
-              <div 
-                className="card-checkbox"
-                style={{ 
-                  position: "absolute", 
-                  top: "12px", 
-                  left: "12px", 
-                  zIndex: 10,
-                  opacity: isSelected ? "1" : "0",
-                  transition: "opacity 0.2s ease"
-                }}
-              >
+              <div style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10 }}>
                 <input
                   type="checkbox"
                   checked={isSelected}
@@ -1750,13 +2021,13 @@ export default function AdminPage({ setPage, setActivePage }) {
                   )}
 
                   {item.archived && (
-                    <div style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(142, 68, 173, 0.95)", color: "#FFFFFF", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", backdropFilter: "blur(4px)" }}>
+                    <div style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(142, 68, 173, 0.95)", color: "#FFFFFF", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700" }}>
                       📦 Archived
                     </div>
                   )}
 
                   {!item.archived && item.isFeatured && (
-                    <div style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(212, 172, 13, 0.95)", color: "#FFFFFF", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", backdropFilter: "blur(4px)" }}>
+                    <div style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(212, 172, 13, 0.95)", color: "#FFFFFF", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700" }}>
                       ⭐ Featured
                     </div>
                   )}
@@ -1765,7 +2036,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                 <div style={{ padding: "20px 24px 12px 24px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                     <div>
-                      <span style={{ fontSize: "11px", fontWeight: 700, background: "#F2ECE4", color: "#6E523D", padding: "4px 10px", borderRadius: "6px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      <span style={{ fontSize: "11px", fontWeight: 700, background: "#F2ECE4", color: "#6E523D", padding: "4px 10px", borderRadius: "6px", textTransform: "uppercase" }}>
                         {item.category || "General"}
                       </span>
                       <h3 style={{ margin: "8px 0 4px 0", fontSize: "20px", fontWeight: 700, color: "#3B1A08", fontFamily: "'Playfair Display', serif" }}>
@@ -1797,7 +2068,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                       isFeatured: item.isFeatured || false,
                       available: item.available ?? true,
                       archived: item.archived || false,
-                      prepTime: item.prepTime || "5–8 mins",
+                      prepTime: item.prepTime || "8-10 mins",
                       servedAs: item.servedAs || "Hot",
                       dietType: item.dietType || "Vegetarian",
                       sizes: item.sizes || [],
