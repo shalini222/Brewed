@@ -197,13 +197,18 @@ export default function MenuManagement({ setPage, setActivePage }) {
   }, []);
 
   async function loadMenu() {
-    const snapshot = await getDocs(collection(db, "menu"));
-    const items = snapshot.docs.map((doc) => ({
-      ...doc.data(),
-      firestoreId: doc.id,
-    }));
-    setMenu(items);
-    setLoading(false);
+    try {
+      const snapshot = await getDocs(collection(db, "menu"));
+      const items = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        firestoreId: doc.id,
+      }));
+      setMenu(items);
+    } catch (err) {
+      console.error("Error loading menu:", err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (loading) {
@@ -228,16 +233,16 @@ export default function MenuManagement({ setPage, setActivePage }) {
       isFeatured: newItem.isFeatured,
       createdAt: now,
       updatedAt: now,
-      sizes: newItem.sizes,
-      prepTime: newItem.prepTime,
-      servedAs: newItem.servedAs,
-      dietType: newItem.dietType,
-      milkOptions: newItem.milkOptions,
-      temperatureOptions: newItem.temperatureOptions,
-      customExtras: newItem.customExtras,
-      customExtrasMaxSelection: Number(newItem.customExtrasMaxSelection),
-      sweetnessOptions: newItem.sweetnessOptions,
-      specialRequests: newItem.specialRequests,
+      sizes: newItem.sizes || [],
+      prepTime: newItem.prepTime || "8-10 mins",
+      servedAs: newItem.servedAs || "Hot",
+      dietType: newItem.dietType || "Vegetarian",
+      milkOptions: newItem.milkOptions || [],
+      temperatureOptions: newItem.temperatureOptions || [],
+      customExtras: newItem.customExtras || [],
+      customExtrasMaxSelection: Number(newItem.customExtrasMaxSelection) || 3,
+      sweetnessOptions: newItem.sweetnessOptions || [],
+      specialRequests: newItem.specialRequests || [],
       salesCount: 0,
       rating: 0,
       reviews: 0,
@@ -303,16 +308,16 @@ export default function MenuManagement({ setPage, setActivePage }) {
         archived: editItem.archived || false,
         isFeatured: editItem.isFeatured,
         updatedAt: new Date(),
-        sizes: editItem.sizes,
-        milkOptions: editItem.milkOptions,
-        temperatureOptions: editItem.temperatureOptions,
-        customExtras: editItem.customExtras,
-        customExtrasMaxSelection: Number(editItem.customExtrasMaxSelection),
-        sweetnessOptions: editItem.sweetnessOptions,
-        specialRequests: editItem.specialRequests,
-        prepTime: editItem.prepTime,
-        servedAs: editItem.servedAs,
-        dietType: editItem.dietType,
+        sizes: editItem.sizes || [],
+        milkOptions: editItem.milkOptions || [],
+        temperatureOptions: editItem.temperatureOptions || [],
+        customExtras: editItem.customExtras || [],
+        customExtrasMaxSelection: Number(editItem.customExtrasMaxSelection) || 3,
+        sweetnessOptions: editItem.sweetnessOptions || [],
+        specialRequests: editItem.specialRequests || [],
+        prepTime: editItem.prepTime || "8-10 mins",
+        servedAs: editItem.servedAs || "Hot",
+        dietType: editItem.dietType || "Vegetarian",
       });
       setEditing(null);
       loadMenu();
