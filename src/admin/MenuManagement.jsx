@@ -28,6 +28,10 @@ export default function AdminPage({ setPage, setActivePage }) {
   const [showBulkDropdown, setShowBulkDropdown] = useState(false);
   const bulkDropdownRef = useRef(null);
 
+  // Bulk Input Modal State
+  const [bulkModal, setBulkModal] = useState({ show: false, type: null });
+  const [bulkInputValue, setBulkInputValue] = useState("");
+
   const [orders, setOrders] = useState([]);
   const [orderLoading, setOrderLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
@@ -343,44 +347,58 @@ export default function AdminPage({ setPage, setActivePage }) {
     }
   }
 
-  // Bulk action execution handler
-  async function executeBulkAction() {
+  // Trigger bulk execution or open modal for input actions
+  function handleBulkActionTrigger() {
     if (selectedItems.length === 0 || !bulkAction) return;
 
-    if (bulkAction === "delete") {
+    if (bulkAction === "change-category" || bulkAction === "apply-discount") {
+      setBulkInputValue(bulkAction === "apply-discount" ? "10" : "Coffee");
+      setBulkModal({ show: true, type: bulkAction });
+      return;
+    }
+
+    executeBulkActionConfirmed();
+  }
+
+  // Bulk action execution handler
+  async function executeBulkActionConfirmed(modalInputOverride = null) {
+    const actionToRun = bulkAction;
+    if (selectedItems.length === 0 || !actionToRun) return;
+
+    if (actionToRun === "delete") {
       if (!window.confirm(`Are you sure you want to delete ${selectedItems.length} products?`)) return;
       for (const id of selectedItems) {
         await deleteDoc(doc(db, "menu", id));
       }
       triggerToast(`${selectedItems.length} products deleted successfully!`);
-    } else if (bulkAction === "mark-featured") {
+    } else if (actionToRun === "mark-featured") {
       for (const id of selectedItems) {
         await updateDoc(doc(db, "menu", id), { isFeatured: true, updatedAt: new Date() });
       }
       triggerToast(`${selectedItems.length} products marked as featured!`);
-    } else if (bulkAction === "remove-featured") {
+    } else if (actionToRun === "remove-featured") {
       for (const id of selectedItems) {
         await updateDoc(doc(db, "menu", id), { isFeatured: false, updatedAt: new Date() });
       }
       triggerToast(`Removed featured status from ${selectedItems.length} products!`);
-    } else if (bulkAction === "mark-in-stock") {
+    } else if (actionToRun === "mark-in-stock") {
       for (const id of selectedItems) {
         await updateDoc(doc(db, "menu", id), { available: true, updatedAt: new Date() });
       }
       triggerToast(`${selectedItems.length} products marked as in stock!`);
-    } else if (bulkAction === "mark-out-of-stock") {
+    } else if (actionToRun === "mark-out-of-stock") {
       for (const id of selectedItems) {
         await updateDoc(doc(db, "menu", id), { available: false, updatedAt: new Date() });
       }
       triggerToast(`${selectedItems.length} products marked as out of stock!`);
-    } else if (bulkAction === "change-category") {
-      const newCat = window.prompt("Enter new category (Coffee, Non-Coffee, Food):", "Coffee");
+    } else if (actionToRun === "change-category") {
+      const newCat = modalInputOverride !== null ? modalInputOverride : bulkInputValue;
       if (!newCat) return;
       for (const id of selectedItems) {
         await updateDoc(doc(db, "menu", id), { category: newCat, updatedAt: new Date() });
       }
       triggerToast(`Category updated for ${selectedItems.length} products!`);
-    } else if (bulkAction === "duplicate") {
+    } else if (actionToRun === "duplicate") {
       for (const id of selectedItems) {
         const itemToCopy = menu.find((i) => i.firestoreId === id);
         if (itemToCopy) {
@@ -392,9 +410,8 @@ export default function AdminPage({ setPage, setActivePage }) {
         }
       }
       triggerToast(`${selectedItems.length} products duplicated!`);
-    } else if (bulkAction === "apply-discount") {
-      const discountStr = window.prompt("Enter discount percentage (e.g., 10 for 10% off):", "10");
-      const discount = Number(discountStr);
+    } else if (actionToRun === "apply-discount") {
+      const discount = Number(modalInputOverride !== null ? modalInputOverride : bulkInputValue);
       if (isNaN(discount) || discount <= 0) return;
       for (const id of selectedItems) {
         const item = menu.find((i) => i.firestoreId === id);
@@ -404,7 +421,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         }
       }
       triggerToast(`${discount}% discount applied to ${selectedItems.length} products!`);
-    } else if (bulkAction === "export") {
+    } else if (actionToRun === "export") {
       const selectedData = menu.filter((i) => selectedItems.includes(i.firestoreId));
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(selectedData, null, 2));
       const downloadAnchor = document.createElement("a");
@@ -414,13 +431,14 @@ export default function AdminPage({ setPage, setActivePage }) {
       downloadAnchor.click();
       downloadAnchor.remove();
       triggerToast(`Exported ${selectedItems.length} products successfully!`);
-    } else if (bulkAction === "archive") {
+    } else if (actionToRun === "archive") {
       for (const id of selectedItems) {
         await updateDoc(doc(db, "menu", id), { available: false, archived: true, updatedAt: new Date() });
       }
       triggerToast(`${selectedItems.length} products archived!`);
     }
 
+    setBulkModal({ show: false, type: null });
     setSelectedItems([]);
     setBulkAction("");
     loadMenu();
@@ -469,6 +487,130 @@ export default function AdminPage({ setPage, setActivePage }) {
           }}
         >
           <span>☕</span> {toast}
+        </div>
+      )}
+
+      {/* Centered Bulk Action Input Modal */}
+      {bulkModal.show && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(5px)",
+            zIndex: 10000,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "20px",
+          }}
+        >
+          <div
+            style={{
+              background: "#FFFFFF",
+              padding: "36px",
+              borderRadius: "20px",
+              width: "100%",
+              maxWidth: "420px",
+              boxShadow: "0 25px 50px rgba(0, 0, 0, 0.25)",
+              border: "1px solid #E8DFD5",
+              boxSizing: "border-box",
+            }}
+          >
+            <h3 style={{ margin: "0 0 10px 0", color: "#3B1A08", fontSize: "20px", fontFamily: "'Playfair Display', serif" }}>
+              {bulkModal.type === "apply-discount" ? "Apply Percentage Discount" : "Change Product Category"}
+            </h3>
+            <p style={{ margin: "0 0 20px 0", color: "#6E523D", fontSize: "13px", lineHeight: "1.5" }}>
+              {bulkModal.type === "apply-discount"
+                ? `Enter the discount percentage to reduce prices for ${selectedItems.length} selected items.`
+                : `Enter the new category name for ${selectedItems.length} selected items.`}
+            </p>
+
+            {bulkModal.type === "apply-discount" ? (
+              <div style={{ position: "relative", marginBottom: "24px" }}>
+                <input
+                  type="number"
+                  placeholder="e.g. 15"
+                  value={bulkInputValue}
+                  onChange={(e) => setBulkInputValue(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "14px 40px 14px 16px",
+                    borderRadius: "12px",
+                    border: "1px solid #D8C8B8",
+                    fontSize: "15px",
+                    outline: "none",
+                    background: "#FAF7F2",
+                    boxSizing: "border-box",
+                    fontWeight: 600,
+                    color: "#3B1A08",
+                  }}
+                />
+                <span style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", color: "#6E523D", fontWeight: 700 }}>%</span>
+              </div>
+            ) : (
+              <div style={{ marginBottom: "24px" }}>
+                <select
+                  value={bulkInputValue}
+                  onChange={(e) => setBulkInputValue(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "14px 16px",
+                    borderRadius: "12px",
+                    border: "1px solid #D8C8B8",
+                    fontSize: "14px",
+                    outline: "none",
+                    background: "#FAF7F2",
+                    boxSizing: "border-box",
+                    fontWeight: 600,
+                    color: "#3B1A08",
+                  }}
+                >
+                  <option value="Coffee">Coffee</option>
+                  <option value="Non-Coffee">Non-Coffee</option>
+                  <option value="Food">Food</option>
+                </select>
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                onClick={() => executeBulkActionConfirmed(bulkInputValue)}
+                style={{
+                  flex: 1,
+                  background: "#3B1A08",
+                  color: "#FFF",
+                  border: "none",
+                  padding: "12px 20px",
+                  borderRadius: "10px",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                  cursor: "pointer",
+                }}
+              >
+                Apply
+              </button>
+              <button
+                onClick={() => setBulkModal({ show: false, type: null })}
+                style={{
+                  flex: 1,
+                  background: "#FAF7F2",
+                  color: "#6E523D",
+                  border: "1px solid #D8C8B8",
+                  padding: "12px 20px",
+                  borderRadius: "10px",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -851,7 +993,7 @@ export default function AdminPage({ setPage, setActivePage }) {
             </div>
 
             <button
-              onClick={executeBulkAction}
+              onClick={handleBulkActionTrigger}
               disabled={selectedItems.length === 0 || !bulkAction}
               style={{
                 padding: "11px 22px",
