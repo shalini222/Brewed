@@ -20,7 +20,13 @@ const DEFAULT_COFFEE_PRESETS = {
     { name: "Large", desc: "260 ml", priceAdd: 80 },
     { name: "Extra Large", desc: "320 ml", priceAdd: 120 }
   ],
-  milkOptions: ["Whole", "Skim", "Oat", "Soy", "Almond"],
+  milkOptions: [
+    { name: "Whole", price: 0 },
+    { name: "Skim", price: 0 },
+    { name: "Oat", price: 30 },
+    { name: "Soy", price: 25 },
+    { name: "Almond", price: 30 }
+  ],
   temperatureOptions: ["Hot", "Iced"],
   sweetnessOptions: ["0% (Unsweetened)", "25% (Light)", "50% (Regular)", "100% (Sweet)"],
   customExtras: [
@@ -1414,7 +1420,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                   onClick={() => {
                     setNewItem({
                       ...newItem,
-                      milkOptions: [...newItem.milkOptions, ""]
+                      milkOptions: [...newItem.milkOptions, { name: "", price: 0 }]
                     });
                   }}
                   style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
@@ -1422,31 +1428,55 @@ export default function AdminPage({ setPage, setActivePage }) {
                   + Add Milk
                 </button>
               </div>
-              {newItem.milkOptions.map((milk, idx) => (
-                <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
-                  <input
-                    placeholder="Milk type (e.g. Oat Milk)"
-                    value={milk}
-                    onChange={(e) => {
-                      const updated = [...newItem.milkOptions];
-                      updated[idx] = e.target.value;
-                      setNewItem({ ...newItem, milkOptions: updated });
-                    }}
-                    style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const updated = newItem.milkOptions.filter((_, i) => i !== idx);
-                      setNewItem({ ...newItem, milkOptions: updated });
-                    }}
-                    style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
-                    title="Delete Milk Option"
-                  >
-                    🗑️ Delete
-                  </button>
-                </div>
-              ))}
+              {newItem.milkOptions.map((milk, idx) => {
+                const milkName = typeof milk === "string" ? milk : milk.name || "";
+                const milkPrice = typeof milk === "string" ? 0 : milk.price ?? 0;
+                return (
+                  <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                    <input
+                      placeholder="Milk type (e.g. Oat Milk)"
+                      value={milkName}
+                      onChange={(e) => {
+                        const updated = [...newItem.milkOptions];
+                        if (typeof updated[idx] === "string") {
+                          updated[idx] = { name: e.target.value, price: 0 };
+                        } else {
+                          updated[idx] = { ...updated[idx], name: e.target.value };
+                        }
+                        setNewItem({ ...newItem, milkOptions: updated });
+                      }}
+                      style={{ flex: 2, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Price (₹)"
+                      value={milkPrice}
+                      onChange={(e) => {
+                        const updated = [...newItem.milkOptions];
+                        const val = Number(e.target.value);
+                        if (typeof updated[idx] === "string") {
+                          updated[idx] = { name: updated[idx], price: val };
+                        } else {
+                          updated[idx] = { ...updated[idx], price: val };
+                        }
+                        setNewItem({ ...newItem, milkOptions: updated });
+                      }}
+                      style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = newItem.milkOptions.filter((_, i) => i !== idx);
+                        setNewItem({ ...newItem, milkOptions: updated });
+                      }}
+                      style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
+                      title="Delete Milk Option"
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                );
+              })}
             </div>
 
             {/* 3. SWEETNESS OPTIONS BUILDER */}
@@ -1806,7 +1836,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                     onClick={() => {
                       setEditItem({
                         ...editItem,
-                        milkOptions: [...editItem.milkOptions, ""]
+                        milkOptions: [...editItem.milkOptions, { name: "", price: 0 }]
                       });
                     }}
                     style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
@@ -1814,30 +1844,54 @@ export default function AdminPage({ setPage, setActivePage }) {
                     + Add Milk
                   </button>
                 </div>
-                {editItem.milkOptions.map((milk, idx) => (
-                  <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
-                    <input
-                      placeholder="Milk type"
-                      value={milk}
-                      onChange={(e) => {
-                        const updated = [...editItem.milkOptions];
-                        updated[idx] = e.target.value;
-                        setEditItem({ ...editItem, milkOptions: updated });
-                      }}
-                      style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const updated = editItem.milkOptions.filter((_, i) => i !== idx);
-                        setEditItem({ ...editItem, milkOptions: updated });
-                      }}
-                      style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
-                    >
-                      🗑️ Delete
-                    </button>
-                  </div>
-                ))}
+                {editItem.milkOptions.map((milk, idx) => {
+                  const milkName = typeof milk === "string" ? milk : milk.name || "";
+                  const milkPrice = typeof milk === "string" ? 0 : milk.price ?? 0;
+                  return (
+                    <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                      <input
+                        placeholder="Milk type"
+                        value={milkName}
+                        onChange={(e) => {
+                          const updated = [...editItem.milkOptions];
+                          if (typeof updated[idx] === "string") {
+                            updated[idx] = { name: e.target.value, price: 0 };
+                          } else {
+                            updated[idx] = { ...updated[idx], name: e.target.value };
+                          }
+                          setEditItem({ ...editItem, milkOptions: updated });
+                        }}
+                        style={{ flex: 2, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                      />
+                      <input
+                        type="number"
+                        placeholder="Price (₹)"
+                        value={milkPrice}
+                        onChange={(e) => {
+                          const updated = [...editItem.milkOptions];
+                          const val = Number(e.target.value);
+                          if (typeof updated[idx] === "string") {
+                            updated[idx] = { name: updated[idx], price: val };
+                          } else {
+                            updated[idx] = { ...updated[idx], price: val };
+                          }
+                          setEditItem({ ...editItem, milkOptions: updated });
+                        }}
+                        style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = editItem.milkOptions.filter((_, i) => i !== idx);
+                          setEditItem({ ...editItem, milkOptions: updated });
+                        }}
+                        style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Edit Sweetness Builder */}
