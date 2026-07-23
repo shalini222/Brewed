@@ -643,7 +643,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         </button>
       </div>
 
-      {/* Search Bar & Custom Dropdown Sort Bar (Aligned at exact eye level via padding-top) */}
+      {/* Search Bar & Custom Dropdown Sort Bar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px", flexWrap: "wrap", gap: "20px" }}>
         <div style={{ position: "relative", maxWidth: "440px", flex: 1, minWidth: "280px", paddingTop: "2px" }}>
           <input
@@ -754,119 +754,142 @@ export default function AdminPage({ setPage, setActivePage }) {
         ))}
       </div>
 
-      {/* Bulk Actions Toolbar */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          background: "#FFFFFF",
-          padding: "14px 22px",
-          borderRadius: "14px",
-          border: "1px solid #E8DFD5",
-          marginBottom: "32px",
-          boxShadow: "0 2px 10px rgba(59, 26, 8, 0.02)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <input
-            type="checkbox"
-            checked={filteredAndSortedMenu.length > 0 && selectedItems.length === filteredAndSortedMenu.length}
-            onChange={toggleSelectAll}
-            style={{ width: "18px", height: "18px", accentColor: "#3B1A08", cursor: "pointer" }}
-          />
-          <span style={{ fontWeight: 600, fontSize: "14px", color: "#3B1A08" }}>
-            {selectedItems.length} selected
-          </span>
-        </div>
+      {/* Bulk Actions Toolbar (Appears only when at least one item is selected) */}
+      {selectedItems.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            background: "#FFFFFF",
+            padding: "14px 22px",
+            borderRadius: "14px",
+            border: "1px solid #E8DFD5",
+            marginBottom: "32px",
+            boxShadow: "0 4px 15px rgba(59, 26, 8, 0.06)",
+            animation: "fadeIn 0.2s ease",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <input
+              type="checkbox"
+              checked={filteredAndSortedMenu.length > 0 && selectedItems.length === filteredAndSortedMenu.length}
+              onChange={toggleSelectAll}
+              style={{ width: "18px", height: "18px", accentColor: "#3B1A08", cursor: "pointer" }}
+            />
+            <span style={{ fontWeight: 600, fontSize: "14px", color: "#3B1A08" }}>
+              {selectedItems.length} selected
+            </span>
+          </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div ref={bulkDropdownRef} style={{ position: "relative" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div ref={bulkDropdownRef} style={{ position: "relative" }}>
+              <button
+                onClick={() => setShowBulkDropdown(!showBulkDropdown)}
+                style={{
+                  padding: "11px 18px",
+                  backgroundColor: "#FAF7F2",
+                  border: "1px solid #D8C8B8",
+                  borderRadius: "10px",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: "13px",
+                  color: "#3B1A08",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <span>{currentBulkLabel}</span>
+                <span style={{ fontSize: "10px", color: "#6E523D" }}>▼</span>
+              </button>
+
+              {showBulkDropdown && (
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "calc(100% + 6px)",
+                    background: "#FFFFFF",
+                    borderRadius: "12px",
+                    boxShadow: "0 10px 30px rgba(44, 24, 16, 0.12)",
+                    border: "1px solid #E8DFD5",
+                    zIndex: 1000,
+                    minWidth: "220px",
+                    padding: "6px 0",
+                    maxHeight: "300px",
+                    overflowY: "auto",
+                  }}
+                >
+                  {bulkActionOptions.map((action) => (
+                    <div
+                      key={action.id}
+                      onClick={() => {
+                        setBulkAction(action.id);
+                        setShowBulkDropdown(false);
+                      }}
+                      style={{
+                        padding: "10px 16px",
+                        fontSize: "13px",
+                        fontWeight: bulkAction === action.id ? 700 : 500,
+                        color: bulkAction === action.id ? "#3B1A08" : "#5C4A3E",
+                        background: bulkAction === action.id ? "#FAF7F2" : "transparent",
+                        cursor: "pointer",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (bulkAction !== action.id) e.currentTarget.style.background = "#FDFBF7";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (bulkAction !== action.id) e.currentTarget.style.background = "transparent";
+                      }}
+                    >
+                      {action.label}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <button
-              onClick={() => setShowBulkDropdown(!showBulkDropdown)}
+              onClick={executeBulkAction}
+              disabled={selectedItems.length === 0 || !bulkAction}
+              style={{
+                padding: "11px 22px",
+                background: selectedItems.length > 0 && bulkAction ? "#3B1A08" : "#E2D5C9",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: "10px",
+                cursor: selectedItems.length > 0 && bulkAction ? "pointer" : "not-allowed",
+                fontWeight: 600,
+                fontSize: "13px",
+                boxShadow: selectedItems.length > 0 && bulkAction ? "0 4px 12px rgba(59, 26, 8, 0.15)" : "none",
+              }}
+            >
+              Apply
+            </button>
+
+            {/* Cancel Button to Exit Bulk Selection Mode */}
+            <button
+              onClick={() => {
+                setSelectedItems([]);
+                setBulkAction("");
+              }}
               style={{
                 padding: "11px 18px",
-                backgroundColor: "#FAF7F2",
+                background: "#FAF7F2",
+                color: "#6E523D",
                 border: "1px solid #D8C8B8",
                 borderRadius: "10px",
                 cursor: "pointer",
                 fontWeight: 600,
                 fontSize: "13px",
-                color: "#3B1A08",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
               }}
             >
-              <span>{currentBulkLabel}</span>
-              <span style={{ fontSize: "10px", color: "#6E523D" }}>▼</span>
+              Cancel
             </button>
-
-            {showBulkDropdown && (
-              <div
-                style={{
-                  position: "absolute",
-                  right: 0,
-                  top: "calc(100% + 6px)",
-                  background: "#FFFFFF",
-                  borderRadius: "12px",
-                  boxShadow: "0 10px 30px rgba(44, 24, 16, 0.12)",
-                  border: "1px solid #E8DFD5",
-                  zIndex: 1000,
-                  minWidth: "220px",
-                  padding: "6px 0",
-                  maxHeight: "300px",
-                  overflowY: "auto",
-                }}
-              >
-                {bulkActionOptions.map((action) => (
-                  <div
-                    key={action.id}
-                    onClick={() => {
-                      setBulkAction(action.id);
-                      setShowBulkDropdown(false);
-                    }}
-                    style={{
-                      padding: "10px 16px",
-                      fontSize: "13px",
-                      fontWeight: bulkAction === action.id ? 700 : 500,
-                      color: bulkAction === action.id ? "#3B1A08" : "#5C4A3E",
-                      background: bulkAction === action.id ? "#FAF7F2" : "transparent",
-                      cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (bulkAction !== action.id) e.currentTarget.style.background = "#FDFBF7";
-                    }}
-                    onMouseLeave={(e) => {
-                      if (bulkAction !== action.id) e.currentTarget.style.background = "transparent";
-                    }}
-                  >
-                    {action.label}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
-
-          <button
-            onClick={executeBulkAction}
-            disabled={selectedItems.length === 0 || !bulkAction}
-            style={{
-              padding: "11px 22px",
-              background: selectedItems.length > 0 && bulkAction ? "#3B1A08" : "#E2D5C9",
-              color: "#FFFFFF",
-              border: "none",
-              borderRadius: "10px",
-              cursor: selectedItems.length > 0 && bulkAction ? "pointer" : "not-allowed",
-              fontWeight: 600,
-              fontSize: "13px",
-              boxShadow: selectedItems.length > 0 && bulkAction ? "0 4px 12px rgba(59, 26, 8, 0.15)" : "none",
-            }}
-          >
-            Apply
-          </button>
         </div>
-      </div>
+      )}
 
       {/* Add Product Modal Drawer */}
       {showAdd && (
@@ -1105,7 +1128,9 @@ export default function AdminPage({ setPage, setActivePage }) {
 
       {/* Menu Cards Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "24px" }}>
-        {filteredAndSortedMenu.map((item) => (
+        {filteredAndSortedMenu.map((item) => {
+          const isSelected = selectedItems.includes(item.firestoreId);
+          return (
             <div
               key={item.firestoreId}
               style={{
@@ -1113,7 +1138,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                 borderRadius: "20px",
                 overflow: "hidden",
                 boxShadow: "0 8px 30px rgba(59, 26, 8, 0.04)",
-                border: "1px solid #E8DFD5",
+                border: isSelected ? "2px solid #3B1A08" : "1px solid #E8DFD5",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
@@ -1124,17 +1149,31 @@ export default function AdminPage({ setPage, setActivePage }) {
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-4px)";
                 e.currentTarget.style.boxShadow = "0 14px 35px rgba(59, 26, 8, 0.08)";
+                const cb = e.currentTarget.querySelector(".card-checkbox");
+                if (cb) cb.style.opacity = "1";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
                 e.currentTarget.style.boxShadow = "0 8px 30px rgba(59, 26, 8, 0.04)";
+                const cb = e.currentTarget.querySelector(".card-checkbox");
+                if (cb && !isSelected) cb.style.opacity = "0";
               }}
             >
-              {/* Product Card Checkbox */}
-              <div style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10 }}>
+              {/* Product Card Checkbox (Hidden by default, reveals on hover or when checked) */}
+              <div 
+                className="card-checkbox"
+                style={{ 
+                  position: "absolute", 
+                  top: "12px", 
+                  left: "12px", 
+                  zIndex: 10,
+                  opacity: isSelected ? "1" : "0",
+                  transition: "opacity 0.2s ease"
+                }}
+              >
                 <input
                   type="checkbox"
-                  checked={selectedItems.includes(item.firestoreId)}
+                  checked={isSelected}
                   onChange={(e) => {
                     if (e.target.checked) {
                       setSelectedItems([...selectedItems, item.firestoreId]);
@@ -1253,7 +1292,8 @@ export default function AdminPage({ setPage, setActivePage }) {
                 </button>
               </div>
             </div>
-          ))}
+          );
+        })}
       </div>
     </div>
   );
