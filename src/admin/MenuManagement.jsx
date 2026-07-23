@@ -42,7 +42,7 @@ const DEFAULT_COFFEE_PRESETS = {
   specialRequests: ["Less Ice", "Extra Hot", "No Foam"]
 };
 
-export default function AdminPage({ setPage, setActivePage }) {
+export default function MenuManagement({ setPage, setActivePage }) {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
