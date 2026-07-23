@@ -1827,7 +1827,7 @@ export default function MenuManagement({ setPage, setActivePage }) {
                     onClick={() => {
                       setEditItem({
                         ...editItem,
-                        sizes: [...editItem.sizes, { name: "", desc: "", priceAdd: 0 }]
+                        sizes: [...editItem.sizes, { name: "", desc: "", price: 0 }]
                       });
                     }}
                     style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
@@ -1860,10 +1860,10 @@ export default function MenuManagement({ setPage, setActivePage }) {
                     <input
                       type="number"
                       placeholder="Price (₹)"
-                      value={sz.priceAdd ?? 0}
+                      value={sz.price ?? 0}
                       onChange={(e) => {
                         const updated = [...editItem.sizes];
-                        updated[idx].priceAdd = Number(e.target.value);
+                        updated[idx].price = Number(e.target.value);
                         setEditItem({ ...editItem, sizes: updated });
                       }}
                       style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
