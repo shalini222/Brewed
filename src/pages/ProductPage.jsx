@@ -53,14 +53,15 @@ export default function ProductPage({
   product,
 })  {
   const [favorite, setFavorite] = useState(false);
-  const [size, setSize] = useState(
-  product?.sizes?.[0]?.name || ""
-);
+  const [selectedSize, setSelectedSize] = useState(product?.sizes?.[0] || null);
   const [milk, setMilk] = useState("");
   const [toppings, setToppings] = useState([]);
   const [temperature, setTemperature] = useState("Hot");
   const [iceLevel, setIceLevel] = useState("Regular");
+  
+  // Keep the index state, and derive the selected object from it safely
   const [sweetnessIndex, setSweetnessIndex] = useState(0);
+  
   const [instructions, setInstructions] = useState("");
   const [reviewText, setReviewText] = useState("");
   const [reviewRating, setReviewRating] = useState(0);
@@ -77,38 +78,32 @@ export default function ProductPage({
   const [selectedReviewImage, setSelectedReviewImage] = useState(null);
   const [reviews, setReviews] = useState([]);
 
+  const [editingReview, setEditingReview] = useState(null);
+  const [editText, setEditText] = useState("");
+  const [editRating, setEditRating] = useState(0);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [reviewToDelete, setReviewToDelete] = useState(null);
 
 
-
-const [editingReview, setEditingReview] = useState(null);
-
-const [editText, setEditText] = useState("");
-
-const [editRating, setEditRating] = useState(0);
-
-const [showDeleteModal, setShowDeleteModal] = useState(false);
-
-const [reviewToDelete, setReviewToDelete] = useState(null);
-  
-  
-  const { addToCart } = useCart();
+const { addToCart } = useCart();
   const { currentUser } = useAuth(); 
 
-const averageRating = reviews.length
-  ? (
-      reviews.reduce((total, review) => total + review.rating, 0) /
-      reviews.length
-    ).toFixed(1)
-  : "0.0";
+  const averageRating = reviews.length
+    ? (
+        reviews.reduce((total, review) => total + review.rating, 0) /
+        reviews.length
+      ).toFixed(1)
+    : "0.0";
 
-
-  
   const sweetnessOptions = Array.isArray(product?.sweetnessOptions)
-  ? product.sweetnessOptions
-  : [];
+    ? product.sweetnessOptions
+    : [];
   
-  const selectedSweetness =
-  sweetnessOptions[sweetnessIndex] ?? null;
+  // This correctly computes the active sweetness object from the admin options array
+  const selectedSweetness = sweetnessOptions[sweetnessIndex] ?? null;
+
+
+
 
 
 const CLOUD_NAME = "knvwfzhp";
@@ -2371,39 +2366,90 @@ gap:30px;
 
               <div className="price">₹{singlePrice}</div>
 
-              {/* SIZE SELECTION SECTION */}
-              <div className="option-section">
-                <h2 className="option-title">Choose Your Size</h2>
-                <div className="size-grid">
-  {product.sizes?.map((item) => (
-    <div
-      key={item.name}
-      className={`size-card ${
-        size === item.name ? "active" : ""
-      }`}
-      onClick={() => setSize(item.name)}
-    >
-      <CupSoda className="cup-icon" />
-
-      <div className="size-name">
-        {item.name}
-      </div>
-
-      <div className="size-volume">
-        {item.volume}
-      </div>
-
-      <div className="size-price">
-  {item.price > 0
-    ? `+₹${item.price}`
-    : item.price < 0
-      ? `-₹${Math.abs(item.price)}`
-      : "No extra charge"}
-</div>
+            {/* SIZE SECTION */}
+{product.sizes && product.sizes.length > 0 && (
+  <div className="option-section">
+    <h2 className="option-title">Select Size</h2>
+    <div className="size-options-grid">
+      {product.sizes.map((sizeOption) => {
+        const isSelected = selectedSize?.id === sizeOption.id || selectedSize?.name === sizeOption.name;
+        
+        return (
+          <button
+            type="button"
+            key={sizeOption.id || sizeOption.name}
+            className={`size-card ${isSelected ? "active" : ""}`}
+            onClick={() => setSelectedSize(sizeOption)}
+          >
+            <span className="size-name">{sizeOption.name}</span>
+            {sizeOption.price > 0 && (
+              <span className="size-price">+{sizeOption.price}</span>
+            )}
+          </button>
+        );
+      })}
     </div>
-  ))}
-</div>
-</div>
+  </div>
+)}
+
+{/* SWEETNESS SECTION */}
+{sweetnessOptions.length > 0 && (
+  <div className="option-section">
+    <h2 className="option-title">Sweetness Level</h2>
+    
+    <div className="sweetness-display">
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 15 }}>
+        <div style={{ fontSize: 28, width: 34, textAlign: "center" }}>
+          {selectedSweetness?.icon?.startsWith("http") || selectedSweetness?.icon?.startsWith("/") ? (
+            <img
+              src={selectedSweetness.icon}
+              alt={selectedSweetness.name}
+              style={{ width: 30, height: 30, objectFit: "contain" }}
+            />
+          ) : (
+            selectedSweetness?.icon || "🍬"
+          )}
+        </div>
+        <div>
+          <div style={{ fontWeight: 700 }}>{selectedSweetness?.name}</div>
+          <div className="sweetness-desc">{selectedSweetness?.description}</div>
+        </div>
+      </div>
+    </div>
+
+    <ReactSlider
+      className="sweetness-slider"
+      thumbClassName="sweetness-thumb"
+      trackClassName="sweetness-track"
+      renderTrack={(props, state) => {
+        const { key, ...rest } = props;
+        return <div key={key} {...rest} className={`sweetness-track sweetness-track-${state.index}`} />;
+      }}
+      min={0}
+      max={sweetnessOptions.length - 1}
+      step={1}
+      value={sweetnessIndex}
+      onChange={(index) => setSweetnessIndex(index)}
+      disabled={sweetnessOptions.length <= 1}
+    />
+
+    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontSize: 13, color: "#777" }}>
+      {sweetnessOptions.map((option, index) => (
+        <span
+          key={option.name}
+          className={sweetnessIndex === index ? "sweetness-label active" : "sweetness-label"}
+          onClick={() => setSweetnessIndex(index)}
+          style={{ cursor: "pointer" }}
+        >
+          {option.name}
+        </span>
+      ))}
+    </div>
+  </div>
+)}
+
+
+
 
               {/* MILK OPTIONS SECTION */}
               {product.milkOptions?.length > 0 && (
