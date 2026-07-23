@@ -1487,8 +1487,203 @@ export default function MenuManagement({ setPage, setActivePage }) {
                     </button>
                   </div>
                 );
-              })}
+              })}    
             </div>
+
+
+{/* TEMPERATURE OPTIONS BUILDER */}
+
+    <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+    <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>
+      Temperature Options +
+    </label>
+
+    <button
+      type="button"
+      onClick={() => {
+        setNewItem({
+          ...newItem,
+          temperatureOptions: [
+            ...newItem.temperatureOptions,
+            {
+              icon: "☕",
+              name: "",
+              description: "",
+            },
+          ],
+        });
+      }}
+      style={{
+        background: "#3B1A08",
+        color: "#FFF",
+        border: "none",
+        padding: "6px 14px",
+        borderRadius: "8px",
+        fontWeight: 600,
+        fontSize: "12px",
+        cursor: "pointer",
+      }}
+    >
+      + Add Temperature
+    </button>
+  </div>
+
+  {newItem.temperatureOptions.map((temp, idx) => {
+    const tempIcon =
+      typeof temp === "string" ? "☕" : temp.icon || "☕";
+
+    const tempName =
+      typeof temp === "string" ? temp : temp.name || "";
+
+    const tempDescription =
+      typeof temp === "string"
+        ? ""
+        : temp.description || "";
+
+    return (
+      <div
+        key={idx}
+        style={{
+          display: "flex",
+          gap: "10px",
+          alignItems: "center",
+          marginBottom: "8px",
+        }}
+      >
+        <input
+          placeholder="Emoji"
+          value={tempIcon}
+          onChange={(e) => {
+            const updated = [...newItem.temperatureOptions];
+
+            if (typeof updated[idx] === "string") {
+              updated[idx] = {
+                icon: e.target.value,
+                name: updated[idx],
+                description: "",
+              };
+            } else {
+              updated[idx] = {
+                ...updated[idx],
+                icon: e.target.value,
+              };
+            }
+
+            setNewItem({
+              ...newItem,
+              temperatureOptions: updated,
+            });
+          }}
+          style={{
+            width: "70px",
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            fontSize: "13px",
+            outline: "none",
+            background: "#FAF7F2",
+          }}
+        />
+
+        <input
+          placeholder="Temperature (e.g. Hot)"
+          value={tempName}
+          onChange={(e) => {
+            const updated = [...newItem.temperatureOptions];
+
+            if (typeof updated[idx] === "string") {
+              updated[idx] = {
+                icon: "☕",
+                name: e.target.value,
+                description: "",
+              };
+            } else {
+              updated[idx] = {
+                ...updated[idx],
+                name: e.target.value,
+              };
+            }
+
+            setNewItem({
+              ...newItem,
+              temperatureOptions: updated,
+            });
+          }}
+          style={{
+            flex: 1,
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            fontSize: "13px",
+            outline: "none",
+            background: "#FAF7F2",
+          }}
+        />
+
+        <input
+          placeholder="Description"
+          value={tempDescription}
+          onChange={(e) => {
+            const updated = [...newItem.temperatureOptions];
+
+            updated[idx] = {
+              ...updated[idx],
+              description: e.target.value,
+            };
+
+            setNewItem({
+              ...newItem,
+              temperatureOptions: updated,
+            });
+          }}
+          style={{
+            flex: 2,
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            fontSize: "13px",
+            outline: "none",
+            background: "#FAF7F2",
+          }}
+        />
+
+        <button
+          type="button"
+          onClick={() => {
+            const updated = newItem.temperatureOptions.filter(
+              (_, i) => i !== idx
+            );
+
+            setNewItem({
+              ...newItem,
+              temperatureOptions: updated,
+            });
+          }}
+          style={{
+            background: "#FFEBEE",
+            color: "#C62828",
+            border: "1px solid #FADBD8",
+            padding: "8px 12px",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontSize: "13px",
+          }}
+          title="Delete Temperature"
+        >
+          🗑️ Delete
+        </button>
+      </div>
+    );
+  })}
+</div>
+
+
+
+
+
+
+            
 
             {/* 3. SWEETNESS OPTIONS BUILDER */}
             <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
@@ -2201,6 +2396,201 @@ export default function MenuManagement({ setPage, setActivePage }) {
                  );
           })}
               </div>
+
+{/*  EDIT TEMPERATURE OPTIONS BUILDER */}
+
+<div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+    <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>
+      Temperature Options +
+    </label>
+
+    <button
+      type="button"
+      onClick={() => {
+        setEditItem({
+          ...editItem,
+          temperatureOptions: [
+            ...(editItem.temperatureOptions || []),
+            {
+              icon: "☕",
+              name: "",
+              description: "",
+            },
+          ],
+        });
+      }}
+      style={{
+        background: "#3B1A08",
+        color: "#FFF",
+        border: "none",
+        padding: "6px 14px",
+        borderRadius: "8px",
+        fontWeight: 600,
+        fontSize: "12px",
+        cursor: "pointer",
+      }}
+    >
+      + Add Temperature
+    </button>
+  </div>
+
+  {(editItem.temperatureOptions || []).map((temp, idx) => {
+    const tempIcon =
+      typeof temp === "string" ? "☕" : temp.icon || "☕";
+
+    const tempName =
+      typeof temp === "string" ? temp : temp.name || "";
+
+    const tempDescription =
+      typeof temp === "string"
+        ? ""
+        : temp.description || "";
+
+    return (
+      <div
+        key={idx}
+        style={{
+          display: "flex",
+          gap: "10px",
+          alignItems: "center",
+          marginBottom: "8px",
+        }}
+      >
+        <input
+          placeholder="Emoji"
+          value={tempIcon}
+          onChange={(e) => {
+            const updated = [...editItem.temperatureOptions];
+
+            if (typeof updated[idx] === "string") {
+              updated[idx] = {
+                icon: e.target.value,
+                name: updated[idx],
+                description: "",
+              };
+            } else {
+              updated[idx] = {
+                ...updated[idx],
+                icon: e.target.value,
+              };
+            }
+
+            setEditItem({
+              ...editItem,
+              temperatureOptions: updated,
+            });
+          }}
+          style={{
+            width: "70px",
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            fontSize: "13px",
+            outline: "none",
+            background: "#FAF7F2",
+          }}
+        />
+
+        <input
+          placeholder="Temperature (e.g. Hot)"
+          value={tempName}
+          onChange={(e) => {
+            const updated = [...editItem.temperatureOptions];
+
+            if (typeof updated[idx] === "string") {
+              updated[idx] = {
+                icon: "☕",
+                name: e.target.value,
+                description: "",
+              };
+            } else {
+              updated[idx] = {
+                ...updated[idx],
+                name: e.target.value,
+              };
+            }
+
+            setEditItem({
+              ...editItem,
+              temperatureOptions: updated,
+            });
+          }}
+          style={{
+            flex: 1,
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            fontSize: "13px",
+            outline: "none",
+            background: "#FAF7F2",
+          }}
+        />
+
+        <input
+          placeholder="Description"
+          value={tempDescription}
+          onChange={(e) => {
+            const updated = [...editItem.temperatureOptions];
+
+            updated[idx] = {
+              ...updated[idx],
+              description: e.target.value,
+            };
+
+            setEditItem({
+              ...editItem,
+              temperatureOptions: updated,
+            });
+          }}
+          style={{
+            flex: 2,
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            fontSize: "13px",
+            outline: "none",
+            background: "#FAF7F2",
+          }}
+        />
+
+        <button
+          type="button"
+          onClick={() => {
+            const updated = editItem.temperatureOptions.filter(
+              (_, i) => i !== idx
+            );
+
+            setEditItem({
+              ...editItem,
+              temperatureOptions: updated,
+            });
+          }}
+          style={{
+            background: "#FFEBEE",
+            color: "#C62828",
+            border: "1px solid #FADBD8",
+            padding: "8px 12px",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontSize: "13px",
+          }}
+        >
+          🗑️ Delete
+        </button>
+      </div>
+    );
+  })}
+</div>
+
+      
+        
+          
+            
+
+
+
+              
 
               {/* Edit Special Requests Builder */}
               <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
