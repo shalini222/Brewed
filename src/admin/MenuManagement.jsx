@@ -1634,6 +1634,7 @@ export default function MenuManagement({ setPage, setActivePage }) {
                     🗑️ Delete
                   </button>
                 </div>
+               );
               ))}
             </div>
 
