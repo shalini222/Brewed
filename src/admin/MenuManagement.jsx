@@ -38,7 +38,8 @@ const DEFAULT_COFFEE_PRESETS = {
   customExtrasMaxSelection: 3,
   prepTime: "8-10 mins",
   servedAs: "Hot",
-  dietType: "Vegetarian"
+  dietType: "Vegetarian",
+  specialRequests: ["Less Ice", "Extra Hot", "No Foam"]
 };
 
 export default function AdminPage({ setPage, setActivePage }) {
@@ -263,6 +264,7 @@ export default function AdminPage({ setPage, setActivePage }) {
       customExtras: [],
       customExtrasMaxSelection: 3,
       sweetnessOptions: [],
+      specialRequests: [],
     });
     setShowAdd(false);
     loadMenu();
@@ -1527,7 +1529,51 @@ export default function AdminPage({ setPage, setActivePage }) {
               ))}
             </div>
 
-            {/* 4. EXTRA CUSTOMS / TOPPINGS & MAX SELECTION BUILDER */}
+            {/* 4. SPECIAL REQUESTS BUILDER */}
+            <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Special Requests Options +</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewItem({
+                      ...newItem,
+                      specialRequests: [...newItem.specialRequests, ""]
+                    });
+                  }}
+                  style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+                >
+                  + Add Special Request
+                </button>
+              </div>
+              {newItem.specialRequests.map((req, idx) => (
+                <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                  <input
+                    placeholder="Special request (e.g. Less Ice, Extra Hot)"
+                    value={req}
+                    onChange={(e) => {
+                      const updated = [...newItem.specialRequests];
+                      updated[idx] = e.target.value;
+                      setNewItem({ ...newItem, specialRequests: updated });
+                    }}
+                    style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = newItem.specialRequests.filter((_, i) => i !== idx);
+                      setNewItem({ ...newItem, specialRequests: updated });
+                    }}
+                    style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
+                    title="Delete Special Request"
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* 5. EXTRA CUSTOMS / TOPPINGS & MAX SELECTION BUILDER */}
             <div style={{ background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "10px" }}>
                 <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Extra Customs / Toppings +</label>
@@ -1932,6 +1978,49 @@ export default function AdminPage({ setPage, setActivePage }) {
                       onClick={() => {
                         const updated = editItem.sweetnessOptions.filter((_, i) => i !== idx);
                         setEditItem({ ...editItem, sweetnessOptions: updated });
+                      }}
+                      style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Edit Special Requests Builder */}
+              <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Special Requests Options +</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditItem({
+                        ...editItem,
+                        specialRequests: [...editItem.specialRequests, ""]
+                      });
+                    }}
+                    style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+                  >
+                    + Add Special Request
+                  </button>
+                </div>
+                {editItem.specialRequests.map((req, idx) => (
+                  <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                    <input
+                      placeholder="Special request (e.g. Less Ice)"
+                      value={req}
+                      onChange={(e) => {
+                        const updated = [...editItem.specialRequests];
+                        updated[idx] = e.target.value;
+                        setEditItem({ ...editItem, specialRequests: updated });
+                      }}
+                      style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = editItem.specialRequests.filter((_, i) => i !== idx);
+                        setEditItem({ ...editItem, specialRequests: updated });
                       }}
                       style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
                     >
