@@ -200,37 +200,35 @@ useEffect(() => {
 }, [currentUser, product]);
   
   
-  const basePrice = product.price;
+    const basePrice = product.price || 0;
 
-  
-  
+  // selectedSize is already tracked as an object via useState, 
+  // so we can just grab its price directly or use it in calculations:
+  const sizePrice = Number(selectedSize?.price || 0);
 
- const selectedSize =
-  product.sizes?.find(s => s.name === size);
-
-  
   const milkPrices = Object.fromEntries(
-  (product.milkOptions || []).map((milk) => [
-    milk.name,
-    Number(milk.price || 0),
-  ])
-);
+    (product.milkOptions || []).map((milk) => [
+      milk.name,
+      Number(milk.price || 0),
+    ])
+  );
 
+  const extrasTotal = selectedExtras.reduce(
+    (sum, extra) => sum + Number(extra.price || 0),
+    0
+  );
 
-const extrasTotal = selectedExtras.reduce(
-  (sum, extra) => sum + Number(extra.price || 0),
-  0
-);
+  const sweetnessPrice = Number(selectedSweetness?.price || 0);
 
-  
-const singlePrice =
-  basePrice +
-  (selectedSize?.price || 0) +
-  (milkPrices[milk] || 0) +
-  extrasTotal;
-  
+  const singlePrice =
+    basePrice +
+    sizePrice +
+    (milkPrices[milk] || 0) +
+    sweetnessPrice +
+    extrasTotal;
 
   const totalPrice = singlePrice * quantity;
+  
 
   const toggleTopping = (topping) => {
     if (toppings.includes(topping)) {
