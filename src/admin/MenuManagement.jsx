@@ -2062,7 +2062,14 @@ export default function MenuManagement({ setPage, setActivePage }) {
                     onClick={() => {
                       setEditItem({
                         ...editItem,
-                        sweetnessOptions: [...editItem.sweetnessOptions, ""]
+                        sweetnessOptions: [
+  ...editItem.sweetnessOptions,
+  {
+    name: "",
+    description: "",
+    icon: "🍬",
+  },
+]
                       });
                     }}
                     style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
@@ -2070,18 +2077,116 @@ export default function MenuManagement({ setPage, setActivePage }) {
                     + Add Sweetness
                   </button>
                 </div>
-                {editItem.sweetnessOptions.map((sweet, idx) => (
+                {editItem.sweetnessOptions.map((sweet, idx) => {
+  const sweetName =
+    typeof sweet === "string" ? sweet : sweet.name || "";
+
+  const sweetDescription =
+    typeof sweet === "string"
+      ? ""
+      : sweet.description || "";
+
+  const sweetIcon =
+    typeof sweet === "string"
+      ? "🍬"
+      : sweet.icon || "🍬";
+
+  return (
                   <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+
                     <input
-                      placeholder="Sweetness level"
-                      value={sweet}
-                      onChange={(e) => {
-                        const updated = [...editItem.sweetnessOptions];
-                        updated[idx] = e.target.value;
-                        setEditItem({ ...editItem, sweetnessOptions: updated });
-                      }}
-                      style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                    />
+    placeholder="Emoji"
+    value={sweetIcon}
+    onChange={(e) => {
+      const updated = [...editItem.sweetnessOptions];
+
+      if (typeof updated[idx] === "string") {
+        updated[idx] = {
+          name: updated[idx],
+          description: "",
+          icon: e.target.value,
+        };
+      } else {
+        updated[idx] = {
+          ...updated[idx],
+          icon: e.target.value,
+        };
+      }
+
+      setEditItem({
+        ...editItem,
+        sweetnessOptions: updated,
+      });
+    }}
+    style={{
+      width: "60px",
+      padding: "10px",
+      borderRadius: "8px",
+      border: "1px solid #D8C8B8",
+    }}
+  />
+
+  <input
+    placeholder="Name"
+    value={sweetName}
+    onChange={(e) => {
+      const updated = [...editItem.sweetnessOptions];
+
+      if (typeof updated[idx] === "string") {
+        updated[idx] = {
+          name: e.target.value,
+          description: "",
+          icon: "🍬",
+        };
+      } else {
+        updated[idx] = {
+          ...updated[idx],
+          name: e.target.value,
+        };
+      }
+
+      setEditItem({
+        ...editItem,
+        sweetnessOptions: updated,
+      });
+    }}
+    style={{
+      flex: 1,
+      padding: "10px",
+      borderRadius: "8px",
+      border: "1px solid #D8C8B8",
+    }}
+  />
+
+  <input
+    placeholder="Description"
+    value={sweetDescription}
+    onChange={(e) => {
+      const updated = [...editItem.sweetnessOptions];
+
+      updated[idx] = {
+        ...updated[idx],
+        description: e.target.value,
+      };
+
+      setEditItem({
+        ...editItem,
+        sweetnessOptions: updated,
+      });
+    }}
+    style={{
+      flex: 2,
+      padding: "10px",
+      borderRadius: "8px",
+      border: "1px solid #D8C8B8",
+    }}
+  />
+
+
+
+
+
+                    
                     <button
                       type="button"
                       onClick={() => {
@@ -2093,7 +2198,8 @@ export default function MenuManagement({ setPage, setActivePage }) {
                       🗑️ Delete
                     </button>
                   </div>
-                ))}
+                 );
+          })}
               </div>
 
               {/* Edit Special Requests Builder */}
