@@ -1306,7 +1306,7 @@ export default function AdminPage({ setPage, setActivePage }) {
             />
           </div>
 
-          <div style={{ marginBottom: "24px" }}>
+          <div style={{ marginBottom: "20px" }}>
             <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Cloudinary Image URL</label>
             <input
               placeholder="https://res.cloudinary.com/..."
@@ -1314,6 +1314,114 @@ export default function AdminPage({ setPage, setActivePage }) {
               onChange={(e) => setNewItem({ ...newItem, img: e.target.value })}
               style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2", boxSizing: "border-box" }}
             />
+          </div>
+
+          {/* Expanded Configuration Section: Sizes, Milk, Temperature, Sweetness, Extras, Diet, Prep Time, Served As */}
+          <div style={{ background: "#FAF7F2", padding: "20px", borderRadius: "16px", border: "1px solid #E8DFD5", marginBottom: "20px" }}>
+            <h4 style={{ margin: "0 0 16px 0", color: "#3B1A08", fontSize: "15px", fontFamily: "'Playfair Display', serif" }}>
+              ☕ Coffee Customization & Options Setup
+            </h4>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px", marginBottom: "16px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Prep Time</label>
+                <input
+                  placeholder="e.g. 5–8 mins"
+                  value={newItem.prepTime}
+                  onChange={(e) => setNewItem({ ...newItem, prepTime: e.target.value })}
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Served As</label>
+                <select
+                  value={newItem.servedAs}
+                  onChange={(e) => setNewItem({ ...newItem, servedAs: e.target.value })}
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                >
+                  <option value="Hot">Hot</option>
+                  <option value="Iced">Iced</option>
+                  <option value="Hot / Iced">Hot / Iced</option>
+                  <option value="Ambient">Ambient</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Diet Type</label>
+                <select
+                  value={newItem.dietType}
+                  onChange={(e) => setNewItem({ ...newItem, dietType: e.target.value })}
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                >
+                  <option value="Vegetarian">Vegetarian</option>
+                  <option value="Vegan">Vegan</option>
+                  <option value="Dairy-Free">Dairy-Free</option>
+                  <option value="Gluten-Free">Gluten-Free</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Max Extra Custom Selections</label>
+                <input
+                  type="number"
+                  value={newItem.customExtrasMaxSelection}
+                  onChange={(e) => setNewItem({ ...newItem, customExtrasMaxSelection: e.target.value })}
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Sizes (JSON / Comma formatted list)</label>
+                <input
+                  placeholder="Small (+₹0), Medium (+₹30), Large (+₹60)"
+                  value={newItem.sizes.map(s => typeof s === 'object' ? `${s.name} (+₹${s.priceAdd})` : s).join(", ")}
+                  onChange={(e) => {
+                    const parsed = e.target.value.split(",").map(item => {
+                      const trimmed = item.trim();
+                      return { name: trimmed, priceAdd: 0 };
+                    });
+                    setNewItem({ ...newItem, sizes: parsed });
+                  }}
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>🥛 Milk Options (Comma separated)</label>
+                <input
+                  placeholder="Whole, Skim, Oat, Soy, Almond"
+                  value={newItem.milkOptions.join(", ")}
+                  onChange={(e) => setNewItem({ ...newItem, milkOptions: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>🍬 Sweetness Options (Comma separated)</label>
+                <input
+                  placeholder="0%, 25%, 50%, 100%"
+                  value={newItem.sweetnessOptions.join(", ")}
+                  onChange={(e) => setNewItem({ ...newItem, sweetnessOptions: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>✨ Common Extras / Toppings (Comma separated)</label>
+                <input
+                  placeholder="Extra Espresso Shot, Vanilla Syrup, Whipped Cream"
+                  value={newItem.customExtras.map(ex => typeof ex === 'object' ? `${ex.name} (+₹${ex.price})` : ex).join(", ")}
+                  onChange={(e) => {
+                    const parsed = e.target.value.split(",").map(item => {
+                      const trimmed = item.trim();
+                      return { name: trimmed, price: 25 };
+                    });
+                    setNewItem({ ...newItem, customExtras: parsed });
+                  }}
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                />
+              </div>
+            </div>
           </div>
 
           <label style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "25px", fontWeight: 600, color: "#3B1A08", cursor: "pointer" }}>
@@ -1432,13 +1540,116 @@ export default function AdminPage({ setPage, setActivePage }) {
               />
             </div>
 
-            <div style={{ marginBottom: "24px" }}>
+            <div style={{ marginBottom: "20px" }}>
               <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Cloudinary URL</label>
               <input
                 value={editItem.img}
                 onChange={(e) => setEditItem({ ...editItem, img: e.target.value })}
                 style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2", boxSizing: "border-box" }}
               />
+            </div>
+
+            {/* Edit Modal Customization Config */}
+            <div style={{ background: "#FAF7F2", padding: "20px", borderRadius: "16px", border: "1px solid #E8DFD5", marginBottom: "20px" }}>
+              <h4 style={{ margin: "0 0 16px 0", color: "#3B1A08", fontSize: "15px", fontFamily: "'Playfair Display', serif" }}>
+                ☕ Coffee Customization & Options Setup
+              </h4>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px", marginBottom: "16px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Prep Time</label>
+                  <input
+                    value={editItem.prepTime}
+                    onChange={(e) => setEditItem({ ...editItem, prepTime: e.target.value })}
+                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Served As</label>
+                  <select
+                    value={editItem.servedAs}
+                    onChange={(e) => setEditItem({ ...editItem, servedAs: e.target.value })}
+                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                  >
+                    <option value="Hot">Hot</option>
+                    <option value="Iced">Iced</option>
+                    <option value="Hot / Iced">Hot / Iced</option>
+                    <option value="Ambient">Ambient</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Diet Type</label>
+                  <select
+                    value={editItem.dietType}
+                    onChange={(e) => setEditItem({ ...editItem, dietType: e.target.value })}
+                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                  >
+                    <option value="Vegetarian">Vegetarian</option>
+                    <option value="Vegan">Vegan</option>
+                    <option value="Dairy-Free">Dairy-Free</option>
+                    <option value="Gluten-Free">Gluten-Free</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Max Extra Custom Selections</label>
+                  <input
+                    type="number"
+                    value={editItem.customExtrasMaxSelection}
+                    onChange={(e) => setEditItem({ ...editItem, customExtrasMaxSelection: e.target.value })}
+                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>Sizes</label>
+                  <input
+                    value={editItem.sizes.map(s => typeof s === 'object' ? `${s.name} (+₹${s.priceAdd})` : s).join(", ")}
+                    onChange={(e) => {
+                      const parsed = e.target.value.split(",").map(item => {
+                        const trimmed = item.trim();
+                        return { name: trimmed, priceAdd: 0 };
+                      });
+                      setEditItem({ ...editItem, sizes: parsed });
+                    }}
+                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>🥛 Milk Options</label>
+                  <input
+                    value={editItem.milkOptions.join(", ")}
+                    onChange={(e) => setEditItem({ ...editItem, milkOptions: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
+                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>🍬 Sweetness Options</label>
+                  <input
+                    value={editItem.sweetnessOptions.join(", ")}
+                    onChange={(e) => setEditItem({ ...editItem, sweetnessOptions: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
+                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6E523D", marginBottom: "6px", textTransform: "uppercase" }}>✨ Common Extras / Toppings</label>
+                  <input
+                    value={editItem.customExtras.map(ex => typeof ex === 'object' ? `${ex.name} (+₹${ex.price})` : ex).join(", ")}
+                    onChange={(e) => {
+                      const parsed = e.target.value.split(",").map(item => {
+                        const trimmed = item.trim();
+                        return { name: trimmed, price: 25 };
+                      });
+                      setEditItem({ ...editItem, customExtras: parsed });
+                    }}
+                    style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #E2D5C9", fontSize: "13px", outline: "none", background: "#FFF", boxSizing: "border-box" }}
+                  />
+                </div>
+              </div>
             </div>
 
             <label style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "25px", fontWeight: 600, color: "#3B1A08", cursor: "pointer" }}>
@@ -1589,6 +1800,12 @@ export default function AdminPage({ setPage, setActivePage }) {
                       prepTime: item.prepTime || "5–8 mins",
                       servedAs: item.servedAs || "Hot",
                       dietType: item.dietType || "Vegetarian",
+                      sizes: item.sizes || [],
+                      milkOptions: item.milkOptions || [],
+                      temperatureOptions: item.temperatureOptions || [],
+                      customExtras: item.customExtras || [],
+                      customExtrasMaxSelection: item.customExtrasMaxSelection || 3,
+                      sweetnessOptions: item.sweetnessOptions || [],
                     });
                   }}
                   style={{
