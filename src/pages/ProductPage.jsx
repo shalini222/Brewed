@@ -2584,60 +2584,97 @@ gap:30px;
 
               {/* SWEETNESS SECTION */}
 
-{/* SWEETNESS SECTION */}
+  {/* SWEETNESS SECTION */}
 <div className="option-section">
   <h2 className="option-title">
     Sweetness Level
   </h2>
 
-  <div className="sweetness-display">
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        marginBottom: 15,
-      }}
-    >
+  {/* Sweetness Cards */}
+  <div
+    style={{
+      display: "flex",
+      gap: "12px",
+      overflowX: "auto",
+      paddingBottom: "10px",
+      marginBottom: "22px",
+      scrollbarWidth: "none",
+      msOverflowStyle: "none",
+    }}
+  >
+    {sweetnessOptions.map((option, index) => (
       <div
+        key={option.name}
+        onClick={() => setSweetnessIndex(index)}
         style={{
-          fontSize: 28,
-          width: 34,
+          minWidth: "120px",
+          padding: "16px",
+          borderRadius: "16px",
+          border:
+            sweetnessIndex === index
+              ? "2px solid #C4956A"
+              : "1px solid #E8DED4",
+          background:
+            sweetnessIndex === index
+              ? "#FFF8F2"
+              : "#FFFFFF",
+          cursor: "pointer",
+          transition: "all 0.25s ease",
           textAlign: "center",
+          flexShrink: 0,
+          boxShadow:
+            sweetnessIndex === index
+              ? "0 8px 20px rgba(196,149,106,.18)"
+              : "0 2px 8px rgba(0,0,0,.04)",
         }}
       >
-        {selectedSweetness?.icon?.startsWith("http") ||
-        selectedSweetness?.icon?.startsWith("/") ? (
-          <img
-            src={selectedSweetness.icon}
-            alt={selectedSweetness.name}
-            style={{
-              width: 30,
-              height: 30,
-              objectFit: "contain",
-            }}
-          />
-        ) : (
-          selectedSweetness?.icon || "🍬"
-        )}
-      </div>
+        <div
+          style={{
+            fontSize: "34px",
+            marginBottom: "10px",
+          }}
+        >
+          {option.icon?.startsWith("http") ||
+          option.icon?.startsWith("/") ? (
+            <img
+              src={option.icon}
+              alt={option.name}
+              style={{
+                width: 34,
+                height: 34,
+                objectFit: "contain",
+              }}
+            />
+          ) : (
+            option.icon || "🍬"
+          )}
+        </div>
 
-      <div>
         <div
           style={{
             fontWeight: 700,
+            fontSize: "15px",
+            color: "#2F1A09",
+            marginBottom: "4px",
           }}
         >
-          {selectedSweetness?.name}
+          {option.name}
         </div>
 
-        <div className="sweetness-desc">
-          {selectedSweetness?.description}
+        <div
+          style={{
+            fontSize: "12px",
+            color: "#8A7564",
+            lineHeight: 1.4,
+          }}
+        >
+          {option.description}
         </div>
       </div>
-    </div>
+    ))}
   </div>
 
+  {/* Slider */}
   <ReactSlider
     className="sweetness-slider"
     thumbClassName="sweetness-thumb"
@@ -2650,29 +2687,41 @@ gap:30px;
     disabled={sweetnessOptions.length <= 1}
   />
 
+  {/* Bottom Labels */}
   <div
     style={{
       display: "flex",
       justifyContent: "space-between",
-      marginTop: 10,
-      fontSize: 13,
-      color: "#777",
+      marginTop: "14px",
+      fontSize: "12px",
+      color: "#8A7564",
+      fontWeight: 600,
     }}
   >
     {sweetnessOptions.map((option, index) => (
       <span
         key={option.name}
-        className={
-          sweetnessIndex === index
-            ? "sweetness-label active"
-            : "sweetness-label"
-        }
+        style={{
+          color:
+            sweetnessIndex === index
+              ? "#C4956A"
+              : "#8A7564",
+          fontWeight:
+            sweetnessIndex === index
+              ? 700
+              : 500,
+          transition: "0.2s",
+        }}
       >
         {option.name}
       </span>
     ))}
   </div>
 </div>
+        
+  
+
+  
                 
               {/* SPECIAL INSTRUCTIONS SECTION */}
             {/* SPECIAL REQUESTS */}
