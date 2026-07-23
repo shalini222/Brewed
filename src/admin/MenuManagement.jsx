@@ -13,6 +13,27 @@ import {
 import * as XLSX from "xlsx";
 import { db } from "../firebase";
 
+const DEFAULT_COFFEE_PRESETS = {
+  sizes: [
+    { name: "Small", priceAdd: 0 },
+    { name: "Medium", priceAdd: 30 },
+    { name: "Large", priceAdd: 60 }
+  ],
+  milkOptions: ["Whole", "Skim", "Oat", "Soy", "Almond"],
+  temperatureOptions: ["Hot", "Iced"],
+  sweetnessOptions: ["0% (Unsweetened)", "25% (Light)", "50% (Regular)", "100% (Sweet)"],
+  customExtras: [
+    { name: "Extra Espresso Shot", price: 40 },
+    { name: "Vanilla Syrup", price: 25 },
+    { name: "Caramel Drizzle", price: 25 },
+    { name: "Whipped Cream", price: 30 }
+  ],
+  customExtrasMaxSelection: 3,
+  prepTime: "5–8 mins",
+  servedAs: "Hot",
+  dietType: "Vegetarian"
+};
+
 export default function AdminPage({ setPage, setActivePage }) {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1195,10 +1216,41 @@ export default function AdminPage({ setPage, setActivePage }) {
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", borderBottom: "1px solid #F2ECE4", paddingBottom: "16px" }}>
-            <h2 style={{ margin: 0, color: "#3B1A08", fontSize: "24px", fontFamily: "'Playfair Display', serif" }}>
-              Craft New Menu Product
-            </h2>
-            <button onClick={() => setShowAdd(false)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#6E523D" }}>✕</button>
+            <div>
+              <h2 style={{ margin: 0, color: "#3B1A08", fontSize: "24px", fontFamily: "'Playfair Display', serif" }}>
+                Craft New Menu Product
+              </h2>
+              <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#6E523D" }}>Fill details manually or quick-fill standard coffee options.</p>
+            </div>
+            
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewItem(prev => ({
+                    ...prev,
+                    ...DEFAULT_COFFEE_PRESETS
+                  }));
+                  triggerToast("Applied default coffee options!");
+                }}
+                style={{
+                  background: "#FAF7F2",
+                  color: "#3B1A08",
+                  border: "1px solid #D8C8B8",
+                  padding: "8px 14px",
+                  borderRadius: "10px",
+                  fontWeight: 600,
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                ⚡ Apply Default Presets
+              </button>
+              <button onClick={() => setShowAdd(false)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#6E523D" }}>✕</button>
+            </div>
           </div>
           
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "20px" }}>
@@ -1208,7 +1260,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                 placeholder="e.g. Vanilla Velvet Latte"
                 value={newItem.name}
                 onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2" }}
+                style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2", boxSizing: "border-box" }}
               />
             </div>
             <div>
@@ -1216,7 +1268,7 @@ export default function AdminPage({ setPage, setActivePage }) {
               <select
                 value={newItem.category}
                 onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2" }}
+                style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2", boxSizing: "border-box" }}
               >
                 <option>Coffee</option>
                 <option>Non-Coffee</option>
@@ -1230,7 +1282,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                 type="number"
                 value={newItem.price}
                 onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
-                style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2" }}
+                style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2", boxSizing: "border-box" }}
               />
             </div>
             <div>
@@ -1239,7 +1291,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                 placeholder="☕"
                 value={newItem.emoji}
                 onChange={(e) => setNewItem({ ...newItem, emoji: e.target.value })}
-                style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2" }}
+                style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2", boxSizing: "border-box" }}
               />
             </div>
           </div>
@@ -1250,7 +1302,7 @@ export default function AdminPage({ setPage, setActivePage }) {
               placeholder="Rich, velvety espresso blended with steamed microfoam and gourmet vanilla essence..."
               value={newItem.desc}
               onChange={(e) => setNewItem({ ...newItem, desc: e.target.value })}
-              style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", minHeight: "90px", resize: "vertical", background: "#FAF7F2" }}
+              style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", minHeight: "90px", resize: "vertical", background: "#FAF7F2", boxSizing: "border-box" }}
             />
           </div>
 
@@ -1260,7 +1312,7 @@ export default function AdminPage({ setPage, setActivePage }) {
               placeholder="https://res.cloudinary.com/..."
               value={newItem.img}
               onChange={(e) => setNewItem({ ...newItem, img: e.target.value })}
-              style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2" }}
+              style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2", boxSizing: "border-box" }}
             />
           </div>
 
