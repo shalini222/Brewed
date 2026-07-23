@@ -31,6 +31,7 @@ export default function AdminPage({ setPage, setActivePage }) {
   // Bulk Input Modal State
   const [bulkModal, setBulkModal] = useState({ show: false, type: null });
   const [bulkInputValue, setBulkInputValue] = useState("");
+  const [discountType, setDiscountType] = useState("percentage"); // "percentage" or "fixed"
 
   const [orders, setOrders] = useState([]);
   const [orderLoading, setOrderLoading] = useState(true);
@@ -58,6 +59,7 @@ export default function AdminPage({ setPage, setActivePage }) {
     emoji: "",
     img: "",
     available: true,
+    archived: false,
     isFeatured: false,
     prepTime: "5–8 mins",
     servedAs: "Hot",
@@ -82,6 +84,7 @@ export default function AdminPage({ setPage, setActivePage }) {
     emoji: "",
     img: "",
     available: true,
+    archived: false,
     isFeatured: false,
     prepTime: "5–8 mins",
     servedAs: "Hot",
@@ -189,6 +192,7 @@ export default function AdminPage({ setPage, setActivePage }) {
       ...newItem,
       price: Number(newItem.price),
       available: newItem.available,
+      archived: newItem.archived || false,
       isFeatured: newItem.isFeatured,
       createdAt: now,
       updatedAt: now,
@@ -213,6 +217,7 @@ export default function AdminPage({ setPage, setActivePage }) {
       emoji: "",
       img: "",
       available: true,
+      archived: false,
       isFeatured: false,
       prepTime: "5–8 mins",
       servedAs: "Hot",
@@ -261,6 +266,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         emoji: editItem.emoji,
         img: editItem.img,
         available: editItem.available,
+        archived: editItem.archived || false,
         isFeatured: editItem.isFeatured,
         updatedAt: new Date(),
         sizes: editItem.sizes,
@@ -281,10 +287,11 @@ export default function AdminPage({ setPage, setActivePage }) {
     }
   }
 
-  const totalProductsCount = menu.length;
-  const featuredCount = menu.filter((i) => i.isFeatured).length;
-  const inStockCount = menu.filter((i) => i.available !== false).length;
-  const outOfStockCount = menu.filter((i) => i.available === false).length;
+  const totalProductsCount = menu.filter((i) => !i.archived).length;
+  const featuredCount = menu.filter((i) => i.isFeatured && !i.archived).length;
+  const inStockCount = menu.filter((i) => i.available !== false && !i.archived).length;
+  const outOfStockCount = menu.filter((i) => i.available === false && !i.archived).length;
+  const archivedCount = menu.filter((i) => i.archived).length;
 
   const sortOptions = [
     { id: "featured", label: "Featured First" },
@@ -304,9 +311,14 @@ export default function AdminPage({ setPage, setActivePage }) {
       const matchesSearch =
         (item.name || "").toLowerCase().includes(search.toLowerCase()) ||
         (item.category || "").toLowerCase().includes(search.toLowerCase());
+      
+      if (categoryFilter === "Archived") {
+        return matchesSearch && item.archived === true;
+      }
+      
       const matchesCategory =
-        categoryFilter === "All" || item.category === categoryFilter;
-      return matchesSearch && matchesCategory;
+        categoryFilter === "All" || (item.category === categoryFilter && !item.archived);
+      return matchesSearch && matchesCategory && !item.archived;
     })
     .sort((a, b) => {
       if (sortBy === "high-to-low") {
@@ -353,6 +365,7 @@ export default function AdminPage({ setPage, setActivePage }) {
 
     if (bulkAction === "change-category" || bulkAction === "apply-discount") {
       setBulkInputValue(bulkAction === "apply-discount" ? "10" : "Coffee");
+      setDiscountType("percentage");
       setBulkModal({ show: true, type: bulkAction });
       return;
     }
@@ -411,16 +424,21 @@ export default function AdminPage({ setPage, setActivePage }) {
       }
       triggerToast(`${selectedItems.length} products duplicated!`);
     } else if (actionToRun === "apply-discount") {
-      const discount = Number(modalInputOverride !== null ? modalInputOverride : bulkInputValue);
-      if (isNaN(discount) || discount <= 0) return;
+      const val = Number(modalInputOverride !== null ? modalInputOverride : bulkInputValue);
+      if (isNaN(val) || val <= 0) return;
       for (const id of selectedItems) {
         const item = menu.find((i) => i.firestoreId === id);
         if (item) {
-          const newPrice = Math.round(Number(item.price) * (1 - discount / 100));
+          let newPrice = Number(item.price);
+          if (discountType === "percentage") {
+            newPrice = Math.round(newPrice * (1 - val / 100));
+          } else {
+            newPrice = Math.max(0, newPrice - val);
+          }
           await updateDoc(doc(db, "menu", id), { price: newPrice, updatedAt: new Date() });
         }
       }
-      triggerToast(`${discount}% discount applied to ${selectedItems.length} products!`);
+      triggerToast(`Discount applied to ${selectedItems.length} products!`);
     } else if (actionToRun === "export") {
       const selectedData = menu.filter((i) => selectedItems.includes(i.firestoreId));
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(selectedData, null, 2));
@@ -433,9 +451,14 @@ export default function AdminPage({ setPage, setActivePage }) {
       triggerToast(`Exported ${selectedItems.length} products successfully!`);
     } else if (actionToRun === "archive") {
       for (const id of selectedItems) {
-        await updateDoc(doc(db, "menu", id), { available: false, archived: true, updatedAt: new Date() });
+        await updateDoc(doc(db, "menu", id), { archived: true, updatedAt: new Date() });
       }
       triggerToast(`${selectedItems.length} products archived!`);
+    } else if (actionToRun === "unarchive") {
+      for (const id of selectedItems) {
+        await updateDoc(doc(db, "menu", id), { archived: false, updatedAt: new Date() });
+      }
+      triggerToast(`${selectedItems.length} products unarchived!`);
     }
 
     setBulkModal({ show: false, type: null });
@@ -455,6 +478,7 @@ export default function AdminPage({ setPage, setActivePage }) {
     { id: "apply-discount", label: "🏷️ Apply Discount" },
     { id: "export", label: "📥 Export Selected" },
     { id: "archive", label: "📦 Archive" },
+    { id: "unarchive", label: "📂 Unarchive" },
   ];
 
   const currentBulkLabel = bulkActionOptions.find((o) => o.id === bulkAction)?.label || "Bulk Actions";
@@ -521,35 +545,80 @@ export default function AdminPage({ setPage, setActivePage }) {
             }}
           >
             <h3 style={{ margin: "0 0 10px 0", color: "#3B1A08", fontSize: "20px", fontFamily: "'Playfair Display', serif" }}>
-              {bulkModal.type === "apply-discount" ? "Apply Percentage Discount" : "Change Product Category"}
+              {bulkModal.type === "apply-discount" ? "Apply Discount" : "Change Product Category"}
             </h3>
             <p style={{ margin: "0 0 20px 0", color: "#6E523D", fontSize: "13px", lineHeight: "1.5" }}>
               {bulkModal.type === "apply-discount"
-                ? `Enter the discount percentage to reduce prices for ${selectedItems.length} selected items.`
+                ? `Choose discount type and enter value for ${selectedItems.length} selected items.`
                 : `Enter the new category name for ${selectedItems.length} selected items.`}
             </p>
 
             {bulkModal.type === "apply-discount" ? (
-              <div style={{ position: "relative", marginBottom: "24px" }}>
-                <input
-                  type="number"
-                  placeholder="e.g. 15"
-                  value={bulkInputValue}
-                  onChange={(e) => setBulkInputValue(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "14px 40px 14px 16px",
-                    borderRadius: "12px",
-                    border: "1px solid #D8C8B8",
-                    fontSize: "15px",
-                    outline: "none",
-                    background: "#FAF7F2",
-                    boxSizing: "border-box",
-                    fontWeight: 600,
-                    color: "#3B1A08",
-                  }}
-                />
-                <span style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", color: "#6E523D", fontWeight: 700 }}>%</span>
+              <div>
+                <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+                  <button
+                    onClick={() => {
+                      setDiscountType("percentage");
+                      setBulkInputValue("10");
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "10px",
+                      borderRadius: "10px",
+                      border: discountType === "percentage" ? "1px solid #3B1A08" : "1px solid #D8C8B8",
+                      background: discountType === "percentage" ? "#3B1A08" : "#FAF7F2",
+                      color: discountType === "percentage" ? "#FFF" : "#6E523D",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Percentage (%)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDiscountType("fixed");
+                      setBulkInputValue("50");
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "10px",
+                      borderRadius: "10px",
+                      border: discountType === "fixed" ? "1px solid #3B1A08" : "1px solid #D8C8B8",
+                      background: discountType === "fixed" ? "#3B1A08" : "#FAF7F2",
+                      color: discountType === "fixed" ? "#FFF" : "#6E523D",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Fixed Amount (₹)
+                  </button>
+                </div>
+
+                <div style={{ position: "relative", marginBottom: "24px" }}>
+                  <input
+                    type="number"
+                    placeholder={discountType === "percentage" ? "e.g. 15" : "e.g. 50"}
+                    value={bulkInputValue}
+                    onChange={(e) => setBulkInputValue(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "14px 40px 14px 16px",
+                      borderRadius: "12px",
+                      border: "1px solid #D8C8B8",
+                      fontSize: "15px",
+                      outline: "none",
+                      background: "#FAF7F2",
+                      boxSizing: "border-box",
+                      fontWeight: 600,
+                      color: "#3B1A08",
+                    }}
+                  />
+                  <span style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", color: "#6E523D", fontWeight: 700 }}>
+                    {discountType === "percentage" ? "%" : "₹"}
+                  </span>
+                </div>
               </div>
             ) : (
               <div style={{ marginBottom: "24px" }}>
@@ -728,7 +797,7 @@ export default function AdminPage({ setPage, setActivePage }) {
       </header>
 
       {/* Metric Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "28px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px", marginBottom: "28px" }}>
         <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ width: "42px", height: "42px", background: "#FAF7F2", border: "1px solid #EFE6DC", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>☕</div>
           <div>
@@ -758,6 +827,14 @@ export default function AdminPage({ setPage, setActivePage }) {
           <div>
             <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>Out of Stock</span>
             <h3 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: 800, color: "#C62828", fontFamily: "'Playfair Display', serif" }}>{outOfStockCount}</h3>
+          </div>
+        </div>
+
+        <div style={{ background: "#FFFFFF", padding: "18px 24px", borderRadius: "16px", border: "1px solid #E8DFD5", display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{ width: "42px", height: "42px", background: "#F5EEF8", border: "1px solid #E8DAEF", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>📦</div>
+          <div>
+            <span style={{ fontSize: "11px", color: "#6E523D", textTransform: "uppercase", fontWeight: 700, letterSpacing: "1px" }}>Archived</span>
+            <h3 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: 800, color: "#8E44AD", fontFamily: "'Playfair Display', serif" }}>{archivedCount}</h3>
           </div>
         </div>
       </div>
@@ -875,7 +952,7 @@ export default function AdminPage({ setPage, setActivePage }) {
 
       {/* Categories Filter Pills */}
       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "20px" }}>
-        {["All", "Coffee", "Non-Coffee", "Food"].map((cat) => (
+        {["All", "Coffee", "Non-Coffee", "Food", "Archived"].map((cat) => (
           <button
             key={cat}
             onClick={() => setCategoryFilter(cat)}
@@ -1337,7 +1414,13 @@ export default function AdminPage({ setPage, setActivePage }) {
                     </div>
                   )}
 
-                  {item.isFeatured && (
+                  {item.archived && (
+                    <div style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(142, 68, 173, 0.95)", color: "#FFFFFF", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", backdropFilter: "blur(4px)" }}>
+                      📦 Archived
+                    </div>
+                  )}
+
+                  {!item.archived && item.isFeatured && (
                     <div style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(212, 172, 13, 0.95)", color: "#FFFFFF", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", backdropFilter: "blur(4px)" }}>
                       ⭐ Featured
                     </div>
@@ -1378,6 +1461,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                       img: item.img || "",
                       isFeatured: item.isFeatured || false,
                       available: item.available ?? true,
+                      archived: item.archived || false,
                       prepTime: item.prepTime || "5–8 mins",
                       servedAs: item.servedAs || "Hot",
                       dietType: item.dietType || "Vegetarian",
