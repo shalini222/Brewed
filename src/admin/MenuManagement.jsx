@@ -103,6 +103,7 @@ export default function AdminPage({ setPage, setActivePage }) {
     customExtras: [],
     customExtrasMaxSelection: 3,
     sweetnessOptions: [],
+    specialRequests: [],
   });
 
   const [editing, setEditing] = useState(null);
@@ -125,6 +126,7 @@ export default function AdminPage({ setPage, setActivePage }) {
     customExtras: [],
     customExtrasMaxSelection: 3,
     sweetnessOptions: [],
+    specialRequests: [],
   });
 
   useEffect(() => {
@@ -234,6 +236,7 @@ export default function AdminPage({ setPage, setActivePage }) {
       customExtras: newItem.customExtras,
       customExtrasMaxSelection: Number(newItem.customExtrasMaxSelection),
       sweetnessOptions: newItem.sweetnessOptions,
+      specialRequests: newItem.specialRequests,
       salesCount: 0,
       rating: 0,
       reviews: 0,
@@ -304,6 +307,7 @@ export default function AdminPage({ setPage, setActivePage }) {
         customExtras: editItem.customExtras,
         customExtrasMaxSelection: Number(editItem.customExtrasMaxSelection),
         sweetnessOptions: editItem.sweetnessOptions,
+        specialRequests: editItem.specialRequests,
         prepTime: editItem.prepTime,
         servedAs: editItem.servedAs,
         dietType: editItem.dietType,
@@ -858,13 +862,13 @@ export default function AdminPage({ setPage, setActivePage }) {
                 fontSize: "13px",
               }}
             >
-              ← Dashboard
+              Dashboard
             </button>
           )}
 
           {setPage && (
             <button
-              onClick={() => setPage("home")}
+              onClick={() => setPage("Menu")}
               style={{
                 padding: "10px 20px",
                 backgroundColor: "#3B1A08",
@@ -876,7 +880,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                 fontSize: "13px",
               }}
             >
-              Exit to Store →
+              Menu Page
             </button>
           )}
         </div>
@@ -2131,6 +2135,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                       customExtras: item.customExtras || [],
                       customExtrasMaxSelection: item.customExtrasMaxSelection || 3,
                       sweetnessOptions: item.sweetnessOptions || [],
+                      specialRequests: item.specialRequests || [],
                     });
                   }}
                   style={{
