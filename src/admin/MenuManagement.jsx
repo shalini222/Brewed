@@ -10,6 +10,7 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
+import * as XLSX from "xlsx";
 import { db } from "../firebase";
 
 export default function AdminPage({ setPage, setActivePage }) {
@@ -32,6 +33,7 @@ export default function AdminPage({ setPage, setActivePage }) {
   const [bulkModal, setBulkModal] = useState({ show: false, type: null });
   const [bulkInputValue, setBulkInputValue] = useState("");
   const [discountType, setDiscountType] = useState("percentage"); // "percentage" or "fixed"
+  const [exportFormat, setExportFormat] = useState("xlsx"); // "xlsx" or "csv"
 
   const [orders, setOrders] = useState([]);
   const [orderLoading, setOrderLoading] = useState(true);
@@ -363,9 +365,14 @@ export default function AdminPage({ setPage, setActivePage }) {
   function handleBulkActionTrigger() {
     if (selectedItems.length === 0 || !bulkAction) return;
 
-    if (bulkAction === "change-category" || bulkAction === "apply-discount") {
-      setBulkInputValue(bulkAction === "apply-discount" ? "10" : "Coffee");
-      setDiscountType("percentage");
+    if (bulkAction === "change-category" || bulkAction === "apply-discount" || bulkAction === "export") {
+      if (bulkAction === "change-category") setBulkInputValue("Coffee");
+      if (bulkAction === "apply-discount") {
+        setBulkInputValue("10");
+        setDiscountType("percentage");
+      }
+      if (bulkAction === "export") setExportFormat("xlsx");
+
       setBulkModal({ show: true, type: bulkAction });
       return;
     }
@@ -440,15 +447,31 @@ export default function AdminPage({ setPage, setActivePage }) {
       }
       triggerToast(`Discount applied to ${selectedItems.length} products!`);
     } else if (actionToRun === "export") {
-      const selectedData = menu.filter((i) => selectedItems.includes(i.firestoreId));
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(selectedData, null, 2));
-      const downloadAnchor = document.createElement("a");
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `brewed_selected_products_${Date.now()}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-      triggerToast(`Exported ${selectedItems.length} products successfully!`);
+      const selectedData = menu
+        .filter((i) => selectedItems.includes(i.firestoreId))
+        .map(({ firestoreId, ...rest }) => ({
+          ID: firestoreId,
+          Name: rest.name || "",
+          Category: rest.category || "",
+          Price: rest.price || 0,
+          Description: rest.desc || "",
+          Available: rest.available !== false ? "Yes" : "No",
+          Archived: rest.archived ? "Yes" : "No",
+          Featured: rest.isFeatured ? "Yes" : "No",
+          SalesCount: rest.salesCount || 0,
+        }));
+
+      const worksheet = XLSX.utils.json_to_sheet(selectedData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
+
+      if (exportFormat === "xlsx") {
+        XLSX.writeFile(workbook, `brewed_products_${Date.now()}.xlsx`);
+        triggerToast(`Exported ${selectedItems.length} products to Excel (.xlsx)!`);
+      } else {
+        XLSX.writeFile(workbook, `brewed_products_${Date.now()}.csv`, { bookType: "csv" });
+        triggerToast(`Exported ${selectedItems.length} products to CSV (.csv)!`);
+      }
     } else if (actionToRun === "archive") {
       for (const id of selectedItems) {
         await updateDoc(doc(db, "menu", id), { archived: true, updatedAt: new Date() });
@@ -545,15 +568,17 @@ export default function AdminPage({ setPage, setActivePage }) {
             }}
           >
             <h3 style={{ margin: "0 0 10px 0", color: "#3B1A08", fontSize: "20px", fontFamily: "'Playfair Display', serif" }}>
-              {bulkModal.type === "apply-discount" ? "Apply Discount" : "Change Product Category"}
+              {bulkModal.type === "apply-discount" && "Apply Discount"}
+              {bulkModal.type === "change-category" && "Change Product Category"}
+              {bulkModal.type === "export" && "Export Products"}
             </h3>
             <p style={{ margin: "0 0 20px 0", color: "#6E523D", fontSize: "13px", lineHeight: "1.5" }}>
-              {bulkModal.type === "apply-discount"
-                ? `Choose discount type and enter value for ${selectedItems.length} selected items.`
-                : `Enter the new category name for ${selectedItems.length} selected items.`}
+              {bulkModal.type === "apply-discount" && `Choose discount type and enter value for ${selectedItems.length} selected items.`}
+              {bulkModal.type === "change-category" && `Enter the new category name for ${selectedItems.length} selected items.`}
+              {bulkModal.type === "export" && `Choose your preferred file format to export ${selectedItems.length} selected items.`}
             </p>
 
-            {bulkModal.type === "apply-discount" ? (
+            {bulkModal.type === "apply-discount" && (
               <div>
                 <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
                   <button
@@ -620,7 +645,9 @@ export default function AdminPage({ setPage, setActivePage }) {
                   </span>
                 </div>
               </div>
-            ) : (
+            )}
+
+            {bulkModal.type === "change-category" && (
               <div style={{ marginBottom: "24px" }}>
                 <select
                   value={bulkInputValue}
@@ -645,6 +672,51 @@ export default function AdminPage({ setPage, setActivePage }) {
               </div>
             )}
 
+            {bulkModal.type === "export" && (
+              <div style={{ display: "flex", gap: "10px", marginBottom: "24px" }}>
+                <button
+                  onClick={() => setExportFormat("xlsx")}
+                  style={{
+                    flex: 1,
+                    padding: "14px",
+                    borderRadius: "12px",
+                    border: exportFormat === "xlsx" ? "1px solid #3B1A08" : "1px solid #D8C8B8",
+                    background: exportFormat === "xlsx" ? "#3B1A08" : "#FAF7F2",
+                    color: exportFormat === "xlsx" ? "#FFF" : "#6E523D",
+                    fontWeight: 600,
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                  }}
+                >
+                  📊 Excel (.xlsx)
+                </button>
+                <button
+                  onClick={() => setExportFormat("csv")}
+                  style={{
+                    flex: 1,
+                    padding: "14px",
+                    borderRadius: "12px",
+                    border: exportFormat === "csv" ? "1px solid #3B1A08" : "1px solid #D8C8B8",
+                    background: exportFormat === "csv" ? "#3B1A08" : "#FAF7F2",
+                    color: exportFormat === "csv" ? "#FFF" : "#6E523D",
+                    fontWeight: 600,
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                  }}
+                >
+                  📄 CSV (.csv)
+                </button>
+              </div>
+            )}
+
             <div style={{ display: "flex", gap: "12px" }}>
               <button
                 onClick={() => executeBulkActionConfirmed(bulkInputValue)}
@@ -660,7 +732,7 @@ export default function AdminPage({ setPage, setActivePage }) {
                   cursor: "pointer",
                 }}
               >
-                Apply
+                {bulkModal.type === "export" ? "Download File" : "Apply"}
               </button>
               <button
                 onClick={() => setBulkModal({ show: false, type: null })}
