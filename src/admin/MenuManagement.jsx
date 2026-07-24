@@ -356,9 +356,25 @@ const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/uplo
 
   return data.secure_url;
 }
+
+
+
   
-  
-  
+  async function uploadProductImage(file) {
+    const formData = new FormData();
+
+  formData.append("file", file);
+  formData.append("upload_preset", UPLOAD_PRESET);
+
+  const response = await fetch(CLOUDINARY_URL, {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await response.json();
+
+  return data.secure_url;
+}
   
   
   
@@ -1327,13 +1343,88 @@ const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/uplo
           </div>
 
           <div style={{ marginBottom: "20px" }}>
-            <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Cloudinary Image URL</label>
-            <input
-              placeholder="https://res.cloudinary.com/..."
-              value={newItem.img}
-              onChange={(e) => setNewItem({ ...newItem, img: e.target.value })}
-              style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2", boxSizing: "border-box" }}
-            />
+            <label
+  style={{
+    display: "block",
+    fontSize: "12px",
+    fontWeight: 700,
+    color: "#6E523D",
+    marginBottom: "8px",
+    textTransform: "uppercase",
+  }}
+>
+  Product Image
+</label>
+
+<div
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "16px",
+  }}
+>
+  <div
+    style={{
+      width: 90,
+      height: 90,
+      borderRadius: 12,
+      border: "1px solid #D8C8B8",
+      background: "#FAF7F2",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+      flexShrink: 0,
+    }}
+  >
+    {newItem.img ? (
+      <img
+        src={newItem.img}
+        alt=""
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+        }}
+      />
+    ) : (
+      <span style={{ fontSize: 34 }}>☕</span>
+    )}
+  </div>
+
+  <input
+    id="product-image-upload"
+    type="file"
+    accept=".png,.jpg,.jpeg,.webp"
+    style={{ display: "none" }}
+    onChange={async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const url = await uploadProductImage(file);
+
+      setNewItem({
+        ...newItem,
+        img: url,
+      });
+    }}
+  />
+
+  <label
+    htmlFor="product-image-upload"
+    style={{
+      padding: "12px 18px",
+      background: "#3B1A08",
+      color: "#FFF",
+      borderRadius: "10px",
+      cursor: "pointer",
+      fontWeight: 600,
+    }}
+  >
+    📁 Upload Image
+  </label>
+</div>
           </div>
 
           {/* Configuration Section with Detailed Dynamic Fields */}
@@ -2836,12 +2927,89 @@ const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/uplo
             </div>
 
             <div style={{ marginBottom: "20px" }}>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#6E523D", marginBottom: "8px", textTransform: "uppercase" }}>Cloudinary URL</label>
-              <input
-                value={editItem.img}
-                onChange={(e) => setEditItem({ ...editItem, img: e.target.value })}
-                style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #E2D5C9", fontSize: "14px", outline: "none", background: "#FAF7F2", boxSizing: "border-box" }}
-              />
+              <label
+  style={{
+    display: "block",
+    fontSize: "12px",
+    fontWeight: 700,
+    color: "#6E523D",
+    marginBottom: "8px",
+    textTransform: "uppercase",
+  }}
+>
+  Product Image (Edit)
+</label>
+
+<div
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "16px",
+  }}
+>
+  <div
+    style={{
+      width: 90,
+      height: 90,
+      borderRadius: 12,
+      border: "1px solid #D8C8B8",
+      background: "#FAF7F2",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+      flexShrink: 0,
+    }}
+  >
+    {editItem.img ? (
+      <img
+        src={editItem.img}
+        alt=""
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+        }}
+      />
+    ) : (
+      <span style={{ fontSize: 34 }}>☕</span>
+    )}
+  </div>
+
+  <input
+    id="edit-product-image-upload"
+    type="file"
+    accept=".png,.jpg,.jpeg,.webp"
+    style={{ display: "none" }}
+    onChange={async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const url = await uploadProductImage(file);
+
+      setEditItem({
+        ...editItem,
+        img: url,
+      });
+    }}
+  />
+
+  <label
+    htmlFor="edit-product-image-upload"
+    style={{
+      padding: "12px 18px",
+      background: "#3B1A08",
+      color: "#FFF",
+      borderRadius: "10px",
+      cursor: "pointer",
+      fontWeight: 600,
+    }}
+  >
+    📁 Upload Image
+  </label>
+</div>
+              
             </div>
 
             {/* Edit Modal Configuration Section */}
