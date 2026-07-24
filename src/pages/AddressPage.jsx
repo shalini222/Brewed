@@ -4,80 +4,220 @@ import { db } from "../firebase";
 
 import {
   collection,
-  addDoc,
   getDocs,
-  deleteDoc,
+  addDoc,
   updateDoc,
+  deleteDoc,
   doc,
-  query,
-  where
+  serverTimestamp,
 } from "firebase/firestore";
 
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Pencil,
+  Home,
+  Briefcase,
+  MapPin,
+  Star
+} from "lucide-react";
 
-import { ArrowLeft } from "lucide-react";
+export default function AddressPage({ setPage }) {
 
+  const { currentUser } = useAuth();
 
-export default function AddressPage({setPage}){
+  const emptyForm = {
+    name: "",
+    phone: "",
+    house: "",
+    street: "",
+    city: "",
+    state: "",
+    pincode: "",
+    type: "Home",
+    isDefault: false,
+  };
 
-const { currentUser } = useAuth();
+  const [addresses, setAddresses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-const [addresses,setAddresses] = useState([]);
-const [showForm,setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
-const [form,setForm] = useState({
-  name:"",
-  phone:"",
-  house:"",
-  street:"",
-  city:"",
-  state:"",
-  pincode:"",
-  type:"Home",
-  isDefault:false
-});
+  const [editingId, setEditingId] = useState(null);
 
+  const [form, setForm] = useState(emptyForm);
 
-return(
-<div>
+  useEffect(() => {
+    if (!currentUser) return;
 
-<h1>My Addresses</h1>
+    loadAddresses();
+  }, [currentUser]);
 
-<button onClick={()=>setShowForm(true)}>
-+ Add New Address
-</button>
+  async function loadAddresses() {
+    try {
+      setLoading(true);
 
+      const snap = await getDocs(
+        collection(
+          db,
+          "users",
+          currentUser.uid,
+          "addresses"
+        )
+      );
 
-{addresses.map(address=>(
-<div key={address.id}>
+      const data = snap.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-<h3>{address.type}</h3>
+      data.sort((a, b) => {
+        if (a.isDefault) return -1;
+        if (b.isDefault) return 1;
+        return 0;
+      });
 
-<p>{address.name}</p>
-<p>{address.phone}</p>
+      setAddresses(data);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-<p>
-{address.house}, {address.street}
-</p>
+  function handleChange(e) {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  }
 
-<p>
-{address.city}, {address.state} - {address.pincode}
-</p>
+  async function saveAddress() {
+    if (!currentUser) return;
 
-<button>
-Edit
-</button>
+    if (
+      !form.name ||
+      !form.phone ||
+      !form.house ||
+      !form.street ||
+      !form.city ||
+      !form.state ||
+      !form.pincode
+    ) {
+      alert("Please fill all fields.");
+      return;
+    }
 
-<button>
-Delete
-</button>
+    try {
+      if (editingId) {
+        await updateDoc(
+          doc(
+            db,
+            "users",
+            currentUser.uid,
+            "addresses",
+            editingId
+          ),
+          form
+        );
 
+        setAddresses((prev) =>
+          prev.map((item) =>
+            item.id === editingId
+              ? { ...item, ...form }
+              : item
+          )
+        );
+      } else {
+        const ref = await addDoc(
+          collection(
+            db,
+            "users",
+            currentUser.uid,
+            "addresses"
+          ),
+          {
+            ...form,
+            createdAt: serverTimestamp(),
+          }
+        );
 
-</div>
-))}
+        setAddresses((prev) => [
+          ...prev,
+          {
+            id: ref.id,
+            ...form,
+          },
+        ]);
+      }
 
+      setForm(emptyForm);
+      setEditingId(null);
+      setShowForm(false);
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
+  function editAddress(address) {
+    setForm(address);
+    setEditingId(address.id);
+    setShowForm(true);
+  }
 
-</div>
-)
+  async function removeAddress(id) {
+    const ok = window.confirm(
+      "Delete this address?"
+    );
 
-}
+    if (!ok) return;
+
+    try {
+      await deleteDoc(
+        doc(
+          db,
+          "users",
+          currentUser.uid,
+          "addresses",
+          id
+        )
+      );
+
+      setAddresses((prev) =>
+        prev.filter((item) => item.id !== id)
+      );
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function setDefault(id) {
+    const updated = addresses.map((item) => ({
+      ...item,
+      isDefault: item.id === id,
+    }));
+
+    try {
+      for (const item of updated) {
+        await updateDoc(
+          doc(
+            db,
+            "users",
+            currentUser.uid,
+            "addresses",
+            item.id
+          ),
+          {
+            isDefault: item.isDefault,
+          }
+        );
+      }
+
+      setAddresses(updated);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  
