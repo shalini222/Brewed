@@ -333,6 +333,32 @@ export default function MenuManagement({ setPage, setActivePage }) {
   const outOfStockCount = menu.filter((i) => i.available === false && !i.archived).length;
   const archivedCount = menu.filter((i) => i.archived).length;
 
+
+  const CLOUD_NAME = "knvwfzhp";
+const UPLOAD_PRESET = "brewed_menu";
+const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+
+async function uploadMilkIcon(file) {
+  const formData = new FormData();
+
+  formData.append("file", file);
+  formData.append("upload_preset", UPLOAD_PRESET);
+
+  const response = await fetch(CLOUDINARY_URL, {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await response.json();
+
+  return data.secure_url;
+}
+  
+  
+  
+  
+  
+  
   const sortOptions = [
     { id: "featured", label: "Featured First" },
     { id: "high-to-low", label: "Highest to Lowest" },
@@ -831,7 +857,7 @@ export default function MenuManagement({ setPage, setActivePage }) {
               gap: "6px",
             }}
           >
-            <span>🔔</span> Notifications
+            <span>🔔</span>
             {(notifications.length > 0 || userNotifications.length > 0) && (
               <span
                 style={{
@@ -1444,32 +1470,66 @@ export default function MenuManagement({ setPage, setActivePage }) {
                 const milkPrice = typeof milk === "string" ? 0 : milk.price ?? 0;
                 return (
                   <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
-                   <input
-  placeholder="🥛 / Image URL"
-  value={milk.icon || ""}
-  onChange={(e) => {
-    const updated = [...newItem.milkOptions];
-
-    updated[idx] = {
-      ...updated[idx],
-      icon: e.target.value,
-    };
-
-    setNewItem({
-      ...newItem,
-      milkOptions: updated,
-    });
-  }}
+                   <div
   style={{
-    width: "110px",
-    padding: "10px",
-    borderRadius: "8px",
+    width: 45,
+    height: 45,
+    borderRadius: 10,
     border: "1px solid #D8C8B8",
-    fontSize: "13px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     background: "#FAF7F2",
   }}
-/>
-                    
+>
+  {milk.icon ? (
+    milk.icon.startsWith("http") || milk.icon.startsWith("/") ? (
+      <img
+        src={milk.icon}
+        alt=""
+        style={{
+          width: 28,
+          height: 28,
+          objectFit: "contain",
+        }}
+      />
+    ) : (
+      <span style={{ fontSize: 24 }}>
+        {milk.icon}
+      </span>
+    )
+  ) : (
+    "🥛"
+  )}
+</div>          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+
+  <input
+    type="file"
+    accept=".png,.svg,.jpg,.jpeg,.webp"
+    onChange={async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const url = await uploadMilkIcon(file);
+
+      const updated = [...newItem.milkOptions];
+
+      updated[idx] = {
+        ...updated[idx],
+        icon: url,
+      };
+
+      setNewItem({
+        ...newItem,
+        milkOptions: updated,
+      });
+    }}
+  />
+
+</div>
+   
+
+
                     
                     
                     <input
