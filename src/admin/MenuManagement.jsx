@@ -2296,7 +2296,7 @@ async function uploadMilkIcon(file) {
                     onClick={() => {
                       setNewItem({
                         ...newItem,
-                        customExtras: [...newItem.customExtras, { name: "", price: 25 }]
+                        customExtras: [...newItem.customExtras, { name: "", price: 0, icon:"" }]
                       });
                     }}
                     style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
@@ -2305,42 +2305,222 @@ async function uploadMilkIcon(file) {
                   </button>
                 </div>
               </div>
-              {newItem.customExtras.map((ex, idx) => (
-                <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
-                  <input
-                    placeholder="Extra name (e.g. Vanilla Syrup)"
-                    value={ex.name || ""}
-                    onChange={(e) => {
-                      const updated = [...newItem.customExtras];
-                      updated[idx].name = e.target.value;
-                      setNewItem({ ...newItem, customExtras: updated });
-                    }}
-                    style={{ flex: 2, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Price (₹)"
-                    value={ex.price ?? 25}
-                    onChange={(e) => {
-                      const updated = [...newItem.customExtras];
-                      updated[idx].price = Number(e.target.value);
-                      setNewItem({ ...newItem, customExtras: updated });
-                    }}
-                    style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const updated = newItem.customExtras.filter((_, i) => i !== idx);
-                      setNewItem({ ...newItem, customExtras: updated });
-                    }}
-                    style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
-                    title="Delete Extra"
-                  >
-                    🗑️ Delete
-                  </button>
-                </div>
-              ))}
+           {newItem.customExtras.map((ex, idx) => {
+  const extraName = ex.name || "";
+  const extraPrice = ex.price ?? 0;
+  const extraIcon = ex.icon || "";
+  return (
+    <div
+      key={idx}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        marginBottom: "10px",
+      }}
+    >
+      {/* Preview */}
+      <div
+        style={{
+          width: 45,
+          height: 45,
+          borderRadius: 10,
+          border: "1px solid #D8C8B8",
+          background: "#FAF7F2",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        {extraIcon ? (
+          extraIcon.startsWith("http") ||
+          extraIcon.startsWith("/") ? (
+            <img
+              src={extraIcon}
+              alt=""
+              style={{
+                width: 28,
+                height: 28,
+                objectFit: "contain",
+              }}
+            />
+          ) : (
+            <span style={{ fontSize: 24 }}>
+              {extraIcon}
+            </span>
+          )
+        ) : (
+          "✨"
+        )}
+      </div>
+
+      {/* Hidden Upload */}
+      <input
+        id={`extra-upload-${idx}`}
+        type="file"
+        accept=".png,.svg,.jpg,.jpeg,.webp"
+        style={{ display: "none" }}
+        onChange={async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const url = await uploadMilkIcon(file);
+
+          const updated = [...newItem.customExtras];
+          updated[idx] = {
+            ...updated[idx],
+            icon: url,
+          };
+
+          setNewItem({
+            ...newItem,
+            customExtras: updated,
+          });
+        }}
+      />
+
+      {/* Upload Button */}
+      <label
+        htmlFor={`extra-upload-${idx}`}
+        style={{
+          padding: "10px 14px",
+          background: "#3B1A08",
+          color: "#FFF",
+          borderRadius: "8px",
+          cursor: "pointer",
+          fontWeight: 600,
+          fontSize: "12px",
+          whiteSpace: "nowrap",
+        }}
+      >
+        📁 Upload
+      </label>
+
+      <span
+        style={{
+          fontWeight: 700,
+          color: "#8B6A4A",
+          whiteSpace: "nowrap",
+        }}
+      >
+        OR
+      </span>
+
+      {/* Emoji */}
+      <input
+        type="text"
+        placeholder="✨"
+        value={
+          extraIcon.startsWith("http") ||
+          extraIcon.startsWith("/")
+            ? ""
+            : extraIcon
+        }
+        onChange={(e) => {
+          const updated = [...newItem.customExtras];
+
+          updated[idx] = {
+            ...updated[idx],
+            icon: e.target.value,
+          };
+
+          setNewItem({
+            ...newItem,
+            customExtras: updated,
+          });
+        }}
+        style={{
+          width: "60px",
+          padding: "10px",
+          borderRadius: "8px",
+          border: "1px solid #D8C8B8",
+          textAlign: "center",
+          fontSize: "22px",
+          background: "#FAF7F2",
+        }}
+      />
+
+      {/* Name */}
+      <input
+        placeholder="Extra name"
+        value={extraName}
+        onChange={(e) => {
+          const updated = [...newItem.customExtras];
+          updated[idx] = {
+            ...updated[idx],
+            name: e.target.value,
+          };
+
+          setNewItem({
+            ...newItem,
+            customExtras: updated,
+          });
+        }}
+        style={{
+          flex: 2,
+          padding: "10px",
+          borderRadius: "8px",
+          border: "1px solid #D8C8B8",
+          fontSize: "13px",
+          background: "#FAF7F2",
+        }}
+      />
+
+      {/* Price */}
+      <input
+        type="number"
+        placeholder="Price (₹)"
+        value={extraPrice}
+        onChange={(e) => {
+          const updated = [...newItem.customExtras];
+          updated[idx] = {
+            ...updated[idx],
+            price: Number(e.target.value),
+          };
+
+          setNewItem({
+            ...newItem,
+            customExtras: updated,
+          });
+        }}
+        style={{
+          width: "100px",
+          padding: "10px",
+          borderRadius: "8px",
+          border: "1px solid #D8C8B8",
+          fontSize: "13px",
+          background: "#FAF7F2",
+        }}
+      />
+
+      {/* Delete */}
+      <button
+        type="button"
+        onClick={() => {
+          const updated = newItem.customExtras.filter((_, i) => i !== idx);
+
+          setNewItem({
+            ...newItem,
+            customExtras: updated,
+          });
+        }}
+        style={{
+          background: "#FFEBEE",
+          color: "#C62828",
+          border: "1px solid #FADBD8",
+          padding: "8px 12px",
+          borderRadius: "8px",
+          cursor: "pointer",
+          fontSize: "13px",
+        }}
+      >
+        🗑️
+      </button>
+    </div>
+  );
+})}
+              
             </div>
 
           </div>
@@ -3372,7 +3552,8 @@ async function uploadMilkIcon(file) {
   })}
 </div>
               
-  re
+ 
+              
                   
               {/* Edit Special Requests Builder */}
               <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
@@ -3418,67 +3599,250 @@ async function uploadMilkIcon(file) {
               </div>
 
               {/* Edit Extras & Max Selection Builder */}
-              <div style={{ background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "10px" }}>
-                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Extra Customs / Toppings +</label>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ fontSize: "11px", fontWeight: 700, color: "#6E523D", textTransform: "uppercase" }}>Max Selection:</span>
-                    <input
-                      type="number"
-                      value={editItem.customExtrasMaxSelection}
-                      onChange={(e) => setEditItem({ ...editItem, customExtrasMaxSelection: e.target.value })}
-                      style={{ width: "60px", padding: "6px", borderRadius: "6px", border: "1px solid #D8C8B8", fontSize: "13px", textAlign: "center", outline: "none", background: "#FAF7F2", fontWeight: 600 }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditItem({
-                          ...editItem,
-                          customExtras: [...editItem.customExtras, { name: "", price: 25 }]
-                        });
-                      }}
-                      style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
-                    >
-                      + Add Extra
-                    </button>
-                  </div>
-                </div>
-                {editItem.customExtras.map((ex, idx) => (
-                  <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
-                    <input
-                      placeholder="Extra name"
-                      value={ex.name || ""}
-                      onChange={(e) => {
-                        const updated = [...editItem.customExtras];
-                        updated[idx].name = e.target.value;
-                        setEditItem({ ...editItem, customExtras: updated });
-                      }}
-                      style={{ flex: 2, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                    />
-                    <input
-                      type="number"
-                      placeholder="Price (₹)"
-                      value={ex.price ?? 25}
-                      onChange={(e) => {
-                        const updated = [...editItem.customExtras];
-                        updated[idx].price = Number(e.target.value);
-                        setEditItem({ ...editItem, customExtras: updated });
-                      }}
-                      style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const updated = editItem.customExtras.filter((_, i) => i !== idx);
-                        setEditItem({ ...editItem, customExtras: updated });
-                      }}
-                      style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
-                    >
-                      🗑️ Delete
-                    </button>
-                  </div>
-                ))}
-              </div>
+              {/* 5. EXTRA CUSTOMS / TOPPINGS & MAX SELECTION BUILDER (EDIT MODE) */}
+<div style={{ background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "10px" }}>
+    <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Extra Customs / Toppings (Edit) +</label>
+    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <span style={{ fontSize: "11px", fontWeight: 700, color: "#6E523D", textTransform: "uppercase" }}>Max Selection:</span>
+      <input
+        type="number"
+        value={editItem.customExtrasMaxSelection}
+        onChange={(e) => setEditItem({ ...editItem, customExtrasMaxSelection: e.target.value })}
+        style={{ width: "60px", padding: "6px", borderRadius: "6px", border: "1px solid #D8C8B8", fontSize: "13px", textAlign: "center", outline: "none", background: "#FAF7F2", fontWeight: 600 }}
+      />
+      <button
+        type="button"
+        onClick={() => {
+          setEditItem({
+            ...editItem,
+            customExtras: [...editItem.customExtras, { name: "", price: 0, icon: "" }]
+          });
+        }}
+        style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+      >
+        + Add Extra
+      </button>
+    </div>
+  </div>
+  {editItem.customExtras.map((ex, idx) => {
+    const extraName = ex.name || "";
+    const extraPrice = ex.price ?? 0;
+    const extraIcon = ex.icon || "";
+    return (
+      <div
+        key={idx}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          marginBottom: "10px",
+        }}
+      >
+        {/* Preview */}
+        <div
+          style={{
+            width: 45,
+            height: 45,
+            borderRadius: 10,
+            border: "1px solid #D8C8B8",
+            background: "#FAF7F2",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          {extraIcon ? (
+            extraIcon.startsWith("http") ||
+            extraIcon.startsWith("/") ? (
+              <img
+                src={extraIcon}
+                alt=""
+                style={{
+                  width: 28,
+                  height: 28,
+                  objectFit: "contain",
+                }}
+              />
+            ) : (
+              <span style={{ fontSize: 24 }}>
+                {extraIcon}
+              </span>
+            )
+          ) : (
+            "✨"
+          )}
+        </div>
+
+        {/* Hidden Upload */}
+        <input
+          id={`edit-extra-upload-${idx}`}
+          type="file"
+          accept=".png,.svg,.jpg,.jpeg,.webp"
+          style={{ display: "none" }}
+          onChange={async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const url = await uploadMilkIcon(file);
+
+            const updated = [...editItem.customExtras];
+            updated[idx] = {
+              ...updated[idx],
+              icon: url,
+            };
+
+            setEditItem({
+              ...editItem,
+              customExtras: updated,
+            });
+          }}
+        />
+
+        {/* Upload Button */}
+        <label
+          htmlFor={`edit-extra-upload-${idx}`}
+          style={{
+            padding: "10px 14px",
+            background: "#3B1A08",
+            color: "#FFF",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontWeight: 600,
+            fontSize: "12px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          📁 Upload
+        </label>
+
+        <span
+          style={{
+            fontWeight: 700,
+            color: "#8B6A4A",
+            whiteSpace: "nowrap",
+          }}
+        >
+          OR
+        </span>
+
+        {/* Emoji */}
+        <input
+          type="text"
+          placeholder="✨"
+          value={
+            extraIcon.startsWith("http") ||
+            extraIcon.startsWith("/")
+              ? ""
+              : extraIcon
+          }
+          onChange={(e) => {
+            const updated = [...editItem.customExtras];
+
+            updated[idx] = {
+              ...updated[idx],
+              icon: e.target.value,
+            };
+
+            setEditItem({
+              ...editItem,
+              customExtras: updated,
+            });
+          }}
+          style={{
+            width: "60px",
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            textAlign: "center",
+            fontSize: "22px",
+            background: "#FAF7F2",
+          }}
+        />
+
+        {/* Name */}
+        <input
+          placeholder="Extra name"
+          value={extraName}
+          onChange={(e) => {
+            const updated = [...editItem.customExtras];
+            updated[idx] = {
+              ...updated[idx],
+              name: e.target.value,
+            };
+
+            setEditItem({
+              ...editItem,
+              customExtras: updated,
+            });
+          }}
+          style={{
+            flex: 2,
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            fontSize: "13px",
+            background: "#FAF7F2",
+          }}
+        />
+
+        {/* Price */}
+        <input
+          type="number"
+          placeholder="Price (₹)"
+          value={extraPrice}
+          onChange={(e) => {
+            const updated = [...editItem.customExtras];
+            updated[idx] = {
+              ...updated[idx],
+              price: Number(e.target.value),
+            };
+
+            setEditItem({
+              ...editItem,
+              customExtras: updated,
+            });
+          }}
+          style={{
+            width: "100px",
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            fontSize: "13px",
+            background: "#FAF7F2",
+          }}
+        />
+
+        {/* Delete */}
+        <button
+          type="button"
+          onClick={() => {
+            const updated = editItem.customExtras.filter((_, i) => i !== idx);
+
+            setEditItem({
+              ...editItem,
+              customExtras: updated,
+            });
+          }}
+          style={{
+            background: "#FFEBEE",
+            color: "#C62828",
+            border: "1px solid #FADBD8",
+            padding: "8px 12px",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontSize: "13px",
+          }}
+        >
+          🗑️
+        </button>
+      </div>
+    );
+  })}
+</div>
+
+          
 
             </div>
 
