@@ -2301,9 +2301,9 @@ gap:30px;
           <div className="hero-section">
             {/* LEFT SIDE */}
             <div className="product-image">
-              {product?.image ? (
+              {product?.img ? (
   <img
-    src={product.image}
+    src={product.img}
     alt={product.name}
   />
 ) : (
