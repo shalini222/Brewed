@@ -2429,72 +2429,299 @@ async function uploadMilkIcon(file) {
               </div>
 
               {/* Edit Milk Builder */}
-              <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Milk Option +</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditItem({
-                        ...editItem,
-                        milkOptions: [...editItem.milkOptions, { name: "", price: 0 }]
-                      });
-                    }}
-                    style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
-                  >
-                    + Add Milk
-                  </button>
-                </div>
-                {editItem.milkOptions.map((milk, idx) => {
-                  const milkName = typeof milk === "string" ? milk : milk.name || "";
-                  const milkPrice = typeof milk === "string" ? 0 : milk.price ?? 0;
-                  return (
-                    <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
-                      <input
-                        placeholder="Milk type"
-                        value={milkName}
-                        onChange={(e) => {
-                          const updated = [...editItem.milkOptions];
-                          if (typeof updated[idx] === "string") {
-                            updated[idx] = { name: e.target.value, price: 0 };
-                          } else {
-                            updated[idx] = { ...updated[idx], name: e.target.value };
-                          }
-                          setEditItem({ ...editItem, milkOptions: updated });
-                        }}
-                        style={{ flex: 2, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                      />
-                      <input
-                        type="number"
-                        placeholder="Price (₹)"
-                        value={milkPrice}
-                        onChange={(e) => {
-                          const updated = [...editItem.milkOptions];
-                          const val = Number(e.target.value);
-                          if (typeof updated[idx] === "string") {
-                            updated[idx] = { name: updated[idx], price: val };
-                          } else {
-                            updated[idx] = { ...updated[idx], price: val };
-                          }
-                          setEditItem({ ...editItem, milkOptions: updated });
-                        }}
-                        style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = editItem.milkOptions.filter((_, i) => i !== idx);
-                          setEditItem({ ...editItem, milkOptions: updated });
-                        }}
-                        style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
-                      >
-                        🗑️ Delete
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
 
+      {/* 2. MILK OPTIONS BUILDER */}
+<div
+  style={{
+    marginBottom: "20px",
+    background: "#FFFFFF",
+    padding: "16px",
+    borderRadius: "12px",
+    border: "1px solid #E2D5C9",
+  }}
+>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: "12px",
+    }}
+  >
+    <label
+      style={{
+        fontSize: "12px",
+        fontWeight: 700,
+        color: "#3B1A08",
+        textTransform: "uppercase",
+      }}
+    >
+      Milk Option +
+    </label>
+
+    <button
+      type="button"
+      onClick={() =>
+        setNewItem({
+          ...newItem,
+          milkOptions: [
+            ...newItem.milkOptions,
+            {
+              name: "",
+              price: 0,
+              icon: "",
+            },
+          ],
+        })
+      }
+      style={{
+        background: "#3B1A08",
+        color: "#FFF",
+        border: "none",
+        padding: "6px 14px",
+        borderRadius: "8px",
+        fontWeight: 600,
+        fontSize: "12px",
+        cursor: "pointer",
+      }}
+    >
+      + Add Milk
+    </button>
+  </div>
+
+  {newItem.milkOptions.map((milk, idx) => {
+    const milkName =
+      typeof milk === "string" ? milk : milk.name || "";
+
+    const milkPrice =
+      typeof milk === "string" ? 0 : milk.price ?? 0;
+
+    const milkIcon =
+      typeof milk === "string" ? "" : milk.icon || "";
+
+    return (
+      <div
+        key={idx}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          marginBottom: "10px",
+        }}
+      >
+        {/* Preview */}
+        <div
+          style={{
+            width: 45,
+            height: 45,
+            borderRadius: 10,
+            border: "1px solid #D8C8B8",
+            background: "#FAF7F2",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          {milkIcon ? (
+            milkIcon.startsWith("http") ||
+            milkIcon.startsWith("/") ? (
+              <img
+                src={milkIcon}
+                alt=""
+                style={{
+                  width: 28,
+                  height: 28,
+                  objectFit: "contain",
+                }}
+              />
+            ) : (
+              <span style={{ fontSize: 24 }}>
+                {milkIcon}
+              </span>
+            )
+          ) : (
+            "🥛"
+          )}
+        </div>
+
+        {/* Hidden Upload */}
+        <input
+          id={`milk-upload-${idx}`}
+          type="file"
+          accept=".png,.svg,.jpg,.jpeg,.webp"
+          style={{ display: "none" }}
+          onChange={async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const url = await uploadMilkIcon(file);
+
+            const updated = [...newItem.milkOptions];
+
+            updated[idx] = {
+              ...updated[idx],
+              icon: url,
+            };
+
+            setNewItem({
+              ...newItem,
+              milkOptions: updated,
+            });
+          }}
+        />
+
+        {/* Upload Button */}
+        <label
+          htmlFor={`milk-upload-${idx}`}
+          style={{
+            padding: "10px 14px",
+            background: "#3B1A08",
+            color: "#FFF",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontWeight: 600,
+            fontSize: "12px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          📁 Upload
+        </label>
+
+        {/* OR */}
+        <span
+          style={{
+            fontWeight: 700,
+            color: "#8B6A4A",
+            whiteSpace: "nowrap",
+          }}
+        >
+          OR
+        </span>
+
+        {/* Emoji */}
+        <input
+          type="text"
+          placeholder="🥛"
+          value={
+            milkIcon.startsWith("http") ||
+            milkIcon.startsWith("/")
+              ? ""
+              : milkIcon
+          }
+          onChange={(e) => {
+            const updated = [...newItem.milkOptions];
+
+            updated[idx] = {
+              ...updated[idx],
+              icon: e.target.value,
+            };
+
+            setNewItem({
+              ...newItem,
+              milkOptions: updated,
+            });
+          }}
+          style={{
+            width: "60px",
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            textAlign: "center",
+            fontSize: "22px",
+            background: "#FAF7F2",
+          }}
+        />
+
+        {/* Milk Name */}
+        <input
+          placeholder="Milk type"
+          value={milkName}
+          onChange={(e) => {
+            const updated = [...newItem.milkOptions];
+
+            updated[idx] = {
+              ...updated[idx],
+              name: e.target.value,
+            };
+
+            setNewItem({
+              ...newItem,
+              milkOptions: updated,
+            });
+          }}
+          style={{
+            flex: 2,
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            fontSize: "13px",
+            background: "#FAF7F2",
+          }}
+        />
+
+        {/* Price */}
+        <input
+          type="number"
+          placeholder="Price (₹)"
+          value={milkPrice}
+          onChange={(e) => {
+            const updated = [...newItem.milkOptions];
+
+            updated[idx] = {
+              ...updated[idx],
+              price: Number(e.target.value),
+            };
+
+            setNewItem({
+              ...newItem,
+              milkOptions: updated,
+            });
+          }}
+          style={{
+            width: "100px",
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            fontSize: "13px",
+            background: "#FAF7F2",
+          }}
+        />
+
+        {/* Delete */}
+        <button
+          type="button"
+          onClick={() => {
+            const updated =
+              newItem.milkOptions.filter(
+                (_, i) => i !== idx
+              );
+
+            setNewItem({
+              ...newItem,
+              milkOptions: updated,
+            });
+          }}
+          style={{
+            background: "#FFEBEE",
+            color: "#C62828",
+            border: "1px solid #FADBD8",
+            padding: "8px 12px",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontSize: "13px",
+          }}
+        >
+          🗑️
+        </button>
+      </div>
+    );
+  })}
+</div>
+
+
+
+              
               {/* Edit Sweetness Builder */}
               <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
