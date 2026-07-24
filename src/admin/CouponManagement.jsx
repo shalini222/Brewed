@@ -462,8 +462,8 @@ export default function CouponManagement({ setPage, setActivePage }) {
       {/* Dynamic Navigation Top Row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "35px" }}>
         <div>
-          <button onClick={() => setPage("admin")} style={{ background: "#fff", border: "1px solid #DCD1C4", padding: "10px 18px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", color: "#544E48" }}>
-            ← Back Dashboard
+          <button onClick={() => setPage("dashboard")} style={{ background: "#fff", border: "1px solid #DCD1C4", padding: "10px 18px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", color: "#544E48" }}>
+            Dashboard
           </button>
           <h1 style={{ fontFamily: "Playfair Display, serif", marginTop: "16px", marginBottom: 0, fontSize: "34px", color: "#1E1B18" }}>
             🎟️ Master Coupon Control Center
