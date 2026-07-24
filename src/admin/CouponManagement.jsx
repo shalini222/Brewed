@@ -26,7 +26,7 @@ import {
   Bar,
 } from "recharts";
 
-export default function CouponsAdminPage({ setPage }) {
+export default function CouponManagement({ setPage, setActivePage }) {
   const [coupons, setCoupons] = useState([]);
   const [orders, setOrders] = useState([]); 
   const [auditLogs, setAuditLogs] = useState([]); 
@@ -510,7 +510,6 @@ export default function CouponsAdminPage({ setPage }) {
           </ResponsiveContainer>
         </div>
 
-      
         {/* Categories Pie Mixer Layout Block */}
         <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", boxShadow: "0 4px 20px rgba(0,0,0,0.01)" }}>
           <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", fontWeight: "700" }}>🥧 Dynamic Structural Mix Ratios</h3>
@@ -761,4 +760,130 @@ export default function CouponsAdminPage({ setPage }) {
                           </span>
                         </div>
 
-                     
+                        {/* Tag Badges Metrics Panel */}
+                        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "14px" }}>
+                          <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 8px", borderRadius: "4px", background: styleSheet.bg, color: styleSheet.color, textTransform: "uppercase" }}>
+                            {coupon?.category || "General"}
+                          </span>
+                          <span style={{ fontSize: "11px", fontWeight: "600", padding: "4px 8px", borderRadius: "4px", background: "#FAF6F0", color: "#544E48" }}>
+                            {coupon?.audienceType === "specific_user" ? `👤 Only: ${coupon?.targetUserId}` : coupon?.audienceType === "new_users_only" ? "🆕 First-Order" : "🌐 Open Tier"}
+                          </span>
+
+                          {/* DYNAMIC TIMEFRAME BADGE RENDERS */}
+                          {timeSpecs.variant === "expired" && <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 8px", borderRadius: "4px", background: "#D32F2F", color: "#fff" }}>🚨 EXPIRED</span>}
+                          {timeSpecs.variant === "warning" && <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 8px", borderRadius: "4px", background: "#FF9800", color: "#fff" }}>⏳ EXPIRING SOON</span>}
+                        </div>
+
+                        {/* Technical Configuration Specifications */}
+                        <div style={{ fontSize: "14px", display: "flex", flexDirection: "column", gap: "6px", color: "#3B342E" }}>
+                          <p style={{ margin: 0 }}><strong>Benefit Yield:</strong> {coupon?.type === "percentage" ? `${coupon?.value}% Off` : `₹${coupon?.value} Off`}{coupon?.type === "percentage" && Number(coupon?.maxDiscount) > 0 && ` (Max ₹${coupon?.maxDiscount})`}</p>
+                          <p style={{ margin: 0 }}><strong>Minimum Trigger:</strong> ₹{coupon?.minOrder}</p>
+                          <p style={{ margin: 0 }}><strong>Redemption Vol Cap:</strong> {coupon?.usageCount || 0} / {coupon?.usageLimit || "∞"}</p>
+                          <p style={{ margin: 0 }}><strong>Target Lifecycle:</strong> {coupon?.singleUse ? "Global Single Use" : "Reusable Pattern"}</p>
+                        </div>
+
+                        {/* DYNAMIC PROGRESS ACCELERATOR GRAPH PROGRESS SLIDER */}
+                        {Number(coupon?.usageLimit) > 0 && (
+                          <div style={{ marginTop: "15px", marginBottom: "15px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#8A827C", marginBottom: "4px" }}>
+                              <span>Campaign Consumption Velocity</span>
+                              <strong>{Math.round(((coupon?.usageCount || 0) / coupon.usageLimit) * 100)}%</strong>
+                            </div>
+                            <div style={{ width: "100%", height: "6px", background: "#FAF6F0", borderRadius: "10px", border: "1px solid #EAE1D4", overflow: "hidden" }}>
+                              <div style={{ height: "100%", background: coupon?.active ? "#3B1A08" : "#A8A096", width: `${Math.min(((coupon?.usageCount || 0) / coupon.usageLimit) * 100, 100)}%`, transition: "width 0.4s ease" }} />
+                            </div>
+                          </div>
+                        )}
+
+                        <p style={{ fontWeight: "600", fontSize: "12px", marginTop: "12px", color: timeSpecs.variant === "expired" ? "#D32F2F" : "#C4956A" }}>
+                          {timeSpecs.label}
+                        </p>
+                      </div>
+
+                      {/* Bottom Level Operation Drawers */}
+                      <div style={{ display: "flex", gap: "8px", marginTop: "18px", borderTop: "1px dashed #DCD1C4", paddingTop: "14px" }}>
+                        <button onClick={() => toggleCoupon(coupon)} style={{ flex: 1, background: coupon?.active ? "#F5B942" : "#2E7D32", color: "#fff", border: "none", padding: "10px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>
+                          {coupon?.active ? "Disable" : "Enable"}
+                        </button>
+                        
+                        <button 
+                          onClick={() => { 
+                            setEditing(coupon); 
+                            setEditCoupon({
+                              code: coupon?.code || "",
+                              type: coupon?.type || "percentage",
+                              value: coupon?.value || "",
+                              maxDiscount: coupon?.maxDiscount || "",
+                              minOrder: coupon?.minOrder || "",
+                              category: coupon?.category || "General",
+                              starts: coupon?.starts || "",
+                              expires: coupon?.expires || "",
+                              usageLimit: coupon?.usageLimit || "",
+                              perUserLimit: coupon?.perUserLimit || 1,
+                              singleUse: coupon?.singleUse || false,
+                              audienceType: coupon?.audienceType || "all",
+                              targetUserId: coupon?.targetUserId || "",
+                              triggerType: coupon?.triggerType || "manual"
+                            }); 
+                          }} 
+                          style={{ flex: 1, background: "#C4956A", color: "#fff", border: "none", padding: "10px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}
+                        >
+                          ✏️ Parameters
+                        </button>
+
+                        <button onClick={() => deleteCoupon(coupon.id)} style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FFCDD2", padding: "10px 14px", borderRadius: "8px", cursor: "pointer" }}>
+                          🗑️
+                        </button>
+                      </div>
+
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
+          {/* DYNAMIC HISTORICAL DATA AUDIT LOG DATAGRID TABLE */}
+          <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", boxShadow: "0 4px 20px rgba(0,0,0,0.01)" }}>
+            <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: "700" }}>📜 Permanent Coupon System Audit Log</h3>
+            <p style={{ color: "#8A827C", fontSize: "13px", margin: "0 0 20px 0" }}>Real-time tracing of deployment loops, administrative parameter mutations, and state resets.</p>
+            
+            <div style={{ overflowX: "auto", maxHeight: "280px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                <thead>
+                  <tr style={{ background: "#FAF6F0", borderBottom: "1px solid #EAE1D4", color: "#544E48" }}>
+                    <th style={{ padding: "12px", textAlign: "left" }}>Timestamp Trigger</th>
+                    <th style={{ padding: "12px", textAlign: "left" }}>Target Subject</th>
+                    <th style={{ padding: "12px", textAlign: "left" }}>Action Signature</th>
+                    <th style={{ padding: "12px", textAlign: "left" }}>Parameter Meta Scope</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {safeLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" style={{ padding: "20px", textAlign: "center", color: "#A8A096" }}>No active logs stored in current execution pipelines.</td>
+                    </tr>
+                  ) : (
+                    safeLogs.map((log) => (
+                      <tr key={log?.id || Math.random()} style={{ borderBottom: "1px solid #FAF6F0" }}>
+                        <td style={{ padding: "12px", color: "#544E48" }}>{log?.timestamp?.seconds ? new Date(log.timestamp.seconds * 1000).toLocaleString() : "Sync Processing"}</td>
+                        <td style={{ padding: "12px", fontWeight: "700", fontFamily: "monospace" }}>{log?.code || "SYSTEM"}</td>
+                        <td style={{ padding: "12px" }}>
+                          <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "700", background: log?.action?.includes("CREATE") ? "#E8F5E9" : log?.action?.includes("PURGE") || log?.action?.includes("DELETE") ? "#FFEBEE" : "#FFF3E0", color: log?.action?.includes("CREATE") ? "#1B5E20" : log?.action?.includes("PURGE") || log?.action?.includes("DELETE") ? "#C62828" : "#E65100" }}>
+                            {log?.action || "LOG_EVENT"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px", color: "#8A827C" }}>{log?.category ? `${log?.category} Framework` : "Metadata Config Sync Override"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  );
+}
