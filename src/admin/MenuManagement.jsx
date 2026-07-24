@@ -1392,7 +1392,7 @@ async function uploadMilkIcon(file) {
                   onClick={() => {
                     setNewItem({
                       ...newItem,
-                      sizes: [...newItem.sizes, { name: "", desc: "", price: 0 }]
+                      sizes: [...newItem.sizes, { name: "", desc: "", price: 0 , icon: ""}]
                     });
                   }}
                   style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
@@ -1400,52 +1400,243 @@ async function uploadMilkIcon(file) {
                   + Add Size
                 </button>
               </div>
-              {newItem.sizes.map((sz, idx) => (
-                <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
-                  <input
-                    placeholder="Size name (e.g. Small)"
-                    value={sz.name || ""}
-                    onChange={(e) => {
-                      const updated = [...newItem.sizes];
-                      updated[idx].name = e.target.value;
-                      setNewItem({ ...newItem, sizes: updated });
-                    }}
-                    style={{ flex: 1.5, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                  />
-                  <input
-                    placeholder="Volume (e.g. 180 ml)"
-                    value={sz.desc || ""}
-                    onChange={(e) => {
-                      const updated = [...newItem.sizes];
-                      updated[idx].desc = e.target.value;
-                      setNewItem({ ...newItem, sizes: updated });
-                    }}
-                    style={{ flex: 1.5, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Price (₹)"
-                    value={sz.price?? 0}
-                    onChange={(e) => {
-                      const updated = [...newItem.sizes];
-                      updated[idx].price = Number(e.target.value);
-                      setNewItem({ ...newItem, sizes: updated });
-                    }}
-                    style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const updated = newItem.sizes.filter((_, i) => i !== idx);
-                      setNewItem({ ...newItem, sizes: updated });
-                    }}
-                    style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
-                    title="Delete Size"
-                  >
-                    🗑️ Delete
-                  </button>
-                </div>
-              ))}
+              {newItem.sizes.map((sz, idx) => {
+  const sizeName = sz.name || "";
+  const sizeDesc = sz.desc || "";
+  const sizePrice = sz.price ?? 0;
+  const sizeIcon = sz.icon || "";
+
+  return (
+                <div
+  key={idx}
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    marginBottom: "10px",
+  }}
+>
+  {/* Preview */}
+  <div
+    style={{
+      width: 45,
+      height: 45,
+      borderRadius: 10,
+      border: "1px solid #D8C8B8",
+      background: "#FAF7F2",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+    }}
+  >
+    {sizeIcon ? (
+      sizeIcon.startsWith("http") ||
+      sizeIcon.startsWith("/") ? (
+        <img
+          src={sizeIcon}
+          alt=""
+          style={{
+            width: 28,
+            height: 28,
+            objectFit: "contain",
+          }}
+        />
+      ) : (
+        <span style={{ fontSize: 24 }}>
+          {sizeIcon}
+        </span>
+      )
+    ) : (
+      "🥤"
+    )}
+  </div>
+
+  {/* Hidden Upload */}
+  <input
+    id={`size-upload-${idx}`}
+    type="file"
+    accept=".png,.svg,.jpg,.jpeg,.webp"
+    style={{ display: "none" }}
+    onChange={async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const url = await uploadOptionIcon(file);
+
+      const updated = [...newItem.sizes];
+      updated[idx] = {
+        ...updated[idx],
+        icon: url,
+      };
+
+      setNewItem({
+        ...newItem,
+        sizes: updated,
+      });
+    }}
+  />
+
+  {/* Upload */}
+  <label
+    htmlFor={`size-upload-${idx}`}
+    style={{
+      padding: "10px 14px",
+      background: "#3B1A08",
+      color: "#FFF",
+      borderRadius: "8px",
+      cursor: "pointer",
+      fontWeight: 600,
+      fontSize: "12px",
+      whiteSpace: "nowrap",
+    }}
+  >
+    📁 Upload
+  </label>
+
+  <span
+    style={{
+      fontWeight: 700,
+      color: "#8B6A4A",
+    }}
+  >
+    OR
+  </span>
+
+  {/* Emoji */}
+  <input
+    type="text"
+    placeholder="🥤"
+    value={
+      sizeIcon.startsWith("http") ||
+      sizeIcon.startsWith("/")
+        ? ""
+        : sizeIcon
+    }
+    onChange={(e) => {
+      const updated = [...newItem.sizes];
+      updated[idx] = {
+        ...updated[idx],
+        icon: e.target.value,
+      };
+
+      setNewItem({
+        ...newItem,
+        sizes: updated,
+      });
+    }}
+    style={{
+      width: "60px",
+      padding: "10px",
+      borderRadius: "8px",
+      border: "1px solid #D8C8B8",
+      textAlign: "center",
+      fontSize: "22px",
+      background: "#FAF7F2",
+    }}
+  />
+
+  {/* Size */}
+  <input
+    placeholder="Size"
+    value={sizeName}
+    onChange={(e) => {
+      const updated = [...newItem.sizes];
+      updated[idx] = {
+        ...updated[idx],
+        name: e.target.value,
+      };
+
+      setNewItem({
+        ...newItem,
+        sizes: updated,
+      });
+    }}
+    style={{
+      flex: 1.2,
+      padding: "10px",
+      borderRadius: "8px",
+      border: "1px solid #D8C8B8",
+      background: "#FAF7F2",
+    }}
+  />
+
+  {/* Volume */}
+  <input
+    placeholder="Volume"
+    value={sizeDesc}
+    onChange={(e) => {
+      const updated = [...newItem.sizes];
+      updated[idx] = {
+        ...updated[idx],
+        desc: e.target.value,
+      };
+
+      setNewItem({
+        ...newItem,
+        sizes: updated,
+      });
+    }}
+    style={{
+      flex: 1.2,
+      padding: "10px",
+      borderRadius: "8px",
+      border: "1px solid #D8C8B8",
+      background: "#FAF7F2",
+    }}
+  />
+
+  {/* Price */}
+  <input
+    type="number"
+    placeholder="₹"
+    value={sizePrice}
+    onChange={(e) => {
+      const updated = [...newItem.sizes];
+      updated[idx] = {
+        ...updated[idx],
+        price: Number(e.target.value),
+      };
+
+      setNewItem({
+        ...newItem,
+        sizes: updated,
+      });
+    }}
+    style={{
+      width: "90px",
+      padding: "10px",
+      borderRadius: "8px",
+      border: "1px solid #D8C8B8",
+      background: "#FAF7F2",
+    }}
+  />
+
+  <button
+    type="button"
+    onClick={() => {
+      const updated = newItem.sizes.filter((_, i) => i !== idx);
+      setNewItem({
+        ...newItem,
+        sizes: updated,
+      });
+    }}
+    style={{
+      background: "#FFEBEE",
+      color: "#C62828",
+      border: "1px solid #FADBD8",
+      padding: "8px 12px",
+      borderRadius: "8px",
+      cursor: "pointer",
+    }}
+  >
+    🗑️
+  </button>
+</div>
+ 
+      );
+})}    
+
             </div>
 
          {/* 2. MILK OPTIONS BUILDER */}
@@ -2235,7 +2426,7 @@ async function uploadMilkIcon(file) {
         })}
             </div>
 
-            {/* 4. SPECIAL REQUESTS BUILDER */}
+             {/* 4. SPECIAL REQUESTS BUILDER */}
             <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                 <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Special Requests Options +</label>
@@ -2700,68 +2891,260 @@ async function uploadMilkIcon(file) {
               </div>
 
               {/* Edit Size Builder */}
-              <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Select Size +</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditItem({
-                        ...editItem,
-                        sizes: [...editItem.sizes, { name: "", desc: "", price: 0 }]
-                      });
-                    }}
-                    style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
-                  >
-                    + Add Size
-                  </button>
-                </div>
-                {editItem.sizes.map((sz, idx) => (
-                  <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
-                    <input
-                      placeholder="Size name"
-                      value={sz.name || ""}
-                      onChange={(e) => {
-                        const updated = [...editItem.sizes];
-                        updated[idx].name = e.target.value;
-                        setEditItem({ ...editItem, sizes: updated });
-                      }}
-                      style={{ flex: 1.5, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                    />
-                    <input
-                      placeholder="Volume (e.g. 180 ml)"
-                      value={sz.desc || ""}
-                      onChange={(e) => {
-                        const updated = [...editItem.sizes];
-                        updated[idx].desc = e.target.value;
-                        setEditItem({ ...editItem, sizes: updated });
-                      }}
-                      style={{ flex: 1.5, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                    />
-                    <input
-                      type="number"
-                      placeholder="Price (₹)"
-                      value={sz.price ?? 0}
-                      onChange={(e) => {
-                        const updated = [...editItem.sizes];
-                        updated[idx].price = Number(e.target.value);
-                        setEditItem({ ...editItem, sizes: updated });
-                      }}
-                      style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const updated = editItem.sizes.filter((_, i) => i !== idx);
-                        setEditItem({ ...editItem, sizes: updated });
-                      }}
-                      style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
-                    >
-                      🗑️ Delete
-                    </button>
-                  </div>
-                ))}
-              </div>
+             {/* 1. SIZES BUILDER (EDIT MODE) */}
+<div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+    <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Select Size (Edit) +</label>
+    <button
+      type="button"
+      onClick={() => {
+        setEditItem({
+          ...editItem,
+          sizes: [...editItem.sizes, { name: "", desc: "", price: 0, icon: "" }]
+        });
+      }}
+      style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+    >
+      + Add Size
+    </button>
+  </div>
+  {editItem.sizes.map((sz, idx) => {
+    const sizeName = sz.name || "";
+    const sizeDesc = sz.desc || "";
+    const sizePrice = sz.price ?? 0;
+    const sizeIcon = sz.icon || "";
+
+    return (
+      <div
+        key={idx}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          marginBottom: "10px",
+        }}
+      >
+        {/* Preview */}
+        <div
+          style={{
+            width: 45,
+            height: 45,
+            borderRadius: 10,
+            border: "1px solid #D8C8B8",
+            background: "#FAF7F2",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          {sizeIcon ? (
+            sizeIcon.startsWith("http") ||
+            sizeIcon.startsWith("/") ? (
+              <img
+                src={sizeIcon}
+                alt=""
+                style={{
+                  width: 28,
+                  height: 28,
+                  objectFit: "contain",
+                }}
+              />
+            ) : (
+              <span style={{ fontSize: 24 }}>
+                {sizeIcon}
+              </span>
+            )
+          ) : (
+            "🥤"
+          )}
+        </div>
+
+        {/* Hidden Upload */}
+        <input
+          id={`edit-size-upload-${idx}`}
+          type="file"
+          accept=".png,.svg,.jpg,.jpeg,.webp"
+          style={{ display: "none" }}
+          onChange={async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const url = await uploadOptionIcon(file);
+
+            const updated = [...editItem.sizes];
+            updated[idx] = {
+              ...updated[idx],
+              icon: url,
+            };
+
+            setEditItem({
+              ...editItem,
+              sizes: updated,
+            });
+          }}
+        />
+
+        {/* Upload */}
+        <label
+          htmlFor={`edit-size-upload-${idx}`}
+          style={{
+            padding: "10px 14px",
+            background: "#3B1A08",
+            color: "#FFF",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontWeight: 600,
+            fontSize: "12px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          📁 Upload
+        </label>
+
+        <span
+          style={{
+            fontWeight: 700,
+            color: "#8B6A4A",
+          }}
+        >
+          OR
+        </span>
+
+        {/* Emoji */}
+        <input
+          type="text"
+          placeholder="🥤"
+          value={
+            sizeIcon.startsWith("http") ||
+            sizeIcon.startsWith("/")
+              ? ""
+              : sizeIcon
+          }
+          onChange={(e) => {
+            const updated = [...editItem.sizes];
+            updated[idx] = {
+              ...updated[idx],
+              icon: e.target.value,
+            };
+
+            setEditItem({
+              ...editItem,
+              sizes: updated,
+            });
+          }}
+          style={{
+            width: "60px",
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            textAlign: "center",
+            fontSize: "22px",
+            background: "#FAF7F2",
+          }}
+        />
+
+        {/* Size */}
+        <input
+          placeholder="Size"
+          value={sizeName}
+          onChange={(e) => {
+            const updated = [...editItem.sizes];
+            updated[idx] = {
+              ...updated[idx],
+              name: e.target.value,
+            };
+
+            setEditItem({
+              ...editItem,
+              sizes: updated,
+            });
+          }}
+          style={{
+            flex: 1.2,
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            background: "#FAF7F2",
+          }}
+        />
+
+        {/* Volume */}
+        <input
+          placeholder="Volume"
+          value={sizeDesc}
+          onChange={(e) => {
+            const updated = [...editItem.sizes];
+            updated[idx] = {
+              ...updated[idx],
+              desc: e.target.value,
+            };
+
+            setEditItem({
+              ...editItem,
+              sizes: updated,
+            });
+          }}
+          style={{
+            flex: 1.2,
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            background: "#FAF7F2",
+          }}
+        />
+
+        {/* Price */}
+        <input
+          type="number"
+          placeholder="₹"
+          value={sizePrice}
+          onChange={(e) => {
+            const updated = [...editItem.sizes];
+            updated[idx] = {
+              ...updated[idx],
+              price: Number(e.target.value),
+            };
+
+            setEditItem({
+              ...editItem,
+              sizes: updated,
+            });
+          }}
+          style={{
+            width: "90px",
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            background: "#FAF7F2",
+          }}
+        />
+
+        <button
+          type="button"
+          onClick={() => {
+            const updated = editItem.sizes.filter((_, i) => i !== idx);
+            setEditItem({
+              ...editItem,
+              sizes: updated,
+            });
+          }}
+          style={{
+            background: "#FFEBEE",
+            color: "#C62828",
+            border: "1px solid #FADBD8",
+            padding: "8px 12px",
+            borderRadius: "8px",
+            cursor: "pointer",
+          }}
+        >
+          🗑️
+        </button>
+      </div>
+    );
+  })}
+</div>
+              
 
               {/* Edit Milk Builder */}
 
@@ -3551,55 +3934,58 @@ async function uploadMilkIcon(file) {
     );
   })}
 </div>
-              
+
+              {/* 4. SPECIAL REQUESTS BUILDER (EDIT MODE) */}
+<div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+    <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Special Requests Options (Edit) +</label>
+    <button
+      type="button"
+      onClick={() => {
+        setEditItem({
+          ...editItem,
+          specialRequests: [...editItem.specialRequests, ""]
+        });
+      }}
+      style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+    >
+      + Add Special Request
+    </button>
+  </div>
+  {editItem.specialRequests.map((req, idx) => (
+    <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+      <input
+        placeholder="Special request (e.g. Less Ice, Extra Hot)"
+        value={req}
+        onChange={(e) => {
+          const updated = [...editItem.specialRequests];
+          updated[idx] = e.target.value;
+          setEditItem({ ...editItem, specialRequests: updated });
+        }}
+        style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
+      />
+      <button
+        type="button"
+        onClick={() => {
+          const updated = editItem.specialRequests.filter((_, i) => i !== idx);
+          setEditItem({ ...editItem, specialRequests: updated });
+        }}
+        style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
+        title="Delete Special Request"
+      >
+        🗑️ Delete
+      </button>
+    </div>
+  ))}
+</div>
+
  
               
                   
-              {/* Edit Special Requests Builder */}
-              <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Special Requests Options +</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditItem({
-                        ...editItem,
-                        specialRequests: [...editItem.specialRequests, ""]
-                      });
-                    }}
-                    style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
-                  >
-                    + Add Special Request
-                  </button>
-                </div>
-                {editItem.specialRequests.map((req, idx) => (
-                  <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
-                    <input
-                      placeholder="Special request (e.g. Less Ice)"
-                      value={req}
-                      onChange={(e) => {
-                        const updated = [...editItem.specialRequests];
-                        updated[idx] = e.target.value;
-                        setEditItem({ ...editItem, specialRequests: updated });
-                      }}
-                      style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #D8C8B8", fontSize: "13px", outline: "none", background: "#FAF7F2" }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const updated = editItem.specialRequests.filter((_, i) => i !== idx);
-                        setEditItem({ ...editItem, specialRequests: updated });
-                      }}
-                      style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
-                    >
-                      🗑️ Delete
-                    </button>
-                  </div>
-                ))}
-              </div>
+         
 
               {/* Edit Extras & Max Selection Builder */}
-              {/* 5. EXTRA CUSTOMS / TOPPINGS & MAX SELECTION BUILDER (EDIT MODE) */}
+          
 <div style={{ background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "10px" }}>
     <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Extra Customs / Toppings (Edit) +</label>
