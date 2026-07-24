@@ -918,37 +918,45 @@ if (
           </div>
 
           {/* EDIT WORKSPACE PANEL DESIGNS */}
+        
+          {/* EDIT WORKSPACE PANEL DESIGNS */}
           {editing && (
             <div style={{ background: "#fff", borderRadius: "16px", padding: "28px", border: "2px solid #C4956A", boxShadow: "0 10px 30px rgba(0,0,0,0.05)" }}>
               <h3 style={{ margin: "0 0 20px 0" }}>✏️ Adjust Configuration Matrix</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                <input
-  style={{
-    ...formInputStyle,
-    background:
-      Number(editing?.usageCount) > 0 ? "#F5F5F5" : "#FCFBFA",
-    cursor:
-      Number(editing?.usageCount) > 0 ? "not-allowed" : "text",
-  }}
-  value={editCoupon.code || ""}
-  disabled={Number(editing?.usageCount) > 0}
-  onChange={(e) =>
-    setEditCoupon({
-      ...editCoupon,
-      code: e.target.value.toUpperCase(),
-    })
-  }{Number(editing?.usageCount) > 0 && (
-  <p
-    style={{
-      color: "#C62828",
-      fontSize: "12px",
-      marginTop: "6px",
-    }}
-  >
-    Coupon code cannot be changed after it has been redeemed.
-  </p>
-)}
-/>
+                <div>
+                  <input
+                    style={{
+                      ...formInputStyle,
+                      background:
+                        Number(editing?.usageCount) > 0 ? "#F5F5F5" : "#FCFBFA",
+                      cursor:
+                        Number(editing?.usageCount) > 0 ? "not-allowed" : "text",
+                      width: "100%",
+                      boxSizing: "border-box",
+                    }}
+                    value={editCoupon.code || ""}
+                    disabled={Number(editing?.usageCount) > 0}
+                    onChange={(e) =>
+                      setEditCoupon({
+                        ...editCoupon,
+                        code: e.target.value.toUpperCase(),
+                      })
+                    }
+                  />
+                  {Number(editing?.usageCount) > 0 && (
+                    <p
+                      style={{
+                        color: "#C62828",
+                        fontSize: "12px",
+                        marginTop: "6px",
+                        marginBottom: "0",
+                      }}
+                    >
+                      Coupon code cannot be changed after it has been redeemed.
+                    </p>
+                  )}
+                </div>
                 
                 <select style={formInputStyle} value={editCoupon.audienceType || "all"} onChange={(e) => setEditCoupon({ ...editCoupon, audienceType: e.target.value })}>
                   <option value="all">🌐 Open Public</option>
