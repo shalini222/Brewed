@@ -5,11 +5,13 @@ import {
   addDoc, query, orderBy, onSnapshot, serverTimestamp 
 } from 'firebase/firestore';
 import { 
-  FiPlus, FiClock, FiGift, FiCoffee, FiRotateCcw, 
-  FiSliders, FiPieChart 
-} from 'react-icons/fi';
+  Plus, Clock, Gift, Coffee, RotateCcw, 
+  Sliders, PieChart 
+} from 'lucide-react';
 
-
+// ==========================================
+// 🔥 FIREBASE CONFIGURATION & INITIALIZATION
+// ==========================================
 
 
 
@@ -135,8 +137,8 @@ export default function WalletPage({ userId = "default_user_123", setPage }) {
       <div style={styles.header}>
         <h2 style={styles.title}>☕ Cafe Wallet</h2>
         <div style={styles.headerActions}>
-          <button style={styles.iconBtn} onClick={() => setActiveModal('insights')}><FiPieChart size={18} /></button>
-          <button style={styles.iconBtn} onClick={() => setActiveModal('settings')}><FiSliders size={18} /></button>
+          <button style={styles.iconBtn} onClick={() => setActiveModal('insights')}><PieChart size={18} /></button>
+          <button style={styles.iconBtn} onClick={() => setActiveModal('settings')}><Sliders size={18} /></button>
         </div>
       </div>
 
@@ -148,7 +150,7 @@ export default function WalletPage({ userId = "default_user_123", setPage }) {
             <h1 style={styles.balanceAmount}>₹{wallet.availableBalance.toFixed(2)}</h1>
           </div>
           <button style={styles.addMoneyBtn} onClick={() => setActiveModal('addMoney')}>
-            <FiPlus /> Add Money
+            <Plus size={16} /> Add Money
           </button>
         </div>
 
@@ -165,7 +167,7 @@ export default function WalletPage({ userId = "default_user_123", setPage }) {
       {/* 💸 Pending Refund Tracker Banner */}
       {wallet.pendingRefunds > 0 && (
         <div style={styles.refundBanner}>
-          <FiClock color="#d97706" size={20} />
+          <Clock color="#d97706" size={20} />
           <div>
             <strong>Active Refund Tracker</strong>
             <p style={{margin: '2px 0 0 0'}}>₹{wallet.pendingRefunds} is currently processing back to your wallet.</p>
@@ -222,10 +224,10 @@ export default function WalletPage({ userId = "default_user_123", setPage }) {
             <div key={tx.id} style={styles.txItem}>
               <div style={styles.txLeft}>
                 <div style={styles.txIcon}>
-                  {tx.type === 'PROMO_CREDIT' && <FiGift size={16} />}
-                  {tx.type === 'REFUND' && <FiRotateCcw size={16} />}
-                  {tx.type === 'ORDER_PAYMENT' && <FiCoffee size={16} />}
-                  {tx.type === 'ADD_MONEY' && <FiPlus size={16} />}
+                  {tx.type === 'PROMO_CREDIT' && <Gift size={16} />}
+                  {tx.type === 'REFUND' && <RotateCcw size={16} />}
+                  {tx.type === 'ORDER_PAYMENT' && <Coffee size={16} />}
+                  {tx.type === 'ADD_MONEY' && <Plus size={16} />}
                 </div>
                 <div>
                   <h4 style={styles.txTitle}>{tx.title}</h4>
@@ -348,7 +350,7 @@ export default function WalletPage({ userId = "default_user_123", setPage }) {
 }
 
 // ==========================================
-// 🎨 INLINE STYLES (Clean & Mobile-Friendly)
+// 🎨 INLINE STYLES
 // ==========================================
 const styles = {
   container: { maxWidth: '500px', margin: '0 auto', padding: '16px', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'sans-serif', boxSizing: 'border-box' },
@@ -356,7 +358,7 @@ const styles = {
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
   title: { fontSize: '20px', color: '#1e293b', margin: 0 },
   headerActions: { display: 'flex', gap: '8px' },
-  iconBtn: { background: '#fff', border: '1px solid #e2e8f0', padding: '8px', borderRadius: '8px', cursor: 'pointer' },
+  iconBtn: { background: '#fff', border: '1px solid #e2e8f0', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   balanceCard: { background: '#0f172a', color: '#fff', padding: '20px', borderRadius: '16px', marginBottom: '16px' },
   balanceMainRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   balanceLabel: { fontSize: '12px', color: '#94a3b8' },
@@ -388,7 +390,7 @@ const styles = {
   txDate: { fontSize: '10px', color: '#94a3b8', display: 'block', marginTop: '2px' },
   txAmount: { fontWeight: '700', fontSize: '13px' },
   emptyText: { fontSize: '12px', color: '#64748b', margin: 0 },
-  modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 100 },
+  modalOverlay: { position: 'fixed', top: '0', left: '0', right: '0', bottom: '0', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 100 },
   modalContent: { backgroundColor: '#fff', padding: '20px', borderRadius: '16px', width: '100%', maxWidth: '380px', boxSizing: 'border-box' },
   modalSub: { color: '#64748b', fontSize: '12px', margin: '4px 0 14px 0' },
   paymentMethodsGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px' },
@@ -402,7 +404,6 @@ const styles = {
   btnSecondary: { backgroundColor: '#e2e8f0', border: 'none', padding: '10px 14px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' },
   insightsGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' },
   insightBox: { backgroundColor: '#f1f5f9', padding: '10px', borderRadius: '8px', textAlign: 'center' },
-  insightBoxSpan: { fontSize: '10px', color: '#64748b', display: 'block' },
   savingsHighlight: { backgroundColor: '#ecfdf5', color: '#065f46', padding: '10px', borderRadius: '8px', fontSize: '12px', textAlign: 'center', marginBottom: '12px' },
   settingToggle: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#334155', marginBottom: '12px' }
 };
