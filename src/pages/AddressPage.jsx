@@ -48,6 +48,14 @@ export default function AddressPage({ setPage }) {
 
   const [form, setForm] = useState(emptyForm);
 
+
+
+
+
+
+
+const  PLACES_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
+
   useEffect(() => {
     if (!currentUser) return;
 
