@@ -499,6 +499,15 @@ async function addCoupon() {
   }
 
   return (
+    <>
+      <style>{`
+    @keyframes pulse {
+      0% { opacity: 0.55; }
+      50% { opacity: 1; }
+      100% { opacity: 0.55; }
+    }
+  `}</style>
+      
     <div style={{ minHeight: "100vh", background: "#FAF6F0", padding: "40px 4%", fontFamily: "system-ui, -apple-system, sans-serif" }}>
       
       {/* Dynamic Navigation Top Row */}
@@ -689,11 +698,22 @@ async function addCoupon() {
 
                   <button
   onClick={addCoupon}
-  disabled={saving}     style={{ background: "#3B1A08", color: "#fff", border: "none", padding: "14px", borderRadius: "10px", cursor: "pointer", fontWeight: "600", marginTop: "8px", width: "100%" }}>
-            {saving
-  ? "Creating Coupon..."
-  : "Create Coupon Code"}
-              </button>
+  disabled={saving}
+  style={{
+    background: saving ? "#A8A096" : "#3B1A08",
+    color: "#fff",
+    border: "none",
+    padding: "14px",
+    borderRadius: "10px",
+    cursor: saving ? "not-allowed" : "pointer",
+    fontWeight: "600",
+    marginTop: "8px",
+    width: "100%",
+    opacity: saving ? 0.75 : 1,
+  }}
+>
+  {saving ? "Creating Coupon..." : "Create Coupon Code"}
+</button>
             </div>
           </div>
 
@@ -771,8 +791,78 @@ async function addCoupon() {
 
           {/* DYNAMIC CARD VIEW GENERATION GRID LOOP */}
           {loading ? (
-            <p>Syncing secure data channels...</p>
-          ) : (
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+      gap: "20px",
+      marginBottom: "40px",
+    }}
+  >
+    {[1, 2, 3, 4, 5, 6].map((item) => (
+      <div
+        key={item}
+        style={{
+          background: "#fff",
+          borderRadius: "16px",
+          padding: "24px",
+          border: "1px solid #EAE1D4",
+          minHeight: "260px",
+          animation: "pulse 1.5s infinite ease-in-out",
+        }}
+      >
+        <div
+          style={{
+            height: "24px",
+            width: "55%",
+            background: "#ECE7DF",
+            borderRadius: "6px",
+            marginBottom: "18px",
+          }}
+        />
+
+        <div
+          style={{
+            height: "14px",
+            width: "90%",
+            background: "#F2EEE8",
+            borderRadius: "6px",
+            marginBottom: "10px",
+          }}
+        />
+
+        <div
+          style={{
+            height: "14px",
+            width: "70%",
+            background: "#F2EEE8",
+            borderRadius: "6px",
+            marginBottom: "10px",
+          }}
+        />
+
+        <div
+          style={{
+            height: "14px",
+            width: "80%",
+            background: "#F2EEE8",
+            borderRadius: "6px",
+            marginBottom: "30px",
+          }}
+        />
+
+        <div
+          style={{
+            height: "38px",
+            width: "100%",
+            background: "#ECE7DF",
+            borderRadius: "10px",
+          }}
+        />
+      </div>
+    ))}
+  </div>
+) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px", marginBottom: "40px" }}>
               {safeCoupons
                 .filter((c) => {
@@ -993,5 +1083,6 @@ async function addCoupon() {
 
       </div>
     </div>
+      </>
   );
 }
