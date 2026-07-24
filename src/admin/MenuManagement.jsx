@@ -2768,7 +2768,7 @@ async function uploadMilkIcon(file) {
               padding: "40px",
               borderRadius: "24px",
               width: "100%",
-              maxWidth: "800px",
+              maxWidth: "1400px",
               maxHeight: "90vh",
               overflowY: "auto",
               boxShadow: "0 25px 50px rgba(0, 0, 0, 0.25)",
