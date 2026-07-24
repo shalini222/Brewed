@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
+import { LoadScript } from "@react-google-maps/api";
 
 import {
   collection,
@@ -47,7 +48,9 @@ export default function AddressPage({ setPage }) {
   const [editingId, setEditingId] = useState(null);
 
   const [form, setForm] = useState(emptyForm);
+const [locationLoading, setLocationLoading] = useState(false);
 
+const [locationError, setLocationError] = useState("");
 
 
 
@@ -238,6 +241,63 @@ const  PLACES_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
     }
   }
 
+const useCurrentLocation = () => {
+
+if (!navigator.geolocation) {
+
+alert("Geolocation is not supported.");
+
+return;
+
+}
+
+setLocationLoading(true);
+
+setLocationError("");
+
+navigator.geolocation.getCurrentPosition(
+
+(position) => {
+
+const latitude = position.coords.latitude;
+
+const longitude = position.coords.longitude;
+
+setForm({
+
+...form,
+
+latitude,
+longitude
+
+});
+
+setLocationLoading(false);
+
+},
+
+(error) => {
+
+console.log(error);
+
+setLocationLoading(false);
+
+setLocationError(
+
+"Unable to fetch your location."
+
+);
+
+}
+
+);
+
+};
+
+
+
+
+  
   return (
   <div style={styles.page}>
 
@@ -280,6 +340,32 @@ const  PLACES_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
     </button>
 
 
+<button
+
+style={styles.locationButton}
+
+onClick={useCurrentLocation}
+
+>
+
+📍
+
+{locationLoading
+
+?
+
+"Getting Location..."
+
+:
+
+"Use Current Location"
+
+}
+
+</button>
+
+
+    
     {/* Address Form */}
 
     {showForm && (
@@ -290,7 +376,15 @@ const  PLACES_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
           {editingId ? "Edit Address" : "New Address"}
         </h2>
 
+       {locationError && (
 
+<p style={styles.error}>
+
+{locationError}
+
+</p>
+
+)}
         <input
           name="name"
           placeholder="Full Name"
@@ -751,7 +845,37 @@ const styles = {
     fontSize: "24px",
     color: "#1A0B05",
   },
+locationButton:{
 
+width:"100%",
+
+padding:"14px",
+
+border:"none",
+
+borderRadius:"12px",
+
+marginBottom:"15px",
+
+background:"#1A0B05",
+
+color:"#fff",
+
+fontWeight:"600",
+
+cursor:"pointer"
+
+},
+
+error:{
+
+marginBottom:"15px",
+
+color:"red",
+
+fontSize:"14px"
+
+},
   emptyText: {
     color: "#777",
     lineHeight: "1.6",
