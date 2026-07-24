@@ -4242,20 +4242,47 @@ async function uploadMilkIcon(file) {
               Highlight as Featured Menu Item
             </label>
 
-            <div style={{ display: "flex", gap: "15px" }}>
-              <button
-                onClick={updateProduct}
-                style={{ background: "#2E7D32", color: "#FFF", border: "none", padding: "14px 28px", borderRadius: "12px", fontWeight: 600, fontSize: "14px", cursor: "pointer" }}
-              >
-                💾 Save Changes
-              </button>
-              <button
-                onClick={() => setEditing(null)}
-                style={{ background: "#E8DFD5", color: "#3B1A08", border: "none", padding: "14px 28px", borderRadius: "12px", fontWeight: 600, fontSize: "14px", cursor: "pointer" }}
-              >
-                Cancel
-              </button>
-            </div>
+           <div
+  style={{
+    display: "flex",
+    gap: "15px",
+    marginTop: "30px",
+    marginBottom: "40px",
+    paddingBottom: "20px",
+  }}
+>
+  <button
+    onClick={updateProduct}
+    style={{
+      background: "#2E7D32",
+      color: "#FFF",
+      border: "none",
+      padding: "14px 28px",
+      borderRadius: "12px",
+      fontWeight: 600,
+      fontSize: "14px",
+      cursor: "pointer",
+    }}
+  >
+    💾 Save Changes
+  </button>
+
+  <button
+    onClick={() => setEditing(null)}
+    style={{
+      background: "#E8DFD5",
+      color: "#3B1A08",
+      border: "none",
+      padding: "14px 28px",
+      borderRadius: "12px",
+      fontWeight: 600,
+      fontSize: "14px",
+      cursor: "pointer",
+    }}
+  >
+    Cancel
+  </button>
+</div>
           </div>
         </div>
       )}
