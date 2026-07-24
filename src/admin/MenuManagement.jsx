@@ -1528,7 +1528,39 @@ async function uploadMilkIcon(file) {
 
 </div>
    
+<input
+  type="text"
+  placeholder="🥛"
+  value={
+    typeof milk === "string"
+      ? ""
+      : (milk.icon?.startsWith("http") || milk.icon?.startsWith("/")
+          ? ""
+          : milk.icon || "")
+  }
+  onChange={(e) => {
+    const updated = [...newItem.milkOptions];
 
+    updated[idx] = {
+      ...updated[idx],
+      icon: e.target.value,
+    };
+
+    setNewItem({
+      ...newItem,
+      milkOptions: updated,
+    });
+  }}
+  style={{
+    width: "60px",
+    padding: "10px",
+    borderRadius: "8px",
+    border: "1px solid #D8C8B8",
+    textAlign: "center",
+    fontSize: "22px",
+    background: "#FAF7F2",
+  }}
+/>
 
                     
                     
