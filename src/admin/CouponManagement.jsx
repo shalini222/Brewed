@@ -203,7 +203,24 @@ export default function CouponManagement({ setPage, setActivePage }) {
   async function loadCoupons() {
     try {
       const couponSnapshot = await getDocs(collection(db, "coupons"));
-      setCoupons(couponSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      const couponList = couponSnapshot.docs.map((doc) => ({
+  id: doc.id,
+  ...doc.data(),
+}));
+
+couponList.forEach((coupon) => {
+  if (
+    coupon.active &&
+    Number(coupon.usageLimit) > 0 &&
+    Number(coupon.usageCount) >= Number(coupon.usageLimit)
+  ) {
+    updateDoc(doc(db, "coupons", coupon.id), {
+      active: false,
+    });
+  }
+});
+
+setCoupons(couponList);
     } catch (e) {
       console.error("Firestore loading coupons error:", e);
     }
@@ -313,6 +330,79 @@ async function addCoupon() {
       return;
     }
 
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+if (newCoupon.starts && newCoupon.expires) {
+  const startDate = new Date(newCoupon.starts);
+  const expiryDate = new Date(newCoupon.expires);
+
+  if (expiryDate < startDate) {
+    alert("Expiry date cannot be before the start date.");
+    return;
+  }
+}
+
+if (newCoupon.expires) {
+  const expiryDate = new Date(newCoupon.expires);
+
+  if (expiryDate < today) {
+    alert("Expiry date cannot be in the past.");
+    return;
+  }
+}
+
+const discountValue = Number(newCoupon.value);
+const minOrder = Number(newCoupon.minOrder);
+const maxDiscount = Number(newCoupon.maxDiscount || 0);
+const usageLimit = Number(newCoupon.usageLimit || 0);
+const perUserLimit = Number(newCoupon.perUserLimit || 1);
+
+// Discount validation
+if (newCoupon.type === "percentage") {
+  if (discountValue <= 0 || discountValue > 100) {
+    alert("Percentage discount must be between 1% and 100%.");
+    setSaving(false);
+    return;
+  }
+} else {
+  if (discountValue <= 0) {
+    alert("Fixed discount must be greater than ₹0.");
+    setSaving(false);
+    return;
+  }
+}
+
+// Minimum order validation
+if (minOrder <= 0) {
+  alert("Minimum order must be greater than ₹0.");
+  setSaving(false);
+  return;
+}
+
+// Max discount validation
+if (maxDiscount < 0) {
+  alert("Maximum discount cannot be negative.");
+  setSaving(false);
+  return;
+}
+
+// Usage limit validation
+if (usageLimit < 0) {
+  alert("Usage limit cannot be negative.");
+  setSaving(false);
+  return;
+}
+
+// Per-user limit validation
+if (perUserLimit <= 0) {
+  alert("Per-user limit must be at least 1.");
+  setSaving(false);
+  return;
+}
+
+
+    
     const payload = {
       code: newCoupon.code.toUpperCase(),
       type: newCoupon.type,
@@ -379,12 +469,34 @@ async function addCoupon() {
     loadCoupons();
   }
 
-  async function toggleCoupon(coupon) {
-    const nextState = !coupon.active;
-    await updateDoc(doc(db, "coupons", coupon.id), { active: nextState });
-    await createAuditEntry(nextState ? "ENABLE_CAMPAIGN" : "DISABLE_CAMPAIGN", coupon.code);
-    loadCoupons();
+async function toggleCoupon(coupon) {
+  // Prevent enabling expired coupons
+  if (!coupon.active && coupon.expires) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const expiry = new Date(coupon.expires);
+    expiry.setHours(0, 0, 0, 0);
+
+    if (expiry < today) {
+      alert("This coupon has expired and cannot be enabled.");
+      return;
+    }
   }
+
+  const nextState = !coupon.active;
+
+  await updateDoc(doc(db, "coupons", coupon.id), {
+    active: nextState,
+  });
+
+  await createAuditEntry(
+    nextState ? "ENABLE_CAMPAIGN" : "DISABLE_CAMPAIGN",
+    coupon.code
+  );
+
+  await loadCoupons();
+}
 
   async function updateCoupon() {
     if (!editing) return;
@@ -722,7 +834,34 @@ async function addCoupon() {
             <div style={{ background: "#fff", borderRadius: "16px", padding: "28px", border: "2px solid #C4956A", boxShadow: "0 10px 30px rgba(0,0,0,0.05)" }}>
               <h3 style={{ margin: "0 0 20px 0" }}>✏️ Adjust Configuration Matrix</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                <input style={formInputStyle} value={editCoupon.code || ""} onChange={(e) => setEditCoupon({ ...editCoupon, code: e.target.value.toUpperCase() })} />
+                <input
+  style={{
+    ...formInputStyle,
+    background:
+      Number(editing?.usageCount) > 0 ? "#F5F5F5" : "#FCFBFA",
+    cursor:
+      Number(editing?.usageCount) > 0 ? "not-allowed" : "text",
+  }}
+  value={editCoupon.code || ""}
+  disabled={Number(editing?.usageCount) > 0}
+  onChange={(e) =>
+    setEditCoupon({
+      ...editCoupon,
+      code: e.target.value.toUpperCase(),
+    })
+  }{Number(editing?.usageCount) > 0 && (
+  <p
+    style={{
+      color: "#C62828",
+      fontSize: "12px",
+      marginTop: "6px",
+    }}
+  >
+    Coupon code cannot be changed after it has been redeemed.
+  </p>
+)}
+/>
+                
                 <select style={formInputStyle} value={editCoupon.audienceType || "all"} onChange={(e) => setEditCoupon({ ...editCoupon, audienceType: e.target.value })}>
                   <option value="all">🌐 Open Public</option>
                   <option value="new_users_only">🆕 First-Order Target</option>
@@ -953,9 +1092,37 @@ async function addCoupon() {
                             </div>
                           </div>
 
-                          <span style={{ background: coupon?.active ? "#E8F5E9" : "#FFEBEE", color: coupon?.active ? "#2E7D32" : "#C62828", padding: "4px 10px", borderRadius: "20px", fontWeight: "700", fontSize: "12px" }}>
-                            {coupon?.active ? "● Active" : "○ Offline"}
-                          </span>
+                          <span
+  style={{
+    background:
+      Number(coupon?.usageLimit) > 0 &&
+      Number(coupon?.usageCount) >= Number(coupon?.usageLimit)
+        ? "#424242"
+        : coupon?.active
+        ? "#E8F5E9"
+        : "#FFEBEE",
+
+    color:
+      Number(coupon?.usageLimit) > 0 &&
+      Number(coupon?.usageCount) >= Number(coupon?.usageLimit)
+        ? "#fff"
+        : coupon?.active
+        ? "#2E7D32"
+        : "#C62828",
+
+    padding: "4px 10px",
+    borderRadius: "20px",
+    fontWeight: "700",
+    fontSize: "12px",
+  }}
+>
+  {Number(coupon?.usageLimit) > 0 &&
+  Number(coupon?.usageCount) >= Number(coupon?.usageLimit)
+    ? "Exhausted"
+    : coupon?.active
+    ? "Active"
+    : "Disabled"}
+</span>
                         </div>
 
                         {/* Tag Badges Metrics Panel */}
