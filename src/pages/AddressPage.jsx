@@ -52,7 +52,7 @@ export default function AddressPage({ setPage }) {
 
 
 
-
+const MAP_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
 const GEOLOCATION_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
 const  PLACES_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
 
