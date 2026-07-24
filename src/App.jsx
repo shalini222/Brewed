@@ -28,6 +28,7 @@ import ReservationPage from "./pages/ReservationPage";
 import CustomersAdminPage from "./pages/CustomersAdminPage";
 import SettingsAdminPage from "./pages/SettingsAdminPage";
 import AddressPage from "./pages/AddressPage";
+import WalletPage from "./pages/WalletPage";
 
 
 
@@ -72,6 +73,7 @@ export default function App() {
     "reservation",
     "settingsAdmin",
     "address",
+    "wallet",
     
     
   ];
@@ -232,7 +234,9 @@ export default function App() {
           {page==="address" && (
 <AddressPage setPage={setPage}/>
 )}
-
+{page==="wallet" && (
+<WalletPage setPage={setPage}/>
+)}
           
           
           
