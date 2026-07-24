@@ -901,7 +901,7 @@ async function uploadMilkIcon(file) {
 
           {setPage && (
             <button
-              onClick={() => setPage("Menu")}
+              onClick={() => setPage("menu")}
               style={{
                 padding: "10px 20px",
                 backgroundColor: "#3B1A08",
@@ -2795,6 +2795,277 @@ async function uploadMilkIcon(file) {
 
 
 
+              {/* Edit Sweetness Builder */}
+<div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+    <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>
+      Temperature Options (Edit) +
+    </label>
+
+    <button
+      type="button"
+      onClick={() => {
+        setEditItem({
+          ...editItem,
+          temperatureOptions: [
+            ...editItem.temperatureOptions,
+            {
+              icon: "",
+              name: "",
+              description: "",
+            },
+          ],
+        });
+      }}
+      style={{
+        background: "#3B1A08",
+        color: "#FFF",
+        border: "none",
+        padding: "6px 14px",
+        borderRadius: "8px",
+        fontWeight: 600,
+        fontSize: "12px",
+        cursor: "pointer",
+      }}
+    >
+      + Add Temperature
+    </button>
+  </div>
+
+  {editItem.temperatureOptions.map((temp, idx) => {
+    const tempIcon =
+      typeof temp === "string" ? "" : temp.icon || "";
+
+    const tempName =
+      typeof temp === "string" ? temp : temp.name || "";
+
+    const tempDescription =
+      typeof temp === "string"
+        ? ""
+        : temp.description || "";
+
+    return (
+      <div
+        key={idx}
+        style={{
+          display: "flex",
+          gap: "10px",
+          alignItems: "center",
+          marginBottom: "10px",
+        }}
+      >
+        {/* Preview */}
+        <div
+          style={{
+            width: 45,
+            height: 45,
+            borderRadius: 10,
+            border: "1px solid #D8C8B8",
+            background: "#FAF7F2",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          {tempIcon ? (
+            tempIcon.startsWith("http") ||
+            tempIcon.startsWith("/") ? (
+              <img
+                src={tempIcon}
+                alt=""
+                style={{
+                  width: 28,
+                  height: 28,
+                  objectFit: "contain",
+                }}
+              />
+            ) : (
+              <span style={{ fontSize: 24 }}>
+                {tempIcon}
+              </span>
+            )
+          ) : (
+            "☕"
+          )}
+        </div>
+
+        {/* Hidden Upload */}
+        <input
+          id={`edit-temp-upload-${idx}`}
+          type="file"
+          accept=".png,.svg,.jpg,.jpeg,.webp"
+          style={{ display: "none" }}
+          onChange={async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const url = await uploadMilkIcon(file);
+
+            const updated = [...editItem.temperatureOptions];
+
+            updated[idx] = {
+              ...updated[idx],
+              icon: url,
+            };
+
+            setEditItem({
+              ...editItem,
+              temperatureOptions: updated,
+            });
+          }}
+        />
+
+        {/* Upload Button */}
+        <label
+          htmlFor={`edit-temp-upload-${idx}`}
+          style={{
+            padding: "10px 14px",
+            background: "#3B1A08",
+            color: "#FFF",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontWeight: 600,
+            fontSize: "12px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          📁 Upload
+        </label>
+
+        <span
+          style={{
+            fontWeight: 700,
+            color: "#8B6A4A",
+            whiteSpace: "nowrap",
+          }}
+        >
+          OR
+        </span>
+
+        {/* Emoji */}
+        <input
+          type="text"
+          placeholder="☕"
+          value={
+            tempIcon.startsWith("http") ||
+            tempIcon.startsWith("/")
+              ? ""
+              : tempIcon
+          }
+          onChange={(e) => {
+            const updated = [...editItem.temperatureOptions];
+
+            updated[idx] = {
+              ...updated[idx],
+              icon: e.target.value,
+            };
+
+            setEditItem({
+              ...editItem,
+              temperatureOptions: updated,
+            });
+          }}
+          style={{
+            width: "60px",
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            textAlign: "center",
+            fontSize: "22px",
+            background: "#FAF7F2",
+          }}
+        />
+
+        {/* Temperature Name */}
+        <input
+          placeholder="Temperature (e.g. Hot)"
+          value={tempName}
+          onChange={(e) => {
+            const updated = [...editItem.temperatureOptions];
+
+            updated[idx] = {
+              ...updated[idx],
+              name: e.target.value,
+            };
+
+            setEditItem({
+              ...editItem,
+              temperatureOptions: updated,
+            });
+          }}
+          style={{
+            flex: 1,
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            fontSize: "13px",
+            background: "#FAF7F2",
+          }}
+        />
+
+        {/* Description */}
+        <input
+          placeholder="Description"
+          value={tempDescription}
+          onChange={(e) => {
+            const updated = [...editItem.temperatureOptions];
+
+            updated[idx] = {
+              ...updated[idx],
+              description: e.target.value,
+            };
+
+            setEditItem({
+              ...editItem,
+              temperatureOptions: updated,
+            });
+          }}
+          style={{
+            flex: 2,
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            fontSize: "13px",
+            background: "#FAF7F2",
+          }}
+        />
+
+        {/* Delete */}
+        <button
+          type="button"
+          onClick={() => {
+            const updated = editItem.temperatureOptions.filter(
+              (_, i) => i !== idx
+            );
+
+            setEditItem({
+              ...editItem,
+              temperatureOptions: updated,
+            });
+          }}
+          style={{
+            background: "#FFEBEE",
+            color: "#C62828",
+            border: "1px solid #FADBD8",
+            padding: "8px 12px",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontSize: "13px",
+          }}
+          title="Delete Temperature"
+        >
+          🗑️
+        </button>
+      </div>
+    );
+  })}
+</div>
+
+
+
+              
+
               
               {/* Edit Sweetness Builder */}
               <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
@@ -2945,201 +3216,9 @@ async function uploadMilkIcon(file) {
           })}
               </div>
 
-{/*  EDIT TEMPERATURE OPTIONS BUILDER */}
 
-<div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
-  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-    <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>
-      Temperature Options +
-    </label>
-
-    <button
-      type="button"
-      onClick={() => {
-        setEditItem({
-          ...editItem,
-          temperatureOptions: [
-            ...(editItem.temperatureOptions || []),
-            {
-              icon: "☕",
-              name: "",
-              description: "",
-            },
-          ],
-        });
-      }}
-      style={{
-        background: "#3B1A08",
-        color: "#FFF",
-        border: "none",
-        padding: "6px 14px",
-        borderRadius: "8px",
-        fontWeight: 600,
-        fontSize: "12px",
-        cursor: "pointer",
-      }}
-    >
-      + Add Temperature
-    </button>
-  </div>
-
-  {(editItem.temperatureOptions || []).map((temp, idx) => {
-    const tempIcon =
-      typeof temp === "string" ? "☕" : temp.icon || "☕";
-
-    const tempName =
-      typeof temp === "string" ? temp : temp.name || "";
-
-    const tempDescription =
-      typeof temp === "string"
-        ? ""
-        : temp.description || "";
-
-    return (
-      <div
-        key={idx}
-        style={{
-          display: "flex",
-          gap: "10px",
-          alignItems: "center",
-          marginBottom: "8px",
-        }}
-      >
-        <input
-          placeholder="Emoji"
-          value={tempIcon}
-          onChange={(e) => {
-            const updated = [...editItem.temperatureOptions];
-
-            if (typeof updated[idx] === "string") {
-              updated[idx] = {
-                icon: e.target.value,
-                name: updated[idx],
-                description: "",
-              };
-            } else {
-              updated[idx] = {
-                ...updated[idx],
-                icon: e.target.value,
-              };
-            }
-
-            setEditItem({
-              ...editItem,
-              temperatureOptions: updated,
-            });
-          }}
-          style={{
-            width: "70px",
-            padding: "10px",
-            borderRadius: "8px",
-            border: "1px solid #D8C8B8",
-            fontSize: "13px",
-            outline: "none",
-            background: "#FAF7F2",
-          }}
-        />
-
-        <input
-          placeholder="Temperature (e.g. Hot)"
-          value={tempName}
-          onChange={(e) => {
-            const updated = [...editItem.temperatureOptions];
-
-            if (typeof updated[idx] === "string") {
-              updated[idx] = {
-                icon: "☕",
-                name: e.target.value,
-                description: "",
-              };
-            } else {
-              updated[idx] = {
-                ...updated[idx],
-                name: e.target.value,
-              };
-            }
-
-            setEditItem({
-              ...editItem,
-              temperatureOptions: updated,
-            });
-          }}
-          style={{
-            flex: 1,
-            padding: "10px",
-            borderRadius: "8px",
-            border: "1px solid #D8C8B8",
-            fontSize: "13px",
-            outline: "none",
-            background: "#FAF7F2",
-          }}
-        />
-
-        <input
-          placeholder="Description"
-          value={tempDescription}
-          onChange={(e) => {
-            const updated = [...editItem.temperatureOptions];
-
-            updated[idx] = {
-              ...updated[idx],
-              description: e.target.value,
-            };
-
-            setEditItem({
-              ...editItem,
-              temperatureOptions: updated,
-            });
-          }}
-          style={{
-            flex: 2,
-            padding: "10px",
-            borderRadius: "8px",
-            border: "1px solid #D8C8B8",
-            fontSize: "13px",
-            outline: "none",
-            background: "#FAF7F2",
-          }}
-        />
-
-        <button
-          type="button"
-          onClick={() => {
-            const updated = editItem.temperatureOptions.filter(
-              (_, i) => i !== idx
-            );
-
-            setEditItem({
-              ...editItem,
-              temperatureOptions: updated,
-            });
-          }}
-          style={{
-            background: "#FFEBEE",
-            color: "#C62828",
-            border: "1px solid #FADBD8",
-            padding: "8px 12px",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontSize: "13px",
-          }}
-        >
-          🗑️ Delete
-        </button>
-      </div>
-    );
-  })}
-</div>
-
-      
-        
           
-            
-
-
-
-              
-
+        
               {/* Edit Special Requests Builder */}
               <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
