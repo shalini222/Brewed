@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import AdminDashboard from "../admin/AdminDashboard";
 import MenuManagement from "../admin/MenuManagement";
-import OrderManagement from "../admin/OrderManagement";
+import CouponManagement from "../admin/CouponManagement";
 
 
 export default function AdminPage({ setPage }) {
@@ -41,8 +41,8 @@ export default function AdminPage({ setPage }) {
         />
       )} 
 
-        {activePage === "orderadmin" && (
-        <OrderManagement
+        {activePage === "coupnadmin" && (
+        <CouponManagement
           setPage={setPage}
           activePage={activePage}
           setActivePage={setActivePage}
