@@ -1431,7 +1431,7 @@ export default function MenuManagement({ setPage, setActivePage }) {
                   onClick={() => {
                     setNewItem({
                       ...newItem,
-                      milkOptions: [...newItem.milkOptions, { name: "", price: 0 }]
+                      milkOptions: [...newItem.milkOptions, { name: "", price: 0 , icon: ""}]
                     });
                   }}
                   style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
@@ -1444,6 +1444,34 @@ export default function MenuManagement({ setPage, setActivePage }) {
                 const milkPrice = typeof milk === "string" ? 0 : milk.price ?? 0;
                 return (
                   <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                   <input
+  placeholder="🥛 / Image URL"
+  value={milk.icon || ""}
+  onChange={(e) => {
+    const updated = [...newItem.milkOptions];
+
+    updated[idx] = {
+      ...updated[idx],
+      icon: e.target.value,
+    };
+
+    setNewItem({
+      ...newItem,
+      milkOptions: updated,
+    });
+  }}
+  style={{
+    width: "110px",
+    padding: "10px",
+    borderRadius: "8px",
+    border: "1px solid #D8C8B8",
+    fontSize: "13px",
+    background: "#FAF7F2",
+  }}
+/>
+                    
+                    
+                    
                     <input
                       placeholder="Milk type (e.g. Oat Milk)"
                       value={milkName}
