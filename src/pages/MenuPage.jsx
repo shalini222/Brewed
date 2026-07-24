@@ -438,29 +438,24 @@ setBestSellerIds(
               </div>
 
               {/* Fix: Renders EMOJI layered cleanly directly over IMG asset */}
-              <div style={styles.cardVisualMediaContainer}>
-                {(item.img || item.image) && (
-                  <img
-                    src={item.img || item.image}
-                    alt={item.name}
-                    style={{ width: "100%", height: "220px", objectFit: "cover", display: "block", position: "absolute", top: 0, left: 0, zIndex: 1 }}
-                  />
-                )}
-                <span style={{ 
-                  zIndex: 2, 
-                  position: "relative",
-                  backgroundColor: (item.img || item.image) ? "rgba(255, 255, 255, 0.85)" : "transparent",
-                  padding: (item.img || item.image) ? "6px 12px" : "0px",
-                  borderRadius: "999px",
-                  backdropFilter: (item.img || item.image) ? "blur(4px)" : "none",
-                  boxShadow: (item.img || item.image) ? "0 4px 12px rgba(0,0,0,0.1)" : "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}>
-                  {item.emoji || "☕"}
-                </span>
-              </div>
+             <div style={styles.cardVisualMediaContainer}>
+  {item.img || item.image ? (
+    <img
+      src={item.img || item.image}
+      alt={item.name}
+      style={{
+        width: "100%",
+        height: "220px",
+        objectFit: "cover",
+        display: "block",
+      }}
+    />
+  ) : (
+    <span>
+      {item.emoji || "☕"}
+    </span>
+  )}
+</div>
 
               {item.available === false && (
                 <div style={{ position: "absolute", top: 12, left: item.isFeatured ? 95 : 12, background: "#B3261E", color: "#fff", padding: "6px 12px", borderRadius: "999px", fontSize: 11, fontWeight: 600, zIndex: 3 }}>
