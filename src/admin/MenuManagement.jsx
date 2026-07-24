@@ -338,7 +338,10 @@ export default function MenuManagement({ setPage, setActivePage }) {
 const UPLOAD_PRESET = "brewed_menu";
 const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
 
-async function uploadMilkIcon(file) {
+
+  {/*will change the name to uploadItemIcon later and corresponding */}
+  
+  async function uploadMilkIcon(file) {
   const formData = new FormData();
 
   formData.append("file", file);
