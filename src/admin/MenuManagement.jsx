@@ -2765,11 +2765,11 @@ async function uploadMilkIcon(file) {
           <div
             style={{
               background: "#FFFFFF",
-              padding: "40px",
+              padding: "40px 40px 70px",
               borderRadius: "24px",
               width: "100%",
               maxWidth: "1400px",
-              maxHeight: "90vh",
+              maxHeight: "95vh",
               overflowY: "auto",
               boxShadow: "0 25px 50px rgba(0, 0, 0, 0.25)",
               border: "2px solid #C4956A",
