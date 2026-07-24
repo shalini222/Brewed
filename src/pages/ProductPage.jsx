@@ -2371,38 +2371,60 @@ gap:30px;
 
               <div className="price">₹{singlePrice}</div>
 
-              {/* SIZE SELECTION SECTION */}
-              <div className="option-section">
-                <h2 className="option-title">Choose Your Size</h2>
-                <div className="size-grid">
-  {product.sizes?.map((item) => (
-    <div
-      key={item.name}
-      className={`size-card ${
-        size === item.name ? "active" : ""
-      }`}
-      onClick={() => setSize(item.name)}
-    >
-      <CupSoda className="cup-icon" />
+    {/* SIZE SELECTION SECTION */}
+<div className="option-section">
+  <h2 className="option-title">Choose Your Size</h2>
 
-      <div className="size-name">
-        {item.name}
+  <div className="size-grid">
+    {product.sizes?.map((item) => (
+      <div
+        key={item.name}
+        className={`size-card ${
+          size === item.name ? "active" : ""
+        }`}
+        onClick={() => setSize(item.name)}
+      >
+        <div className="cup-icon">
+          {item.icon ? (
+            item.icon.startsWith("http") ||
+            item.icon.startsWith("/") ? (
+              <img
+                src={item.icon}
+                alt={item.name}
+                style={{
+                  width: 32,
+                  height: 32,
+                  objectFit: "contain",
+                }}
+              />
+            ) : (
+              <span style={{ fontSize: 28 }}>
+                {item.icon}
+              </span>
+            )
+          ) : (
+            <CupSoda className="cup-icon" />
+          )}
+        </div>
+
+        <div className="size-name">
+          {item.name}
+        </div>
+
+        <div className="size-volume">
+          {item.desc}
+        </div>
+
+        <div className="size-price">
+          {item.price > 0
+            ? `+₹${item.price}`
+            : item.price < 0
+            ? `-₹${Math.abs(item.price)}`
+            : "No extra charge"}
+        </div>
       </div>
-
-      <div className="size-volume">
-        {item.volume}
-      </div>
-
-      <div className="size-price">
-  {item.price > 0
-    ? `+₹${item.price}`
-    : item.price < 0
-      ? `-₹${Math.abs(item.price)}`
-      : "No extra charge"}
-</div>
-    </div>
-  ))}
-</div>
+    ))}
+  </div>
 </div>
 
               {/* MILK OPTIONS SECTION */}
