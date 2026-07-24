@@ -2406,7 +2406,7 @@ gap:30px;
 </div>
 
               {/* MILK OPTIONS SECTION */}
-              {product.milkOptions?.length > 0 && (
+             {product.milkOptions?.length > 0 && (
   <div className="option-section">
     <h2 className="option-title">
       Choose Your Milk
@@ -2423,20 +2423,28 @@ gap:30px;
         >
           <div className="milk-header">
             <div className="milk-emoji">
-  {option.icon?.startsWith("http") ? (
-    <img
-      src={option.icon}
-      alt={option.name}
-      style={{
-        width: 30,
-        height: 30,
-        objectFit: "contain",
-      }}
-    />
-  ) : (
-    option.icon || "🥛"
-  )}
-</div>
+              {option.icon?.startsWith("http") ||
+              option.icon?.startsWith("/") ? (
+                <img
+                  src={option.icon}
+                  alt={option.name}
+                  style={{
+                    width: 30,
+                    height: 30,
+                    objectFit: "contain",
+                  }}
+                />
+              ) : (
+                <span
+                  style={{
+                    fontSize: 30,
+                    lineHeight: 1,
+                  }}
+                >
+                  {option.icon || "🥛"}
+                </span>
+              )}
+            </div>
 
             <div>
               <div className="milk-name">
@@ -2450,7 +2458,7 @@ gap:30px;
           </div>
 
           <div className="milk-price">
-            {option.price > 0
+            {Number(option.price) > 0
               ? `+₹${option.price}`
               : "Free"}
           </div>
