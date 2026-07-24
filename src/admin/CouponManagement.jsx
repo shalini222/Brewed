@@ -35,6 +35,7 @@ export default function CouponManagement({ setPage, setActivePage }) {
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
+  const [saving, setSaving] = useState(false);
   const [revenueTimeframe, setRevenueTimeframe] = useState("30days");
 
   // State managers for Bulk Selection Operations
@@ -291,11 +292,45 @@ export default function CouponManagement({ setPage, setActivePage }) {
     }
   }
 
-  async function addCoupon() {
-    if (!newCoupon.code || !newCoupon.value || !newCoupon.minOrder) {
-      alert("Please complete all required fields.");
-      return;
-    }
+async function addCoupon() {
+  if (saving) return;
+  setSaving(true);
+
+  if (!newCoupon.code || !newCoupon.value || !newCoupon.minOrder) {
+    alert("Please complete all required fields.");
+    setSaving(false);
+    return;
+  }
+
+  const codeExists = safeCoupons.some(
+    (coupon) =>
+      (coupon.code || "").toUpperCase() ===
+      newCoupon.code.toUpperCase()
+  );
+
+  if (codeExists) {
+    alert("A coupon with this code already exists.");
+    setSaving(false);
+    return;
+  }
+
+  const payload = {
+    // your existing payload object
+  };
+
+  try {
+    await addDoc(collection(db, "coupons"), payload);
+    await createAuditEntry("CREATE_CAMPAIGN", payload.code, {
+      category: payload.category,
+    });
+
+    // your existing setNewCoupon(...)
+    await loadCoupons();
+    alert("Coupon created successfully!");
+  } finally {
+    setSaving(false);
+  }
+}
 
     const payload = {
       code: newCoupon.code.toUpperCase(),
@@ -369,6 +404,7 @@ export default function CouponManagement({ setPage, setActivePage }) {
     alert("Coupon updated!");
     setEditing(null);
     loadCoupons();
+
   }
 
   // --- STAT CARDS WORKSPACE RENDERS ---
@@ -548,12 +584,12 @@ export default function CouponManagement({ setPage, setActivePage }) {
               <div>
                 <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>Category Core Logic Class</label>
                 <select style={formInputStyle} value={newCoupon.category} onChange={(e) => setNewCoupon({ ...newCoupon, category: e.target.value })}>
-                  <option value="General">🏷️ General Release Template</option>
-                  <option value="New User">👤 First-Order / New User Trigger</option>
-                  <option value="Festival">🎉 Seasonal Festival Allocation</option>
-                  <option value="Birthday">🎂 Automated Birthday Sequence</option>
-                  <option value="Referral">🤝 Dynamic Referral Bonus Reward</option>
-                  <option value="Loyalty">💎 Milestone Loyalty Protocol</option>
+                  <option value="General">🏷️ General </option>
+                  <option value="New User">👤 First-Order / New User </option>
+                  <option value="Festival">🎉 Seasonal </option>
+                  <option value="Birthday">🎂 Birthday </option>
+                  <option value="Referral">🤝 Referral Reward</option>
+                  <option value="Loyalty">💎 Milestone Loyalty </option>
                 </select>
               </div>
 
@@ -645,8 +681,12 @@ export default function CouponManagement({ setPage, setActivePage }) {
                 </select>
               </div>
 
-              <button onClick={addCoupon} style={{ background: "#3B1A08", color: "#fff", border: "none", padding: "14px", borderRadius: "10px", cursor: "pointer", fontWeight: "600", marginTop: "8px", width: "100%" }}>
-                🚀 Launch Automated Matrix Code
+                  <button
+  onClick={addCoupon}
+  disabled={saving}     style={{ background: "#3B1A08", color: "#fff", border: "none", padding: "14px", borderRadius: "10px", cursor: "pointer", fontWeight: "600", marginTop: "8px", width: "100%" }}>
+            {saving
+  ? "Creating Coupon..."
+  : "Create Coupon Code"}
               </button>
             </div>
           </div>
@@ -729,8 +769,70 @@ export default function CouponManagement({ setPage, setActivePage }) {
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px", marginBottom: "40px" }}>
               {safeCoupons
-                .filter((c) => (c?.code || "").toLowerCase().includes(search.toLowerCase()) && (filter === "All" || (filter === "Active" ? c?.active : !c?.active)))
-                .sort((a, b) => sortBy === "code" ? (a?.code || "").localeCompare(b?.code || "") : sortBy === "used" ? (b?.usageCount || 0) - (a?.usageCount || 0) : (b?.createdAt?.seconds || 0) - (a?.createdAt?.seconds || 0))
+                .filter((c) => {
+  const matchesSearch = (c?.code || "")
+    .toLowerCase()
+    .includes(search.toLowerCase());
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const expiryDate = c?.expires
+    ? new Date(c.expires)
+    : null;
+
+  if (expiryDate) {
+    expiryDate.setHours(0, 0, 0, 0);
+  }
+
+  const isExpired =
+    expiryDate && expiryDate < today;
+
+  const matchesFilter =
+    filter === "All"
+      ? true
+      : filter === "Active"
+      ? c?.active
+      : filter === "Disabled"
+      ? !c?.active
+      : filter === "Expired"
+      ? isExpired
+      : true;
+
+  return matchesSearch && matchesFilter;
+})
+                .filter((c) => {
+  const matchesSearch = (c?.code || "")
+    .toLowerCase()
+    .includes(search.toLowerCase());
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const expiryDate = c?.expires
+    ? new Date(c.expires)
+    : null;
+
+  if (expiryDate) {
+    expiryDate.setHours(0, 0, 0, 0);
+  }
+
+  const isExpired =
+    expiryDate && expiryDate < today;
+
+  const matchesFilter =
+    filter === "All"
+      ? true
+      : filter === "Active"
+      ? c?.active
+      : filter === "Disabled"
+      ? !c?.active
+      : filter === "Expired"
+      ? isExpired
+      : true;
+
+  return matchesSearch && matchesFilter;
+})
                 .map((coupon) => {
                   const styleSheet = getCategoryColor(coupon?.category);
                   const timeSpecs = getExpiryStatus(coupon?.expires, coupon?.starts);
