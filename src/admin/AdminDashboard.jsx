@@ -578,7 +578,7 @@ return (
         },
         {
           title: "🎟 Coupons",
-          page: "couponsadmin",
+          page: "couponadmin",
         },
         {
           title: "🔔 Notifications",
