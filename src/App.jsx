@@ -24,7 +24,6 @@ import TermsPage from "./pages/TermsPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import DeleteAccountPage from "./pages/DeleteAccountPage";
 import AdminPage from "./pages/AdminPage";
-import CouponsAdminPage from "./pages/CouponsAdminPage";
 import ReservationPage from "./pages/ReservationPage";
 import CustomersAdminPage from "./pages/CustomersAdminPage";
 import SettingsAdminPage from "./pages/SettingsAdminPage";
@@ -69,7 +68,6 @@ export default function App() {
     "change-password",
     "deleteAccount",
     "admin",
-    "couponsadmin",
     "customersadmin",
     "reservation",
     "settingsAdmin",
@@ -220,9 +218,8 @@ export default function App() {
   <AdminPage setPage={navigateTo} />
 )}
 
-          {page === "couponsadmin" && (
-            <CouponsAdminPage setPage={navigateTo} />
-          )}
+          
+      
           {page === "customersadmin" && (
             <CustomersAdminPage setPage={navigateTo} />
           )}
