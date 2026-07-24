@@ -9,21 +9,9 @@ import {
   FiSliders, FiPieChart 
 } from 'react-icons/fi';
 
-// ==========================================
-// 🔥 FIREBASE CONFIGURATION & INITIALIZATION
-// ==========================================
-const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
 
-// Initialize Firebase safely (prevents duplicate app initialization error in React)
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const db = getFirestore(app);
+
+
 
 // ==========================================
 // 🛠️ FIREBASE SERVICE UTILITIES
@@ -83,7 +71,7 @@ const updateWalletSettings = async (userId, newSettings) => {
 // ==========================================
 // 💻 MAIN REACT COMPONENT
 // ==========================================
-export default function WalletPage({ userId = "default_user_123" }) {
+export default function WalletPage({ userId = "default_user_123", setPage }) {
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [promos, setPromos] = useState([]);
