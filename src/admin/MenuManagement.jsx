@@ -2020,7 +2020,7 @@ async function uploadMilkIcon(file) {
   {
     name: "",
     description: "",
-    icon: "🍬",
+    icon: "",
   },
 ]
                     });
@@ -2041,100 +2041,181 @@ async function uploadMilkIcon(file) {
 
   const sweetIcon =
     typeof sweet === "string"
-      ? "🍬"
-      : sweet.icon || "🍬";
+      ? ""
+      : sweet.icon || "";
 
   return (
                 <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                  {/* Preview */}
+<div
+  style={{
+    width: 45,
+    height: 45,
+    borderRadius: 10,
+    border: "1px solid #D8C8B8",
+    background: "#FAF7F2",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  }}
+>
+  {sweetIcon ? (
+    sweetIcon.startsWith("http") ||
+    sweetIcon.startsWith("/") ? (
+      <img
+        src={sweetIcon}
+        alt=""
+        style={{
+          width: 28,
+          height: 28,
+          objectFit: "contain",
+        }}
+      />
+    ) : (
+      <span style={{ fontSize: 24 }}>
+        {sweetIcon}
+      </span>
+    )
+  ) : (
+    "🍬"
+  )}
+</div>
 
+{/* Hidden Upload */}
+<input
+  id={`sweet-upload-${idx}`}
+  type="file"
+  accept=".png,.svg,.jpg,.jpeg,.webp"
+  style={{ display: "none" }}
+  onChange={async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const url = await uploadMilkIcon(file);
+
+    const updated = [...newItem.sweetnessOptions];
+
+    updated[idx] = {
+      ...updated[idx],
+      icon: url,
+    };
+
+    setNewItem({
+      ...newItem,
+      sweetnessOptions: updated,
+    });
+  }}
+/>
+
+<label
+  htmlFor={`sweet-upload-${idx}`}
+  style={{
+    padding: "10px 14px",
+    background: "#3B1A08",
+    color: "#FFF",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: "12px",
+    whiteSpace: "nowrap",
+  }}
+>
+  📁 Upload
+</label>
+
+<span
+  style={{
+    fontWeight: 700,
+    color: "#8B6A4A",
+    whiteSpace: "nowrap",
+  }}
+>
+  OR
+</span>
+
+<input
+  type="text"
+  placeholder="🍬"
+  value={
+    sweetIcon.startsWith("http") ||
+    sweetIcon.startsWith("/")
+      ? ""
+      : sweetIcon
+  }
+  onChange={(e) => {
+    const updated = [...newItem.sweetnessOptions];
+
+    updated[idx] = {
+      ...updated[idx],
+      icon: e.target.value,
+    };
+
+    setNewItem({
+      ...newItem,
+      sweetnessOptions: updated,
+    });
+  }}
+  style={{
+    width: "60px",
+    padding: "10px",
+    borderRadius: "8px",
+    border: "1px solid #D8C8B8",
+    textAlign: "center",
+    fontSize: "22px",
+    background: "#FAF7F2",
+  }}
+/>
+                  <input
+  placeholder="Name"
+  value={sweetName}
+  onChange={(e) => {
+    const updated = [...newItem.sweetnessOptions];
+
+    updated[idx] = {
+      ...updated[idx],
+      name: e.target.value,
+    };
+
+    setNewItem({
+      ...newItem,
+      sweetnessOptions: updated,
+    });
+  }}
+  style={{
+    flex: 1,
+    padding: "10px",
+    borderRadius: "8px",
+    border: "1px solid #D8C8B8",
+    fontSize: "13px",
+    background: "#FAF7F2",
+  }}
+/>
  <input
-    placeholder="Emoji"
-    value={sweetIcon}
-    onChange={(e) => {
-      const updated = [...newItem.sweetnessOptions];
+  placeholder="Description"
+  value={sweetDescription}
+  onChange={(e) => {
+    const updated = [...newItem.sweetnessOptions];
 
-      if (typeof updated[idx] === "string") {
-        updated[idx] = {
-          name: updated[idx],
-          description: "",
-          icon: e.target.value,
-        };
-      } else {
-        updated[idx] = {
-          ...updated[idx],
-          icon: e.target.value,
-        };
-      }
+    updated[idx] = {
+      ...updated[idx],
+      description: e.target.value,
+    };
 
-      setNewItem({
-        ...newItem,
-        sweetnessOptions: updated,
-      });
-    }}
-    style={{
-      width: "60px",
-      padding: "10px",
-      borderRadius: "8px",
-      border: "1px solid #D8C8B8",
-    }}
-  />
-
-  <input
-    placeholder="Name"
-    value={sweetName}
-    onChange={(e) => {
-      const updated = [...newItem.sweetnessOptions];
-
-      if (typeof updated[idx] === "string") {
-        updated[idx] = {
-          name: e.target.value,
-          description: "",
-          icon: "🍬",
-        };
-      } else {
-        updated[idx] = {
-          ...updated[idx],
-          name: e.target.value,
-        };
-      }
-
-      setNewItem({
-        ...newItem,
-        sweetnessOptions: updated,
-      });
-    }}
-    style={{
-      flex: 1,
-      padding: "10px",
-      borderRadius: "8px",
-      border: "1px solid #D8C8B8",
-    }}
-  />
-
-  <input
-    placeholder="Description"
-    value={sweetDescription}
-    onChange={(e) => {
-      const updated = [...newItem.sweetnessOptions];
-
-      updated[idx] = {
-        ...updated[idx],
-        description: e.target.value,
-      };
-
-      setNewItem({
-        ...newItem,
-        sweetnessOptions: updated,
-      });
-    }}
-    style={{
-      flex: 2,
-      padding: "10px",
-      borderRadius: "8px",
-      border: "1px solid #D8C8B8",
-    }}
-  />
-
+    setNewItem({
+      ...newItem,
+      sweetnessOptions: updated,
+    });
+  }}
+  style={{
+    flex: 2,
+    padding: "10px",
+    borderRadius: "8px",
+    border: "1px solid #D8C8B8",
+    fontSize: "13px",
+    background: "#FAF7F2",
+  }}
+/>
 
 
                   
@@ -3061,164 +3142,238 @@ async function uploadMilkIcon(file) {
     );
   })}
 </div>
-
-
-
-              
-
               
               {/* Edit Sweetness Builder */}
-              <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Sweetness Option +</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditItem({
-                        ...editItem,
-                        sweetnessOptions: [
-  ...editItem.sweetnessOptions,
-  {
-    name: "",
-    description: "",
-    icon: "🍬",
-  },
-]
-                      });
-                    }}
-                    style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
-                  >
-                    + Add Sweetness
-                  </button>
-                </div>
-                {editItem.sweetnessOptions.map((sweet, idx) => {
-  const sweetName =
-    typeof sweet === "string" ? sweet : sweet.name || "";
+<div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
+  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+    <label style={{ fontSize: "12px", fontWeight: 700, color: "#3B1A08", textTransform: "uppercase" }}>Sweetness Option (Edit) +</label>
+    <button
+      type="button"
+      onClick={() => {
+        setEditItem({
+          ...editItem,
+          sweetnessOptions: [
+            ...editItem.sweetnessOptions,
+            {
+              name: "",
+              description: "",
+              icon: "",
+            },
+          ]
+        });
+      }}
+      style={{ background: "#3B1A08", color: "#FFF", border: "none", padding: "6px 14px", borderRadius: "8px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+    >
+      + Add Sweetness
+    </button>
+  </div>
+  {editItem.sweetnessOptions.map((sweet, idx) => {
+    const sweetName =
+      typeof sweet === "string" ? sweet : sweet.name || "";
 
-  const sweetDescription =
-    typeof sweet === "string"
-      ? ""
-      : sweet.description || "";
+    const sweetDescription =
+      typeof sweet === "string"
+        ? ""
+        : sweet.description || "";
 
-  const sweetIcon =
-    typeof sweet === "string"
-      ? "🍬"
-      : sweet.icon || "🍬";
+    const sweetIcon =
+      typeof sweet === "string"
+        ? ""
+        : sweet.icon || "";
 
-  return (
-                  <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+    return (
+      <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+        {/* Preview */}
+        <div
+          style={{
+            width: 45,
+            height: 45,
+            borderRadius: 10,
+            border: "1px solid #D8C8B8",
+            background: "#FAF7F2",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          {sweetIcon ? (
+            sweetIcon.startsWith("http") ||
+            sweetIcon.startsWith("/") ? (
+              <img
+                src={sweetIcon}
+                alt=""
+                style={{
+                  width: 28,
+                  height: 28,
+                  objectFit: "contain",
+                }}
+              />
+            ) : (
+              <span style={{ fontSize: 24 }}>
+                {sweetIcon}
+              </span>
+            )
+          ) : (
+            "🍬"
+          )}
+        </div>
 
-                    <input
-    placeholder="Emoji"
-    value={sweetIcon}
-    onChange={(e) => {
-      const updated = [...editItem.sweetnessOptions];
+        {/* Hidden Upload */}
+        <input
+          id={`edit-sweet-upload-${idx}`}
+          type="file"
+          accept=".png,.svg,.jpg,.jpeg,.webp"
+          style={{ display: "none" }}
+          onChange={async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-      if (typeof updated[idx] === "string") {
-        updated[idx] = {
-          name: updated[idx],
-          description: "",
-          icon: e.target.value,
-        };
-      } else {
-        updated[idx] = {
-          ...updated[idx],
-          icon: e.target.value,
-        };
-      }
+            const url = await uploadMilkIcon(file);
 
-      setEditItem({
-        ...editItem,
-        sweetnessOptions: updated,
-      });
-    }}
-    style={{
-      width: "60px",
-      padding: "10px",
-      borderRadius: "8px",
-      border: "1px solid #D8C8B8",
-    }}
-  />
+            const updated = [...editItem.sweetnessOptions];
 
-  <input
-    placeholder="Name"
-    value={sweetName}
-    onChange={(e) => {
-      const updated = [...editItem.sweetnessOptions];
+            updated[idx] = {
+              ...updated[idx],
+              icon: url,
+            };
 
-      if (typeof updated[idx] === "string") {
-        updated[idx] = {
-          name: e.target.value,
-          description: "",
-          icon: "🍬",
-        };
-      } else {
-        updated[idx] = {
-          ...updated[idx],
-          name: e.target.value,
-        };
-      }
+            setEditItem({
+              ...editItem,
+              sweetnessOptions: updated,
+            });
+          }}
+        />
 
-      setEditItem({
-        ...editItem,
-        sweetnessOptions: updated,
-      });
-    }}
-    style={{
-      flex: 1,
-      padding: "10px",
-      borderRadius: "8px",
-      border: "1px solid #D8C8B8",
-    }}
-  />
+        <label
+          htmlFor={`edit-sweet-upload-${idx}`}
+          style={{
+            padding: "10px 14px",
+            background: "#3B1A08",
+            color: "#FFF",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontWeight: 600,
+            fontSize: "12px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          📁 Upload
+        </label>
 
-  <input
-    placeholder="Description"
-    value={sweetDescription}
-    onChange={(e) => {
-      const updated = [...editItem.sweetnessOptions];
+        <span
+          style={{
+            fontWeight: 700,
+            color: "#8B6A4A",
+            whiteSpace: "nowrap",
+          }}
+        >
+          OR
+        </span>
 
-      updated[idx] = {
-        ...updated[idx],
-        description: e.target.value,
-      };
+        <input
+          type="text"
+          placeholder="🍬"
+          value={
+            sweetIcon.startsWith("http") ||
+            sweetIcon.startsWith("/")
+              ? ""
+              : sweetIcon
+          }
+          onChange={(e) => {
+            const updated = [...editItem.sweetnessOptions];
 
-      setEditItem({
-        ...editItem,
-        sweetnessOptions: updated,
-      });
-    }}
-    style={{
-      flex: 2,
-      padding: "10px",
-      borderRadius: "8px",
-      border: "1px solid #D8C8B8",
-    }}
-  />
+            updated[idx] = {
+              ...updated[idx],
+              icon: e.target.value,
+            };
 
-
-
-
-
-                    
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const updated = editItem.sweetnessOptions.filter((_, i) => i !== idx);
-                        setEditItem({ ...editItem, sweetnessOptions: updated });
-                      }}
-                      style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
-                    >
-                      🗑️ Delete
-                    </button>
-                  </div>
-                 );
-          })}
-              </div>
-
-
-          
+            setEditItem({
+              ...editItem,
+              sweetnessOptions: updated,
+            });
+          }}
+          style={{
+            width: "60px",
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            textAlign: "center",
+            fontSize: "22px",
+            background: "#FAF7F2",
+          }}
+        />
         
+        <input
+          placeholder="Name"
+          value={sweetName}
+          onChange={(e) => {
+            const updated = [...editItem.sweetnessOptions];
+
+            updated[idx] = {
+              ...updated[idx],
+              name: e.target.value,
+            };
+
+            setEditItem({
+              ...editItem,
+              sweetnessOptions: updated,
+            });
+          }}
+          style={{
+            flex: 1,
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            fontSize: "13px",
+            background: "#FAF7F2",
+          }}
+        />
+        
+        <input
+          placeholder="Description"
+          value={sweetDescription}
+          onChange={(e) => {
+            const updated = [...editItem.sweetnessOptions];
+
+            updated[idx] = {
+              ...updated[idx],
+              description: e.target.value,
+            };
+
+            setEditItem({
+              ...editItem,
+              sweetnessOptions: updated,
+            });
+          }}
+          style={{
+            flex: 2,
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #D8C8B8",
+            fontSize: "13px",
+            background: "#FAF7F2",
+          }}
+        />
+
+        <button
+          type="button"
+          onClick={() => {
+            const updated = editItem.sweetnessOptions.filter((_, i) => i !== idx);
+            setEditItem({ ...editItem, sweetnessOptions: updated });
+          }}
+          style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FADBD8", padding: "8px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "13px" }}
+          title="Delete Sweetness Option"
+        >
+          🗑️ Delete
+        </button>
+      </div>
+    );
+  })}
+</div>
+              
+  re
+                  
               {/* Edit Special Requests Builder */}
               <div style={{ marginBottom: "20px", background: "#FFFFFF", padding: "16px", borderRadius: "12px", border: "1px solid #E2D5C9" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
