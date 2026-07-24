@@ -1527,6 +1527,16 @@ async function uploadMilkIcon(file) {
   />
 
 </div>
+                    <span
+    style={{
+      fontSize: "12px",
+      fontWeight: 700,
+      color: "#8B6A4A",
+      userSelect: "none",
+    }}
+  >
+    OR
+  </span>
    
 <input
   type="text"
