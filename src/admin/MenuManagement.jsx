@@ -2462,10 +2462,10 @@ async function uploadMilkIcon(file) {
     <button
       type="button"
       onClick={() =>
-        setNewItem({
-          ...newItem,
+        setEditItem({
+          ...editItem,
           milkOptions: [
-            ...newItem.milkOptions,
+            ...editItem.milkOptions,
             {
               name: "",
               price: 0,
@@ -2489,7 +2489,7 @@ async function uploadMilkIcon(file) {
     </button>
   </div>
 
-  {newItem.milkOptions.map((milk, idx) => {
+  {editItem.milkOptions.map((milk, idx) => {
     const milkName =
       typeof milk === "string" ? milk : milk.name || "";
 
@@ -2557,15 +2557,15 @@ async function uploadMilkIcon(file) {
 
             const url = await uploadMilkIcon(file);
 
-            const updated = [...newItem.milkOptions];
+            const updated = [...editItem.milkOptions];
 
             updated[idx] = {
               ...updated[idx],
               icon: url,
             };
 
-            setNewItem({
-              ...newItem,
+            setEditItem({
+              ...editItem,
               milkOptions: updated,
             });
           }}
@@ -2610,15 +2610,15 @@ async function uploadMilkIcon(file) {
               : milkIcon
           }
           onChange={(e) => {
-            const updated = [...newItem.milkOptions];
+            const updated = [...editItem.milkOptions];
 
             updated[idx] = {
               ...updated[idx],
               icon: e.target.value,
             };
 
-            setNewItem({
-              ...newItem,
+            setEditItem({
+              ...editItem,
               milkOptions: updated,
             });
           }}
@@ -2638,15 +2638,15 @@ async function uploadMilkIcon(file) {
           placeholder="Milk type"
           value={milkName}
           onChange={(e) => {
-            const updated = [...newItem.milkOptions];
+            const updated = [...editItem.milkOptions];
 
             updated[idx] = {
               ...updated[idx],
               name: e.target.value,
             };
 
-            setNewItem({
-              ...newItem,
+            setEditItem({
+              ...editItem,
               milkOptions: updated,
             });
           }}
@@ -2666,15 +2666,15 @@ async function uploadMilkIcon(file) {
           placeholder="Price (₹)"
           value={milkPrice}
           onChange={(e) => {
-            const updated = [...newItem.milkOptions];
+            const updated = [...editItem.milkOptions];
 
             updated[idx] = {
               ...updated[idx],
               price: Number(e.target.value),
             };
 
-            setNewItem({
-              ...newItem,
+            setEditItem({
+              ...editItem,
               milkOptions: updated,
             });
           }}
@@ -2693,12 +2693,12 @@ async function uploadMilkIcon(file) {
           type="button"
           onClick={() => {
             const updated =
-              newItem.milkOptions.filter(
+              editItem.milkOptions.filter(
                 (_, i) => i !== idx
               );
 
-            setNewItem({
-              ...newItem,
+            setEditItem({
+              ...editItem,
               milkOptions: updated,
             });
           }}
