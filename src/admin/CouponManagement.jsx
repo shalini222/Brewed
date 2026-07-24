@@ -35,6 +35,7 @@ export default function CouponManagement({ setPage, setActivePage }) {
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
+  const [toast, setToast] = useState(null);
   const [saving, setSaving] = useState(false);
   const [revenueTimeframe, setRevenueTimeframe] = useState("30days");
 
@@ -326,7 +327,7 @@ async function addCoupon() {
     );
 
     if (codeExists) {
-      alert("A coupon with this code already exists.");
+      showToast("Another coupon already uses this code.", "error");
       return;
     }
 
@@ -338,7 +339,7 @@ if (newCoupon.starts && newCoupon.expires) {
   const expiryDate = new Date(newCoupon.expires);
 
   if (expiryDate < startDate) {
-    alert("Expiry date cannot be before the start date.");
+    showToast("Expiry date cannot be before the start date.");
     return;
   }
 }
@@ -347,7 +348,7 @@ if (newCoupon.expires) {
   const expiryDate = new Date(newCoupon.expires);
 
   if (expiryDate < today) {
-    alert("Expiry date cannot be in the past.");
+    showToast("Expiry date cannot be in the past.");
     return;
   }
 }
@@ -361,13 +362,13 @@ const perUserLimit = Number(newCoupon.perUserLimit || 1);
 // Discount validation
 if (newCoupon.type === "percentage") {
   if (discountValue <= 0 || discountValue > 100) {
-    alert("Percentage discount must be between 1% and 100%.");
+    showToast("Percentage discount must be between 1% and 100%.");
     setSaving(false);
     return;
   }
 } else {
   if (discountValue <= 0) {
-    alert("Fixed discount must be greater than ₹0.");
+    showToast("Fixed discount must be greater than ₹0.");
     setSaving(false);
     return;
   }
@@ -375,14 +376,14 @@ if (newCoupon.type === "percentage") {
 
 // Minimum order validation
 if (minOrder <= 0) {
-  alert("Minimum order must be greater than ₹0.");
+  showToast("Minimum order must be greater than ₹0.");
   setSaving(false);
   return;
 }
 
 // Max discount validation
 if (maxDiscount < 0) {
-  alert("Maximum discount cannot be negative.");
+  showToast("Maximum discount cannot be negative.");
   setSaving(false);
   return;
 }
@@ -452,10 +453,10 @@ if (perUserLimit <= 0) {
     });
 
     await loadCoupons();
-    alert("Coupon created successfully!");
+    showToast("Coupon created successfully!");
   } catch (error) {
     console.error(error);
-    alert("Failed to create coupon. Please try again.");
+    showToast("Failed to create coupon. Please try again.");
   } finally {
     setSaving(false);
   }
@@ -479,7 +480,7 @@ async function toggleCoupon(coupon) {
     expiry.setHours(0, 0, 0, 0);
 
     if (expiry < today) {
-      alert("This coupon has expired and cannot be enabled.");
+      showToast("This coupon has expired and cannot be enabled.");
       return;
     }
   }
@@ -500,7 +501,83 @@ async function toggleCoupon(coupon) {
 
   async function updateCoupon() {
     if (!editing) return;
+    const duplicateCode = safeCoupons.some(
+  (coupon) =>
+    coupon.id !== editing.id &&
+    (coupon.code || "").toUpperCase() ===
+      editCoupon.code.toUpperCase()
+);
 
+if (duplicateCode) {
+  showToast("Another coupon already uses this code.");
+  return;
+}
+
+const discountValue = Number(editCoupon.value);
+const minOrder = Number(editCoupon.minOrder);
+const maxDiscount = Number(editCoupon.maxDiscount || 0);
+const usageLimit = Number(editCoupon.usageLimit || 0);
+const perUserLimit = Number(editCoupon.perUserLimit || 1);
+
+// Percentage validation
+if (editCoupon.type === "percentage") {
+  if (discountValue <= 0 || discountValue > 100) {
+    showToast("Percentage discount must be between 1% and 100%.");
+    return;
+  }
+} else {
+  if (discountValue <= 0) {
+    alert("Fixed discount must be greater than ₹0.");
+    return;
+  }
+}
+
+// Minimum order
+if (minOrder <= 0) {
+  alert("Minimum order must be greater than ₹0.");
+  return;
+}
+
+// Max discount
+if (maxDiscount < 0) {
+  alert("Maximum discount cannot be negative.");
+  return;
+}
+
+// Usage limit
+if (usageLimit < 0) {
+  alert("Usage limit cannot be negative.");
+  return;
+}
+
+// Per-user limit
+if (perUserLimit <= 0) {
+  alert("Per-user limit must be at least 1.");
+  return;
+}
+
+// Date validation
+if (editCoupon.starts && editCoupon.expires) {
+  const start = new Date(editCoupon.starts);
+  const expiry = new Date(editCoupon.expires);
+
+  if (expiry < start) {
+    alert("Expiry date cannot be before the start date.");
+    return;
+  }
+}
+
+if (
+  Number(editCoupon.usageLimit) > 0 &&
+  Number(editCoupon.usageLimit) < Number(editing.usageCount || 0)
+) {
+  alert(
+    `Usage limit cannot be lower than current usage (${editing.usageCount}).`
+  );
+  return;
+}
+
+    
     await updateDoc(doc(db, "coupons", editing.id), {
       code: editCoupon.code.toUpperCase(),
       type: editCoupon.type,
@@ -521,7 +598,7 @@ async function toggleCoupon(coupon) {
     await createAuditEntry("UPDATE_METADATA", editCoupon.code.toUpperCase());
     alert("Coupon updated!");
     setEditing(null);
-    loadCoupons();
+   await loadCoupons();
 
   }
 
@@ -584,6 +661,17 @@ async function toggleCoupon(coupon) {
     return { label: `⏳ Valid (${days} days left)`, variant: "valid" };
   }
 
+  function showToast(message, type = "success") {
+  setToast({ message, type });
+
+  setTimeout(() => {
+    setToast(null);
+  }, 3000);
+  }
+  
+  
+  
+  
   const formInputStyle = {
     padding: "12px 16px",
     borderRadius: "10px",
@@ -1250,6 +1338,24 @@ async function toggleCoupon(coupon) {
 
       </div>
     </div>
-      </>
-  );
-}
+       {toast && (
+      <div
+        style={{
+          position: "fixed",
+          top: "24px",
+          right: "24px",
+          background:
+            toast.type === "error" ? "#C62828" : "#2E7D32",
+          color: "#fff",
+          padding: "14px 20px",
+          borderRadius: "10px",
+          fontWeight: "600",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+          zIndex: 100000,
+        }}
+      >
+        {toast.message}
+      </div>
+    )}
+  </>
+);
