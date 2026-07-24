@@ -332,6 +332,24 @@ async function addCoupon() {
   }
 }
 
+  const payload = {
+    // your existing payload object
+  };
+
+  try {
+    await addDoc(collection(db, "coupons"), payload);
+    await createAuditEntry("CREATE_CAMPAIGN", payload.code, {
+      category: payload.category,
+    });
+
+    // your existing setNewCoupon(...)
+    await loadCoupons();
+    alert("Coupon created successfully!");
+  } finally {
+    setSaving(false);
+  }
+}
+
     const payload = {
       code: newCoupon.code.toUpperCase(),
       type: newCoupon.type,
