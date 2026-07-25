@@ -255,47 +255,27 @@ const useCurrentLocation = () => {
   setLocationError("");
 
   navigator.geolocation.getCurrentPosition(
-    (position) => {
-      const latitude = position.coords.latitude;
-      const longitude = position.coords.longitude;
-
-      setForm((prev) => ({
-        ...prev,
-        latitude,
-        longitude,
-      }));
-
-      setLocationLoading(false);
-
-      console.log("Latitude:", latitude);
-      console.log("Longitude:", longitude);
-    },
-
-    (error) => {
-       let message = "";
-
-  switch (error.code) {
-    case error.PERMISSION_DENIED:
-      message = "Permission Denied";
-      break;
-
-    case error.POSITION_UNAVAILABLE:
-      message = "Position Unavailable";
-      break;
-
-    case error.TIMEOUT:
-      message = "Location Request Timed Out";
-      break;
-
-    default:
-      message = "Unknown Error";
-  }
+    
+(position) => {
+  const latitude = position.coords.latitude;
+  const longitude = position.coords.longitude;
 
   alert(
-    `Code: ${error.code}\nMessage: ${error.message}\nType: ${message}`
+    `Success!\nLatitude: ${latitude}\nLongitude: ${longitude}`
   );
 
-  setLocationError(message);
+  setForm((prev) => ({
+    ...prev,
+    latitude,
+    longitude,
+  }));
+
+  setLocationLoading(false);
+},
+    (error) => {
+      alert(
+    `Error ${error.code}\n${error.message}`
+  );
       setLocationLoading(false);
     },
 
