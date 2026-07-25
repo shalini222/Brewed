@@ -885,7 +885,7 @@ async function checkDelivery(pincode) {
   </div>
 );
 
-
+}
 
 const styles = {
   page: {
