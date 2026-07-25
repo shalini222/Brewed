@@ -283,7 +283,7 @@ const useCurrentLocation = () => {
       console.log(err);
       setLocationLoading(false);
     });
-}
+},
     (error) => {
       alert(
     `Error ${error.code}\n${error.message}`
