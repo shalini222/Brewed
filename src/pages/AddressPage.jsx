@@ -272,32 +272,37 @@ const useCurrentLocation = () => {
     },
 
     (error) => {
-      console.log("Geolocation Error:", error);
-  console.log("Code:", error.code);
-  console.log("Message:", error.message);
-      
+       let message = "";
 
-      if (error.code === 1) {
-        setLocationError(
-          "Location permission denied."
-        );
-      } else if (error.code === 2) {
-        setLocationError(
-          "Location unavailable."
-        );
-      } else {
-        setLocationError(
-          "Couldn't get your location."
-        );
-      }
+  switch (error.code) {
+    case error.PERMISSION_DENIED:
+      message = "Permission Denied";
+      break;
 
+    case error.POSITION_UNAVAILABLE:
+      message = "Position Unavailable";
+      break;
+
+    case error.TIMEOUT:
+      message = "Location Request Timed Out";
+      break;
+
+    default:
+      message = "Unknown Error";
+  }
+
+  alert(
+    `Code: ${error.code}\nMessage: ${error.message}\nType: ${message}`
+  );
+
+  setLocationError(message);
       setLocationLoading(false);
     },
 
     {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0,
+      enableHighAccuracy: false,
+      timeout: 20000,
+      maximumAge: 60000,
     }
   );
 };
