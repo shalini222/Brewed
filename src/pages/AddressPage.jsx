@@ -727,135 +727,146 @@ async function setDefaultAddress(id) {
 
     {/* Address List */}
 
-    <div style={styles.list}>
+   <div style={styles.list}>
 
-            {loading ? (
+  {loading ? (
 
-        <p style={styles.loading}>
-          Loading addresses...
-        </p>
+    <p style={styles.loading}>
+      Loading addresses...
+    </p>
 
-      ) : (
+  ) : (
 
-        addresses.map((address) => (
+    [...addresses]
+      .sort(
+        (a, b) =>
+          Number(b.isDefault) -
+          Number(a.isDefault)
+      )
+      .map((address) => (
 
-          <div
-            key={address.id}
-            style={styles.card}
-          >
+        <div
+          key={address.id}
+          style={styles.card}
+        >
 
-            <div style={styles.cardTop}>
+          <div style={styles.cardTop}>
 
-              <div style={styles.typeContainer}>
+            <div style={styles.typeContainer}>
 
-                {address.type === "Home" && (
-                  <Home
-                    size={18}
-                    color="#C4956A"
+              {address.type === "Home" && (
+                <Home
+                  size={18}
+                  color="#C4956A"
+                />
+              )}
+
+              {address.type === "Work" && (
+                <Briefcase
+                  size={18}
+                  color="#C4956A"
+                />
+              )}
+
+              {address.type === "Other" && (
+                <MapPin
+                  size={18}
+                  color="#C4956A"
+                />
+              )}
+
+              <span style={styles.typeText}>
+                {address.type}
+              </span>
+
+              {address.isDefault && (
+                <div style={styles.defaultBadge}>
+                  <Star
+                    size={13}
+                    fill="#fff"
+                    color="#fff"
                   />
-                )}
-
-                {address.type === "Work" && (
-                  <Briefcase
-                    size={18}
-                    color="#C4956A"
-                  />
-                )}
-
-                {address.type === "Other" && (
-                  <MapPin
-                    size={18}
-                    color="#C4956A"
-                  />
-                )}
-
-                <span style={styles.typeText}>
-                  {address.type}
-                </span>
-
-                {address.isDefault && (
-
-                  <div style={styles.defaultBadge}>
-
-                    <Star
-                      size={13}
-                      fill="#fff"
-                    />
-
-                    Default
-
-                  </div>
-
-                )}
-
-              </div>
-
-              <div style={styles.actions}>
-
-                <button
-                  style={styles.iconButton}
-                  onClick={() =>
-                    editAddress(address)
-                  }
-                >
-                  <Pencil size={18} />
-                </button>
-
-                <button
-                  style={styles.iconButton}
-                  onClick={() =>
-                    removeAddress(address.id)
-                  }
-                >
-                  <Trash2 size={18} />
-                </button>
-
-              </div>
+                  Default
+                </div>
+              )}
 
             </div>
 
-            <div style={styles.info}>
+            <div style={styles.actions}>
 
-              <h3 style={styles.name}>
-                {address.name}
-              </h3>
+              <button
+                style={styles.iconButton}
+                onClick={() =>
+                  editAddress(address)
+                }
+              >
+                <Pencil size={18} />
+              </button>
 
-              <p style={styles.phone}>
-                {address.phone}
-              </p>
-
-              <p style={styles.address}>
-                {address.house}, {address.street}
-              </p>
-
-              <p style={styles.address}>
-                {address.city}, {address.state}
-              </p>
-
-              <p style={styles.address}>
-                {address.pincode}
-              </p>
+              <button
+                style={styles.iconButton}
+                onClick={() =>
+                  removeAddress(address.id)
+                }
+              >
+                <Trash2 size={18} />
+              </button>
 
             </div>
-
-            <button
-  style={styles.defaultButton}
-  onClick={() => setDefaultAddress(address.id)}
->
-  {address.isDefault
-    ? "⭐ Default Address"
-    : "Set as Default"}
-</button>
 
           </div>
 
-        ))
+          <div style={styles.info}>
 
-      )}
+            <h3 style={styles.name}>
+              {address.name}
+            </h3>
 
-    </div>
+            <p style={styles.phone}>
+              {address.phone}
+            </p>
 
-  </div>
+            <p style={styles.address}>
+              {address.house}, {address.street}
+            </p>
+
+            <p style={styles.address}>
+              {address.city}, {address.state}
+            </p>
+
+            <p style={styles.address}>
+              {address.pincode}
+            </p>
+
+          </div>
+
+          <button
+            style={{
+              ...styles.defaultButton,
+              background: address.isDefault
+                ? "#C4956A"
+                : "#F5F5F5",
+              color: address.isDefault
+                ? "#fff"
+                : "#444",
+            }}
+            onClick={() =>
+              setDefaultAddress(address.id)
+            }
+            disabled={address.isDefault}
+          >
+            {address.isDefault
+              ? "⭐ Default Address"
+              : "Set as Default"}
+          </button>
+
+        </div>
+
+      ))
+
+  )}
+
+</div>
 
 );
 }
@@ -1087,6 +1098,20 @@ suggestion: {
     borderRadius: "18px",
     boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
   },
+  addressHeader: {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+},
+
+defaultBadge: {
+  background: "#FFF4E5",
+  color: "#C4956A",
+  padding: "4px 10px",
+  borderRadius: "999px",
+  fontSize: "12px",
+  fontWeight: "700",
+},
 
   emptyTitle: {
     marginTop: "18px",
