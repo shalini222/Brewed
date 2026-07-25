@@ -440,7 +440,32 @@ useEffect(() => {
   );
 };
 
+const searchPlaces = async (text) => {
+  if (text.length < 3) {
+    setSuggestions([]);
+    return;
+  }
 
+  setLoadingSuggestions(true);
+
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
+        text
+      )}&key=${GOOGLE_API_KEY}`
+    );
+
+    const data = await response.json();
+
+    console.log(data);
+
+    setSuggestions(data.predictions || []);
+  } catch (err) {
+    console.log(err);
+  }
+
+  setLoadingSuggestions(false);
+};
 
   
   return (
@@ -510,9 +535,24 @@ useEffect(() => {
     <input
   placeholder="🔍 Search address..."
   value={searchText}
-  onChange={(e) => setSearchText(e.target.value)}
+  onChange={(e) => {
+  setSearchText(e.target.value);
+  searchPlaces(e.target.value);
+}}
   style={styles.input}
 />
+
+    {suggestions.map((place) => (
+  <div
+    key={place.place_id}
+    style={styles.suggestion}
+  >
+    📍 {place.description}
+  </div>
+))}
+
+
+    
         <input
           name="name"
           placeholder="Full Name"
@@ -839,7 +879,12 @@ const styles = {
     boxSizing: "border-box",
     background: "#fff",
   },
-
+suggestion: {
+  padding: "12px 16px",
+  borderBottom: "1px solid #eee",
+  cursor: "pointer",
+  background: "#fff",
+},
   saveButton: {
     width: "100%",
     padding: "14px",
