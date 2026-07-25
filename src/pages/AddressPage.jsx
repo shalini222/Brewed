@@ -275,7 +275,7 @@ const  PLACES_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
         console.log(data);
 
         if (data.status !== "OK") {
-          alert(`Google API Error: ${data.status}`);
+          alert(`Status: ${data.status}\nError: ${data.error_message || "No error message"}`);
           setLocationLoading(false);
           return;
         }
