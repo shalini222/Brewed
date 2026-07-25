@@ -49,6 +49,7 @@ export default function AddressPage({ setPage }) {
 
   const [showForm, setShowForm] = useState(false);
 const [googleReady, setGoogleReady] = useState(false);
+  const [autocompleteService, setAutocompleteService] = useState(null);
   const [editingId, setEditingId] = useState(null);
 
   const [form, setForm] = useState(emptyForm);
@@ -140,6 +141,20 @@ useEffect(() => {
     })
     .catch(console.error);
 }, []);
+
+
+useEffect(() => {
+  if (!googleReady) return;
+
+  const service =
+    new window.google.maps.places.AutocompleteService();
+
+  setAutocompleteService(service);
+
+}, [googleReady]);
+
+
+
   
   function handleChange(e) {
     setForm({
@@ -447,31 +462,40 @@ useEffect(() => {
   );
 };
 
-const searchPlaces = async (text) => {
+const searchPlaces = (text) => {
+
+  setSearchText(text);
+
+  if (!autocompleteService) return;
+
   if (text.length < 3) {
     setSuggestions([]);
     return;
   }
 
-  setLoadingSuggestions(true);
+  autocompleteService.getPlacePredictions(
+    {
+      input: text,
+      componentRestrictions: {
+        country: "in",
+      },
+    },
+    (predictions, status) => {
 
-  try {
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
-        text
-      )}&key=${GOOGLE_API_KEY}`
-    );
+      console.log(status);
 
-    const data = await response.json();
+      if (
+        status !==
+        window.google.maps.places.PlacesServiceStatus.OK
+      ) {
+        setSuggestions([]);
+        return;
+      }
 
-    console.log(data);
+      setSuggestions(predictions);
 
-    setSuggestions(data.predictions || []);
-  } catch (err) {
-    console.log(err);
-  }
-
-  setLoadingSuggestions(false);
+    }
+  );
 };
 
   
@@ -542,10 +566,7 @@ const searchPlaces = async (text) => {
     <input
   placeholder="🔍 Search address..."
   value={searchText}
-  onChange={(e) => {
-  setSearchText(e.target.value);
-  searchPlaces(e.target.value);
-}}
+  onChange={(e) => searchPlaces(e.target.value)}
   style={styles.input}
 />
 
