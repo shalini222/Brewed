@@ -243,6 +243,7 @@ const  PLACES_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
     }
   }
 
+
 const useCurrentLocation = () => {
   if (!navigator.geolocation) {
     setLocationError(
@@ -255,40 +256,142 @@ const useCurrentLocation = () => {
   setLocationError("");
 
   navigator.geolocation.getCurrentPosition(
-    
-(position) => {
-  const latitude = position.coords.latitude;
-  const longitude = position.coords.longitude;
 
-  setLocationLoading(true);
+    async (position) => {
 
-  fetch(
-    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GEOCODING_API_KEY}`
-  )
-    .then((res) => res.json())
-    .then((data) => {
-      console.log(data);
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
 
-      alert(data.results[0].formatted_address);
+      try {
 
-      setForm((prev) => ({
-        ...prev,
-        latitude,
-        longitude,
-      }));
+        const response = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GEOCODING_API_KEY}`
+        );
 
-      setLocationLoading(false);
-    })
-    .catch((err) => {
-      console.log(err);
-      setLocationLoading(false);
-    });
-},
+        const data = await response.json();
+
+        console.log(data);
+
+        if (data.status !== "OK") {
+          alert(`Google API Error: ${data.status}`);
+          setLocationLoading(false);
+          return;
+        }
+
+        if (!data.results || data.results.length === 0) {
+          alert("No address found.");
+          setLocationLoading(false);
+          return;
+        }
+
+        const components =
+          data.results[0].address_components;
+
+        let house = "";
+        let street = "";
+        let city = "";
+        let state = "";
+        let pincode = "";
+
+        components.forEach((component) => {
+
+          if (
+            component.types.includes("street_number")
+          ) {
+            house = component.long_name;
+          }
+
+          if (
+            component.types.includes("route")
+          ) {
+            street = component.long_name;
+          }
+
+          if (
+            component.types.includes("locality")
+          ) {
+            city = component.long_name;
+          }
+
+          if (
+            component.types.includes(
+              "administrative_area_level_1"
+            )
+          ) {
+            state = component.long_name;
+          }
+
+          if (
+            component.types.includes("postal_code")
+          ) {
+            pincode = component.long_name;
+          }
+
+        });
+
+        setForm((prev) => ({
+          ...prev,
+          house,
+          street,
+          city,
+          state,
+          pincode,
+          latitude,
+          longitude,
+        }));
+
+        alert("✅ Address detected successfully!");
+
+      } catch (err) {
+
+        console.log(err);
+
+        alert(
+          "Unable to fetch address from Google."
+        );
+
+      } finally {
+
+        setLocationLoading(false);
+
+      }
+
+    },
+
     (error) => {
-      alert(
-    `Error ${error.code}\n${error.message}`
-  );
+
+      switch (error.code) {
+
+        case error.PERMISSION_DENIED:
+          setLocationError(
+            "Location permission denied."
+          );
+             alert("Permission Denied");
+          break;
+
+        case error.POSITION_UNAVAILABLE:
+          setLocationError(
+            "Location unavailable."
+          );
+          alert("Location Unavailable");
+          break;
+
+        case error.TIMEOUT:
+          setLocationError(
+            "Location request timed out."
+          );
+          alert("Location Timed Out");
+          break;
+
+        default:
+          setLocationError(
+            "Couldn't get your location."
+          );
+          alert("Unknown location error");
+      }
+
       setLocationLoading(false);
+
     },
 
     {
@@ -296,9 +399,9 @@ const useCurrentLocation = () => {
       timeout: 20000,
       maximumAge: 60000,
     }
+
   );
 };
-
 
 
 
