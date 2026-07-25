@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
+import { loadGoogleMaps } from "../utils/loadGoogleMaps";
 
 import { LoadScript } from "@react-google-maps/api";
 
@@ -47,7 +48,7 @@ export default function AddressPage({ setPage }) {
   const [loading, setLoading] = useState(true);
 
   const [showForm, setShowForm] = useState(false);
-
+const [googleReady, setGoogleReady] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
   const [form, setForm] = useState(emptyForm);
@@ -132,7 +133,13 @@ useEffect(() => {
   loadUserDetails();
 }, [currentUser]);
   
-
+useEffect(() => {
+  loadGoogleMaps(GOOGLE_API_KEY)
+    .then(() => {
+      setGoogleReady(true);
+    })
+    .catch(console.error);
+}, []);
   
   function handleChange(e) {
     setForm({
