@@ -260,18 +260,30 @@ const useCurrentLocation = () => {
   const latitude = position.coords.latitude;
   const longitude = position.coords.longitude;
 
-  alert(
-    `Success!\nLatitude: ${latitude}\nLongitude: ${longitude}`
-  );
+  setLocationLoading(true);
 
-  setForm((prev) => ({
-    ...prev,
-    latitude,
-    longitude,
-  }));
+  fetch(
+    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${API_KEY}`
+  )
+    .then((res) => res.json())
+    .then((data) => {
+      console.log(data);
 
-  setLocationLoading(false);
-},
+      alert(data.results[0].formatted_address);
+
+      setForm((prev) => ({
+        ...prev,
+        latitude,
+        longitude,
+      }));
+
+      setLocationLoading(false);
+    })
+    .catch((err) => {
+      console.log(err);
+      setLocationLoading(false);
+    });
+}
     (error) => {
       alert(
     `Error ${error.code}\n${error.message}`
