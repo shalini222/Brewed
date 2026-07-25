@@ -29,6 +29,7 @@ import CustomersAdminPage from "./pages/CustomersAdminPage";
 import SettingsAdminPage from "./pages/SettingsAdminPage";
 import AddressPage from "./pages/AddressPage";
 import WalletPage from "./pages/WalletPage";
+import DeliveryAdminPage from "./admin/DeliveryAdminPage";
 
 
 
@@ -130,7 +131,9 @@ export default function App() {
           )}
 
 
-
+<button onClick={() => setPage("deliveryAdmin")}>
+  🚚 Delivery Admin
+</button>
 
           
           {page === "menu" && (
@@ -219,7 +222,9 @@ export default function App() {
           {page === "admin" && (
   <AdminPage setPage={navigateTo} />
 )}
-
+{page === "deliveryAdmin" && (
+  <DeliveryAdminPage setPage={setPage} />
+)}
           
       
           {page === "customersadmin" && (
