@@ -131,9 +131,6 @@ export default function App() {
           )}
 
 
-<button onClick={() => setPage("deliveryAdmin")}>
-  🚚 Delivery Admin
-</button>
 
           
           {page === "menu" && (
