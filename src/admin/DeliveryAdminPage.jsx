@@ -52,16 +52,13 @@ export default function DeliveryAdminPage({ setPage }) {
         collection(db, "deliveryZones")
       );
 
-      const data = snap.docs.map((docSnap) => {
-        const d = docSnap.data();
-        return {
-          id: docSnap.id,
-          ...d,
-          pincodes: Array.isArray(d.pincodes)
-            ? d.pincodes.join("\n")
-            : d.pincodes || "",
-        };
-      });
+     
+
+
+      const data = snap.docs.map((docSnap) => ({
+  id: docSnap.id,
+  ...docSnap.data(),
+}));
 
       setZones(data);
     } catch (err) {
@@ -70,56 +67,80 @@ export default function DeliveryAdminPage({ setPage }) {
       setLoading(false);
     }
   }
+async function saveZone() {
+  const name = zoneForm.name.trim();
 
-  async function saveZone() {
-    const name = zoneForm.name.trim();
-
-    if (!name) {
-      alert("Please enter a zone name.");
-      return;
-    }
-
-    const pincodesArray = zoneForm.pincodes
-      .split("\n")
-      .map((p) => p.trim())
-      .filter(Boolean);
-
-    if (pincodesArray.length === 0) {
-      alert("Please enter at least one pincode.");
-      return;
-    }
-
-    const zoneData = {
-      ...zoneForm,
-      name,
-      pincodes: pincodesArray,
-    };
-
-    try {
-      if (editingId) {
-        await updateDoc(
-          doc(db, "deliveryZones", editingId),
-          zoneData
-        );
-      } else {
-        await addDoc(
-          collection(db, "deliveryZones"),
-          {
-            ...zoneData,
-            createdAt: serverTimestamp(),
-          }
-        );
-      }
-
-      loadZones();
-      setShowForm(false);
-      setEditingId(null);
-      setZoneForm(emptyZone);
-    } catch (err) {
-      console.log(err);
-    }
+  if (!name) {
+    alert("Please enter a zone name.");
+    return;
   }
 
+  const pincodesArray = zoneForm.pincodes
+    .split("\n")
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  if (pincodesArray.length === 0) {
+    alert("Please enter at least one pincode.");
+    return;
+  }
+
+  const invalid = pincodesArray.some(
+    (pin) => !/^\d{6}$/.test(pin)
+  );
+
+  if (invalid) {
+    alert("Every pincode must be exactly 6 digits.");
+    return;
+  }
+
+  if (Number(zoneForm.deliveryFee) < 0) {
+    alert("Delivery fee cannot be negative.");
+    return;
+  }
+
+  if (Number(zoneForm.minOrder) <= 0) {
+    alert("Minimum order must be greater than ₹0.");
+    return;
+  }
+
+  if (Number(zoneForm.freeDeliveryAbove) <= 0) {
+    alert("Free delivery amount must be greater than ₹0.");
+    return;
+  }
+
+  const zoneData = {
+    ...zoneForm,
+    name,
+    pincodes: pincodesArray,
+  };
+
+  try {
+    if (editingId) {
+      await updateDoc(
+        doc(db, "deliveryZones", editingId),
+        zoneData
+      );
+    } else {
+      await addDoc(
+        collection(db, "deliveryZones"),
+        {
+          ...zoneData,
+          createdAt: serverTimestamp(),
+        }
+      );
+    }
+
+    await loadZones();
+
+    setShowForm(false);
+    setEditingId(null);
+    setZoneForm(emptyZone);
+
+  } catch (err) {
+    console.log(err);
+  }
+}
   function editZone(zone) {
     setEditingId(zone.id);
 
@@ -180,46 +201,7 @@ export default function DeliveryAdminPage({ setPage }) {
     }
   }
 
-  async function checkDelivery(pincode) {
-    setCheckingDelivery(true);
 
-    try {
-      const snap = await getDocs(
-        collection(db, "deliveryZones")
-      );
-
-      const zoneDocs = snap.docs.map((docSnap) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      }));
-
-      const zone = zoneDocs.find(
-        (z) =>
-          z.active &&
-          Array.isArray(z.pincodes) &&
-          z.pincodes.includes(pincode)
-      );
-
-      if (zone) {
-        setDeliveryAvailable(true);
-
-        setDeliveryInfo({
-          zoneName: zone.name,
-          fee: zone.deliveryFee,
-          freeAbove: zone.freeDeliveryAbove,
-          minOrder: zone.minOrder,
-          eta: zone.estimatedTime,
-        });
-      } else {
-        setDeliveryAvailable(false);
-        setDeliveryInfo(null);
-      }
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setCheckingDelivery(false);
-    }
-  }
 
   return (
     <div style={styles.page}>
