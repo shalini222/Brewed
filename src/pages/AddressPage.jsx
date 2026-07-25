@@ -52,6 +52,9 @@ export default function AddressPage({ setPage }) {
 
   const [form, setForm] = useState(emptyForm);
 const [locationLoading, setLocationLoading] = useState(false);
+  const [searchText, setSearchText] = useState("");
+const [suggestions, setSuggestions] = useState([]);
+const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
 const [locationError, setLocationError] = useState("");
 
@@ -503,7 +506,13 @@ useEffect(() => {
         {locationError}
       </p>
     )}
-        
+
+    <input
+  placeholder="🔍 Search address..."
+  value={searchText}
+  onChange={(e) => setSearchText(e.target.value)}
+  style={styles.input}
+/>
         <input
           name="name"
           placeholder="Full Name"
