@@ -57,6 +57,11 @@ const [locationLoading, setLocationLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
 const [suggestions, setSuggestions] = useState([]);
 const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [checkingDelivery, setCheckingDelivery] = useState(false);
+
+const [deliveryAvailable, setDeliveryAvailable] = useState(null);
+
+const [deliveryInfo, setDeliveryInfo] = useState(null);
 
 const [locationError, setLocationError] = useState("");
 
@@ -153,7 +158,17 @@ useEffect(() => {
 
 }, [googleReady]);
 
+useEffect(() => {
 
+  if (form.pincode.length === 6) {
+
+    checkDelivery(form.pincode);
+
+  }
+
+}, [form.pincode]);
+
+  
 
   
   function handleChange(e) {
@@ -535,7 +550,37 @@ async function setDefaultAddress(id) {
 
 
 
+async function checkDelivery(pincode) {
+  if (!pincode) return;
 
+  setCheckingDelivery(true);
+
+  try {
+    const snap = await getDoc(
+      doc(db, "deliveryZones", pincode)
+    );
+
+    if (snap.exists()) {
+      const data = snap.data();
+
+      setDeliveryAvailable(data.active);
+      setDeliveryInfo(data);
+
+    } else {
+
+      setDeliveryAvailable(false);
+      setDeliveryInfo(null);
+
+    }
+
+  } catch (err) {
+
+    console.log(err);
+
+  }
+
+  setCheckingDelivery(false);
+}
 
 
 
@@ -677,6 +722,23 @@ async function setDefaultAddress(id) {
           onChange={handleChange}
           style={styles.input}
         />
+    {checkingDelivery && (
+  <p style={styles.info}>
+    Checking delivery...
+  </p>
+)}
+
+{deliveryAvailable === true && (
+  <p style={styles.success}>
+    ✅ Delivery available
+  </p>
+)}
+
+{deliveryAvailable === false && (
+  <p style={styles.error}>
+    ❌ Sorry, we don't deliver here yet.
+  </p>
+)}
 
         <select
           name="type"
