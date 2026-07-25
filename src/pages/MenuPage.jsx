@@ -324,6 +324,11 @@ setBestSellerIds(
           </div>
         </div>
 
+
+         <button onClick={() => setPage("deliveryAdmin")}>
+        🚛Delivery Admin
+      </button>
+
         {/* --- Responsive Control Dashboard Center --- */}
         <div className="filter-bar">
           {/* LEFT: Tags & Categories */}
