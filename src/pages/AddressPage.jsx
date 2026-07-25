@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
 import { LoadScript } from "@react-google-maps/api";
 
 import {
@@ -100,6 +101,40 @@ const [locationError, setLocationError] = useState("");
     }
   }
 
+
+
+
+useEffect(() => {
+  async function loadUserDetails() {
+    if (!currentUser) return;
+
+    try {
+      const userRef = doc(db, "users", currentUser.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+
+        setForm((prev) => ({
+          ...prev,
+          name: userData.fullName || "",
+          phone: userData.phone || "",
+        }));
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  loadUserDetails();
+}, [currentUser]);
+  
+
+
+  loadUserDetails();
+}, [currentUser]);
+
+  
   function handleChange(e) {
     setForm({
       ...form,
