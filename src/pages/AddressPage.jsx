@@ -4,7 +4,7 @@ import { db } from "../firebase";
 import { loadGoogleMaps } from "../utils/loadGoogleMaps";
 
 import { LoadScript } from "@react-google-maps/api";
-import { checkDeliveryAvailability } from "../service/deliveryService";
+import { checkDelivery } from "../service/deliveryService";
 
 import {
   collection,
