@@ -498,6 +498,47 @@ const searchPlaces = (text) => {
   );
 };
 
+
+
+async function setDefaultAddress(id) {
+  if (!currentUser) return;
+
+  try {
+    // Remove default from every address
+    for (const address of addresses) {
+      await updateDoc(
+        doc(
+          db,
+          "users",
+          currentUser.uid,
+          "addresses",
+          address.id
+        ),
+        {
+          isDefault: address.id === id,
+        }
+      );
+    }
+
+    // Update local state
+    setAddresses((prev) =>
+      prev.map((address) => ({
+        ...address,
+        isDefault: address.id === id,
+      }))
+    );
+
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+
+
+
+
+
+
   
   return (
   <div style={styles.page}>
@@ -797,18 +838,14 @@ const searchPlaces = (text) => {
 
             </div>
 
-            {!address.isDefault && (
-
-              <button
-                style={styles.defaultButton}
-                onClick={() =>
-                  setDefault(address.id)
-                }
-              >
-                Set as Default
-              </button>
-
-            )}
+            <button
+  style={styles.defaultButton}
+  onClick={() => setDefaultAddress(address.id)}
+>
+  {address.isDefault
+    ? "⭐ Default Address"
+    : "Set as Default"}
+</button>
 
           </div>
 
@@ -976,6 +1013,18 @@ suggestion: {
     fontSize: "12px",
     fontWeight: "600",
   },
+  defaultButton: {
+  marginTop: "12px",
+  width: "100%",
+  padding: "12px",
+  borderRadius: "10px",
+  border: "none",
+  cursor: "pointer",
+  background: "#C4956A",
+  color: "#fff",
+  fontWeight: "600",
+  fontSize: "15px",
+},
 
   actions: {
     display: "flex",
