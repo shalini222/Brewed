@@ -117,25 +117,59 @@ export default function DeliveryAdminPage({ setPage }) {
 
   function editZone(zone) {
     setEditingId(zone.id);
+
     setZoneForm({
-      name: zone.name || "",
-      deliveryFee: zone.deliveryFee ?? 40,
-      freeDeliveryAbove: zone.freeDeliveryAbove ?? 499,
-      minOrder: zone.minOrder ?? 199,
-      estimatedTime: zone.estimatedTime || "30-40 mins",
-      pincodes: zone.pincodes || "",
-      active: zone.active ?? true,
+      name: zone.name,
+      deliveryFee: zone.deliveryFee,
+      freeDeliveryAbove: zone.freeDeliveryAbove,
+      minOrder: zone.minOrder,
+      estimatedTime: zone.estimatedTime,
+      pincodes: Array.isArray(zone.pincodes)
+        ? zone.pincodes.join("\n")
+        : zone.pincodes,
+      active: zone.active,
     });
+
     setShowForm(true);
   }
 
-  async function removeZone(id) {
-    const ok = window.confirm("Are you sure you want to delete this zone?");
+  async function deleteZone(id) {
+    const ok = window.confirm("Delete this delivery zone?");
+
     if (!ok) return;
 
     try {
-      await deleteDoc(doc(db, "deliveryZones", id));
-      setZones((prev) => prev.filter((item) => item.id !== id));
+      await deleteDoc(
+        doc(db, "deliveryZones", id)
+      );
+
+      setZones((prev) =>
+        prev.filter((z) => z.id !== id)
+      );
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function toggleZone(zone) {
+    try {
+      await updateDoc(
+        doc(db, "deliveryZones", zone.id),
+        {
+          active: !zone.active,
+        }
+      );
+
+      setZones((prev) =>
+        prev.map((z) =>
+          z.id === zone.id
+            ? {
+                ...z,
+                active: !z.active,
+              }
+            : z
+        )
+      );
     } catch (err) {
       console.log(err);
     }
@@ -300,7 +334,6 @@ export default function DeliveryAdminPage({ setPage }) {
           </div>
         ) : (
           zones.map((zone) => {
-            // Ensure zone.pincodes is an array for rendering tags properly
             const pinArray = Array.isArray(zone.pincodes)
               ? zone.pincodes
               : typeof zone.pincodes === "string"
@@ -325,17 +358,24 @@ export default function DeliveryAdminPage({ setPage }) {
 
                     <div style={styles.actions}>
                       <button
-                        style={styles.iconButton}
-                        onClick={() => editZone(zone)}
+                        style={styles.actionButton}
+                        onClick={() => toggleZone(zone)}
                       >
-                        <Pencil size={18} />
+                        {zone.active ? "Disable" : "Enable"}
                       </button>
 
                       <button
                         style={styles.iconButton}
-                        onClick={() => removeZone(zone.id)}
+                        onClick={() => editZone(zone)}
                       >
-                        <Trash2 size={18} color="#d9534f" />
+                        <Pencil size={16} /> Edit
+                      </button>
+
+                      <button
+                        style={{ ...styles.iconButton, color: "#d9534f" }}
+                        onClick={() => deleteZone(zone.id)}
+                      >
+                        <Trash2 size={16} /> Delete
                       </button>
                     </div>
                   </div>
@@ -495,11 +535,14 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: "4px",
+    flexWrap: "wrap",
+    gap: "12px",
   },
   headerRight: {
     display: "flex",
     alignItems: "center",
     gap: "12px",
+    flexWrap: "wrap",
   },
   badge: {
     fontSize: "12px",
@@ -510,12 +553,28 @@ const styles = {
   actions: {
     display: "flex",
     gap: "8px",
+    alignItems: "center",
+  },
+  actionButton: {
+    background: "#f5f5f5",
+    border: "1px solid #ddd",
+    padding: "6px 10px",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "600",
   },
   iconButton: {
     background: "none",
-    border: "none",
+    border: "1px solid #ddd",
+    borderRadius: "6px",
     cursor: "pointer",
-    padding: "4px",
+    padding: "6px 10px",
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+    fontSize: "12px",
+    fontWeight: "600",
   },
   detailText: {
     fontSize: "14px",
@@ -554,8 +613,6 @@ const styles = {
   },
   loading: {
     textAlign: "center",
-    color: "#667",
+    color: "#666",
   },
 };
-
-
