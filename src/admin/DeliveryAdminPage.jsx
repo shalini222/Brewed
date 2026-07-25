@@ -8,7 +8,7 @@ import {
   doc,
   serverTimestamp,
 } from "firebase/firestore";
-import { db } from "../../firebase";
+import { db } from "../firebase";
 
 import {
   Plus,
