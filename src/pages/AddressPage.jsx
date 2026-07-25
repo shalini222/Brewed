@@ -58,7 +58,7 @@ const [locationError, setLocationError] = useState("");
 
 
 const MAP_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
-const GEOLOCATION_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
+const GEOCODING_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
 const  PLACES_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
 
   useEffect(() => {
@@ -263,7 +263,7 @@ const useCurrentLocation = () => {
   setLocationLoading(true);
 
   fetch(
-    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${API_KEY}`
+    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GEOCODING_API_KEY}`
   )
     .then((res) => res.json())
     .then((data) => {
