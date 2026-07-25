@@ -130,10 +130,6 @@ useEffect(() => {
 }, [currentUser]);
   
 
-
-  loadUserDetails();
-}, [currentUser]);
-
   
   function handleChange(e) {
     setForm({
