@@ -47,6 +47,7 @@ export default function CheckoutPage({ setPage }) {
   const [appliedCoupon, setAppliedCoupon] = useState(null); 
   const [couponError, setCouponError] = useState("");
   const [addresses, setAddresses] = useState([]);
+  const [showAddressPicker, setShowAddressPicker] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [orderSnapshot, setOrderSnapshot] = useState(null);
 
@@ -468,6 +469,99 @@ const handleFormSubmission = async (e) => {
 
         <form onSubmit={handleFormSubmission} className="checkout-layout">
           <div className="main-panel">
+            <div style={styles.addressCard}>
+
+  <div style={styles.addressHeader}>
+
+    <div>
+
+      <h3 style={styles.addressTitle}>
+        📍 Delivery Address
+      </h3>
+
+      {selectedAddress && (
+        <>
+          <p style={styles.addressName}>
+            {selectedAddress.name}
+          </p>
+
+          <p style={styles.addressText}>
+            {selectedAddress.house}, {selectedAddress.street}
+          </p>
+
+          <p style={styles.addressText}>
+            {selectedAddress.city}, {selectedAddress.state}
+          </p>
+
+          <p style={styles.addressText}>
+            {selectedAddress.pincode}
+          </p>
+        </>
+      )}
+
+    </div>
+
+    <button
+      style={styles.changeButton}
+      onClick={() =>
+        setShowAddressPicker(true)
+      }
+    >
+      Change
+    </button>
+
+  </div>
+
+</div>
+
+{showAddressPicker && (
+
+  <div style={styles.addressPicker}>
+
+    {addresses.map((address) => (
+
+      <div
+        key={address.id}
+        style={styles.addressOption}
+        onClick={() => {
+
+          setSelectedAddress(address);
+
+          setForm((prev) => ({
+            ...prev,
+            name: address.name,
+            phone: address.phone,
+            address:
+              `${address.house}, ${address.street}, ${address.city}, ${address.state} ${address.pincode}`,
+          }));
+
+          setShowAddressPicker(false);
+
+        }}
+      >
+
+        <strong>
+          {address.type}
+        </strong>
+
+        <br />
+
+        {address.house}, {address.street}
+
+        <br />
+
+        {address.city}, {address.state}
+
+      </div>
+
+    ))}
+
+  </div>
+
+)}
+
+
+            
             <div style={styles.card}>
               <h2 style={styles.sectionTitle}>📍 Delivery Information</h2>
               <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem" }}>
@@ -567,7 +661,57 @@ const handleFormSubmission = async (e) => {
 }
 
 const styles = {
-  page: { padding: "2rem 0" },
+  page: { padding: "2rem 0" },addressCard: {
+  background: "#fff",
+  borderRadius: "16px",
+  padding: "18px",
+  marginBottom: "20px",
+  border: "1px solid #E6DFD5",
+},
+
+addressHeader: {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+},
+
+addressTitle: {
+  margin: 0,
+  marginBottom: "10px",
+},
+
+addressName: {
+  fontWeight: "600",
+  marginBottom: "6px",
+},
+
+addressText: {
+  margin: "2px 0",
+  color: "#666",
+},
+
+changeButton: {
+  background: "#C4956A",
+  color: "#fff",
+  border: "none",
+  padding: "10px 16px",
+  borderRadius: "10px",
+  cursor: "pointer",
+},
+
+addressPicker: {
+  background: "#fff",
+  borderRadius: "16px",
+  marginBottom: "20px",
+  border: "1px solid #E6DFD5",
+  overflow: "hidden",
+},
+
+addressOption: {
+  padding: "16px",
+  borderBottom: "1px solid #eee",
+  cursor: "pointer",
+},
   backLink: { background: "none", border: "none", color: THEME.colors.textMuted, cursor: "pointer", fontSize: "0.9rem", padding: 0, marginBottom: "0.5rem" },
   heading: { fontFamily: THEME.fonts.serif, fontSize: "2.2rem", color: THEME.colors.textDark, margin: "0 0 1.5rem 0" },
   card: { background: THEME.colors.cardBg, borderRadius: "12px", padding: "1.5rem", marginBottom: "1.5rem", border: `1px solid ${THEME.colors.cardBorder}` },
