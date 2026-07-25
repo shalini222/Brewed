@@ -272,7 +272,10 @@ const useCurrentLocation = () => {
     },
 
     (error) => {
-      console.log(error);
+      console.log("Geolocation Error:", error);
+  console.log("Code:", error.code);
+  console.log("Message:", error.message);
+      
 
       if (error.code === 1) {
         setLocationError(
