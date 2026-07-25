@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 
 export default function AddressPage({ setPage }) {
-
   const { currentUser } = useAuth();
 
   const emptyForm = {
@@ -41,41 +40,32 @@ export default function AddressPage({ setPage }) {
     type: "Home",
     isDefault: false,
     latitude: null,
-  longitude: null,
+    longitude: null,
   };
 
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [showForm, setShowForm] = useState(false);
-const [googleReady, setGoogleReady] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
   const [autocompleteService, setAutocompleteService] = useState(null);
   const [editingId, setEditingId] = useState(null);
 
-  const [form, setForm] = useState(emptyForm);
-const [locationLoading, setLocationLoading] = useState(false);
+  const [cleanedForm, setCleanedForm] = useState(emptyForm);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-const [suggestions, setSuggestions] = useState([]);
-const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [checkingDelivery, setCheckingDelivery] = useState(false);
 
-const [deliveryAvailable, setDeliveryAvailable] = useState(null);
-
-const [deliveryInfo, setDeliveryInfo] = useState(null);
-
-const [locationError, setLocationError] = useState("");
-
-
-
-
-
+  const [deliveryAvailable, setDeliveryAvailable] = useState(null);
+  const [deliveryInfo, setDeliveryInfo] = useState(null);
+  const [locationError, setLocationError] = useState("");
 
   const GOOGLE_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
-  
 
   useEffect(() => {
     if (!currentUser) return;
-
     loadAddresses();
   }, [currentUser]);
 
@@ -84,12 +74,7 @@ const [locationError, setLocationError] = useState("");
       setLoading(true);
 
       const snap = await getDocs(
-        collection(
-          db,
-          "users",
-          currentUser.uid,
-          "addresses"
-        )
+        collection(db, "users", currentUser.uid, "addresses")
       );
 
       const data = snap.docs.map((doc) => ({
@@ -111,119 +96,152 @@ const [locationError, setLocationError] = useState("");
     }
   }
 
+  useEffect(() => {
+    async function loadUserDetails() {
+      if (!currentUser) return;
 
+      try {
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userRef);
 
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
 
-useEffect(() => {
-  async function loadUserDetails() {
-    if (!currentUser) return;
-
-    try {
-      const userRef = doc(db, "users", currentUser.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (userSnap.exists()) {
-        const userData = userSnap.data();
-
-        setForm((prev) => ({
-          ...prev,
-          name: userData.fullName || "",
-          phone: userData.phone || "",
-        }));
+          setCleanedForm((prev) => ({
+            ...prev,
+            name: userData.fullName || "",
+            phone: userData.phone || "",
+          }));
+        }
+      } catch (err) {
+        console.log(err);
       }
-    } catch (err) {
-      console.log(err);
     }
-  }
 
-  loadUserDetails();
-}, [currentUser]);
-  
-useEffect(() => {
-  loadGoogleMaps(GOOGLE_API_KEY)
-    .then(() => {
-      setGoogleReady(true);
-    })
-    .catch(console.error);
-}, []);
+    loadUserDetails();
+  }, [currentUser]);
 
+  useEffect(() => {
+    loadGoogleMaps(GOOGLE_API_KEY)
+      .then(() => {
+        setGoogleReady(true);
+      })
+      .catch(console.error);
+  }, []);
 
-useEffect(() => {
-  if (!googleReady) return;
+  useEffect(() => {
+    if (!googleReady) return;
 
-  const service =
-    new window.google.maps.places.AutocompleteService();
+    const service = new window.google.maps.places.AutocompleteService();
+    setAutocompleteService(service);
+  }, [googleReady]);
 
-  setAutocompleteService(service);
+  useEffect(() => {
+    if (cleanedForm.pincode.length === 6) {
+      checkDelivery(cleanedForm.pincode);
+    }
+  }, [cleanedForm.pincode]);
 
-}, [googleReady]);
-
-useEffect(() => {
-
-  if (form.pincode.length === 6) {
-
-    checkDelivery(form.pincode);
-
-  }
-
-}, [form.pincode]);
-
-  
-
-  
   function handleChange(e) {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    let { name, value } = e.target;
+
+    if (name === "phone" || name === "pincode") {
+      value = value.replace(/\D/g, "");
+    }
+
+    setCleanedForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   }
 
   async function saveAddress() {
     if (!currentUser) return;
 
-    if (
-      !form.name ||
-      !form.phone ||
-      !form.house ||
-      !form.street ||
-      !form.city ||
-      !form.state ||
-      !form.pincode
-    ) {
-      alert("Please fill all fields.");
+    const name = cleanedForm.name.trim();
+    const phone = cleanedForm.phone.trim();
+    const house = cleanedForm.house.trim();
+    const street = cleanedForm.street.trim();
+    const city = cleanedForm.city.trim();
+    const state = cleanedForm.state.trim();
+    const pincode = cleanedForm.pincode.trim();
+
+    if (!name) {
+      alert("Please enter your full name.");
       return;
     }
+
+    if (!/^\d{10}$/.test(phone)) {
+      alert("Phone number must be exactly 10 digits.");
+      return;
+    }
+
+    if (!house) {
+      alert("Please enter your house or flat number.");
+      return;
+    }
+
+    if (!street) {
+      alert("Please enter your street or area.");
+      return;
+    }
+
+    if (!city) {
+      alert("Please enter your city.");
+      return;
+    }
+
+    if (!state) {
+      alert("Please enter your state.");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(pincode)) {
+      alert("Pincode must be exactly 6 digits.");
+      return;
+    }
+
+    const addressData = {
+      ...cleanedForm,
+      name,
+      phone,
+      house,
+      street,
+      city,
+      state,
+      pincode,
+    };
 
     try {
       if (editingId) {
         await updateDoc(
-          doc(
-            db,
-            "users",
-            currentUser.uid,
-            "addresses",
-            editingId
-          ),
-          form
+          doc(db, "users", currentUser.uid, "addresses", editingId),
+          addressData
         );
 
         setAddresses((prev) =>
           prev.map((item) =>
-            item.id === editingId
-              ? { ...item, ...form }
-              : item
+            item.id === editingId ? { ...item, ...addressData } : item
           )
         );
       } else {
+        const isDuplicate = addresses.some(
+  (item) =>
+    (item.house || "").toLowerCase() === house.toLowerCase() &&
+    (item.street || "").toLowerCase() === street.toLowerCase() &&
+    (item.city || "").toLowerCase() === city.toLowerCase() &&
+    (item.pincode || "") === pincode
+);
+
+        if (isDuplicate) {
+          alert("This address is already saved.");
+          return;
+        }
+
         const ref = await addDoc(
-          collection(
-            db,
-            "users",
-            currentUser.uid,
-            "addresses"
-          ),
+          collection(db, "users", currentUser.uid, "addresses"),
           {
-            ...form,
+            ...addressData,
             createdAt: serverTimestamp(),
           }
         );
@@ -232,12 +250,16 @@ useEffect(() => {
           ...prev,
           {
             id: ref.id,
-            ...form,
+            ...addressData,
           },
         ]);
       }
 
-      setForm(emptyForm);
+      setCleanedForm({
+        ...emptyForm,
+        name: cleanedForm.name,
+        phone: cleanedForm.phone,
+      });
       setEditingId(null);
       setShowForm(false);
     } catch (err) {
@@ -246,48 +268,38 @@ useEffect(() => {
   }
 
   function editAddress(address) {
-    setForm({
-  name: address.name || "",
-  phone: address.phone || "",
-  house: address.house || "",
-  street: address.street || "",
-  city: address.city || "",
-  state: address.state || "",
-  pincode: address.pincode || "",
-  type: address.type || "Home",
-  isDefault: address.isDefault || false,
-});
+    setCleanedForm({
+      name: address.name || "",
+      phone: address.phone || "",
+      house: address.house || "",
+      street: address.street || "",
+      city: address.city || "",
+      state: address.state || "",
+      pincode: address.pincode || "",
+      type: address.type || "Home",
+      isDefault: address.isDefault || false,
+      latitude: address.latitude || null,
+      longitude: address.longitude || null,
+    });
     setEditingId(address.id);
     setShowForm(true);
   }
 
   async function removeAddress(id) {
-    const ok = window.confirm(
-      "Delete this address?"
-    );
+    const ok = window.confirm("Delete this address?");
 
     if (!ok) return;
 
     try {
-      await deleteDoc(
-        doc(
-          db,
-          "users",
-          currentUser.uid,
-          "addresses",
-          id
-        )
-      );
+      await deleteDoc(doc(db, "users", currentUser.uid, "addresses", id));
 
-      setAddresses((prev) =>
-        prev.filter((item) => item.id !== id)
-      );
+      setAddresses((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
       console.log(err);
     }
   }
 
-  async function setDefault(id) {
+  async function setDefaultAddress(id) {
     const updated = addresses.map((item) => ({
       ...item,
       isDefault: item.id === id,
@@ -296,13 +308,7 @@ useEffect(() => {
     try {
       for (const item of updated) {
         await updateDoc(
-          doc(
-            db,
-            "users",
-            currentUser.uid,
-            "addresses",
-            item.id
-          ),
+          doc(db, "users", currentUser.uid, "addresses", item.id),
           {
             isDefault: item.isDefault,
           }
@@ -315,273 +321,153 @@ useEffect(() => {
     }
   }
 
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Your device doesn't support location services.");
+      return;
+    }
 
-          
+    setLocationLoading(true);
+    setLocationError("");
 
-          const useCurrentLocation = () => {
-  if (!navigator.geolocation) {
-    setLocationError(
-      "Your device doesn't support location services."
-    );
-    return;
-  }
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
 
-  setLocationLoading(true);
-  setLocationError("");
+        try {
+          const response = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`
+          );
 
-  navigator.geolocation.getCurrentPosition(
+          const data = await response.json();
 
-    async (position) => {
+          console.log(data);
 
-      const latitude = position.coords.latitude;
-      const longitude = position.coords.longitude;
+          if (data.status !== "OK") {
+            alert(
+              `Status: ${data.status}\nError: ${data.error_message || "No error message"}`
+            );
+            setLocationLoading(false);
+            return;
+          }
 
-      try {
+          if (!data.results || data.results.length === 0) {
+            alert("No address found.");
+            setLocationLoading(false);
+            return;
+          }
 
-        const response = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}`
-        );
+          const components = data.results[0].address_components;
 
-        const data = await response.json();
+          let house = "";
+          let street = "";
+          let city = "";
+          let state = "";
+          let pincode = "";
 
-        console.log(data);
+          components.forEach((component) => {
+            if (component.types.includes("street_number")) {
+              house = component.long_name;
+            }
 
-        if (data.status !== "OK") {
-          alert(`Status: ${data.status}\nError: ${data.error_message || "No error message"}`);
+            if (component.types.includes("route")) {
+              street = component.long_name;
+            }
+
+            if (component.types.includes("locality")) {
+              city = component.long_name;
+            }
+
+            if (component.types.includes("administrative_area_level_1")) {
+              state = component.long_name;
+            }
+
+            if (component.types.includes("postal_code")) {
+              pincode = component.long_name;
+            }
+          });
+
+          setCleanedForm((prev) => ({
+            ...prev,
+            house,
+            street,
+            city,
+            state,
+            pincode,
+            latitude,
+            longitude,
+          }));
+
+          alert("✅ Address detected successfully!");
+        } catch (err) {
+          console.log(err);
+          alert("Unable to fetch address from Google.");
+        } finally {
           setLocationLoading(false);
-          return;
         }
+      },
+      (error) => {
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setLocationError("Location permission denied.");
+            alert("Permission Denied");
+            break;
 
-        if (!data.results || data.results.length === 0) {
-          alert("No address found.");
-          setLocationLoading(false);
-          return;
+          case error.POSITION_UNAVAILABLE:
+            setLocationError("Location unavailable.");
+            alert("Location Unavailable");
+            break;
+
+          case error.TIMEOUT:
+            setLocationError("Location request timed out.");
+            alert("Location Timed Out");
+            break;
+
+          default:
+            setLocationError("Couldn't get your location.");
+            alert("Unknown location error");
         }
-
-        const components =
-          data.results[0].address_components;
-
-        let house = "";
-        let street = "";
-        let city = "";
-        let state = "";
-        let pincode = "";
-
-        components.forEach((component) => {
-
-          if (
-            component.types.includes("street_number")
-          ) {
-            house = component.long_name;
-          }
-
-          if (
-            component.types.includes("route")
-          ) {
-            street = component.long_name;
-          }
-
-          if (
-            component.types.includes("locality")
-          ) {
-            city = component.long_name;
-          }
-
-          if (
-            component.types.includes(
-              "administrative_area_level_1"
-            )
-          ) {
-            state = component.long_name;
-          }
-
-          if (
-            component.types.includes("postal_code")
-          ) {
-            pincode = component.long_name;
-          }
-
-        });
-
-        setForm((prev) => ({
-          ...prev,
-          house,
-          street,
-          city,
-          state,
-          pincode,
-          latitude,
-          longitude,
-        }));
-
-        alert("✅ Address detected successfully!");
-
-      } catch (err) {
-
-        console.log(err);
-
-        alert(
-          "Unable to fetch address from Google."
-        );
-
-      } finally {
 
         setLocationLoading(false);
-
-      }
-
-    },
-
-    (error) => {
-
-      switch (error.code) {
-
-        case error.PERMISSION_DENIED:
-          setLocationError(
-            "Location permission denied."
-          );
-          alert("Permission Denied");
-          break;
-
-        case error.POSITION_UNAVAILABLE:
-          setLocationError(
-            "Location unavailable."
-          );
-          alert("Location Unavailable");
-          break;
-
-        case error.TIMEOUT:
-          setLocationError(
-            "Location request timed out."
-          );
-          alert("Location Timed Out");
-          break;
-
-        default:
-          setLocationError(
-            "Couldn't get your location."
-          );
-          alert("Unknown location error");
-      }
-
-      setLocationLoading(false);
-
-    },
-
-    {
-      enableHighAccuracy: false,
-      timeout: 20000,
-      maximumAge: 60000,
-    }
-
-  );
-};
-
-const searchPlaces = (text) => {
-
-  setSearchText(text);
-
-  if (!autocompleteService) return;
-
-  if (text.length < 3) {
-    setSuggestions([]);
-    return;
-  }
-
-  autocompleteService.getPlacePredictions(
-    {
-      input: text,
-      componentRestrictions: {
-        country: "in",
       },
-    },
-    (predictions, status) => {
-
-      console.log(status);
-
-      if (
-        status !==
-        window.google.maps.places.PlacesServiceStatus.OK
-      ) {
-        setSuggestions([]);
-        return;
+      {
+        enableHighAccuracy: false,
+        timeout: 20000,
+        maximumAge: 60000,
       }
+    );
+  };
 
-      setSuggestions(predictions);
+  const searchPlaces = (text) => {
+    setSearchText(text);
 
+    if (!autocompleteService) return;
+
+    if (text.length < 3) {
+      setSuggestions([]);
+      return;
     }
-  );
-};
 
+    autocompleteService.getPlacePredictions(
+      {
+        input: text,
+        componentRestrictions: {
+          country: "in",
+        },
+      },
+      (predictions, status) => {
+        console.log(status);
 
-
-async function setDefaultAddress(id) {
-  if (!currentUser) return;
-
-  try {
-    // Remove default from every address
-    for (const address of addresses) {
-      await updateDoc(
-        doc(
-          db,
-          "users",
-          currentUser.uid,
-          "addresses",
-          address.id
-        ),
-        {
-          isDefault: address.id === id,
+        if (status !== window.google.maps.places.PlacesServiceStatus.OK) {
+          setSuggestions([]);
+          return;
         }
-      );
-    }
 
-    // Update local state
-    setAddresses((prev) =>
-      prev.map((address) => ({
-        ...address,
-        isDefault: address.id === id,
-      }))
+        setSuggestions(predictions);
+      }
     );
-
-  } catch (err) {
-    console.log(err);
-  }
-}
-
-
-
-async function checkDelivery(pincode) {
-  if (!pincode) return;
-
-  setCheckingDelivery(true);
-
-  try {
-    const snap = await getDoc(
-      doc(db, "deliveryZones", pincode)
-    );
-
-    if (snap.exists()) {
-      const data = snap.data();
-
-      setDeliveryAvailable(data.active);
-      setDeliveryInfo(data);
-
-    } else {
-
-      setDeliveryAvailable(false);
-      setDeliveryInfo(null);
-
-    }
-
-  } catch (err) {
-
-    console.log(err);
-
-  }
-
-  setCheckingDelivery(false);
-}
-
+  };
 
 
   
@@ -671,6 +557,7 @@ async function checkDelivery(pincode) {
           placeholder="Phone Number"
           value={form.phone}
           onChange={handleChange}
+          maxLength={10}
           style={styles.input}
         />
 
@@ -711,6 +598,7 @@ async function checkDelivery(pincode) {
           placeholder="Pincode"
           value={form.pincode}
           onChange={handleChange}
+          maxLength={6}
           style={styles.input}
         />
 
