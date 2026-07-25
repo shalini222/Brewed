@@ -585,13 +585,11 @@ async function checkDelivery(pincode) {
 
 
   
-  return (
+ return (
   <div style={styles.page}>
 
     {/* Header */}
-
     <div style={styles.header}>
-
       <button
         style={styles.backButton}
         onClick={() => setPage("menu")}
@@ -603,70 +601,63 @@ async function checkDelivery(pincode) {
         <h1 style={styles.title}>
           My Addresses
         </h1>
-
         <p style={styles.subtitle}>
           Manage your saved delivery addresses
         </p>
       </div>
-
     </div>
 
-
     {/* Add Address Button */}
-<button
-  style={styles.addButton}
-  onClick={() => {
-    setEditingId(null);
-    setForm(emptyForm);
-    setShowForm(!showForm);
-  }}
->
-  <Plus size={18} />
-  Add New Address
-</button>
-
-{showForm && (
-
-  <div style={styles.formCard}>
-
-    <h2 style={styles.formTitle}>
-      {editingId ? "Edit Address" : "New Address"}
-    </h2>
-
     <button
-      style={styles.locationButton}
-      onClick={useCurrentLocation}
+      style={styles.addButton}
+      onClick={() => {
+        setEditingId(null);
+        setForm(emptyForm);
+        setShowForm(!showForm);
+      }}
     >
-      📍
-      {locationLoading
-        ? "Getting Location..."
-        : "Use Current Location"}
+      <Plus size={18} />
+      Add New Address
     </button>
 
-    {locationError && (
-      <p style={styles.error}>
-        {locationError}
-      </p>
-    )}
+    {showForm && (
+      <div style={styles.formCard}>
+        <h2 style={styles.formTitle}>
+          {editingId ? "Edit Address" : "New Address"}
+        </h2>
 
-    <input
-  placeholder="🔍 Search address..."
-  value={searchText}
-  onChange={(e) => searchPlaces(e.target.value)}
-  style={styles.input}
-/>
+        <button
+          style={styles.locationButton}
+          onClick={useCurrentLocation}
+        >
+          📍
+          {locationLoading
+            ? "Getting Location..."
+            : "Use Current Location"}
+        </button>
 
-    {suggestions.map((place) => (
-  <div
-    key={place.place_id}
-    style={styles.suggestion}
-  >
-    📍 {place.description}
-  </div>
-))}
+        {locationError && (
+          <p style={styles.error}>
+            {locationError}
+          </p>
+        )}
 
+        <input
+          placeholder="🔍 Search address..."
+          value={searchText}
+          onChange={(e) => searchPlaces(e.target.value)}
+          style={styles.input}
+        />
 
-    
+        {suggestions.map((place) => (
+          <div
+            key={place.place_id}
+            style={styles.suggestion}
+          >
+            📍 {place.description}
+          </div>
+        ))}
+
         <input
           name="name"
           placeholder="Full Name"
@@ -722,23 +713,24 @@ async function checkDelivery(pincode) {
           onChange={handleChange}
           style={styles.input}
         />
-    {checkingDelivery && (
-  <p style={styles.info}>
-    Checking delivery...
-  </p>
-)}
 
-{deliveryAvailable === true && (
-  <p style={styles.success}>
-    ✅ Delivery available
-  </p>
-)}
+        {checkingDelivery && (
+          <p style={styles.info}>
+            Checking delivery...
+          </p>
+        )}
 
-{deliveryAvailable === false && (
-  <p style={styles.error}>
-    ❌ Sorry, we don't deliver here yet.
-  </p>
-)}
+        {deliveryAvailable === true && (
+          <p style={styles.success}>
+            ✅ Delivery available
+          </p>
+        )}
+
+        {deliveryAvailable === false && (
+          <p style={styles.error}>
+            ❌ Sorry, we don't deliver here yet.
+          </p>
+        )}
 
         <select
           name="type"
@@ -757,181 +749,143 @@ async function checkDelivery(pincode) {
         >
           {editingId ? "Update Address" : "Save Address"}
         </button>
-
       </div>
-
     )}
 
-
     {/* Empty State */}
-
     {!loading && addresses.length === 0 && (
-
       <div style={styles.emptyBox}>
-
         <MapPin
           size={55}
           color="#C4956A"
         />
-
         <h2 style={styles.emptyTitle}>
           No Saved Addresses
         </h2>
-
         <p style={styles.emptyText}>
           Add your first delivery address to make checkout faster.
         </p>
-
       </div>
-
     )}
 
-
     {/* Address List */}
+    <div style={styles.list}>
+      {loading ? (
+        <p style={styles.loading}>
+          Loading addresses...
+        </p>
+      ) : (
+        [...addresses]
+          .sort(
+            (a, b) =>
+              Number(b.isDefault) -
+              Number(a.isDefault)
+          )
+          .map((address) => (
+            <div
+              key={address.id}
+              style={styles.card}
+            >
+              <div style={styles.cardTop}>
+                <div style={styles.typeContainer}>
+                  {address.type === "Home" && (
+                    <Home
+                      size={18}
+                      color="#C4956A"
+                    />
+                  )}
 
-   <div style={styles.list}>
+                  {address.type === "Work" && (
+                    <Briefcase
+                      size={18}
+                      color="#C4956A"
+                    />
+                  )}
 
-  {loading ? (
+                  {address.type === "Other" && (
+                    <MapPin
+                      size={18}
+                      color="#C4956A"
+                    />
+                  )}
 
-    <p style={styles.loading}>
-      Loading addresses...
-    </p>
+                  <span style={styles.typeText}>
+                    {address.type}
+                  </span>
 
-  ) : (
-
-    [...addresses]
-      .sort(
-        (a, b) =>
-          Number(b.isDefault) -
-          Number(a.isDefault)
-      )
-      .map((address) => (
-
-        <div
-          key={address.id}
-          style={styles.card}
-        >
-
-          <div style={styles.cardTop}>
-
-            <div style={styles.typeContainer}>
-
-              {address.type === "Home" && (
-                <Home
-                  size={18}
-                  color="#C4956A"
-                />
-              )}
-
-              {address.type === "Work" && (
-                <Briefcase
-                  size={18}
-                  color="#C4956A"
-                />
-              )}
-
-              {address.type === "Other" && (
-                <MapPin
-                  size={18}
-                  color="#C4956A"
-                />
-              )}
-
-              <span style={styles.typeText}>
-                {address.type}
-              </span>
-
-              {address.isDefault && (
-                <div style={styles.defaultBadge}>
-                  <Star
-                    size={13}
-                    fill="#fff"
-                    color="#fff"
-                  />
-                  Default
+                  {address.isDefault && (
+                    <div style={styles.defaultBadge}>
+                      <Star
+                        size={13}
+                        fill="#fff"
+                        color="#fff"
+                      />
+                      Default
+                    </div>
+                  )}
                 </div>
-              )}
 
-            </div>
+                <div style={styles.actions}>
+                  <button
+                    style={styles.iconButton}
+                    onClick={() => editAddress(address)}
+                  >
+                    <Pencil size={18} />
+                  </button>
 
-            <div style={styles.actions}>
+                  <button
+                    style={styles.iconButton}
+                    onClick={() => removeAddress(address.id)}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+
+              <div style={styles.info}>
+                <h3 style={styles.name}>
+                  {address.name}
+                </h3>
+                <p style={styles.phone}>
+                  {address.phone}
+                </p>
+                <p style={styles.address}>
+                  {address.house}, {address.street}
+                </p>
+                <p style={styles.address}>
+                  {address.city}, {address.state}
+                </p>
+                <p style={styles.address}>
+                  {address.pincode}
+                </p>
+              </div>
 
               <button
-                style={styles.iconButton}
-                onClick={() =>
-                  editAddress(address)
-                }
+                style={{
+                  ...styles.defaultButton,
+                  background: address.isDefault
+                    ? "#C4956A"
+                    : "#F5F5F5",
+                  color: address.isDefault
+                    ? "#fff"
+                    : "#444",
+                }}
+                onClick={() => setDefaultAddress(address.id)}
+                disabled={address.isDefault}
               >
-                <Pencil size={18} />
+                {address.isDefault
+                  ? "⭐ Default Address"
+                  : "Set as Default"}
               </button>
-
-              <button
-                style={styles.iconButton}
-                onClick={() =>
-                  removeAddress(address.id)
-                }
-              >
-                <Trash2 size={18} />
-              </button>
-
             </div>
+          ))
+      )}
+    </div>
 
-          </div>
-
-          <div style={styles.info}>
-
-            <h3 style={styles.name}>
-              {address.name}
-            </h3>
-
-            <p style={styles.phone}>
-              {address.phone}
-            </p>
-
-            <p style={styles.address}>
-              {address.house}, {address.street}
-            </p>
-
-            <p style={styles.address}>
-              {address.city}, {address.state}
-            </p>
-
-            <p style={styles.address}>
-              {address.pincode}
-            </p>
-
-          </div>
-
-          <button
-            style={{
-              ...styles.defaultButton,
-              background: address.isDefault
-                ? "#C4956A"
-                : "#F5F5F5",
-              color: address.isDefault
-                ? "#fff"
-                : "#444",
-            }}
-            onClick={() =>
-              setDefaultAddress(address.id)
-            }
-            disabled={address.isDefault}
-          >
-            {address.isDefault
-              ? "⭐ Default Address"
-              : "Set as Default"}
-          </button>
-
-        </div>
-
-      ))
-
-  )}
-
-</div>
-
+  </div>
 );
-}
+
+
 
 const styles = {
   page: {
