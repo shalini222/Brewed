@@ -15,7 +15,6 @@ import {
   Pencil,
   Trash2,
   Truck,
-  MapPin,
   ArrowLeft,
 } from "lucide-react";
 
@@ -300,51 +299,78 @@ export default function DeliveryAdminPage({ setPage }) {
             <p style={styles.emptyText}>No delivery zones found.</p>
           </div>
         ) : (
-          zones.map((zone) => (
-            <div
-              key={zone.id}
-              style={styles.card}
-            >
-              <div style={styles.cardTop}>
-                <div>
-                  <h3 style={styles.zoneName}>{zone.name}</h3>
-                  <span
-                    style={{
-                      ...styles.badge,
-                      background: zone.active ? "#E6F4EA" : "#FCE8E6",
-                      color: zone.active ? "#137333" : "#C5221F",
-                    }}
-                  >
-                    {zone.active ? "Active" : "Inactive"}
-                  </span>
+          zones.map((zone) => {
+            // Ensure zone.pincodes is an array for rendering tags properly
+            const pinArray = Array.isArray(zone.pincodes)
+              ? zone.pincodes
+              : typeof zone.pincodes === "string"
+              ? zone.pincodes.split("\n").map((p) => p.trim()).filter(Boolean)
+              : [];
+
+            return (
+              <div key={zone.id} style={styles.zoneCard}>
+                <div style={styles.zoneHeader}>
+                  <h3>{zone.name}</h3>
+
+                  <div style={styles.headerRight}>
+                    <span
+                      style={{
+                        ...styles.badge,
+                        background: zone.active ? "#E6F4EA" : "#FCE8E6",
+                        color: zone.active ? "#137333" : "#C5221F",
+                      }}
+                    >
+                      {zone.active ? "🟢 Active" : "🔴 Disabled"}
+                    </span>
+
+                    <div style={styles.actions}>
+                      <button
+                        style={styles.iconButton}
+                        onClick={() => editZone(zone)}
+                      >
+                        <Pencil size={18} />
+                      </button>
+
+                      <button
+                        style={styles.iconButton}
+                        onClick={() => removeZone(zone.id)}
+                      >
+                        <Trash2 size={18} color="#d9534f" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <div style={styles.actions}>
-                  <button
-                    style={styles.iconButton}
-                    onClick={() => editZone(zone)}
-                  >
-                    <Pencil size={18} />
-                  </button>
+                <p style={styles.detailText}>
+                  <strong>Delivery Fee:</strong> ₹{zone.deliveryFee}
+                </p>
 
-                  <button
-                    style={styles.iconButton}
-                    onClick={() => removeZone(zone.id)}
-                  >
-                    <Trash2 size={18} color="#d9534f" />
-                  </button>
+                <p style={styles.detailText}>
+                  <strong>Free Delivery Above:</strong> ₹{zone.freeDeliveryAbove}
+                </p>
+
+                <p style={styles.detailText}>
+                  <strong>Minimum Order:</strong> ₹{zone.minOrder}
+                </p>
+
+                <p style={styles.detailText}>
+                  <strong>ETA:</strong> {zone.estimatedTime}
+                </p>
+
+                <p style={styles.pincodeLabel}>
+                  <strong>Pincodes:</strong>
+                </p>
+
+                <div style={styles.pinContainer}>
+                  {pinArray.map((pin) => (
+                    <span key={pin} style={styles.pin}>
+                      {pin}
+                    </span>
+                  ))}
                 </div>
               </div>
-
-              <div style={styles.zoneDetails}>
-                <p><strong>Fee:</strong> ₹{zone.deliveryFee}</p>
-                <p><strong>Free Delivery Above:</strong> ₹{zone.freeDeliveryAbove}</p>
-                <p><strong>Min Order:</strong> ₹{zone.minOrder}</p>
-                <p><strong>Time:</strong> {zone.estimatedTime}</p>
-                <p><strong>Pincodes:</strong> {zone.pincodes.replace(/\n/g, ", ")}</p>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
@@ -455,32 +481,31 @@ const styles = {
     flexDirection: "column",
     gap: "16px",
   },
-  card: {
+  zoneCard: {
     background: "#fff",
-    padding: "16px",
+    padding: "18px",
     borderRadius: "12px",
     boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
+    gap: "8px",
   },
-  cardTop: {
+  zoneHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: "4px",
   },
-  zoneName: {
-    fontSize: "16px",
-    fontWeight: "bold",
-    color: "#333",
+  headerRight: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
   },
   badge: {
-    fontSize: "11px",
-    padding: "2px 8px",
+    fontSize: "12px",
+    padding: "4px 10px",
     borderRadius: "12px",
-    fontWeight: "500",
-    display: "inline-block",
-    marginTop: "4px",
+    fontWeight: "600",
   },
   actions: {
     display: "flex",
@@ -492,12 +517,29 @@ const styles = {
     cursor: "pointer",
     padding: "4px",
   },
-  zoneDetails: {
-    fontSize: "13px",
-    color: "#555",
+  detailText: {
+    fontSize: "14px",
+    color: "#444",
+  },
+  pincodeLabel: {
+    fontSize: "14px",
+    color: "#444",
+    marginTop: "4px",
+  },
+  pinContainer: {
     display: "flex",
-    flexDirection: "column",
-    gap: "4px",
+    flexWrap: "wrap",
+    gap: "6px",
+    marginTop: "4px",
+  },
+  pin: {
+    background: "#F5F5F5",
+    color: "#333",
+    padding: "4px 8px",
+    borderRadius: "6px",
+    fontSize: "12px",
+    border: "1px solid #eee",
+    fontWeight: "500",
   },
   emptyBox: {
     textAlign: "center",
@@ -512,7 +554,8 @@ const styles = {
   },
   loading: {
     textAlign: "center",
-    color: "#666",
+    color: "#667",
   },
 };
+
 
