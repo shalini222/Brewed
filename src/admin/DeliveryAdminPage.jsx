@@ -35,6 +35,11 @@ export default function DeliveryAdminPage({ setPage }) {
   const [editingId, setEditingId] = useState(null);
   const [zoneForm, setZoneForm] = useState(emptyZone);
 
+  // Added states for checking delivery logic
+  const [checkingDelivery, setCheckingDelivery] = useState(false);
+  const [deliveryAvailable, setDeliveryAvailable] = useState(null);
+  const [deliveryInfo, setDeliveryInfo] = useState(null);
+
   useEffect(() => {
     loadZones();
   }, []);
@@ -172,6 +177,47 @@ export default function DeliveryAdminPage({ setPage }) {
       );
     } catch (err) {
       console.log(err);
+    }
+  }
+
+  async function checkDelivery(pincode) {
+    setCheckingDelivery(true);
+
+    try {
+      const snap = await getDocs(
+        collection(db, "deliveryZones")
+      );
+
+      const zoneDocs = snap.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      }));
+
+      const zone = zoneDocs.find(
+        (z) =>
+          z.active &&
+          Array.isArray(z.pincodes) &&
+          z.pincodes.includes(pincode)
+      );
+
+      if (zone) {
+        setDeliveryAvailable(true);
+
+        setDeliveryInfo({
+          zoneName: zone.name,
+          fee: zone.deliveryFee,
+          freeAbove: zone.freeDeliveryAbove,
+          minOrder: zone.minOrder,
+          eta: zone.estimatedTime,
+        });
+      } else {
+        setDeliveryAvailable(false);
+        setDeliveryInfo(null);
+      }
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setCheckingDelivery(false);
     }
   }
 
@@ -608,11 +654,11 @@ const styles = {
   },
   emptyText: {
     fontSize: "14px",
-    color: "#666",
+    color: "#667",
     marginTop: "8px",
   },
   loading: {
     textAlign: "center",
-    color: "#666",
+    color: "#667",
   },
 };
