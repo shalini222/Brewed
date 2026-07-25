@@ -326,65 +326,42 @@ setLocationError(
 
 
     {/* Add Address Button */}
-
-    <button
-      style={styles.addButton}
-      onClick={() => {
-        setEditingId(null);
-        setForm(emptyForm);
-        setShowForm(!showForm);
-      }}
-    >
-      <Plus size={18} />
-      Add New Address
-    </button>
-
-
 <button
-
-style={styles.locationButton}
-
-onClick={useCurrentLocation}
-
+  style={styles.addButton}
+  onClick={() => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setShowForm(!showForm);
+  }}
 >
-
-📍
-
-{locationLoading
-
-?
-
-"Getting Location..."
-
-:
-
-"Use Current Location"
-
-}
-
+  <Plus size={18} />
+  Add New Address
 </button>
 
+{showForm && (
 
-    
-    {/* Address Form */}
+  <div style={styles.formCard}>
 
-    {showForm && (
+    <h2 style={styles.formTitle}>
+      {editingId ? "Edit Address" : "New Address"}
+    </h2>
 
-      <div style={styles.formCard}>
+    <button
+      style={styles.locationButton}
+      onClick={useCurrentLocation}
+    >
+      📍
+      {locationLoading
+        ? "Getting Location..."
+        : "Use Current Location"}
+    </button>
 
-        <h2 style={styles.formTitle}>
-          {editingId ? "Edit Address" : "New Address"}
-        </h2>
-
-       {locationError && (
-
-<p style={styles.error}>
-
-{locationError}
-
-</p>
-
-)}
+    {locationError && (
+      <p style={styles.error}>
+        {locationError}
+      </p>
+    )}
+        
         <input
           name="name"
           placeholder="Full Name"
