@@ -4,7 +4,7 @@ import { db } from "../firebase";
 import { loadGoogleMaps } from "../utils/loadGoogleMaps";
 
 import { LoadScript } from "@react-google-maps/api";
-import { checkDelivery } from "../service/deliveryService";
+import { checkDelivery as checkDeliveryService } from "../service/deliveryService";
 
 import {
   collection,
@@ -144,7 +144,7 @@ export default function AddressPage({ setPage }) {
     }
   }, [cleanedForm.pincode]);
 
-  async function checkDelivery(pincode) {
+ async function checkDelivery(pincode) {
   if (!/^\d{6}$/.test(pincode)) {
     setDeliveryAvailable(null);
     setDeliveryInfo(null);
@@ -154,18 +154,11 @@ export default function AddressPage({ setPage }) {
   setCheckingDelivery(true);
 
   try {
-    const result = await checkDeliveryAvailability(pincode);
+    const result = await checkDeliveryService(pincode);
 
     if (result.available) {
       setDeliveryAvailable(true);
-
-      setDeliveryInfo({
-        zoneName: result.zone.name,
-        fee: result.deliveryFee,
-        freeAbove: result.freeDeliveryAbove,
-        minOrder: result.minOrder,
-        eta: result.estimatedTime,
-      });
+      setDeliveryInfo(result.info);
     } else {
       setDeliveryAvailable(false);
       setDeliveryInfo(null);
@@ -177,8 +170,7 @@ export default function AddressPage({ setPage }) {
   } finally {
     setCheckingDelivery(false);
   }
-  }
-
+ }
   function handleChange(e) {
     let { name, value } = e.target;
 
