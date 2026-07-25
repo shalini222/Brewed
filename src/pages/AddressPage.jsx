@@ -38,6 +38,8 @@ export default function AddressPage({ setPage }) {
     pincode: "",
     type: "Home",
     isDefault: false,
+    latitude: null,
+  longitude: null,
   };
 
   const [addresses, setAddresses] = useState([]);
@@ -242,56 +244,59 @@ const  PLACES_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
   }
 
 const useCurrentLocation = () => {
+  if (!navigator.geolocation) {
+    setLocationError(
+      "Your device doesn't support location services."
+    );
+    return;
+  }
 
-if (!navigator.geolocation) {
+  setLocationLoading(true);
+  setLocationError("");
 
-alert("Geolocation is not supported.");
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
 
-return;
+      setForm((prev) => ({
+        ...prev,
+        latitude,
+        longitude,
+      }));
 
-}
+      setLocationLoading(false);
 
-setLocationLoading(true);
+      console.log("Latitude:", latitude);
+      console.log("Longitude:", longitude);
+    },
 
-setLocationError("");
+    (error) => {
+      console.log(error);
 
-navigator.geolocation.getCurrentPosition(
+      if (error.code === 1) {
+        setLocationError(
+          "Location permission denied."
+        );
+      } else if (error.code === 2) {
+        setLocationError(
+          "Location unavailable."
+        );
+      } else {
+        setLocationError(
+          "Couldn't get your location."
+        );
+      }
 
-(position) => {
+      setLocationLoading(false);
+    },
 
-const latitude = position.coords.latitude;
-
-const longitude = position.coords.longitude;
-
-setForm({
-
-...form,
-
-latitude,
-longitude
-
-});
-
-setLocationLoading(false);
-
-},
-
-(error) => {
-
-console.log(error);
-
-setLocationLoading(false);
-
-setLocationError(
-
-"Unable to fetch your location."
-
-);
-
-}
-
-);
-
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0,
+    }
+  );
 };
 
 
