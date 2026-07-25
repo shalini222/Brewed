@@ -2,6 +2,12 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useCart } from "../context/CartContext";
 import { auth } from "../firebase";
 import { serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+} from "firebase/firestore";
+
+import { db } from "../firebase";
 
 const THEME = {
   colors: {
@@ -40,6 +46,8 @@ export default function CheckoutPage({ setPage }) {
   const [coupon, setCoupon] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(null); 
   const [couponError, setCouponError] = useState("");
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState(null);
   const [orderSnapshot, setOrderSnapshot] = useState(null);
 
   const canvasRef = useRef(null);
@@ -56,6 +64,53 @@ export default function CheckoutPage({ setPage }) {
   }, [total, paymentMethod, appliedCoupon]);
 
   useEffect(() => { loadRazorpayScript(); }, []);
+
+  useEffect(() => {
+  async function loadAddresses() {
+    if (!auth.currentUser) return;
+
+    try {
+      const snapshot = await getDocs(
+        collection(
+          db,
+          "users",
+          auth.currentUser.uid,
+          "addresses"
+        )
+      );
+
+      const list = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setAddresses(list);
+
+      const defaultAddress =
+        list.find((a) => a.isDefault);
+
+      const addressToUse =
+        defaultAddress || list[0];
+
+      if (addressToUse) {
+        setSelectedAddress(addressToUse);
+
+        setForm((prev) => ({
+          ...prev,
+          name: addressToUse.name,
+          phone: addressToUse.phone,
+          address:
+            `${addressToUse.house}, ${addressToUse.street}, ${addressToUse.city}, ${addressToUse.state} ${addressToUse.pincode}`,
+        }));
+      }
+
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  loadAddresses();
+}, []);
 
   // --- Particle Simulation Effect ---
   useEffect(() => {
