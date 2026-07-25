@@ -244,7 +244,9 @@ const  PLACES_API_KEY = "AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA";
   }
 
 
-const useCurrentLocation = () => {
+          
+
+          const useCurrentLocation = () => {
   if (!navigator.geolocation) {
     setLocationError(
       "Your device doesn't support location services."
@@ -366,7 +368,7 @@ const useCurrentLocation = () => {
           setLocationError(
             "Location permission denied."
           );
-             alert("Permission Denied");
+          alert("Permission Denied");
           break;
 
         case error.POSITION_UNAVAILABLE:
