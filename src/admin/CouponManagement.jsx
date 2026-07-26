@@ -17,36 +17,36 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
-  BarChart,
-  Bar,
 } from "recharts";
 
 // --- REUSABLE STYLE CONSTANTS ---
 const STYLES = {
   card: {
-    background: "#fff",
-    padding: "25px",
+    background: "#FFFFFF",
+    padding: "22px 24px",
     borderRadius: "16px",
-    boxShadow: "0 10px 30px rgba(196,149,106,0.06)",
-    border: "1px solid rgba(230, 220, 210, 0.4)",
+    boxShadow: "0 10px 30px rgba(196,149,106,0.04)",
+    border: "1px solid rgba(230, 220, 210, 0.6)",
     display: "flex",
     alignItems: "center",
-    gap: "20px",
+    gap: "18px",
+    transition: "transform 0.2s ease, box-shadow 0.2s ease",
   },
   highlightCard: {
     background: "linear-gradient(135deg, #1E1B18 0%, #3B342E 100%)",
-    padding: "25px",
+    padding: "22px 24px",
     borderRadius: "16px",
-    boxShadow: "0 10px 30px rgba(196,149,106,0.06)",
-    border: "1px solid rgba(230, 220, 210, 0.4)",
+    boxShadow: "0 10px 30px rgba(30,27,24,0.15)",
+    border: "1px solid rgba(230, 220, 210, 0.2)",
     display: "flex",
     alignItems: "center",
-    gap: "20px",
+    gap: "18px",
+    transition: "transform 0.2s ease, box-shadow 0.2s ease",
   },
   formInput: {
     padding: "12px 16px",
@@ -102,7 +102,6 @@ const getCategoryColor = (category) => {
     default: return { cardBg: "#fff", bg: "#FAF6F0", color: "#544E48", border: "#EAE1D4" };
   }
 };
-
 
 export default function CouponManagement({ setPage = () => {} }) {
   const [coupons, setCoupons] = useState([]);
@@ -171,11 +170,9 @@ export default function CouponManagement({ setPage = () => {} }) {
 
   const {
     totalUses,
-    totalPossibleUses,
     redemptionRate,
     totalDiscount,
     totalRevenue,
-    mostUsed,
   } = metrics;
 
   // --- CHART DATA GENERATION (MEMOIZED) ---
@@ -184,15 +181,6 @@ export default function CouponManagement({ setPage = () => {} }) {
       name: type,
       value: safeCoupons.filter((c) => (c?.category || "General") === type).length,
     }));
-  }, [safeCoupons]);
-
-  const usageData = useMemo(() => {
-    return [...safeCoupons]
-      .sort((a, b) => parseSec(a?.createdAt) - parseSec(b?.createdAt))
-      .map((coupon) => ({
-        name: coupon?.code || "UNNAMED",
-        uses: parseNum(coupon?.usageCount),
-      }));
   }, [safeCoupons]);
 
   // --- SALES & REVENUE TIMELINE METRICS ---
@@ -633,28 +621,43 @@ export default function CouponManagement({ setPage = () => {} }) {
 
   function StatCard({ title, value, color, icon, highlight }) {
     return (
-      <div style={highlight ? STYLES.highlightCard : STYLES.card}>
+      <div 
+        style={highlight ? STYLES.highlightCard : STYLES.card}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "translateY(-3px)";
+          e.currentTarget.style.boxShadow = highlight ? "0 14px 35px rgba(30,27,24,0.2)" : "0 14px 35px rgba(196,149,106,0.1)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "translateY(0px)";
+          e.currentTarget.style.boxShadow = highlight ? "0 10px 30px rgba(30,27,24,0.15)" : "0 10px 30px rgba(196,149,106,0.04)";
+        }}
+      >
         <div
           style={{
-            fontSize: "30px",
-            background: highlight ? "rgba(255,255,255,0.08)" : `${color}10`,
-            padding: "14px",
+            fontSize: "26px",
+            background: highlight ? "rgba(255,255,255,0.08)" : `${color}12`,
+            color: highlight ? "#C4956A" : color,
+            width: "52px",
+            height: "52px",
             borderRadius: "14px",
             display: "flex",
             alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            border: highlight ? "1px solid rgba(255,255,255,0.05)" : `1px solid ${color}20`
           }}
         >
           {icon}
         </div>
-        <div>
+        <div style={{ overflow: "hidden" }}>
           <p
             style={{
-              color: highlight ? "#C4956A" : "#8A827C",
+              color: highlight ? "#A8A096" : "#8A827C",
               margin: 0,
-              fontSize: "12px",
-              fontWeight: "600",
+              fontSize: "11px",
+              fontWeight: "700",
               textTransform: "uppercase",
-              letterSpacing: "0.5px",
+              letterSpacing: "0.8px",
             }}
           >
             {title}
@@ -664,9 +667,12 @@ export default function CouponManagement({ setPage = () => {} }) {
               marginTop: "4px",
               marginBottom: 0,
               color: highlight ? "#fff" : "#1E1B18",
-              fontSize: "26px",
+              fontSize: "24px",
               fontWeight: "700",
               fontFamily: "monospace",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis"
             }}
           >
             {value}
@@ -730,7 +736,7 @@ export default function CouponManagement({ setPage = () => {} }) {
 
         {/* CORE LIVE TRANSACTIONAL SALES HUD */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px", marginBottom: "40px" }}>
-          <StatCard title="Sales Confirmed Today" value={`${salesTodayStats.count} Orders`} color="#fff" icon="🛍️" highlight={true} />
+          <StatCard title="Sales Confirmed Today" value={`${salesTodayStats.count} Orders`} color="#C4956A" icon="🛍️" highlight={true} />
           <StatCard title="Revenue Captured Today" value={`₹${salesTodayStats.revenue}`} color="#009688" icon="⚡" />
           <StatCard title="All-Time Total Revenue" value={`₹${totalSalesRevenueCollection}`} color="#2E7D32" icon="💼" />
           <StatCard title="Active Templates" value={safeCoupons.filter(c => c?.active).length} color="#3B1A08" icon="⚙️" />
@@ -999,6 +1005,48 @@ export default function CouponManagement({ setPage = () => {} }) {
                 </div>
               </div>
             )}
+
+            {/* DYNAMIC HISTORICAL DATA AUDIT LOG DATAGRID TABLE (MOVED HERE) */}
+            <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", boxShadow: "0 4px 20px rgba(0,0,0,0.01)" }}>
+              <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: "700" }}>📜 Permanent Coupon System Audit Log</h3>
+              <p style={{ color: "#8A827C", fontSize: "13px", margin: "0 0 20px 0" }}>Real-time tracing of deployment loops, administrative parameter mutations, and state resets.</p>
+              
+              <div style={{ overflowX: "auto", maxHeight: "320px" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                  <thead>
+                    <tr style={{ background: "#FAF6F0", borderBottom: "1px solid #EAE1D4", color: "#544E48" }}>
+                      <th style={{ padding: "12px", textAlign: "left" }}>Timestamp Trigger</th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>Target Subject</th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>Action Signature</th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>Parameter Meta Scope</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {safeLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" style={{ padding: "20px", textAlign: "center", color: "#A8A096" }}>No active logs stored in current execution pipelines.</td>
+                      </tr>
+                    ) : (
+                      [...safeLogs]
+                        .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))
+                        .map((log, index) => (
+                          <tr key={log?.id || `${log?.code}-${log?.timestamp?.seconds}` || index} style={{ borderBottom: "1px solid #FAF6F0" }}>
+                            <td style={{ padding: "12px", color: "#544E48" }}>{log?.timestamp?.seconds ? new Date(log.timestamp.seconds * 1000).toLocaleString() : "Sync Processing"}</td>
+                            <td style={{ padding: "12px", fontWeight: "700", fontFamily: "monospace" }}>{log?.code || "SYSTEM"}</td>
+                            <td style={{ padding: "12px" }}>
+                              <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "700", background: log?.action?.includes("CREATE") ? "#E8F5E9" : log?.action?.includes("PURGE") || log?.action?.includes("DELETE") ? "#FFEBEE" : "#FFF3E0", color: log?.action?.includes("CREATE") ? "#1B5E20" : log?.action?.includes("PURGE") || log?.action?.includes("DELETE") ? "#C62828" : "#E65100" }}>
+                                {log?.action || "LOG_EVENT"}
+                              </span>
+                            </td>
+                            <td style={{ padding: "12px", color: "#8A827C" }}>{log?.category ? `${log?.category} Framework` : "Metadata Config Sync Override"}</td>
+                          </tr>
+                        ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
 
           {/* DISPLAY PIPELINE WORKSPACE FOR DYNAMIC REPOSITORIES */}
@@ -1231,47 +1279,6 @@ export default function CouponManagement({ setPage = () => {} }) {
                 );
               })()
             )}
-
-            {/* DYNAMIC HISTORICAL DATA AUDIT LOG DATAGRID TABLE */}
-            <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", boxShadow: "0 4px 20px rgba(0,0,0,0.01)" }}>
-              <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: "700" }}>📜 Permanent Coupon System Audit Log</h3>
-              <p style={{ color: "#8A827C", fontSize: "13px", margin: "0 0 20px 0" }}>Real-time tracing of deployment loops, administrative parameter mutations, and state resets.</p>
-              
-              <div style={{ overflowX: "auto", maxHeight: "280px" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-                  <thead>
-                    <tr style={{ background: "#FAF6F0", borderBottom: "1px solid #EAE1D4", color: "#544E48" }}>
-                      <th style={{ padding: "12px", textAlign: "left" }}>Timestamp Trigger</th>
-                      <th style={{ padding: "12px", textAlign: "left" }}>Target Subject</th>
-                      <th style={{ padding: "12px", textAlign: "left" }}>Action Signature</th>
-                      <th style={{ padding: "12px", textAlign: "left" }}>Parameter Meta Scope</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {safeLogs.length === 0 ? (
-                      <tr>
-                        <td colSpan="4" style={{ padding: "20px", textAlign: "center", color: "#A8A096" }}>No active logs stored in current execution pipelines.</td>
-                      </tr>
-                    ) : (
-                      [...safeLogs]
-                        .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))
-                        .map((log, index) => (
-                          <tr key={log?.id || `${log?.code}-${log?.timestamp?.seconds}` || index} style={{ borderBottom: "1px solid #FAF6F0" }}>
-                            <td style={{ padding: "12px", color: "#544E48" }}>{log?.timestamp?.seconds ? new Date(log.timestamp.seconds * 1000).toLocaleString() : "Sync Processing"}</td>
-                            <td style={{ padding: "12px", fontWeight: "700", fontFamily: "monospace" }}>{log?.code || "SYSTEM"}</td>
-                            <td style={{ padding: "12px" }}>
-                              <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "700", background: log?.action?.includes("CREATE") ? "#E8F5E9" : log?.action?.includes("PURGE") || log?.action?.includes("DELETE") ? "#FFEBEE" : "#FFF3E0", color: log?.action?.includes("CREATE") ? "#1B5E20" : log?.action?.includes("PURGE") || log?.action?.includes("DELETE") ? "#C62828" : "#E65100" }}>
-                                {log?.action || "LOG_EVENT"}
-                              </span>
-                            </td>
-                            <td style={{ padding: "12px", color: "#8A827C" }}>{log?.category ? `${log?.category} Framework` : "Metadata Config Sync Override"}</td>
-                          </tr>
-                        ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
 
           </div>
 
