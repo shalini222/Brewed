@@ -38,6 +38,14 @@ export default function WalletPage({ setPage }) {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [showPayments, setShowPayments] = useState(false);
 
+  // Phase 8 Wallet Settings States
+  const [showWalletSettings, setShowWalletSettings] = useState(false);
+  const [walletSettings, setWalletSettings] = useState({
+    notifications: true,
+    autoTopUp: false,
+    securityLock: false,
+  });
+
   useEffect(() => {
     if (!currentUser) return;
 
@@ -132,6 +140,19 @@ export default function WalletPage({ setPage }) {
 
       setPaymentMethods(paymentData);
 
+      // Load Settings From Firestore
+      const settingsRef = doc(
+        db,
+        "walletSettings",
+        currentUser.uid
+      );
+
+      const settingsSnap = await getDoc(settingsRef);
+
+      if (settingsSnap.exists()) {
+        setWalletSettings(settingsSnap.data());
+      }
+
     } catch (error) {
       console.error(error);
     } finally {
@@ -192,6 +213,21 @@ export default function WalletPage({ setPage }) {
       console.error(error);
       alert("Something went wrong");
     }
+  };
+
+  const updateWalletSettings = async (key, value) => {
+    const updated = {
+      ...walletSettings,
+      [key]: value,
+    };
+
+    setWalletSettings(updated);
+
+    await setDoc(
+      doc(db, "walletSettings", currentUser.uid),
+      updated,
+      { merge: true }
+    );
   };
 
   const filteredTransactions =
@@ -315,7 +351,7 @@ export default function WalletPage({ setPage }) {
 
         .wallet-actions {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(4, 1fr);
           gap: 16px;
           margin-bottom: 30px;
         }
@@ -347,6 +383,7 @@ export default function WalletPage({ setPage }) {
           font-size: 0.9rem;
           font-weight: 600;
           color: #2C2C2C;
+          text-align: center;
         }
 
         .wallet-transactions {
@@ -474,7 +511,7 @@ export default function WalletPage({ setPage }) {
           cursor: pointer;
         }
 
-        .wallet-modal input {
+        .wallet-modal input[type="number"] {
           width: 100%;
           padding: 14px;
           border-radius: 12px;
@@ -536,9 +573,22 @@ export default function WalletPage({ setPage }) {
           font-size: 32px;
         }
 
+        .setting-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 0;
+          border-bottom: 1px solid #eee;
+        }
+
+        .setting-row span {
+          font-weight: 600;
+          color: #2C2C2C;
+        }
+
         @media (max-width: 768px) {
           .wallet-actions {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, 1fr);
           }
 
           .wallet-button-group {
@@ -623,6 +673,14 @@ export default function WalletPage({ setPage }) {
         >
           <div className="wallet-action-icon">💸</div>
           <span>Refunds</span>
+        </button>
+
+        <button
+          className="wallet-action-card"
+          onClick={() => setShowWalletSettings(true)}
+        >
+          <div className="wallet-action-icon">⚙️</div>
+          <span>Settings</span>
         </button>
       </section>
 
@@ -960,6 +1018,79 @@ export default function WalletPage({ setPage }) {
               className="wallet-close-btn"
               style={{ marginTop: "20px" }}
               onClick={() => setShowPayments(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Wallet Settings Modal */}
+      {showWalletSettings && (
+        <div className="wallet-modal-overlay">
+          <div className="wallet-modal">
+            <div className="wallet-section-header">
+              <h2>Wallet Settings</h2>
+              <button
+                className="wallet-view-all"
+                onClick={() => setShowWalletSettings(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="setting-row">
+              <span>
+                Transaction Notifications
+              </span>
+              <input
+                type="checkbox"
+                checked={walletSettings.notifications}
+                onChange={(e) =>
+                  updateWalletSettings(
+                    "notifications",
+                    e.target.checked
+                  )
+                }
+              />
+            </div>
+
+            <div className="setting-row">
+              <span>
+                Auto Top-up
+              </span>
+              <input
+                type="checkbox"
+                checked={walletSettings.autoTopUp}
+                onChange={(e) =>
+                  updateWalletSettings(
+                    "autoTopUp",
+                    e.target.checked
+                  )
+                }
+              />
+            </div>
+
+            <div className="setting-row">
+              <span>
+                Wallet Lock
+              </span>
+              <input
+                type="checkbox"
+                checked={walletSettings.securityLock}
+                onChange={(e) =>
+                  updateWalletSettings(
+                    "securityLock",
+                    e.target.checked
+                  )
+                }
+              />
+            </div>
+
+            <button
+              className="wallet-close-btn"
+              style={{ marginTop: "20px" }}
+              onClick={() => setShowWalletSettings(false)}
             >
               Close
             </button>
