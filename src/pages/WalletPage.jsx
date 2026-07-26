@@ -34,6 +34,10 @@ export default function WalletPage({ setPage }) {
   const [refunds, setRefunds] = useState([]);
   const [showRefunds, setShowRefunds] = useState(false);
 
+  // Phase 7 Payment Method States
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [showPayments, setShowPayments] = useState(false);
+
   useEffect(() => {
     if (!currentUser) return;
 
@@ -112,6 +116,21 @@ export default function WalletPage({ setPage }) {
       }));
 
       setRefunds(refundData);
+
+      // Load Payment Methods From Firestore
+      const paymentQuery = query(
+        collection(db, "paymentMethods"),
+        where("userId", "==", currentUser.uid)
+      );
+
+      const paymentSnapshot = await getDocs(paymentQuery);
+
+      const paymentData = paymentSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      setPaymentMethods(paymentData);
 
     } catch (error) {
       console.error(error);
@@ -590,7 +609,10 @@ export default function WalletPage({ setPage }) {
           <span>Transactions</span>
         </button>
 
-        <button className="wallet-action-card">
+        <button
+          className="wallet-action-card"
+          onClick={() => setShowPayments(true)}
+        >
           <div className="wallet-action-icon">💳</div>
           <span>Payments</span>
         </button>
@@ -875,6 +897,69 @@ export default function WalletPage({ setPage }) {
               className="wallet-close-btn"
               style={{ marginTop: "20px" }}
               onClick={() => setShowRefunds(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Methods Modal */}
+      {showPayments && (
+        <div className="wallet-modal-overlay">
+          <div className="wallet-modal transaction-modal">
+            <div className="wallet-section-header">
+              <h2>Payment Methods</h2>
+              <button
+                className="wallet-view-all"
+                onClick={() => setShowPayments(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {paymentMethods.length === 0 ? (
+              <div className="wallet-empty-state">
+                <div className="wallet-empty-icon">
+                  💳
+                </div>
+                <h4>
+                  No Payment Methods
+                </h4>
+                <p>
+                  Add a card or UPI account for faster checkout.
+                </p>
+              </div>
+            ) : (
+              <div className="wallet-transaction-list">
+                {paymentMethods.map((method) => (
+                  <div
+                    key={method.id}
+                    className="wallet-transaction-item"
+                  >
+                    <div>
+                      <strong>
+                        {method.type}
+                      </strong>
+                      <p>
+                        {method.details}
+                      </p>
+                    </div>
+
+                    {method.isDefault && (
+                      <span style={{ fontSize: "0.8rem", background: "#f0e6dc", color: "#A7774F", padding: "4px 8px", borderRadius: "12px", fontWeight: "600" }}>
+                        Default
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              className="wallet-close-btn"
+              style={{ marginTop: "20px" }}
+              onClick={() => setShowPayments(false)}
             >
               Close
             </button>
