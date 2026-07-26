@@ -30,6 +30,10 @@ export default function WalletPage({ setPage }) {
   const [showRewards, setShowRewards] = useState(false);
   const [rewards, setRewards] = useState([]);
 
+  // Phase 6 Refund States
+  const [refunds, setRefunds] = useState([]);
+  const [showRefunds, setShowRefunds] = useState(false);
+
   useEffect(() => {
     if (!currentUser) return;
 
@@ -91,6 +95,23 @@ export default function WalletPage({ setPage }) {
       );
 
       setRewardBalance(totalRewards);
+
+      // Load Refunds From Firestore
+      const refundQuery = query(
+        collection(db, "refunds"),
+        where("userId", "==", currentUser.uid),
+        orderBy("createdAt", "desc"),
+        limit(10)
+      );
+
+      const refundSnapshot = await getDocs(refundQuery);
+
+      const refundData = refundSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      setRefunds(refundData);
 
     } catch (error) {
       console.error(error);
@@ -574,7 +595,10 @@ export default function WalletPage({ setPage }) {
           <span>Payments</span>
         </button>
 
-        <button className="wallet-action-card">
+        <button
+          className="wallet-action-card"
+          onClick={() => setShowRefunds(true)}
+        >
           <div className="wallet-action-icon">💸</div>
           <span>Refunds</span>
         </button>
@@ -790,6 +814,67 @@ export default function WalletPage({ setPage }) {
               className="wallet-close-btn"
               style={{ marginTop: "20px" }}
               onClick={() => setShowRewards(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Refunds Modal */}
+      {showRefunds && (
+        <div className="wallet-modal-overlay">
+          <div className="wallet-modal transaction-modal">
+            <div className="wallet-section-header">
+              <h2>Refunds</h2>
+              <button
+                className="wallet-view-all"
+                onClick={() => setShowRefunds(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {refunds.length === 0 ? (
+              <div className="wallet-empty-state">
+                <div className="wallet-empty-icon">
+                  💸
+                </div>
+                <h4>
+                  No Refunds Yet
+                </h4>
+                <p>
+                  Your refunded orders will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="wallet-transaction-list">
+                {refunds.map((refund) => (
+                  <div
+                    key={refund.id}
+                    className="wallet-transaction-item"
+                  >
+                    <div>
+                      <strong>
+                        {refund.reason}
+                      </strong>
+                      <p>
+                        {refund.status}
+                      </p>
+                    </div>
+
+                    <h4 style={{ color: "#2E7D32" }}>
+                      +₹{refund.amount}
+                    </h4>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              className="wallet-close-btn"
+              style={{ marginTop: "20px" }}
+              onClick={() => setShowRefunds(false)}
             >
               Close
             </button>
