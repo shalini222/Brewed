@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useCart } from "../context/CartContext";
 import { auth } from "../firebase";
 import { serverTimestamp } from "firebase/firestore";
+import { checkDelivery } from "../service/deliveryService";
 import {
   collection,
   getDocs,
@@ -49,20 +50,46 @@ export default function CheckoutPage({ setPage }) {
   const [addresses, setAddresses] = useState([]);
   const [showAddressPicker, setShowAddressPicker] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(null);
+  const [deliveryLoading, setDeliveryLoading] = useState(false);
+  const [deliveryAvailable, setDeliveryAvailable] = useState(null);
+  const [deliveryInfo, setDeliveryInfo] = useState(null);
   const [orderSnapshot, setOrderSnapshot] = useState(null);
 
   const canvasRef = useRef(null);
-  const CONFIG = { taxRate: 0.08, codFee: 30, deliveryFee: 40 };
+  
+ const calculations = useMemo(() => {
+  const subtotal = Number.isFinite(total) ? total : 0;
 
-  const calculations = useMemo(() => {
-    const subtotal = Number.isFinite(total) ? total : 0;
-    const tax = Math.round(subtotal * CONFIG.taxRate);
-    const delivery = subtotal > 0 ? CONFIG.deliveryFee : 0;
-    const cod = paymentMethod === "cod" ? CONFIG.codFee : 0;
-    const discount = appliedCoupon ? appliedCoupon.discount : 0;
-    const grandTotal = Math.max(0, Math.round(subtotal + tax + delivery + cod - discount));
-    return { subtotal, tax, delivery, cod, discount, grandTotal };
-  }, [total, paymentMethod, appliedCoupon]);
+  const tax = Math.round(subtotal * CONFIG.taxRate);
+
+  let delivery = 0;
+
+  if (subtotal > 0 && deliveryInfo) {
+    if (subtotal >= deliveryInfo.freeDeliveryAbove) {
+      delivery = 0;
+    } else {
+      delivery = deliveryInfo.deliveryFee;
+    }
+  }
+
+  const cod = paymentMethod === "cod" ? CONFIG.codFee : 0;
+
+  const discount = appliedCoupon ? appliedCoupon.discount : 0;
+
+  const grandTotal = Math.max(
+    0,
+    Math.round(subtotal + tax + delivery + cod - discount)
+  );
+
+  return {
+    subtotal,
+    tax,
+    delivery,
+    cod,
+    discount,
+    grandTotal,
+  };
+}, [total, paymentMethod, appliedCoupon, deliveryInfo]);
 
   useEffect(() => { loadRazorpayScript(); }, []);
 
@@ -157,6 +184,30 @@ export default function CheckoutPage({ setPage }) {
     const timer = setTimeout(() => { active = false; }, 5000);
     return () => { cancelAnimationFrame(animationFrameId); clearTimeout(timer); window.removeEventListener("resize", resizeCanvas); };
   }, [status]);
+
+
+  useEffect(() => {
+  async function validateDelivery() {
+    if (!selectedAddress?.pincode) return;
+
+    setDeliveryLoading(true);
+
+    try {
+      const result = await checkDelivery(selectedAddress.pincode);
+
+      setDeliveryAvailable(result.available);
+      setDeliveryInfo(result.info);
+    } catch (err) {
+      console.log(err);
+      setDeliveryAvailable(false);
+      setDeliveryInfo(null);
+    } finally {
+      setDeliveryLoading(false);
+    }
+  }
+
+  validateDelivery();
+}, [selectedAddress]);
 
   const handleInputChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
