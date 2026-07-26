@@ -13,6 +13,15 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 
 const actionButtonStyle = {
   padding: 12,
@@ -61,6 +70,13 @@ export default function WalletManagement({ setPage }) {
   // State
   const [wallets, setWallets] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Wallet Analytics State for Phase 7.1
+  const [walletAnalytics, setWalletAnalytics] = useState({
+    daily: [],
+    weekly: [],
+    monthly: [],
+  });
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -153,6 +169,34 @@ export default function WalletManagement({ setPage }) {
         });
 
         setWallets(mergedData);
+
+        const monthlyData = {};
+
+        mergedData.forEach((wallet) => {
+          if (!wallet.updatedAt) return;
+
+          const date = new Date(wallet.updatedAt);
+          const month = date.toLocaleString("default", {
+            month: "short",
+          });
+
+          if (!monthlyData[month]) {
+            monthlyData[month] = {
+              month,
+              wallets: 0,
+              balance: 0,
+            };
+          }
+
+          monthlyData[month].wallets += 1;
+          monthlyData[month].balance += wallet.balance;
+        });
+
+        setWalletAnalytics({
+          monthly: Object.values(monthlyData),
+          daily: [],
+          weekly: [],
+        });
 
         const transactions = transactionSnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -548,6 +592,77 @@ export default function WalletManagement({ setPage }) {
   const totalRefunds = wallets.reduce((acc, curr) => acc + (Number(curr.refunds) || 0), 0);
   const totalRewards = wallets.reduce((acc, curr) => acc + (Number(curr.rewardBalance) || 0), 0);
 
+  // Phase 7.2 Liability Calculations
+  const totalWalletLiability = totalBalance;
+  const totalRewardLiability = totalRewards;
+  const totalLiability =
+    totalWalletLiability + totalRewardLiability;
+
+  // Phase 7.3 Top Wallet Users Calculations
+  const topWalletUsers = [...wallets]
+    .sort((a, b) => b.balance - a.balance)
+    .slice(0, 5);
+
+  // Phase 7.4 Reward Usage Analytics Calculations
+  const totalRewardsEarned = wallets.reduce(
+    (sum, wallet) => sum + (Number(wallet.rewardBalance) || 0),
+    0
+  );
+
+  const activeRewardUsers = wallets.filter(
+    (wallet) => wallet.rewardBalance > 0
+  ).length;
+
+  const averageRewardBalance =
+    wallets.length > 0
+      ? Math.round(totalRewardsEarned / wallets.length)
+      : 0;
+
+  const highestRewardHolder = [...wallets].sort(
+    (a, b) => b.rewardBalance - a.rewardBalance
+  )[0];
+
+  // Phase 7.5 Refund Analytics Calculations
+  const totalRefundAmount = wallets.reduce(
+    (sum, wallet) => sum + (Number(wallet.refunds) || 0),
+    0
+  );
+
+  const refundedUsers = wallets.filter(
+    (wallet) => (wallet.refunds || 0) > 0
+  ).length;
+
+  const averageRefund =
+    refundedUsers > 0
+      ? Math.round(totalRefundAmount / refundedUsers)
+      : 0;
+
+  const highestRefundUser = [...wallets].sort(
+    (a, b) => (b.refunds || 0) - (a.refunds || 0)
+  )[0];
+
+  // Phase 7 Summary Calculations
+  const summary = {
+    daily: {
+      topUps: 0,
+      spent: 0,
+      refunds: 0,
+      rewards: 0,
+    },
+    weekly: {
+      topUps: 0,
+      spent: 0,
+      refunds: 0,
+      rewards: 0,
+    },
+    monthly: {
+      topUps: totalMoneyAdded,
+      spent: totalMoneySpent,
+      refunds: totalRefundAmount,
+      rewards: totalRewardsEarned,
+    },
+  };
+
   // Filtered and Sorted Wallets using useMemo
   const filteredWallets = useMemo(() => {
     return [...wallets]
@@ -643,6 +758,446 @@ export default function WalletManagement({ setPage }) {
         <StatCard title="Money Spent" value={`₹${totalMoneySpent.toLocaleString()}`} />
         <StatCard title="Refunds" value={`₹${totalRefunds.toLocaleString()}`} />
         <StatCard title="Rewards" value={`₹${totalRewards.toLocaleString()}`} />
+      </div>
+
+      {/* Wallet Growth Chart Section */}
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          padding: 24,
+          marginBottom: 30,
+          border: "1px solid #eee",
+          boxShadow: "0 8px 25px rgba(0,0,0,.05)",
+        }}
+      >
+        <h2
+          style={{
+            marginTop: 0,
+            color: "#3B1A08",
+          }}
+        >
+          📈 Wallet Growth
+        </h2>
+
+        <div style={{ width: "100%", height: 300 }}>
+          <ResponsiveContainer>
+            <LineChart data={walletAnalytics.monthly}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+
+              <Line
+                type="monotone"
+                dataKey="wallets"
+                stroke="#C4956A"
+                strokeWidth={3}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Wallet Liability Section */}
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          padding: 24,
+          marginBottom: 30,
+          border: "1px solid #eee",
+          boxShadow: "0 8px 25px rgba(0,0,0,.05)",
+        }}
+      >
+        <h2
+          style={{
+            marginTop: 0,
+            color: "#3B1A08",
+            marginBottom: 20,
+          }}
+        >
+          💰 Wallet Liability
+        </h2>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+            gap: 20,
+          }}
+        >
+          <StatCard
+            title="Wallet Balance"
+            value={`₹${totalWalletLiability.toLocaleString()}`}
+          />
+
+          <StatCard
+            title="Reward Balance"
+            value={`₹${totalRewardLiability.toLocaleString()}`}
+          />
+
+          <StatCard
+            title="Total Liability"
+            value={`₹${totalLiability.toLocaleString()}`}
+          />
+        </div>
+
+        <p
+          style={{
+            marginTop: 20,
+            color: "#666",
+            lineHeight: 1.6,
+            fontSize: 14,
+            marginBottom: 0,
+          }}
+        >
+          Wallet liability represents the total value currently owed
+          to customers through wallet balances and reward balances.
+        </p>
+      </div>
+
+      {/* Top Wallet Users Section */}
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          padding: 24,
+          marginBottom: 30,
+          border: "1px solid #eee",
+          boxShadow: "0 8px 25px rgba(0,0,0,.05)",
+        }}
+      >
+        <h2
+          style={{
+            marginTop: 0,
+            marginBottom: 20,
+            color: "#3B1A08",
+          }}
+        >
+          🏆 Top Wallet Users
+        </h2>
+
+        {topWalletUsers.length === 0 ? (
+          <p style={{ color: "#777" }}>No wallet data available.</p>
+        ) : (
+          topWalletUsers.map((user, index) => (
+            <div
+              key={user.id}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "14px 0",
+                borderBottom:
+                  index === topWalletUsers.length - 1
+                    ? "none"
+                    : "1px solid #eee",
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontWeight: "bold",
+                    color: "#3B1A08",
+                  }}
+                >
+                  {index === 0
+                    ? "🥇"
+                    : index === 1
+                    ? "🥈"
+                    : index === 2
+                    ? "🥉"
+                    : `#${index + 1}`}{" "}
+                  {user.name}
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: "#777",
+                  }}
+                >
+                  {user.email}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  textAlign: "right",
+                }}
+              >
+                <div
+                  style={{
+                    fontWeight: "bold",
+                    color: "#3B1A08",
+                  }}
+                >
+                  ₹{user.balance.toLocaleString()}
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: "#777",
+                  }}
+                >
+                  {user.transactionCount} transactions
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Reward Usage Analytics Section */}
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          padding: 24,
+          marginBottom: 30,
+          border: "1px solid #eee",
+          boxShadow: "0 8px 25px rgba(0,0,0,.05)",
+        }}
+      >
+        <h2
+          style={{
+            marginTop: 0,
+            marginBottom: 20,
+            color: "#3B1A08",
+          }}
+        >
+          🎁 Reward Usage Analytics
+        </h2>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+            gap: 20,
+          }}
+        >
+          <StatCard
+            title="Total Reward Balance"
+            value={`₹${totalRewardsEarned.toLocaleString()}`}
+          />
+
+          <StatCard
+            title="Reward Users"
+            value={activeRewardUsers}
+          />
+
+          <StatCard
+            title="Average Rewards"
+            value={`₹${averageRewardBalance}`}
+          />
+
+          <StatCard
+            title="Top Reward Holder"
+            value={highestRewardHolder?.name || "-"}
+          />
+        </div>
+
+        {highestRewardHolder && (
+          <div
+            style={{
+              marginTop: 20,
+              padding: 16,
+              background: "#FAF6F0",
+              borderRadius: 12,
+            }}
+          >
+            <strong>{highestRewardHolder.name}</strong>
+
+            <div style={{ marginTop: 8 }}>
+              Reward Balance:
+              <strong>
+                {" "}
+                ₹{highestRewardHolder.rewardBalance.toLocaleString()}
+              </strong>
+            </div>
+
+            <div>
+              Transactions:
+              <strong>
+                {" "}
+                {highestRewardHolder.transactionCount}
+              </strong>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Refund Analytics Section */}
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          padding: 24,
+          marginBottom: 30,
+          border: "1px solid #eee",
+          boxShadow: "0 8px 25px rgba(0,0,0,.05)",
+        }}
+      >
+        <h2
+          style={{
+            marginTop: 0,
+            marginBottom: 20,
+            color: "#3B1A08",
+          }}
+        >
+          💸 Refund Analytics
+        </h2>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+            gap: 20,
+          }}
+        >
+          <StatCard
+            title="Total Refund Value"
+            value={`₹${totalRefundAmount.toLocaleString("en-IN")}`}
+          />
+
+          <StatCard
+            title="Customers Refunded"
+            value={refundedUsers}
+          />
+
+          <StatCard
+            title="Average Refund"
+            value={`₹${averageRefund.toLocaleString("en-IN")}`}
+          />
+
+          <StatCard
+            title="Largest Refund User"
+            value={highestRefundUser?.name || "-"}
+          />
+        </div>
+
+        {highestRefundUser && (
+          <div
+            style={{
+              marginTop: 20,
+              padding: 18,
+              borderRadius: 12,
+              background: "#FAF6F0",
+            }}
+          >
+            <strong>{highestRefundUser.name}</strong>
+
+            <div style={{ marginTop: 8 }}>
+              Total Refunds:
+              <strong>
+                {" "}
+                ₹{highestRefundUser.refunds.toLocaleString("en-IN")}
+              </strong>
+            </div>
+
+            <div>
+              Wallet Balance:
+              <strong>
+                {" "}
+                ₹{highestRefundUser.balance.toLocaleString("en-IN")}
+              </strong>
+            </div>
+
+            <div>
+              Transactions:
+              <strong>
+                {" "}
+                {highestRefundUser.transactionCount}
+              </strong>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Daily / Weekly / Monthly Summaries Section */}
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          padding: 24,
+          marginBottom: 30,
+          border: "1px solid #eee",
+          boxShadow: "0 8px 25px rgba(0,0,0,.05)",
+        }}
+      >
+        <h2
+          style={{
+            marginTop: 0,
+            color: "#3B1A08",
+            marginBottom: 25,
+          }}
+        >
+          📅 Business Summary
+        </h2>
+
+        {/* Daily Summary */}
+        <h3 style={{ color: "#3B1A08" }}>Today</h3>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+            gap: 15,
+            marginBottom: 25,
+          }}
+        >
+          <StatCard title="Top-ups" value={`₹${summary.daily.topUps}`} />
+          <StatCard title="Spent" value={`₹${summary.daily.spent}`} />
+          <StatCard title="Refunds" value={`₹${summary.daily.refunds}`} />
+          <StatCard title="Rewards" value={`₹${summary.daily.rewards}`} />
+        </div>
+
+        {/* Weekly Summary */}
+        <h3 style={{ color: "#3B1A08" }}>This Week</h3>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+            gap: 15,
+            marginBottom: 25,
+          }}
+        >
+          <StatCard title="Top-ups" value={`₹${summary.weekly.topUps}`} />
+          <StatCard title="Spent" value={`₹${summary.weekly.spent}`} />
+          <StatCard title="Refunds" value={`₹${summary.weekly.refunds}`} />
+          <StatCard title="Rewards" value={`₹${summary.weekly.rewards}`} />
+        </div>
+
+        {/* Monthly Summary */}
+        <h3 style={{ color: "#3B1A08" }}>This Month</h3>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+            gap: 15,
+          }}
+        >
+          <StatCard title="Top-ups" value={`₹${summary.monthly.topUps.toLocaleString("en-IN")}`} />
+          <StatCard title="Spent" value={`₹${summary.monthly.spent.toLocaleString("en-IN")}`} />
+          <StatCard title="Refunds" value={`₹${summary.monthly.refunds.toLocaleString("en-IN")}`} />
+          <StatCard title="Rewards" value={`₹${summary.monthly.rewards.toLocaleString("en-IN")}`} />
+        </div>
+
+        <p
+          style={{
+            marginTop: 20,
+            color: "#777",
+            fontSize: 13,
+            lineHeight: 1.6,
+          }}
+        >
+          Daily and weekly summaries will automatically populate as individual wallet
+          transactions are stored with timestamps.
+        </p>
       </div>
 
       {/* Search & Filters */}
