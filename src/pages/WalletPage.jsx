@@ -13,129 +13,121 @@ import {
   serverTimestamp
 } from "firebase/firestore";
 
-
-
-
 export default function WalletPage({ setPage }) {
+  const { currentUser } = useAuth();
 
-
-
-const { currentUser } = useAuth();
-
-const [balance, setBalance] = useState(0);
-const [promoBalance, setPromoBalance] = useState(0);
-const [transactions, setTransactions] = useState([]);
-const [loading, setLoading] = useState(true);
-const [showAddMoney, setShowAddMoney] = useState(false);
-const [amount, setAmount] = useState("");
+  const [balance, setBalance] = useState(0);
+  const [promoBalance, setPromoBalance] = useState(0);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddMoney, setShowAddMoney] = useState(false);
+  const [amount, setAmount] = useState("");
   const [showTransactions, setShowTransactions] = useState(false);
-const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("all");
 
+  useEffect(() => {
+    if (!currentUser) return;
 
+    loadWallet();
+  }, [currentUser]);
 
+  async function loadWallet() {
+    try {
+      setLoading(true);
 
-useEffect(() => {
-  if (!currentUser) return;
+      const walletRef = doc(db, "wallets", currentUser.uid);
+      const walletSnap = await getDoc(walletRef);
 
-  loadWallet();
-}, [currentUser]);
+      if (walletSnap.exists()) {
+        const data = walletSnap.data();
 
-
-async function loadWallet() {
-  try {
-    setLoading(true);
-
-    const walletRef = doc(db, "wallets", currentUser.uid);
-    const walletSnap = await getDoc(walletRef);
-
-    if (walletSnap.exists()) {
-      const data = walletSnap.data();
-
-      setBalance(data.balance || 0);
-      setPromoBalance(data.promoBalance || 0);
-    }
-
-    const q = query(
-      collection(db, "walletTransactions"),
-      where("userId", "==", currentUser.uid),
-      orderBy("createdAt", "desc"),
-      limit(5)
-    );
-
-    const snapshot = await getDocs(q);
-
-    setTransactions(
-      snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-    );
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setLoading(false);
-  }
-}
-  
-const handleAddMoney = async () => {
-  if (!amount || amount <= 0) {
-    alert("Enter a valid amount");
-    return;
-  }
-
-  try {
-    const walletRef = doc(db, "wallets", currentUser.uid);
-
-    const walletSnap = await getDoc(walletRef);
-
-    let currentBalance = 0;
-
-    if (walletSnap.exists()) {
-      currentBalance = walletSnap.data().balance || 0;
-    }
-
-    const newBalance =
-      currentBalance + Number(amount);
-
-
-    // Update wallet balance
-    await setDoc(
-      walletRef,
-      {
-        balance: newBalance,
-        updatedAt: serverTimestamp()
-      },
-      { merge: true }
-    );
-
-
-    // Create transaction
-    await addDoc(
-      collection(db, "walletTransactions"),
-      {
-        userId: currentUser.uid,
-        type: "credit",
-        title: "Wallet Top Up",
-        amount: Number(amount),
-        status: "completed",
-        createdAt: serverTimestamp()
+        setBalance(data.balance || 0);
+        setPromoBalance(data.promoBalance || 0);
       }
-    );
 
+      const q = query(
+        collection(db, "walletTransactions"),
+        where("userId", "==", currentUser.uid),
+        orderBy("createdAt", "desc"),
+        limit(5)
+      );
 
-    setBalance(newBalance);
+      const snapshot = await getDocs(q);
 
-    setShowAddMoney(false);
-    setAmount("");
-
-    alert("Money added successfully");
-
-  } catch (error) {
-    console.error(error);
-    alert("Something went wrong");
+      setTransactions(
+        snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+      );
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   }
-};
   
+  const handleAddMoney = async () => {
+    if (!amount || amount <= 0) {
+      alert("Enter a valid amount");
+      return;
+    }
+
+    try {
+      const walletRef = doc(db, "wallets", currentUser.uid);
+
+      const walletSnap = await getDoc(walletRef);
+
+      let currentBalance = 0;
+
+      if (walletSnap.exists()) {
+        currentBalance = walletSnap.data().balance || 0;
+      }
+
+      const newBalance = currentBalance + Number(amount);
+
+      // Update wallet balance
+      await setDoc(
+        walletRef,
+        {
+          balance: newBalance,
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
+      );
+
+      // Create transaction
+      await addDoc(
+        collection(db, "walletTransactions"),
+        {
+          userId: currentUser.uid,
+          type: "credit",
+          title: "Wallet Top Up",
+          amount: Number(amount),
+          status: "completed",
+          createdAt: serverTimestamp()
+        }
+      );
+
+      setBalance(newBalance);
+      setShowAddMoney(false);
+      setAmount("");
+      loadWallet();
+
+      alert("Money added successfully");
+
+    } catch (error) {
+      console.error(error);
+      alert("Something went wrong");
+    }
+  };
+
+  const filteredTransactions =
+    filter === "all"
+      ? transactions
+      : transactions.filter(
+          (item) => item.type === filter
+        );
 
   return (
     <div className="wallet-page">
@@ -300,7 +292,8 @@ const handleAddMoney = async () => {
           margin-bottom: 20px;
         }
 
-        .wallet-section-header h3 {
+        .wallet-section-header h3,
+        .wallet-section-header h2 {
           font-size: 1.1rem;
           color: #2C2C2C;
           margin: 0;
@@ -341,113 +334,117 @@ const handleAddMoney = async () => {
           margin: 0;
           line-height: 1.4;
         }
+
         .wallet-promo {
-  opacity: 0.9;
-  margin-top: -5px;
-  margin-bottom: 20px;
-}
+          opacity: 0.9;
+          margin-top: -5px;
+          margin-bottom: 20px;
+        }
 
-.wallet-transaction-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
+        .wallet-transaction-list {
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+        }
 
-.wallet-transaction-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 0;
-  border-bottom: 1px solid #eee;
-}
+        .wallet-transaction-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 14px 0;
+          border-bottom: 1px solid #eee;
+        }
 
-.wallet-transaction-item:last-child {
-  border-bottom: none;
-}
+        .wallet-transaction-item:last-child {
+          border-bottom: none;
+        }
 
-.wallet-transaction-item p {
-  margin: 4px 0 0;
-  color: #777;
-  font-size: 0.85rem;
-}
+        .wallet-transaction-item p {
+          margin: 4px 0 0;
+          color: #777;
+          font-size: 0.85rem;
+        }
 
-.wallet-transaction-item h4 {
-  margin: 0;
-}
-.wallet-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
+        .wallet-transaction-item h4 {
+          margin: 0;
+        }
 
-.wallet-modal {
-  background: white;
-  width: 90%;
-  max-width: 400px;
-  border-radius: 24px;
-  padding: 24px;
-}
+        .wallet-modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.45);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+        }
 
-.amount-options {
-  display: grid;
-  grid-template-columns: repeat(2,1fr);
-  gap: 12px;
-  margin: 20px 0;
-}
+        .wallet-modal {
+          background: white;
+          width: 90%;
+          max-width: 400px;
+          border-radius: 24px;
+          padding: 24px;
+        }
 
-.amount-options button {
-  padding: 14px;
-  border-radius: 12px;
-  border: 1px solid #eae3d9;
-  background: #FDFAF5;
-  cursor: pointer;
-}
+        .amount-options {
+          display: grid;
+          grid-template-columns: repeat(2,1fr);
+          gap: 12px;
+          margin: 20px 0;
+        }
 
-.wallet-modal input {
-  width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  margin-bottom: 15px;
-}
+        .amount-options button {
+          padding: 14px;
+          border-radius: 12px;
+          border: 1px solid #eae3d9;
+          background: #FDFAF5;
+          cursor: pointer;
+        }
 
-.wallet-close-btn {
-  width: 100%;
-  margin-top: 12px;
-  padding: 14px;
-  border-radius: 12px;
-  border: none;
-  background: #eee;
-  cursor: pointer;
-}
-.transaction-modal {
-  max-height: 80vh;
-  overflow-y: auto;
-}
+        .wallet-modal input {
+          width: 100%;
+          padding: 14px;
+          border-radius: 12px;
+          border: 1px solid #ddd;
+          margin-bottom: 15px;
+        }
 
-.transaction-filters {
-  display: flex;
-  gap: 10px;
-  margin: 20px 0;
-}
+        .wallet-close-btn {
+          width: 100%;
+          margin-top: 12px;
+          padding: 14px;
+          border-radius: 12px;
+          border: none;
+          background: #eee;
+          cursor: pointer;
+        }
 
-.transaction-filters button {
-  padding: 8px 16px;
-  border-radius: 20px;
-  border: 1px solid #ddd;
-  background: white;
-  cursor: pointer;
-}
+        .transaction-modal {
+          max-height: 80vh;
+          overflow-y: auto;
+        }
 
-.active-filter {
-  background: #C4956A !important;
-  color: white;
-  border-color: #C4956A !important;
-}
+        .transaction-filters {
+          display: flex;
+          gap: 10px;
+          margin: 20px 0;
+        }
+
+        .transaction-filters button {
+          padding: 8px 16px;
+          border-radius: 20px;
+          border: 1px solid #ddd;
+          background: white;
+          cursor: pointer;
+          text-transform: capitalize;
+        }
+
+        .active-filter {
+          background: #C4956A !important;
+          color: white;
+          border-color: #C4956A !important;
+        }
 
         @media (max-width: 768px) {
           .wallet-actions {
@@ -482,27 +479,26 @@ const handleAddMoney = async () => {
       <section className="wallet-card">
         <div className="wallet-card-top">
           <p className="wallet-label">Available Balance</p>
-
           <span className="wallet-chip">Brewed Wallet</span>
         </div>
 
         <h2 className="wallet-balance">
-  ₹{balance.toFixed(2)}
-</h2>
-<p className="wallet-promo">
-  Promo Balance: ₹{promoBalance.toFixed(2)}
-</p>
+          ₹{balance.toFixed(2)}
+        </h2>
+        <p className="wallet-promo">
+          Promo Balance: ₹{promoBalance.toFixed(2)}
+        </p>
         <p className="wallet-description">
           Pay faster, receive instant refunds and earn rewards.
         </p>
 
         <div className="wallet-button-group">
           <button
-  className="wallet-primary-btn"
-  onClick={() => setShowAddMoney(true)}
->
-  Add Money
-</button>
+            className="wallet-primary-btn"
+            onClick={() => setShowAddMoney(true)}
+          >
+            Add Money
+          </button>
 
           <button className="wallet-secondary-btn">
             Rewards
@@ -512,7 +508,10 @@ const handleAddMoney = async () => {
 
       {/* Quick Actions */}
       <section className="wallet-actions">
-        <button className="wallet-action-card">
+        <button 
+          className="wallet-action-card"
+          onClick={() => setShowTransactions(true)}
+        >
           <div className="wallet-action-icon">📜</div>
           <span>Transactions</span>
         </button>
@@ -528,93 +527,168 @@ const handleAddMoney = async () => {
         </button>
       </section>
 
-      {/* Recent Transactions */}
-      {transactions.length === 0 ? (
-  <div className="wallet-empty-state">
-    <div className="wallet-empty-icon">💰</div>
-
-    <h4>No Transactions Yet</h4>
-
-    <p>
-      Add money or make your first purchase to
-      see your wallet activity.
-    </p>
-  </div>
-) : (
-  <div className="wallet-transaction-list">
-    {transactions.map((transaction) => (
-      <div
-        key={transaction.id}
-        className="wallet-transaction-item"
-      >
-        <div>
-          <strong>{transaction.title}</strong>
-          <p>{transaction.date}</p>
+      {/* Recent Transactions Section */}
+      <div className="wallet-transactions">
+        <div className="wallet-section-header">
+          <h3>Recent Transactions</h3>
+          <button
+            className="wallet-view-all"
+            onClick={() => setShowTransactions(true)}
+          >
+            View All
+          </button>
         </div>
 
-        <h4
-          style={{
-            color:
-              transaction.type === "credit"
-                ? "#2E7D32"
-                : "#C62828",
-          }}
-        >
-          {transaction.type === "credit" ? "+" : "-"}₹
-          {transaction.amount}
-        </h4>
+        {transactions.length === 0 ? (
+          <div className="wallet-empty-state">
+            <div className="wallet-empty-icon">💰</div>
+            <h4>No Transactions Yet</h4>
+            <p>
+              Add money or make your first purchase to
+              see your wallet activity.
+            </p>
+          </div>
+        ) : (
+          <div className="wallet-transaction-list">
+            {transactions.slice(0, 3).map((transaction) => (
+              <div
+                key={transaction.id}
+                className="wallet-transaction-item"
+              >
+                <div>
+                  <strong>{transaction.title}</strong>
+                  <p>{transaction.status}</p>
+                </div>
+
+                <h4
+                  style={{
+                    color:
+                      transaction.type === "credit"
+                        ? "#2E7D32"
+                        : "#C62828",
+                  }}
+                >
+                  {transaction.type === "credit" ? "+" : "-"}₹
+                  {transaction.amount}
+                </h4>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-    ))}
-  </div>
-)}
 
-
-
+      {/* Add Money Modal */}
       {showAddMoney && (
-  <div className="wallet-modal-overlay">
+        <div className="wallet-modal-overlay">
+          <div className="wallet-modal">
+            <h2>Add Money</h2>
 
-    <div className="wallet-modal">
+            <div className="amount-options">
+              {[100, 250, 500, 1000].map((value) => (
+                <button
+                  key={value}
+                  onClick={() => setAmount(value)}
+                >
+                  ₹{value}
+                </button>
+              ))}
+            </div>
 
-      <h2>Add Money</h2>
+            <input
+              type="number"
+              placeholder="Enter amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
 
-      <div className="amount-options">
+            <button
+              className="wallet-primary-btn"
+              style={{ width: "100%" }}
+              onClick={handleAddMoney}
+            >
+              Continue
+            </button>
 
-        {[100, 250, 500, 1000].map((value) => (
-          <button
-            key={value}
-            onClick={() => setAmount(value)}
-          >
-            ₹{value}
-          </button>
-        ))}
+            <button
+              className="wallet-close-btn"
+              onClick={() => setShowAddMoney(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
-      </div>
+      {/* Transactions History Modal */}
+      {showTransactions && (
+        <div className="wallet-modal-overlay">
+          <div className="wallet-modal transaction-modal">
+            <div className="wallet-section-header">
+              <h2>Transactions</h2>
+              <button
+                className="wallet-view-all"
+                onClick={() => setShowTransactions(false)}
+              >
+                ✕
+              </button>
+            </div>
 
-      <input
-        type="number"
-        placeholder="Enter amount"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
+            <div className="transaction-filters">
+              {["all", "credit", "debit"].map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setFilter(type)}
+                  className={
+                    filter === type
+                      ? "active-filter"
+                      : ""
+                  }
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
 
-      <button
-  className="wallet-primary-btn"
-  onClick={handleAddMoney}
->
-  Continue
-</button>
+            {filteredTransactions.length === 0 ? (
+              <p style={{ textAlign: "center", color: "#777", padding: "20px 0" }}>No transactions found</p>
+            ) : (
+              <div className="wallet-transaction-list">
+                {filteredTransactions.map((item) => (
+                  <div
+                    key={item.id}
+                    className="wallet-transaction-item"
+                  >
+                    <div>
+                      <strong>{item.title}</strong>
+                      <p>{item.status}</p>
+                    </div>
 
-      <button
-        className="wallet-close-btn"
-        onClick={() => setShowAddMoney(false)}
-      >
-        Cancel
-      </button>
+                    <h4
+                      style={{
+                        color:
+                          item.type === "credit"
+                            ? "#2E7D32"
+                            : "#C62828",
+                      }}
+                    >
+                      {item.type === "credit" ? "+" : "-"}₹
+                      {item.amount}
+                    </h4>
+                  </div>
+                ))}
+              </div>
+            )}
 
-    </div>
-
-  </div>
-)}
+            <button
+              className="wallet-close-btn"
+              style={{ marginTop: "20px" }}
+              onClick={() => setShowTransactions(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
