@@ -815,8 +815,7 @@ export default function CouponManagement({
         {/* Dynamic Navigation Top Row */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "35px", flexWrap: "wrap", gap: "15px" }}>
           <div>
-            <button 
-              onClick={() => setPage("dashboard")} 
+            <button onClick={() => setActivePage("dashboard")}
               style={{ background: "#fff", border: "1px solid #DCD1C4", padding: "10px 18px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", color: "#544E48", transition: "all 0.2s ease" }}
               onMouseEnter={(e) => { e.currentTarget.style.background = "#F5F0EB"; e.currentTarget.style.borderColor = "#C4956A"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#DCD1C4"; }}
