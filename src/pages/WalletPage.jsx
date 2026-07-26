@@ -46,6 +46,15 @@ export default function WalletPage({ setPage }) {
     securityLock: false,
   });
 
+  // Phase 9 Wallet Analytics States
+  const [analytics, setAnalytics] = useState({
+    totalAdded: 0,
+    totalSpent: 0,
+    totalRefunds: 0,
+    totalRewards: 0,
+  });
+  const [showAnalytics, setShowAnalytics] = useState(false);
+
   useEffect(() => {
     if (!currentUser) return;
 
@@ -66,21 +75,22 @@ export default function WalletPage({ setPage }) {
         setPromoBalance(data.promoBalance || 0);
       }
 
+      // Load more transactions for analytics and display
       const q = query(
         collection(db, "walletTransactions"),
         where("userId", "==", currentUser.uid),
         orderBy("createdAt", "desc"),
-        limit(5)
+        limit(50)
       );
 
       const snapshot = await getDocs(q);
 
-      setTransactions(
-        snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
-      );
+      const loadedTransactions = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setTransactions(loadedTransactions);
 
       // Load Rewards From Firestore
       const rewardsRef = collection(db, "rewards");
@@ -89,7 +99,7 @@ export default function WalletPage({ setPage }) {
         rewardsRef,
         where("userId", "==", currentUser.uid),
         orderBy("createdAt", "desc"),
-        limit(10)
+        limit(50)
       );
 
       const rewardSnapshot = await getDocs(rewardQuery);
@@ -113,7 +123,7 @@ export default function WalletPage({ setPage }) {
         collection(db, "refunds"),
         where("userId", "==", currentUser.uid),
         orderBy("createdAt", "desc"),
-        limit(10)
+        limit(50)
       );
 
       const refundSnapshot = await getDocs(refundQuery);
@@ -124,6 +134,28 @@ export default function WalletPage({ setPage }) {
       }));
 
       setRefunds(refundData);
+
+      // Calculate Analytics
+      const totalAdded = loadedTransactions
+        .filter(item => item.type === "credit")
+        .reduce((sum, item) => sum + item.amount, 0);
+
+      const totalSpent = loadedTransactions
+        .filter(item => item.type === "debit")
+        .reduce((sum, item) => sum + item.amount, 0);
+
+      const totalRefunds = refundData
+        .reduce((sum, item) => sum + item.amount, 0);
+
+      const calculatedRewards = rewardData
+        .reduce((sum, item) => sum + item.amount, 0);
+
+      setAnalytics({
+        totalAdded,
+        totalSpent,
+        totalRefunds,
+        totalRewards: calculatedRewards,
+      });
 
       // Load Payment Methods From Firestore
       const paymentQuery = query(
@@ -351,20 +383,20 @@ export default function WalletPage({ setPage }) {
 
         .wallet-actions {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 16px;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 12px;
           margin-bottom: 30px;
         }
 
         .wallet-action-card {
           background: #ffffff;
           border: 1px solid #eae3d9;
-          padding: 20px 16px;
+          padding: 16px 12px;
           border-radius: 18px;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
           cursor: pointer;
           box-shadow: 0 4px 12px rgba(0,0,0,0.03);
           transition: 0.2s;
@@ -376,11 +408,11 @@ export default function WalletPage({ setPage }) {
         }
 
         .wallet-action-icon {
-          font-size: 24px;
+          font-size: 22px;
         }
 
         .wallet-action-card span {
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           font-weight: 600;
           color: #2C2C2C;
           text-align: center;
@@ -586,9 +618,35 @@ export default function WalletPage({ setPage }) {
           color: #2C2C2C;
         }
 
+        .analytics-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 15px;
+          margin-top: 20px;
+        }
+
+        .analytics-card {
+          background: #FDFAF5;
+          padding: 18px;
+          border-radius: 18px;
+          text-align: center;
+        }
+
+        .analytics-card p {
+          color: #777;
+          margin-bottom: 8px;
+          font-size: 0.85rem;
+        }
+
+        .analytics-card h3 {
+          color: #C4956A;
+          margin: 0;
+          font-size: 1.25rem;
+        }
+
         @media (max-width: 768px) {
           .wallet-actions {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
           }
 
           .wallet-button-group {
@@ -597,6 +655,10 @@ export default function WalletPage({ setPage }) {
 
           .wallet-balance {
             font-size: 2.2rem;
+          }
+
+          .analytics-grid {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
@@ -673,6 +735,14 @@ export default function WalletPage({ setPage }) {
         >
           <div className="wallet-action-icon">💸</div>
           <span>Refunds</span>
+        </button>
+
+        <button
+          className="wallet-action-card"
+          onClick={() => setShowAnalytics(true)}
+        >
+          <div className="wallet-action-icon">📊</div>
+          <span>Analytics</span>
         </button>
 
         <button
@@ -1018,6 +1088,53 @@ export default function WalletPage({ setPage }) {
               className="wallet-close-btn"
               style={{ marginTop: "20px" }}
               onClick={() => setShowPayments(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Analytics Modal */}
+      {showAnalytics && (
+        <div className="wallet-modal-overlay">
+          <div className="wallet-modal">
+            <div className="wallet-section-header">
+              <h2>Wallet Analytics</h2>
+              <button
+                className="wallet-view-all"
+                onClick={() => setShowAnalytics(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="analytics-grid">
+              <div className="analytics-card">
+                <p>Total Added</p>
+                <h3>₹{analytics.totalAdded}</h3>
+              </div>
+
+              <div className="analytics-card">
+                <p>Total Spent</p>
+                <h3>₹{analytics.totalSpent}</h3>
+              </div>
+
+              <div className="analytics-card">
+                <p>Refunds</p>
+                <h3>₹{analytics.totalRefunds}</h3>
+              </div>
+
+              <div className="analytics-card">
+                <p>Rewards</p>
+                <h3>₹{analytics.totalRewards}</h3>
+              </div>
+            </div>
+
+            <button
+              className="wallet-close-btn"
+              style={{ marginTop: "20px" }}
+              onClick={() => setShowAnalytics(false)}
             >
               Close
             </button>
