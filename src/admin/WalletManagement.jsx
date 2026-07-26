@@ -44,7 +44,7 @@ export default function WalletManagement({ setPage }) {
   const [statusFilter, setStatusFilter] = useState("All");
   const [sortBy, setSortBy] = useState("Balance");
 
-  // Selected Wallet State for Phase 3
+  // Selected Wallet State for Phase 3 Drawer
   const [selectedWallet, setSelectedWallet] = useState(null);
 
   // Load and Merge Data
@@ -411,10 +411,533 @@ export default function WalletManagement({ setPage }) {
         </p>
       </div>
 
-      {/* Selected Wallet Details Drawer Placeholder (Ready for Phase 3) */}
+      {/* Slide-in Wallet Drawer */}
       {selectedWallet && (
-        <div style={{ display: "none" }}>
-          {/* Phase 3 Wallet Details Drawer code will be rendered here */}
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            right: 0,
+            width: "100%",
+            maxWidth: 520,
+            height: "100vh",
+            background: "#fff",
+            boxShadow: "-10px 0 40px rgba(0,0,0,.15)",
+            zIndex: 1000,
+            overflowY: "auto",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              background: "#3B1A08",
+              color: "#fff",
+              padding: 24,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <h2
+              style={{
+                margin: 0,
+                fontFamily: "Playfair Display",
+              }}
+            >
+              Wallet Details
+            </h2>
+
+            <button
+              onClick={() => setSelectedWallet(null)}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#fff",
+                fontSize: 24,
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div style={{ padding: 24 }}>
+            {/* Customer Profile */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+                marginBottom: 25,
+                borderBottom: "1px solid #eee",
+                paddingBottom: 20,
+              }}
+            >
+              <img
+                src={
+                  selectedWallet.photoURL ||
+                  `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(
+                    selectedWallet.name
+                  )}`
+                }
+                alt={selectedWallet.name}
+                style={{
+                  width: 70,
+                  height: 70,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                }}
+              />
+
+              <div style={{ flex: 1 }}>
+                <h3
+                  style={{
+                    margin: 0,
+                    color: "#3B1A08",
+                    fontSize: 22,
+                  }}
+                >
+                  {selectedWallet.name}
+                </h3>
+
+                <p
+                  style={{
+                    margin: "6px 0",
+                    color: "#777",
+                  }}
+                >
+                  {selectedWallet.email}
+                </p>
+
+                <span
+                  style={{
+                    display: "inline-block",
+                    padding: "6px 12px",
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: "bold",
+                    background:
+                      selectedWallet.status === "Active"
+                        ? "#E8F5E9"
+                        : "#FFEBEE",
+                    color:
+                      selectedWallet.status === "Active"
+                        ? "#2E7D32"
+                        : "#C62828",
+                  }}
+                >
+                  {selectedWallet.status}
+                </span>
+              </div>
+            </div>
+
+            {/* Wallet Summary */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr",
+                gap: 15,
+              }}
+            >
+              <div
+                style={{
+                  background: "#FAF6F0",
+                  borderRadius: 12,
+                  padding: 18,
+                }}
+              >
+                <div style={{ color: "#777", fontSize: 13 }}>
+                  Wallet Balance
+                </div>
+
+                <h2
+                  style={{
+                    margin: "8px 0 0",
+                    color: "#3B1A08",
+                  }}
+                >
+                  ₹{selectedWallet.balance.toLocaleString()}
+                </h2>
+              </div>
+
+              <div
+                style={{
+                  background: "#FAF6F0",
+                  borderRadius: 12,
+                  padding: 18,
+                }}
+              >
+                <div style={{ color: "#777", fontSize: 13 }}>
+                  Rewards Balance
+                </div>
+
+                <h2
+                  style={{
+                    margin: "8px 0 0",
+                    color: "#3B1A08",
+                  }}
+                >
+                  ₹{selectedWallet.rewardBalance.toLocaleString()}
+                </h2>
+              </div>
+
+              <div
+                style={{
+                  background: "#FAF6F0",
+                  borderRadius: 12,
+                  padding: 18,
+                }}
+              >
+                <div style={{ color: "#777", fontSize: 13 }}>
+                  Total Transactions
+                </div>
+
+                <h2
+                  style={{
+                    margin: "8px 0 0",
+                    color: "#3B1A08",
+                  }}
+                >
+                  {selectedWallet.transactionCount}
+                </h2>
+              </div>
+            </div>
+
+            {/* Admin Actions */}
+            <div
+              style={{
+                marginTop: 30,
+              }}
+            >
+              <h3
+                style={{
+                  color: "#3B1A08",
+                  marginBottom: 15,
+                }}
+              >
+                ⚙️ Wallet Actions
+              </h3>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 12,
+                }}
+              >
+                <button
+                  style={{
+                    padding: 14,
+                    border: "none",
+                    borderRadius: 10,
+                    background: "#2E7D32",
+                    color: "#fff",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  ➕ Credit Money
+                </button>
+
+                <button
+                  style={{
+                    padding: 14,
+                    border: "none",
+                    borderRadius: 10,
+                    background: "#C62828",
+                    color: "#fff",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  ➖ Debit Money
+                </button>
+
+                <button
+                  style={{
+                    padding: 14,
+                    border: "none",
+                    borderRadius: 10,
+                    background: "#F5B942",
+                    color: "#3B1A08",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  🎁 Add Rewards
+                </button>
+
+                <button
+                  style={{
+                    padding: 14,
+                    border: "none",
+                    borderRadius: 10,
+                    background: "#1976D2",
+                    color: "#fff",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  💸 Refund
+                </button>
+
+                <button
+                  style={{
+                    gridColumn: "1 / -1",
+                    padding: 14,
+                    border: "none",
+                    borderRadius: 10,
+                    background:
+                      selectedWallet.status === "Active"
+                        ? "#444"
+                        : "#2E7D32",
+                    color: "#fff",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  {selectedWallet.status === "Active"
+                    ? "🔒 Lock Wallet"
+                    : "🔓 Unlock Wallet"}
+                </button>
+              </div>
+            </div>
+
+            {/* Wallet Analytics */}
+            <div
+              style={{
+                marginTop: 35,
+              }}
+            >
+              <h3
+                style={{
+                  color: "#3B1A08",
+                  marginBottom: 15,
+                }}
+              >
+                📊 Wallet Analytics
+              </h3>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 15,
+                }}
+              >
+                <div
+                  style={{
+                    background: "#FAF6F0",
+                    padding: 18,
+                    borderRadius: 12,
+                    textAlign: "center",
+                  }}
+                >
+                  <div style={{ color: "#777", fontSize: 13 }}>
+                    Money Added
+                  </div>
+
+                  <h3
+                    style={{
+                      margin: "10px 0 0",
+                      color: "#2E7D32",
+                    }}
+                  >
+                    ₹{selectedWallet.moneyAdded.toLocaleString()}
+                  </h3>
+                </div>
+
+                <div
+                  style={{
+                    background: "#FAF6F0",
+                    padding: 18,
+                    borderRadius: 12,
+                    textAlign: "center",
+                  }}
+                >
+                  <div style={{ color: "#777", fontSize: 13 }}>
+                    Money Spent
+                  </div>
+
+                  <h3
+                    style={{
+                      margin: "10px 0 0",
+                      color: "#C62828",
+                    }}
+                  >
+                    ₹{selectedWallet.moneySpent.toLocaleString()}
+                  </h3>
+                </div>
+
+                <div
+                  style={{
+                    background: "#FAF6F0",
+                    padding: 18,
+                    borderRadius: 12,
+                    textAlign: "center",
+                  }}
+                >
+                  <div style={{ color: "#777", fontSize: 13 }}>
+                    Refunds
+                  </div>
+
+                  <h3
+                    style={{
+                      margin: "10px 0 0",
+                      color: "#1976D2",
+                    }}
+                  >
+                    ₹{selectedWallet.refunds.toLocaleString()}
+                  </h3>
+                </div>
+
+                <div
+                  style={{
+                    background: "#FAF6F0",
+                    padding: 18,
+                    borderRadius: 12,
+                    textAlign: "center",
+                  }}
+                >
+                  <div style={{ color: "#777", fontSize: 13 }}>
+                    Reward Balance
+                  </div>
+
+                  <h3
+                    style={{
+                      margin: "10px 0 0",
+                      color: "#F5B942",
+                    }}
+                  >
+                    ₹{selectedWallet.rewardBalance.toLocaleString()}
+                  </h3>
+                </div>
+              </div>
+            </div>
+
+            {/* Transaction History */}
+            <div
+              style={{
+                marginTop: 35,
+              }}
+            >
+              <h3
+                style={{
+                  color: "#3B1A08",
+                  marginBottom: 15,
+                }}
+              >
+                📜 Recent Transactions
+              </h3>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 12,
+                }}
+              >
+                {[
+                  {
+                    icon: "⬆️",
+                    title: "Wallet Top-up",
+                    amount: "+₹500",
+                    color: "#2E7D32",
+                  },
+                  {
+                    icon: "⬇️",
+                    title: "Coffee Purchase",
+                    amount: "-₹245",
+                    color: "#C62828",
+                  },
+                  {
+                    icon: "🎁",
+                    title: "Reward Credit",
+                    amount: "+₹50",
+                    color: "#F5B942",
+                  },
+                  {
+                    icon: "💸",
+                    title: "Refund",
+                    amount: "+₹320",
+                    color: "#1976D2",
+                  },
+                ].map((transaction, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "14px 16px",
+                      background: "#FAF6F0",
+                      borderRadius: 10,
+                      border: "1px solid #eee",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                      }}
+                    >
+                      <div style={{ fontSize: 22 }}>
+                        {transaction.icon}
+                      </div>
+
+                      <div>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            color: "#3B1A08",
+                          }}
+                        >
+                          {transaction.title}
+                        </div>
+
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "#888",
+                          }}
+                        >
+                          Today • 2:45 PM
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        fontWeight: "bold",
+                        color: transaction.color,
+                      }}
+                    >
+                      {transaction.amount}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                style={{
+                  marginTop: 18,
+                  width: "100%",
+                  padding: 12,
+                  borderRadius: 10,
+                  border: "1px solid #3B1A08",
+                  background: "#fff",
+                  color: "#3B1A08",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                View Full Transaction History
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
