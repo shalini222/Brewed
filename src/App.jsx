@@ -25,7 +25,6 @@ import ChangePasswordPage from "./pages/ChangePasswordPage";
 import DeleteAccountPage from "./pages/DeleteAccountPage";
 import AdminPage from "./pages/AdminPage";
 import ReservationPage from "./pages/ReservationPage";
-import CustomersAdminPage from "./pages/CustomersAdminPage";
 import SettingsAdminPage from "./pages/SettingsAdminPage";
 import AddressPage from "./pages/AddressPage";
 import WalletPage from "./pages/WalletPage";
@@ -70,7 +69,7 @@ export default function App() {
     "change-password",
     "deleteAccount",
     "admin",
-    "customersadmin",
+    
     "reservation",
     "settingsAdmin",
     "address",
@@ -224,9 +223,7 @@ export default function App() {
 )}
           
       
-          {page === "customersadmin" && (
-            <CustomersAdminPage setPage={navigateTo} />
-          )}
+          
 
           {page === "settingsAdmin" && (
             <SettingsAdminPage setPage={navigateTo} />
