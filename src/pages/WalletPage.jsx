@@ -14,7 +14,8 @@ const [balance, setBalance] = useState(0);
 const [promoBalance, setPromoBalance] = useState(0);
 const [transactions, setTransactions] = useState([]);
 const [loading, setLoading] = useState(true);
-
+const [showAddMoney, setShowAddMoney] = useState(false);
+const [amount, setAmount] = useState("");
   
 
 
@@ -303,6 +304,56 @@ async function loadWallet() {
 .wallet-transaction-item h4 {
   margin: 0;
 }
+.wallet-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.wallet-modal {
+  background: white;
+  width: 90%;
+  max-width: 400px;
+  border-radius: 24px;
+  padding: 24px;
+}
+
+.amount-options {
+  display: grid;
+  grid-template-columns: repeat(2,1fr);
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.amount-options button {
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #eae3d9;
+  background: #FDFAF5;
+  cursor: pointer;
+}
+
+.wallet-modal input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  margin-bottom: 15px;
+}
+
+.wallet-close-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: #eee;
+  cursor: pointer;
+}
 
         @media (max-width: 768px) {
           .wallet-actions {
@@ -352,9 +403,12 @@ async function loadWallet() {
         </p>
 
         <div className="wallet-button-group">
-          <button className="wallet-primary-btn">
-            Add Money
-          </button>
+          <button
+  className="wallet-primary-btn"
+  onClick={() => setShowAddMoney(true)}
+>
+  Add Money
+</button>
 
           <button className="wallet-secondary-btn">
             Rewards
@@ -417,6 +471,51 @@ async function loadWallet() {
         </h4>
       </div>
     ))}
+  </div>
+)}
+
+
+
+      {showAddMoney && (
+  <div className="wallet-modal-overlay">
+
+    <div className="wallet-modal">
+
+      <h2>Add Money</h2>
+
+      <div className="amount-options">
+
+        {[100, 250, 500, 1000].map((value) => (
+          <button
+            key={value}
+            onClick={() => setAmount(value)}
+          >
+            ₹{value}
+          </button>
+        ))}
+
+      </div>
+
+      <input
+        type="number"
+        placeholder="Enter amount"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+      />
+
+      <button className="wallet-primary-btn">
+        Continue
+      </button>
+
+      <button
+        className="wallet-close-btn"
+        onClick={() => setShowAddMoney(false)}
+      >
+        Cancel
+      </button>
+
+    </div>
+
   </div>
 )}
     </div>
