@@ -51,7 +51,7 @@ export default function AdminPage({ setPage }) {
 
 
       {activePage === "orderadmin" && (
-        <CouponManagement
+        <CustomerManagement
           setPage={setPage}
           activePage={activePage}
           setActivePage={setActivePage}
