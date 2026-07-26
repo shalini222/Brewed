@@ -204,7 +204,9 @@ export default function WalletPage({ setPage }) {
   margin-bottom: 30px;
 }
 
-.wallet-actions {
+/* Added responsive media query wrapper */
+@media (max-width: 768px) {
+  .wallet-actions {
     grid-template-columns: 1fr;
   }
 
@@ -215,4 +217,4 @@ export default function WalletPage({ setPage }) {
   .wallet-balance {
     font-size: 2.2rem;
   }
-}
+  }
