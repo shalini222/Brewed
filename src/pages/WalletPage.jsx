@@ -3,6 +3,18 @@ import { doc, getDoc, collection, query, where, orderBy, limit, getDocs } from "
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  setDoc,
+  addDoc,
+  collection,
+  serverTimestamp
+} from "firebase/firestore";
+
+
+
 
 export default function WalletPage({ setPage }) {
 
@@ -64,7 +76,64 @@ async function loadWallet() {
   }
 }
   
+const handleAddMoney = async () => {
+  if (!amount || amount <= 0) {
+    alert("Enter a valid amount");
+    return;
+  }
 
+  try {
+    const walletRef = doc(db, "wallets", currentUser.uid);
+
+    const walletSnap = await getDoc(walletRef);
+
+    let currentBalance = 0;
+
+    if (walletSnap.exists()) {
+      currentBalance = walletSnap.data().balance || 0;
+    }
+
+    const newBalance =
+      currentBalance + Number(amount);
+
+
+    // Update wallet balance
+    await setDoc(
+      walletRef,
+      {
+        balance: newBalance,
+        updatedAt: serverTimestamp()
+      },
+      { merge: true }
+    );
+
+
+    // Create transaction
+    await addDoc(
+      collection(db, "walletTransactions"),
+      {
+        userId: currentUser.uid,
+        type: "credit",
+        title: "Wallet Top Up",
+        amount: Number(amount),
+        status: "completed",
+        createdAt: serverTimestamp()
+      }
+    );
+
+
+    setBalance(newBalance);
+
+    setShowAddMoney(false);
+    setAmount("");
+
+    alert("Money added successfully");
+
+  } catch (error) {
+    console.error(error);
+    alert("Something went wrong");
+  }
+};
   
 
   return (
@@ -503,9 +572,12 @@ async function loadWallet() {
         onChange={(e) => setAmount(e.target.value)}
       />
 
-      <button className="wallet-primary-btn">
-        Continue
-      </button>
+      <button
+  className="wallet-primary-btn"
+  onClick={handleAddMoney}
+>
+  Continue
+</button>
 
       <button
         className="wallet-close-btn"
