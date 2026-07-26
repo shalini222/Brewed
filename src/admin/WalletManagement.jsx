@@ -10,6 +10,7 @@ import {
   query,
   orderBy,
   limit,
+  where,
 } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -76,6 +77,21 @@ export default function WalletManagement({ setPage }) {
 
   // Recent Transactions State for Phase 4.5
   const [recentTransactions, setRecentTransactions] = useState([]);
+
+  // Wallet Details Transaction History States for Phase 5.1, 5.2 & 5.3
+  const [walletTransactions, setWalletTransactions] = useState([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [transactionSearch, setTransactionSearch] = useState("");
+  const [transactionFilter, setTransactionFilter] = useState("All");
+  const [visibleTransactions, setVisibleTransactions] = useState(20);
+
+  // Transaction Details Modal State for Phase 5.4
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+
+  // Reset pagination when search or filter changes
+  useEffect(() => {
+    setVisibleTransactions(20);
+  }, [transactionSearch, transactionFilter]);
 
   // Load and Merge Data
   useEffect(() => {
@@ -145,6 +161,31 @@ export default function WalletManagement({ setPage }) {
 
     fetchAndMergeData();
   }, []);
+
+  async function loadWalletTransactions(walletId) {
+    try {
+      setLoadingTransactions(true);
+
+      const q = query(
+        collection(db, "walletTransactions"),
+        where("walletId", "==", walletId),
+        orderBy("createdAt", "desc")
+      );
+
+      const snapshot = await getDocs(q);
+
+      const list = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setWalletTransactions(list);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingTransactions(false);
+    }
+  }
 
   async function handleWalletAction() {
     if (!selectedWallet) return;
@@ -263,6 +304,7 @@ export default function WalletManagement({ setPage }) {
         }
 
         setSelectedWallet(updated);
+        loadWalletTransactions(selectedWallet.id);
       }
 
       alert("Wallet updated successfully.");
@@ -305,6 +347,29 @@ export default function WalletManagement({ setPage }) {
         return 0;
       });
   }, [wallets, search, statusFilter, sortBy]);
+
+  // Filtered Transactions inside Drawer for Phase 5.2
+  const filteredTransactions = walletTransactions.filter((transaction) => {
+    const matchesSearch =
+      (transaction.reason || "")
+        .toLowerCase()
+        .includes(transactionSearch.toLowerCase()) ||
+      transaction.type
+        .toLowerCase()
+        .includes(transactionSearch.toLowerCase());
+
+    const matchesFilter =
+      transactionFilter === "All" ||
+      transaction.type === transactionFilter;
+
+    return matchesSearch && matchesFilter;
+  });
+
+  // Paginated Data for Phase 5.3
+  const displayedTransactions = filteredTransactions.slice(
+    0,
+    visibleTransactions
+  );
 
   return (
     <div
@@ -532,7 +597,10 @@ export default function WalletManagement({ setPage }) {
                 </div>
 
                 <button
-                  onClick={() => setSelectedWallet(wallet)}
+                  onClick={() => {
+                    setSelectedWallet(wallet);
+                    loadWalletTransactions(wallet.id);
+                  }}
                   style={{
                     width: "100%",
                     padding: "10px",
@@ -1034,125 +1102,217 @@ export default function WalletManagement({ setPage }) {
             </div>
 
             {/* Transaction History */}
-            <div
-              style={{
-                marginTop: 35,
-              }}
-            >
-              <h3
-                style={{
-                  color: "#3B1A08",
-                  marginBottom: 15,
-                }}
-              >
-                📜 Recent Transactions
+            <div style={{ marginTop: 30 }}>
+              <h3 style={{ color: "#3B1A08" }}>
+                📜 Complete Transaction History
               </h3>
 
+              {/* Phase 5.2 Search & Filter Controls */}
               <div
                 style={{
                   display: "flex",
-                  flexDirection: "column",
                   gap: 12,
+                  margin: "20px 0",
+                  flexWrap: "wrap",
                 }}
               >
-                {[
-                  {
-                    icon: "⬆️",
-                    title: "Wallet Top-up",
-                    amount: "+₹500",
-                    color: "#2E7D32",
-                  },
-                  {
-                    icon: "⬇️",
-                    title: "Coffee Purchase",
-                    amount: "-₹245",
-                    color: "#C62828",
-                  },
-                  {
-                    icon: "🎁",
-                    title: "Reward Credit",
-                    amount: "+₹50",
-                    color: "#F5B942",
-                  },
-                  {
-                    icon: "💸",
-                    title: "Refund",
-                    amount: "+₹320",
-                    color: "#1976D2",
-                  },
-                ].map((transaction, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "14px 16px",
-                      background: "#FAF6F0",
-                      borderRadius: 10,
-                      border: "1px solid #eee",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                      }}
-                    >
-                      <div style={{ fontSize: 22 }}>
-                        {transaction.icon}
-                      </div>
+                <input
+                  type="text"
+                  placeholder="🔍 Search transactions..."
+                  value={transactionSearch}
+                  onChange={(e) => setTransactionSearch(e.target.value)}
+                  style={{
+                    flex: 1,
+                    minWidth: 220,
+                    padding: 12,
+                    borderRadius: 10,
+                    border: "1px solid #ddd",
+                  }}
+                />
 
-                      <div>
-                        <div
-                          style={{
-                            fontWeight: 600,
-                            color: "#3B1A08",
-                          }}
-                        >
-                          {transaction.title}
-                        </div>
-
-                        <div
-                          style={{
-                            fontSize: 12,
-                            color: "#888",
-                          }}
-                        >
-                          Today • 2:45 PM
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        fontWeight: "bold",
-                        color: transaction.color,
-                      }}
-                    >
-                      {transaction.amount}
-                    </div>
-                  </div>
-                ))}
+                <select
+                  value={transactionFilter}
+                  onChange={(e) => setTransactionFilter(e.target.value)}
+                  style={{
+                    padding: 12,
+                    borderRadius: 10,
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  <option value="All">All</option>
+                  <option value="credit">Credit</option>
+                  <option value="debit">Debit</option>
+                  <option value="reward">Reward</option>
+                  <option value="refund">Refund</option>
+                </select>
               </div>
 
-              <button
-                style={{
-                  marginTop: 18,
-                  width: "100%",
-                  padding: 12,
-                  borderRadius: 10,
-                  border: "1px solid #3B1A08",
-                  background: "#fff",
-                  color: "#3B1A08",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                View Full Transaction History
-              </button>
+              {loadingTransactions ? (
+                <p>Loading...</p>
+              ) : filteredTransactions.length === 0 ? (
+                <p style={{ color: "#777" }}>
+                  No matching transactions found.
+                </p>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      marginBottom: 15,
+                      color: "#777",
+                      fontSize: 14,
+                    }}
+                  >
+                    Showing {displayedTransactions.length} of {filteredTransactions.length} transactions
+                  </div>
+
+                  {displayedTransactions.map((transaction) => (
+                    <div
+                      key={transaction.id}
+                      onClick={() => setSelectedTransaction(transaction)}
+                      style={{
+                        cursor: "pointer",
+                        padding: 15,
+                        border: "1px solid #eee",
+                        borderRadius: 10,
+                        marginBottom: 12,
+                        background: "#FAF6F0",
+                        transition: ".2s",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <strong>{transaction.type.toUpperCase()}</strong>
+
+                        <strong>₹{transaction.amount}</strong>
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 6,
+                          color: "#666",
+                        }}
+                      >
+                        {transaction.reason || "No reason provided"}
+                      </div>
+                    </div>
+                  ))}
+
+                  {displayedTransactions.length < filteredTransactions.length && (
+                    <button
+                      onClick={() =>
+                        setVisibleTransactions((prev) => prev + 20)
+                      }
+                      style={{
+                        width: "100%",
+                        padding: 12,
+                        marginTop: 20,
+                        borderRadius: 10,
+                        border: "none",
+                        background: "#3B1A08",
+                        color: "#fff",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Load More Transactions
+                    </button>
+                  )}
+                </>
+              )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transaction Details Modal */}
+      {selectedTransaction && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,.45)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 3000,
+          }}
+        >
+          <div
+            style={{
+              width: "95%",
+              maxWidth: 500,
+              background: "#fff",
+              borderRadius: 18,
+              padding: 25,
+            }}
+          >
+            <h2
+              style={{
+                marginTop: 0,
+                color: "#3B1A08",
+              }}
+            >
+              💳 Transaction Details
+            </h2>
+
+            <div style={{ lineHeight: 2 }}>
+              <div>
+                <strong>ID:</strong> {selectedTransaction.id}
+              </div>
+
+              <div>
+                <strong>Customer:</strong> {selectedTransaction.customerName}
+              </div>
+
+              <div>
+                <strong>Email:</strong> {selectedTransaction.customerEmail}
+              </div>
+
+              <div>
+                <strong>Type:</strong> {selectedTransaction.type}
+              </div>
+
+              <div>
+                <strong>Amount:</strong> ₹{selectedTransaction.amount}
+              </div>
+
+              <div>
+                <strong>Reason:</strong>{" "}
+                {selectedTransaction.reason || "No reason"}
+              </div>
+
+              <div>
+                <strong>Admin Action:</strong>{" "}
+                {selectedTransaction.adminAction ? "Yes" : "No"}
+              </div>
+
+              <div>
+                <strong>Date:</strong>{" "}
+                {selectedTransaction.createdAt?.toDate?.().toLocaleString() ||
+                  "Unknown"}
+              </div>
+            </div>
+
+            <button
+              onClick={() => setSelectedTransaction(null)}
+              style={{
+                width: "100%",
+                marginTop: 25,
+                padding: 12,
+                borderRadius: 10,
+                border: "none",
+                background: "#3B1A08",
+                color: "#fff",
+                fontWeight: "bold",
+                cursor: "pointer",
+              }}
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
