@@ -1,14 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useCart } from "../context/CartContext";
-import { auth } from "../firebase";
-import { serverTimestamp } from "firebase/firestore";
+import { auth, db } from "../firebase";
+import { serverTimestamp, collection, getDocs } from "firebase/firestore";
 import { checkDelivery } from "../service/deliveryService";
-import {
-  collection,
-  getDocs,
-} from "firebase/firestore";
-
-import { db } from "../firebase";
 
 const THEME = {
   colors: {
@@ -58,91 +52,68 @@ export default function CheckoutPage({ setPage }) {
   const canvasRef = useRef(null);
 
   const CONFIG = {
-  taxRate: 0.08,
-  codFee: 30,
-};
-  
- const calculations = useMemo(() => {
-  const subtotal = Number.isFinite(total) ? total : 0;
-
-  const tax = Math.round(subtotal * CONFIG.taxRate);
-
-  let delivery = 0;
-
-  if (subtotal > 0 && deliveryInfo) {
-    if (subtotal >= deliveryInfo.freeDeliveryAbove) {
-      delivery = 0;
-    } else {
-      delivery = deliveryInfo.deliveryFee;
-    }
-  }
-
-  const cod = paymentMethod === "cod" ? CONFIG.codFee : 0;
-
-  const discount = appliedCoupon ? appliedCoupon.discount : 0;
-
-  const grandTotal = Math.max(
-    0,
-    Math.round(subtotal + tax + delivery + cod - discount)
-  );
-
-  return {
-    subtotal,
-    tax,
-    delivery,
-    cod,
-    discount,
-    grandTotal,
+    taxRate: 0.08,
+    codFee: 30,
   };
-}, [total, paymentMethod, appliedCoupon, deliveryInfo]);
+  
+  const calculations = useMemo(() => {
+    const subtotal = Number.isFinite(total) ? total : 0;
+    const tax = Math.round(subtotal * CONFIG.taxRate);
+
+    let delivery = 0;
+    if (subtotal > 0 && deliveryInfo) {
+      if (subtotal >= deliveryInfo.freeDeliveryAbove) {
+        delivery = 0;
+      } else {
+        delivery = deliveryInfo.deliveryFee;
+      }
+    }
+
+    const cod = paymentMethod === "cod" ? CONFIG.codFee : 0;
+    const discount = appliedCoupon ? appliedCoupon.discount : 0;
+    const grandTotal = Math.max(0, Math.round(subtotal + tax + delivery + cod - discount));
+
+    return { subtotal, tax, delivery, cod, discount, grandTotal };
+  }, [total, paymentMethod, appliedCoupon, deliveryInfo]);
 
   useEffect(() => { loadRazorpayScript(); }, []);
 
   useEffect(() => {
-  async function loadAddresses() {
-    if (!auth.currentUser) return;
+    async function loadAddresses() {
+      if (!auth.currentUser) return;
 
-    try {
-      const snapshot = await getDocs(
-        collection(
-          db,
-          "users",
-          auth.currentUser.uid,
-          "addresses"
-        )
-      );
+      try {
+        const snapshot = await getDocs(
+          collection(db, "users", auth.currentUser.uid, "addresses")
+        );
 
-      const list = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      setAddresses(list);
-
-      const defaultAddress =
-        list.find((a) => a.isDefault);
-
-      const addressToUse =
-        defaultAddress || list[0];
-
-      if (addressToUse) {
-        setSelectedAddress(addressToUse);
-
-        setForm((prev) => ({
-          ...prev,
-          name: addressToUse.name,
-          phone: addressToUse.phone,
-           address: `${addressToUse.house}, ${addressToUse.street}, ${addressToUse.city}, ${addressToUse.state} ${addressToUse.pincode}`,
+        const list = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
         }));
+
+        setAddresses(list);
+
+        const defaultAddress = list.find((a) => a.isDefault);
+        const addressToUse = defaultAddress || list[0];
+
+        if (addressToUse) {
+          setSelectedAddress(addressToUse);
+          setForm((prev) => ({
+            ...prev,
+            name: addressToUse.name,
+            phone: addressToUse.phone,
+            email: auth.currentUser?.email || "",
+            address: `${addressToUse.house}, ${addressToUse.street}, ${addressToUse.city}, ${addressToUse.state} ${addressToUse.pincode}`,
+          }));
+        }
+      } catch (err) {
+        console.log(err);
       }
-
-    } catch (err) {
-      console.log(err);
     }
-  }
 
-  loadAddresses();
-}, []);
+    loadAddresses();
+  }, []);
 
   // --- Particle Simulation Effect ---
   useEffect(() => {
@@ -189,33 +160,31 @@ export default function CheckoutPage({ setPage }) {
     return () => { cancelAnimationFrame(animationFrameId); clearTimeout(timer); window.removeEventListener("resize", resizeCanvas); };
   }, [status]);
 
-
   useEffect(() => {
-  async function validateDelivery() {
-    if (!selectedAddress?.pincode) {
-  setDeliveryAvailable(null);
-  setDeliveryInfo(null);
-  return;
+    async function validateDelivery() {
+      if (!selectedAddress?.pincode) {
+        setDeliveryAvailable(null);
+        setDeliveryInfo(null);
+        return;
+      }
+
+      setDeliveryLoading(true);
+
+      try {
+        const result = await checkDelivery(selectedAddress.pincode);
+        setDeliveryAvailable(result.available);
+        setDeliveryInfo(result.info);
+      } catch (err) {
+        console.log(err);
+        setDeliveryAvailable(false);
+        setDeliveryInfo(null);
+      } finally {
+        setDeliveryLoading(false);
+      }
     }
 
-    setDeliveryLoading(true);
-
-    try {
-      const result = await checkDelivery(selectedAddress.pincode);
-
-      setDeliveryAvailable(result.available);
-      setDeliveryInfo(result.info);
-    } catch (err) {
-      console.log(err);
-      setDeliveryAvailable(false);
-      setDeliveryInfo(null);
-    } finally {
-      setDeliveryLoading(false);
-    }
-  }
-
-  validateDelivery();
-}, [selectedAddress]);
+    validateDelivery();
+  }, [selectedAddress]);
 
   const handleInputChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -233,112 +202,57 @@ export default function CheckoutPage({ setPage }) {
     }
   };
 
-  const triggerRazorpayPayment = async () => {
-    setStatus("processing");
-    const scriptInitialized = await loadRazorpayScript();
-    if (!scriptInitialized) { setStatus("idle"); alert("Payment gateway failed to load."); return; }
-
-    const options = {
-      key: "YOUR_RAZORPAY_KEY_ID",
-      amount: calculations.grandTotal * 100, 
-      currency: "INR",
-      name: "Brewed Cafe",
-      description: "Artisanal Coffee Order",
-      handler: async function (response) {
-        try {
-          const orderId = await placeOrder({ ...form, paymentId: response.razorpay_payment_id, paymentMethod: "online" });
-          setOrderSnapshot({ id: orderId, customer: form, cart, calculations, method: "online" });
-          setStatus("success");
-        } catch (err) { setStatus("failure"); }
-      },
-      prefill: { name: form.name, email: form.email, contact: form.phone },
-      theme: { color: THEME.colors.headerBg },
-      modal: { ondismiss: () => setStatus("failure") }
-    };
-
-    const rzp = new window.Razorpay(options);
-    rzp.on("payment.failed", () => setStatus("failure"));
-    rzp.open();
-  };
-
-  
-const handleFormSubmission = async (e) => {
+  const handleFormSubmission = async (e) => {
     e.preventDefault();
 
-    // 1. SECURITY GATE: Block non-authenticated users immediately
     if (!auth.currentUser) {
       alert("Please log in to your Brewed account to place an order.");
       setPage("login");
       return;
     }
-if (!selectedAddress) {
-  alert("Please select a delivery address.");
-  return;
-}
+    if (!selectedAddress) {
+      alert("Please select a delivery address.");
+      return;
+    }
+    if (!selectedAddress.pincode) {
+      alert("Selected address doesn't have a valid pincode.");
+      return;
+    }
+    if (deliveryLoading) {
+      alert("Please wait while we verify delivery availability.");
+      return;
+    }
+    if (deliveryAvailable === false) {
+      alert("Sorry, we don't deliver to the selected address.");
+      return;
+    }
+    if (deliveryInfo && calculations.subtotal < deliveryInfo.minOrder) {
+      alert(`Minimum order for this area is ₹${deliveryInfo.minOrder}.`);
+      return;
+    }
 
-if (!selectedAddress.pincode) {
-  alert("Selected address doesn't have a valid pincode.");
-  return;
-}
-
-if (deliveryLoading) {
-  alert("Please wait while we verify delivery availability.");
-  return;
-}
-
-if (deliveryAvailable === false) {
-  alert("Sorry, we don't deliver to the selected address.");
-  return;
-}
-
-if (
-  deliveryInfo &&
-  calculations.subtotal < deliveryInfo.minOrder
-) {
-  alert(
-    `Minimum order for this area is ₹${deliveryInfo.minOrder}.`
-  );
-  return;
-}
-
-
-  
-  
     setStatus("processing");
 
     try {
-      // 2. Prepare the order data
-
       const orderData = {
-  customer: form,
-  userId: auth.currentUser.uid,
+        customer: form,
+        userId: auth.currentUser.uid,
+        items: cart,
+        subtotal: calculations.subtotal,
+        tax: calculations.tax,
+        delivery: calculations.delivery,
+        deliveryZone: deliveryInfo?.zoneName || "",
+        estimatedDelivery: deliveryInfo?.estimatedTime || "",
+        minimumOrder: deliveryInfo?.minOrder || 0,
+        freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
+        total: calculations.grandTotal,
+        paymentMethod: paymentMethod === "cod" ? "COD" : "Online",
+        status: "New",
+        createdAt: serverTimestamp(),
+      };
 
-  items: cart,
-
-  subtotal: calculations.subtotal,
-  tax: calculations.tax,
-  delivery: calculations.delivery,
-  deliveryZone: deliveryInfo?.zoneName || "",
-estimatedDelivery: deliveryInfo?.estimatedTime || "",
-minimumOrder: deliveryInfo?.minOrder || 0,
-freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
-  total: calculations.grandTotal,
-
-  paymentMethod: paymentMethod === "cod" ? "COD" : "Online",
-
-  status: "New",
-
-  createdAt: serverTimestamp(),
-};
-
-
-
-
-      
-      // 3. Await the result
       const orderId = await placeOrder(orderData);
 
-      // 4. Update UI only after success
       setOrderSnapshot({ 
         id: orderId, 
         customer: form, 
@@ -354,200 +268,33 @@ freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
       setStatus("failure");
     }
   };
-  
 
-  // --- RENDER FALLBACK: PAYMENT FAILED PAGE ---
   if (status === "failure") {
     return (
       <div style={styles.confirmPage}>
         <canvas ref={canvasRef} style={styles.confettiCanvas} />
-        
-        <style>{`
-          @keyframes fluidRevealCard {
-            0% { opacity: 0; transform: scale(0.96) translateY(30px); filter: blur(4px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
-          }
-          @keyframes drawCross {
-            0% { stroke-dashoffset: 40; opacity: 0; }
-            100% { stroke-dashoffset: 0; opacity: 1; }
-          }
-          @keyframes scaleErrorCircle {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); opacity: 1; }
-          }
-          .fluid-card { 
-            animation: fluidRevealCard 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
-            position: relative;
-            z-index: 10;
-          }
-          .error-svg-wrapper {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 1.5rem;
-            display: block;
-          }
-          .error-circle {
-            fill: none;
-            stroke: ${THEME.colors.danger};
-            stroke-width: 3;
-            stroke-linecap: round;
-            transform-origin: center;
-            animation: scaleErrorCircle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-          }
-          .cross-path-1, .cross-path-2 {
-            fill: none;
-            stroke: ${THEME.colors.danger};
-            stroke-width: 4;
-            stroke-linecap: round;
-            stroke-dasharray: 40;
-            stroke-dashoffset: 40;
-          }
-          .cross-path-1 {
-            animation: drawCross 0.3s ease-out 0.4s both;
-          }
-          .cross-path-2 {
-            animation: drawCross 0.3s ease-out 0.65s both;
-          }
-          .btn-interactive { 
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s, box-shadow 0.3s; 
-            cursor: pointer; 
-          }
-          .btn-interactive:hover { 
-            transform: translateY(-3px); 
-            background-color: #2D140A !important;
-            box-shadow: 0 8px 20px rgba(26, 11, 5, 0.12);
-          }
-          .deliveryCard: {
-  background: "#fff",
-  border: "1px solid #E6DFD5",
-  borderRadius: "16px",
-  padding: "18px",
-  marginBottom: "20px",
-},
-          .btn-interactive:active { 
-            transform: translateY(-1px); 
-          }
-        `}</style>
-
-        <div className="fluid-card" style={styles.confirmCard}>
-          <div className="error-svg-wrapper">
-            <svg viewBox="0 0 52 52" style={{ width: "100%", height: "100%" }}>
-              <circle className="error-circle" cx="26" cy="26" r="23" />
-              <path className="cross-path-1" d="M16 16l20 20" />
-              <path className="cross-path-2" d="M36 16L16 36" />
-            </svg>
-          </div>
-
+        <div style={styles.confirmCard}>
           <h2 style={{ ...styles.confirmTitle, color: THEME.colors.danger }}>Payment Failed</h2>
-          <p style={styles.confirmSub}>
-            We couldn't process your transaction. Don't worry, if any money was deducted, it will be refunded automatically.
-          </p>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <button className="btn-interactive" style={styles.payBtn} onClick={triggerRazorpayPayment}>
-              Retry Payment
-            </button>
-            <button className="btn-interactive" style={styles.payBtn} onClick={() => { setStatus("idle"); setPage("menu"); }}>
-              Return to Menu
-            </button>
-          </div>
+          <p style={styles.confirmSub}>We couldn't process your transaction.</p>
+          <button style={styles.payBtn} onClick={() => { setStatus("idle"); setPage("menu"); }}>Return to Menu</button>
         </div>
       </div>
     );
   }
 
-  // --- RENDER SUCCESS: ORDER CONFIRMED PAGE ---
   if (status === "success" && orderSnapshot) {
     return (
       <div style={styles.confirmPage}>
         <canvas ref={canvasRef} style={styles.confettiCanvas} />
-
-        <style>{`
-          @keyframes fluidRevealCard {
-            0% { opacity: 0; transform: scale(0.96) translateY(30px); filter: blur(4px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
-          }
-          @keyframes drawCheckmark {
-            0% { stroke-dashoffset: 50; }
-            100% { stroke-dashoffset: 0; }
-          }
-          @keyframes scaleCircle {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); opacity: 1; }
-          }
-          .fluid-card { 
-            animation: fluidRevealCard 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
-            position: relative;
-            z-index: 10;
-          }
-          .success-checkmark-wrapper {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 1.5rem;
-            display: block;
-          }
-          .success-circle {
-            fill: none;
-            stroke: ${THEME.colors.success};
-            stroke-width: 3;
-            stroke-linecap: round;
-            transform-origin: center;
-            animation: scaleCircle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-          }
-          .checkmark-path {
-            fill: none;
-            stroke: ${THEME.colors.success};
-            stroke-width: 4;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            stroke-dasharray: 50;
-            stroke-dashoffset: 50;
-            animation: drawCheckmark 0.45s cubic-bezier(0.4, 0, 0.2, 1) 0.4s both;
-          }
-          .btn-interactive { 
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s, box-shadow 0.3s; 
-            cursor: pointer; 
-          }
-          .btn-interactive:hover { 
-            transform: translateY(-3px); 
-            background-color: #2D140A !important;
-            box-shadow: 0 8px 20px rgba(26, 11, 5, 0.12);
-          }
-          .btn-interactive:active { 
-            transform: translateY(-1px); 
-          }
-        `}</style>
-        
-        <div className="fluid-card" style={styles.confirmCard}>
-          <div className="success-checkmark-wrapper">
-            <svg viewBox="0 0 52 52" style={{ width: "100%", height: "100%" }}>
-              <circle className="success-circle" cx="26" cy="26" r="23" />
-              <path className="checkmark-path" d="M14 27l7.5 7.5L38 18" />
-            </svg>
-          </div>
-
+        <div style={styles.confirmCard}>
           <h2 style={styles.confirmTitle}>Order Confirmed</h2>
-          <p style={styles.confirmSub}>
-            Thank you for ordering from <strong style={{ color: THEME.colors.headerBg }}>Brewed</strong>, {form.name}!
-          </p>
-          
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {/* UPDATED: Emits orderSnapshot data along with route parameter */}
-            <button className="btn-interactive" style={styles.payBtn} onClick={() => setPage("tracking", orderSnapshot)}>
-              Track Order
-            </button>
-            <button className="btn-interactive" style={styles.payBtn} onClick={() => setPage("menu")}>
-              Return to Menu
-            </button>
-          </div>
+          <p style={styles.confirmSub}>Thank you for ordering from Brewed!</p>
+          <button style={styles.payBtn} onClick={() => setPage("menu")}>Return to Menu</button>
         </div>
       </div>
     );
   }
 
-  // --- MAIN CHECKOUT VIEW PANEL ---
   return (
     <div style={styles.page}>
       <style>{`
@@ -565,106 +312,65 @@ freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
         }
       `}</style>
 
-  <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 1rem" }}>
+      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 1rem" }}>
         <button style={styles.backLink} onClick={() => setPage("cart")}>← Back to Cart</button>
         <h1 style={styles.heading}>Checkout</h1>
 
         <form onSubmit={handleFormSubmission} className="checkout-layout">
           <div className="main-panel">
             <div style={styles.addressCard}>
+              <div style={styles.addressHeader}>
+                <div>
+                  <h3 style={styles.addressTitle}>📍 Delivery Address</h3>
+                  {selectedAddress && (
+                    <>
+                      <p style={styles.addressName}>{selectedAddress.name}</p>
+                      <p style={styles.addressText}>{selectedAddress.house}, {selectedAddress.street}</p>
+                      <p style={styles.addressText}>{selectedAddress.city}, {selectedAddress.state}</p>
+                      <p style={styles.addressText}>{selectedAddress.pincode}</p>
+                    </>
+                  )}
+                </div>
 
-  <div style={styles.addressHeader}>
+                {addresses.length > 0 && (
+                  <button
+                    type="button"
+                    style={styles.changeButton}
+                    onClick={() => setShowAddressPicker(true)}
+                  >
+                    Change
+                  </button>
+                )}
+              </div>
+            </div>
 
-    <div>
-
-      <h3 style={styles.addressTitle}>
-        📍 Delivery Address
-      </h3>
-
-      {selectedAddress && (
-        <>
-          <p style={styles.addressName}>
-            {selectedAddress.name}
-          </p>
-
-          <p style={styles.addressText}>
-            {selectedAddress.house}, {selectedAddress.street}
-          </p>
-
-          <p style={styles.addressText}>
-            {selectedAddress.city}, {selectedAddress.state}
-          </p>
-
-          <p style={styles.addressText}>
-            {selectedAddress.pincode}
-          </p>
-        </>
-      )}
-
-    </div>
-
-    {addresses.length > 0 && (
-      <button
-        type="button"
-        style={styles.changeButton}
-        onClick={() => setShowAddressPicker(true)}
-      >
-        Change
-      </button>
-    )}
-
-  </div>
-
-</div>
-
-{showAddressPicker && (
-
-  <div style={styles.addressPicker}>
-
-    {addresses.map((address) => (
-
-      <div
-        key={address.id}
-        style={styles.addressOption}
-        onClick={() => {
-
-          setSelectedAddress(address);
-
-          setForm((prev) => ({
-            ...prev,
-            name: address.name,
-            phone: address.phone,
-            email: auth.currentUser?.email || "",
-            address:
-              `${address.house}, ${address.street}, ${address.city}, ${address.state} ${address.pincode}`,
-          }));
-
-          setShowAddressPicker(false);
-
-        }}
-      >
-
-        <strong>
-          {address.type}
-        </strong>
-
-        <br />
-
-        {address.house}, {address.street}
-
-        <br />
-
-        {address.city}, {address.state}
-
-      </div>
-
-    ))}
-
-  </div>
-
-)}
-
-
+            {showAddressPicker && (
+              <div style={styles.addressPicker}>
+                {addresses.map((address) => (
+                  <div
+                    key={address.id}
+                    style={styles.addressOption}
+                    onClick={() => {
+                      setSelectedAddress(address);
+                      setForm((prev) => ({
+                        ...prev,
+                        name: address.name,
+                        phone: address.phone,
+                        email: auth.currentUser?.email || "",
+                        address: `${address.house}, ${address.street}, ${address.city}, ${address.state} ${address.pincode}`,
+                      }));
+                      setShowAddressPicker(false);
+                    }}
+                  >
+                    <strong>{address.type}</strong>
+                    <br />
+                    {address.house}, {address.street}
+                    <br />
+                    {address.city}, {address.state}
+                  </div>
+                ))}
+              </div>
+            )}
             
             <div style={styles.card}>
               <h2 style={styles.sectionTitle}>📍 Delivery Information</h2>
@@ -772,31 +478,26 @@ freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
                     marginBottom: "12px",
                   }}
                 >
-                 <div>
-  <strong>Delivery Available ✅</strong>
-</div>
+                  <div><strong>Delivery Available ✅</strong></div>
+                  <div>Zone: {deliveryInfo.zoneName}</div>
+                  <div>ETA: {deliveryInfo.estimatedTime}</div>
+                  <div>Minimum Order: ₹{deliveryInfo.minOrder}</div>
+                  <div>Free Delivery Above: ₹{deliveryInfo.freeDeliveryAbove}</div>
 
-<div>Zone: {deliveryInfo.zoneName}</div>
+                  {calculations.delivery === 0 && (
+                    <div
+                      style={{
+                        marginTop: "4px",
+                        fontWeight: 600,
+                        color: THEME.colors.success,
+                      }}
+                    >
+                      🎉 Free Delivery Applied
+                    </div>
+                  )}
+                </div> 
+              )} 
 
-<div>ETA: {deliveryInfo.estimatedTime}</div>
-
-<div>Minimum Order: ₹{deliveryInfo.minOrder}</div>
-
-<div>Free Delivery Above: ₹{deliveryInfo.freeDeliveryAbove}</div>
-
-{calculations.delivery === 0 && (
-  <div
-    style={{
-      marginTop: "4px",
-      fontWeight: 600,
-      color: THEME.colors.success,
-    }}
-  >
-    🎉 Free Delivery Applied
-  </div>
-)}
-              
-</div> 
               {paymentMethod === "cod" && <div style={styles.calcRow}><span>COD Surcharge</span><span>₹{calculations.cod}</span></div>}
               {calculations.discount > 0 && <div style={{ ...styles.calcRow, color: THEME.colors.success }}><span>Discounts</span><span>-₹{calculations.discount}</span></div>}
               
@@ -828,6 +529,7 @@ freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
     </div>
   );
 }
+
 
 
 const styles = {
