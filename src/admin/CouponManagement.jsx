@@ -61,6 +61,8 @@ const STYLES = {
   },
 };
 
+
+const formInputStyle = STYLES.formInput;
 const CHART_COLORS = ["#C4956A", "#4F46E5", "#2E7D32", "#F59E0B", "#EC4899", "#06B6D4"];
 const COUPON_TYPES = ["General", "New User", "Festival", "Birthday", "Referral", "Loyalty"];
 
