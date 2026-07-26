@@ -91,7 +91,19 @@ const getExpiryStatus = (expires, starts) => {
   return { label: `⏳ Valid (${days} days left)`, variant: "valid" };
 };
 
-export default function CouponManagement() {
+const getCategoryColor = (category) => {
+  switch (category) {
+    case "New User": return { cardBg: "#fff", bg: "#E8F5E9", color: "#2E7D32", border: "#C8E6C9" };
+    case "Festival": return { cardBg: "#fff", bg: "#FFF3E0", color: "#E65100", border: "#FFE0B2" };
+    case "Birthday": return { cardBg: "#fff", bg: "#FCE4EC", color: "#C2185B", border: "#F8BBD0" };
+    case "Referral": return { cardBg: "#fff", bg: "#EDE7F6", color: "#512DA8", border: "#D1C4E9" };
+    case "Loyalty": return { cardBg: "#fff", bg: "#E0F7FA", color: "#00838F", border: "#B2EBF2" };
+    default: return { cardBg: "#fff", bg: "#FAF6F0", color: "#544E48", border: "#EAE1D4" };
+  }
+};
+
+
+export default function CouponManagement({setPage}) {
   const [coupons, setCoupons] = useState([]);
   const [orders, setOrders] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
@@ -102,6 +114,7 @@ export default function CouponManagement() {
   const [filter, setFilter] = useState("All");
   const [toast, setToast] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState("dashboard");
   const [revenueTimeframe, setRevenueTimeframe] = useState("30days");
 
   const [selectedCouponIds, setSelectedCouponIds] = useState([]);
