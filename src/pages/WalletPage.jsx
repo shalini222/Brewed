@@ -1,4 +1,29 @@
+import { useState } from "react";
+
+
 export default function WalletPage({ setPage }) {
+
+const [balance] = useState(0);
+const [promoBalance] = useState(0);
+
+const transactions = [
+  {
+    id: 1,
+    title: "Welcome Bonus",
+    type: "credit",
+    amount: 100,
+    date: "Today",
+  },
+  {
+    id: 2,
+    title: "Cappuccino",
+    type: "debit",
+    amount: 245,
+    date: "Yesterday",
+  },
+];
+
+
   return (
     <div className="wallet-page">
       <style>{`
@@ -203,6 +228,39 @@ export default function WalletPage({ setPage }) {
           margin: 0;
           line-height: 1.4;
         }
+        .wallet-promo {
+  opacity: 0.9;
+  margin-top: -5px;
+  margin-bottom: 20px;
+}
+
+.wallet-transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.wallet-transaction-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.wallet-transaction-item:last-child {
+  border-bottom: none;
+}
+
+.wallet-transaction-item p {
+  margin: 4px 0 0;
+  color: #777;
+  font-size: 0.85rem;
+}
+
+.wallet-transaction-item h4 {
+  margin: 0;
+}
 
         @media (max-width: 768px) {
           .wallet-actions {
@@ -241,8 +299,12 @@ export default function WalletPage({ setPage }) {
           <span className="wallet-chip">Brewed Wallet</span>
         </div>
 
-        <h2 className="wallet-balance">₹0.00</h2>
-
+        <h2 className="wallet-balance">
+  ₹{balance.toFixed(2)}
+</h2>
+<p className="wallet-promo">
+  Promo Balance: ₹{promoBalance.toFixed(2)}
+</p>
         <p className="wallet-description">
           Pay faster, receive instant refunds and earn rewards.
         </p>
@@ -277,26 +339,44 @@ export default function WalletPage({ setPage }) {
       </section>
 
       {/* Recent Transactions */}
-      <section className="wallet-transactions">
-        <div className="wallet-section-header">
-          <h3>Recent Transactions</h3>
+      {transactions.length === 0 ? (
+  <div className="wallet-empty-state">
+    <div className="wallet-empty-icon">💰</div>
 
-          <button className="wallet-view-all">
-            View All
-          </button>
+    <h4>No Transactions Yet</h4>
+
+    <p>
+      Add money or make your first purchase to
+      see your wallet activity.
+    </p>
+  </div>
+) : (
+  <div className="wallet-transaction-list">
+    {transactions.map((transaction) => (
+      <div
+        key={transaction.id}
+        className="wallet-transaction-item"
+      >
+        <div>
+          <strong>{transaction.title}</strong>
+          <p>{transaction.date}</p>
         </div>
 
-        <div className="wallet-empty-state">
-          <div className="wallet-empty-icon">💰</div>
-
-          <h4>No Transactions Yet</h4>
-
-          <p>
-            Add money or make your first purchase to
-            see your wallet activity.
-          </p>
-        </div>
-      </section>
+        <h4
+          style={{
+            color:
+              transaction.type === "credit"
+                ? "#2E7D32"
+                : "#C62828",
+          }}
+        >
+          {transaction.type === "credit" ? "+" : "-"}₹
+          {transaction.amount}
+        </h4>
+      </div>
+    ))}
+  </div>
+)}
     </div>
   );
 }
