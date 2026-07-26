@@ -132,8 +132,7 @@ export default function CheckoutPage({ setPage }) {
           ...prev,
           name: addressToUse.name,
           phone: addressToUse.phone,
-          address:
-            `${addressToUse.house}, ${addressToUse.street}, ${addressToUse.city}, ${addressToUse.state} ${addressToUse.pincode}`,
+           address: `${addressToUse.house}, ${addressToUse.street}, ${addressToUse.city}, ${addressToUse.state} ${addressToUse.pincode}`,
         }));
       }
 
@@ -272,9 +271,18 @@ const handleFormSubmission = async (e) => {
       setPage("login");
       return;
     }
+if (!selectedAddress) {
+  alert("Please select a delivery address.");
+  return;
+}
+
+if (!selectedAddress.pincode) {
+  alert("Selected address doesn't have a valid pincode.");
+  return;
+}
 
 if (deliveryLoading) {
-  alert("Checking delivery availability...");
+  alert("Please wait while we verify delivery availability.");
   return;
 }
 
@@ -282,7 +290,8 @@ if (deliveryAvailable === false) {
   alert("Sorry, we don't deliver to the selected address.");
   return;
 }
-  if (
+
+if (
   deliveryInfo &&
   calculations.subtotal < deliveryInfo.minOrder
 ) {
@@ -292,6 +301,8 @@ if (deliveryAvailable === false) {
   return;
 }
 
+
+  
   
     setStatus("processing");
 
@@ -554,7 +565,7 @@ freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
         }
       `}</style>
 
-      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 1rem" }}>
+  <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 1rem" }}>
         <button style={styles.backLink} onClick={() => setPage("cart")}>← Back to Cart</button>
         <h1 style={styles.heading}>Checkout</h1>
 
@@ -592,14 +603,15 @@ freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
 
     </div>
 
-    <button
-      style={styles.changeButton}
-      onClick={() =>
-        setShowAddressPicker(true)
-      }
-    >
-      Change
-    </button>
+    {addresses.length > 0 && (
+      <button
+        type="button"
+        style={styles.changeButton}
+        onClick={() => setShowAddressPicker(true)}
+      >
+        Change
+      </button>
+    )}
 
   </div>
 
@@ -622,6 +634,7 @@ freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
             ...prev,
             name: address.name,
             phone: address.phone,
+            email: auth.currentUser?.email || "",
             address:
               `${address.house}, ${address.street}, ${address.city}, ${address.state} ${address.pincode}`,
           }));
@@ -731,46 +744,59 @@ freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
               <div style={styles.calcRow}><span>Subtotal</span><span>₹{calculations.subtotal}</span></div>
               <div style={styles.calcRow}><span>Tax / Fees (8%)</span><span>₹{calculations.tax}</span></div>
               <div style={styles.calcRow}><span>Delivery Fee</span><span>₹{calculations.delivery}</span></div>
+              
               {deliveryLoading ? (
-  <p style={styles.deliveryInfo}>
-    Checking delivery...
-  </p>
-) : deliveryAvailable === false ? (
-  <p
+                <p style={{ color: "#666", marginBottom: "12px" }}>
+                  Checking delivery availability...
+                </p>
+              ) : deliveryAvailable === false ? (
+                <div
+                  style={{
+                    background: "#FCE8E6",
+                    color: "#C5221F",
+                    padding: "12px",
+                    borderRadius: "10px",
+                    marginBottom: "12px",
+                    fontWeight: 600,
+                  }}
+                >
+                  ❌ Sorry, we don't deliver to this address.
+                </div>
+              ) : deliveryAvailable && deliveryInfo && (
+                <div
+                  style={{
+                    background: "#E6F4EA",
+                    color: "#137333",
+                    padding: "12px",
+                    borderRadius: "10px",
+                    marginBottom: "12px",
+                  }}
+                >
+                 <div>
+  <strong>Delivery Available ✅</strong>
+</div>
+
+<div>Zone: {deliveryInfo.zoneName}</div>
+
+<div>ETA: {deliveryInfo.estimatedTime}</div>
+
+<div>Minimum Order: ₹{deliveryInfo.minOrder}</div>
+
+<div>Free Delivery Above: ₹{deliveryInfo.freeDeliveryAbove}</div>
+
+{calculations.delivery === 0 && (
+  <div
     style={{
-      ...styles.deliveryInfo,
-      color: THEME.colors.danger,
+      marginTop: "4px",
+      fontWeight: 600,
+      color: THEME.colors.success,
     }}
   >
-    ❌ Delivery unavailable for this address
-  </p>
-) : deliveryInfo && (
-  <>
-    <p style={styles.deliveryInfo}>
-      📍 <strong>Zone:</strong> {deliveryInfo.zoneName}
-    </p>
-
-    <p style={styles.deliveryInfo}>
-      🚚 <strong>ETA:</strong> {deliveryInfo.estimatedTime}
-    </p>
-
-    <p style={styles.deliveryInfo}>
-      🛒 <strong>Minimum Order:</strong> ₹{deliveryInfo.minOrder}
-    </p>
-
-    {calculations.delivery === 0 && (
-      <p
-        style={{
-          ...styles.deliveryInfo,
-          color: THEME.colors.success,
-          fontWeight: 600,
-        }}
-      >
-        🎉 Free Delivery Applied
-      </p>
-    )}
-  </>
+    🎉 Free Delivery Applied
+  </div>
 )}
+              
+</div> 
               {paymentMethod === "cod" && <div style={styles.calcRow}><span>COD Surcharge</span><span>₹{calculations.cod}</span></div>}
               {calculations.discount > 0 && <div style={{ ...styles.calcRow, color: THEME.colors.success }}><span>Discounts</span><span>-₹{calculations.discount}</span></div>}
               
@@ -780,8 +806,20 @@ freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
                 <span>₹{calculations.grandTotal}</span>
               </div>
 
-              <button type="submit" disabled={status === "processing"} style={styles.payBtn}>
-                {status === "processing" ? "Processing Order..." : `Place Order · ₹${calculations.grandTotal}`}
+              <button
+                type="submit"
+                disabled={
+                  status === "processing" ||
+                  deliveryLoading ||
+                  !selectedAddress
+                }
+                style={styles.payBtn}
+              >
+                {deliveryLoading
+                  ? "Checking delivery..."
+                  : status === "processing"
+                  ? "Processing Order..."
+                  : `Place Order · ₹${calculations.grandTotal}`}
               </button>
             </div>
           </div>
@@ -790,6 +828,7 @@ freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
     </div>
   );
 }
+
 
 const styles = {
   page: { padding: "2rem 0" },addressCard: {
