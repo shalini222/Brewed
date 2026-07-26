@@ -56,6 +56,11 @@ export default function CheckoutPage({ setPage }) {
   const [orderSnapshot, setOrderSnapshot] = useState(null);
 
   const canvasRef = useRef(null);
+
+  const CONFIG = {
+  taxRate: 0.08,
+  codFee: 30,
+};
   
  const calculations = useMemo(() => {
   const subtotal = Number.isFinite(total) ? total : 0;
@@ -188,7 +193,11 @@ export default function CheckoutPage({ setPage }) {
 
   useEffect(() => {
   async function validateDelivery() {
-    if (!selectedAddress?.pincode) return;
+    if (!selectedAddress?.pincode) {
+  setDeliveryAvailable(null);
+  setDeliveryInfo(null);
+  return;
+    }
 
     setDeliveryLoading(true);
 
@@ -278,6 +287,10 @@ const handleFormSubmission = async (e) => {
   subtotal: calculations.subtotal,
   tax: calculations.tax,
   delivery: calculations.delivery,
+  deliveryZone: deliveryInfo?.zoneName || "",
+estimatedDelivery: deliveryInfo?.estimatedTime || "",
+minimumOrder: deliveryInfo?.minOrder || 0,
+freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
   total: calculations.grandTotal,
 
   paymentMethod: paymentMethod === "cod" ? "COD" : "Online",
