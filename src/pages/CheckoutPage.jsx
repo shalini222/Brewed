@@ -273,6 +273,26 @@ const handleFormSubmission = async (e) => {
       return;
     }
 
+if (deliveryLoading) {
+  alert("Checking delivery availability...");
+  return;
+}
+
+if (deliveryAvailable === false) {
+  alert("Sorry, we don't deliver to the selected address.");
+  return;
+}
+  if (
+  deliveryInfo &&
+  calculations.subtotal < deliveryInfo.minOrder
+) {
+  alert(
+    `Minimum order for this area is ₹${deliveryInfo.minOrder}.`
+  );
+  return;
+}
+
+  
     setStatus("processing");
 
     try {
@@ -387,6 +407,13 @@ freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
             background-color: #2D140A !important;
             box-shadow: 0 8px 20px rgba(26, 11, 5, 0.12);
           }
+          .deliveryCard: {
+  background: "#fff",
+  border: "1px solid #E6DFD5",
+  borderRadius: "16px",
+  padding: "18px",
+  marginBottom: "20px",
+},
           .btn-interactive:active { 
             transform: translateY(-1px); 
           }
@@ -704,6 +731,46 @@ freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
               <div style={styles.calcRow}><span>Subtotal</span><span>₹{calculations.subtotal}</span></div>
               <div style={styles.calcRow}><span>Tax / Fees (8%)</span><span>₹{calculations.tax}</span></div>
               <div style={styles.calcRow}><span>Delivery Fee</span><span>₹{calculations.delivery}</span></div>
+              {deliveryLoading ? (
+  <p style={styles.deliveryInfo}>
+    Checking delivery...
+  </p>
+) : deliveryAvailable === false ? (
+  <p
+    style={{
+      ...styles.deliveryInfo,
+      color: THEME.colors.danger,
+    }}
+  >
+    ❌ Delivery unavailable for this address
+  </p>
+) : deliveryInfo && (
+  <>
+    <p style={styles.deliveryInfo}>
+      📍 <strong>Zone:</strong> {deliveryInfo.zoneName}
+    </p>
+
+    <p style={styles.deliveryInfo}>
+      🚚 <strong>ETA:</strong> {deliveryInfo.estimatedTime}
+    </p>
+
+    <p style={styles.deliveryInfo}>
+      🛒 <strong>Minimum Order:</strong> ₹{deliveryInfo.minOrder}
+    </p>
+
+    {calculations.delivery === 0 && (
+      <p
+        style={{
+          ...styles.deliveryInfo,
+          color: THEME.colors.success,
+          fontWeight: 600,
+        }}
+      >
+        🎉 Free Delivery Applied
+      </p>
+    )}
+  </>
+)}
               {paymentMethod === "cod" && <div style={styles.calcRow}><span>COD Surcharge</span><span>₹{calculations.cod}</span></div>}
               {calculations.discount > 0 && <div style={{ ...styles.calcRow, color: THEME.colors.success }}><span>Discounts</span><span>-₹{calculations.discount}</span></div>}
               
@@ -737,6 +804,11 @@ addressHeader: {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "flex-start",
+},
+  deliveryInfo: {
+  margin: "8px 0",
+  fontSize: "0.9rem",
+  color: THEME.colors.textMuted,
 },
 
 addressTitle: {
