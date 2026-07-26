@@ -574,7 +574,7 @@ return (
         },
         {
           title: "👥 Customers",
-          page: "customersadmin",
+          page: "customeradmin",
         },
         {
           title: "🎟 Coupons",
