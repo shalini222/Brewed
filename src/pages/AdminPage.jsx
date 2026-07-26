@@ -4,6 +4,7 @@ import AdminDashboard from "../admin/AdminDashboard";
 import MenuManagement from "../admin/MenuManagement";
 import CouponManagement from "../admin/CouponManagement";
 import CustomerManagement from "../admin/CustomerManagement";
+import WalletManagement from "../admin/WalletManagement";
 
 export default function AdminPage({ setPage }) {
   const [activePage, setActivePage] = useState("dashboard");
@@ -58,6 +59,15 @@ export default function AdminPage({ setPage }) {
         />
       )} 
 
+
+
+      {activePage === "walletadmin" && (
+        <WalletManagement
+          setPage={setPage}
+          activePage={activePage}
+          setActivePage={setActivePage}
+        />
+      )} 
       {/* Future pages will go here */}
     </div>
   );
