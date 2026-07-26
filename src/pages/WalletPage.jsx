@@ -16,25 +16,8 @@ const [transactions, setTransactions] = useState([]);
 const [loading, setLoading] = useState(true);
 
   
-const [balance] = useState(0);
-const [promoBalance] = useState(0);
 
-const transactions = [
-  {
-    id: 1,
-    title: "Welcome Bonus",
-    type: "credit",
-    amount: 100,
-    date: "Today",
-  },
-  {
-    id: 2,
-    title: "Cappuccino",
-    type: "debit",
-    amount: 245,
-    date: "Yesterday",
-  },
-];
+
 
 
 useEffect(() => {
