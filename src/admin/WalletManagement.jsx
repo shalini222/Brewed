@@ -1,6 +1,27 @@
 import { useState, useEffect, useMemo } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+  increment,
+  addDoc,
+  serverTimestamp,
+  query,
+  orderBy,
+  limit,
+} from "firebase/firestore";
 import { db } from "../firebase";
+
+const actionButtonStyle = {
+  padding: 12,
+  borderRadius: 10,
+  border: "none",
+  background: "#3B1A08",
+  color: "#fff",
+  cursor: "pointer",
+  fontWeight: 600,
+};
 
 function StatCard({ title, value }) {
   return (
@@ -47,16 +68,26 @@ export default function WalletManagement({ setPage }) {
   // Selected Wallet State for Phase 3 Drawer
   const [selectedWallet, setSelectedWallet] = useState(null);
 
+  // Modal & Action States for Phase 4.1
+  const [showActionModal, setShowActionModal] = useState(false);
+  const [actionType, setActionType] = useState("");
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
+
+  // Recent Transactions State for Phase 4.5
+  const [recentTransactions, setRecentTransactions] = useState([]);
+
   // Load and Merge Data
   useEffect(() => {
     async function fetchAndMergeData() {
       try {
         setLoading(true);
 
-        // Load both collections concurrently
-        const [usersSnapshot, walletsSnapshot] = await Promise.all([
+        // Load both collections concurrently along with recent transactions
+        const [usersSnapshot, walletsSnapshot, transactionSnapshot] = await Promise.all([
           getDocs(collection(db, "users")),
           getDocs(collection(db, "wallets")),
+          getDocs(query(collection(db, "walletTransactions"), orderBy("createdAt", "desc"), limit(10))),
         ]);
 
         // Map wallets by document ID (matching user ID)
@@ -98,6 +129,13 @@ export default function WalletManagement({ setPage }) {
         });
 
         setWallets(mergedData);
+
+        const transactions = transactionSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        setRecentTransactions(transactions);
       } catch (error) {
         console.error("Error loading user wallets:", error);
       } finally {
@@ -107,6 +145,137 @@ export default function WalletManagement({ setPage }) {
 
     fetchAndMergeData();
   }, []);
+
+  async function handleWalletAction() {
+    if (!selectedWallet) return;
+
+    const value = Number(amount);
+
+    if (!value || value <= 0) {
+      alert("Enter a valid amount.");
+      return;
+    }
+
+    try {
+      const walletRef = doc(db, "wallets", selectedWallet.id);
+
+      if (actionType === "credit") {
+        await updateDoc(walletRef, {
+          balance: increment(value),
+          moneyAdded: increment(value),
+          updatedAt: serverTimestamp(),
+        });
+      }
+
+      if (actionType === "debit") {
+        await updateDoc(walletRef, {
+          balance: increment(-value),
+          moneySpent: increment(value),
+          updatedAt: serverTimestamp(),
+        });
+      }
+
+      if (actionType === "reward") {
+        await updateDoc(walletRef, {
+          rewardBalance: increment(value),
+          updatedAt: serverTimestamp(),
+        });
+      }
+
+      if (actionType === "refund") {
+        await updateDoc(walletRef, {
+          balance: increment(value),
+          refunds: increment(value),
+          updatedAt: serverTimestamp(),
+        });
+      }
+
+      await addDoc(collection(db, "walletTransactions"), {
+        walletId: selectedWallet.id,
+        customerName: selectedWallet.name,
+        customerEmail: selectedWallet.email,
+        type: actionType,
+        amount: value,
+        reason: reason,
+        adminAction: true,
+        createdAt: serverTimestamp(),
+      });
+
+      setWallets((prev) =>
+        prev.map((wallet) => {
+          if (wallet.id !== selectedWallet.id) return wallet;
+
+          const updatedWallet = { ...wallet };
+
+          switch (actionType) {
+            case "credit":
+              updatedWallet.balance += value;
+              updatedWallet.moneyAdded += value;
+              break;
+
+            case "debit":
+              updatedWallet.balance -= value;
+              updatedWallet.moneySpent += value;
+              break;
+
+            case "reward":
+              updatedWallet.rewardBalance += value;
+              break;
+
+            case "refund":
+              updatedWallet.balance += value;
+              updatedWallet.refunds += value;
+              break;
+
+            default:
+              break;
+          }
+
+          return updatedWallet;
+        })
+      );
+
+      if (selectedWallet) {
+        const updated = { ...selectedWallet };
+
+        switch (actionType) {
+          case "credit":
+            updated.balance += value;
+            updated.moneyAdded += value;
+            break;
+
+          case "debit":
+            updated.balance -= value;
+            updated.moneySpent += value;
+            break;
+
+          case "reward":
+            updated.rewardBalance += value;
+            break;
+
+          case "refund":
+            updated.balance += value;
+            updated.refunds += value;
+            break;
+
+          default:
+            break;
+        }
+
+        setSelectedWallet(updated);
+      }
+
+      alert("Wallet updated successfully.");
+
+      setShowActionModal(false);
+      setAmount("");
+      setReason("");
+
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update wallet.");
+    }
+  }
 
   // Dashboard Statistics Calculations from Merged Data
   const totalWalletUsers = wallets.length;
@@ -402,13 +571,75 @@ export default function WalletManagement({ setPage }) {
           📋 Recent Wallet Activity
         </h2>
 
-        <p
-          style={{
-            color: "#777",
-          }}
-        >
-          Recent wallet transactions will appear here.
-        </p>
+        {recentTransactions.length === 0 ? (
+          <p style={{ color: "#777" }}>
+            No wallet activity yet.
+          </p>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
+            {recentTransactions.map((transaction) => (
+              <div
+                key={transaction.id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: 16,
+                  border: "1px solid #eee",
+                  borderRadius: 12,
+                  background: "#FAF6F0",
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      color: "#3B1A08",
+                    }}
+                  >
+                    {transaction.customerName}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#777",
+                    }}
+                  >
+                    {transaction.type.toUpperCase()}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#999",
+                    }}
+                  >
+                    {transaction.reason || "No reason"}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    fontWeight: "bold",
+                    color:
+                      transaction.type === "debit"
+                        ? "#C62828"
+                        : "#2E7D32",
+                  }}
+                >
+                  ₹{transaction.amount}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Slide-in Wallet Drawer */}
@@ -625,60 +856,45 @@ export default function WalletManagement({ setPage }) {
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",
                   gap: 12,
+                  marginTop: 25,
                 }}
               >
                 <button
-                  style={{
-                    padding: 14,
-                    border: "none",
-                    borderRadius: 10,
-                    background: "#2E7D32",
-                    color: "#fff",
-                    fontWeight: 600,
-                    cursor: "pointer",
+                  onClick={() => {
+                    setActionType("credit");
+                    setShowActionModal(true);
                   }}
+                  style={actionButtonStyle}
                 >
                   ➕ Credit Money
                 </button>
 
                 <button
-                  style={{
-                    padding: 14,
-                    border: "none",
-                    borderRadius: 10,
-                    background: "#C62828",
-                    color: "#fff",
-                    fontWeight: 600,
-                    cursor: "pointer",
+                  onClick={() => {
+                    setActionType("debit");
+                    setShowActionModal(true);
                   }}
+                  style={actionButtonStyle}
                 >
                   ➖ Debit Money
                 </button>
 
                 <button
-                  style={{
-                    padding: 14,
-                    border: "none",
-                    borderRadius: 10,
-                    background: "#F5B942",
-                    color: "#3B1A08",
-                    fontWeight: 600,
-                    cursor: "pointer",
+                  onClick={() => {
+                    setActionType("reward");
+                    setShowActionModal(true);
                   }}
+                  style={actionButtonStyle}
                 >
-                  🎁 Add Rewards
+                  🎁 Reward
                 </button>
 
                 <button
-                  style={{
-                    padding: 14,
-                    border: "none",
-                    borderRadius: 10,
-                    background: "#1976D2",
-                    color: "#fff",
-                    fontWeight: 600,
-                    cursor: "pointer",
+                  onClick={() => {
+                    setActionType("refund");
+                    setShowActionModal(true);
                   }}
+                  style={actionButtonStyle}
                 >
                   💸 Refund
                 </button>
@@ -935,6 +1151,105 @@ export default function WalletManagement({ setPage }) {
                 }}
               >
                 View Full Transaction History
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Wallet Action Modal */}
+      {showActionModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,.45)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 2000,
+          }}
+        >
+          <div
+            style={{
+              width: 420,
+              background: "#fff",
+              borderRadius: 18,
+              padding: 25,
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>
+              {actionType.toUpperCase()}
+            </h2>
+
+            <input
+              type="number"
+              placeholder="Amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              style={{
+                width: "100%",
+                padding: 12,
+                marginBottom: 15,
+                boxSizing: "border-box",
+                borderRadius: 8,
+                border: "1px solid #ccc",
+              }}
+            />
+
+            <textarea
+              placeholder="Reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              style={{
+                width: "100%",
+                height: 100,
+                padding: 12,
+                marginBottom: 20,
+                boxSizing: "border-box",
+                borderRadius: 8,
+                border: "1px solid #ccc",
+                fontFamily: "sans-serif",
+              }}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 10,
+              }}
+            >
+              <button
+                onClick={() => {
+                  setShowActionModal(false);
+                  setAmount("");
+                  setReason("");
+                }}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 8,
+                  border: "1px solid #ccc",
+                  background: "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleWalletAction}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#3B1A08",
+                  color: "#fff",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Confirm
               </button>
             </div>
           </div>
