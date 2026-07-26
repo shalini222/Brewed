@@ -25,6 +25,11 @@ export default function WalletPage({ setPage }) {
   const [showTransactions, setShowTransactions] = useState(false);
   const [filter, setFilter] = useState("all");
 
+  // Phase 5 Reward States
+  const [rewardBalance, setRewardBalance] = useState(0);
+  const [showRewards, setShowRewards] = useState(false);
+  const [rewards, setRewards] = useState([]);
+
   useEffect(() => {
     if (!currentUser) return;
 
@@ -60,6 +65,33 @@ export default function WalletPage({ setPage }) {
           ...doc.data(),
         }))
       );
+
+      // Load Rewards From Firestore
+      const rewardsRef = collection(db, "rewards");
+
+      const rewardQuery = query(
+        rewardsRef,
+        where("userId", "==", currentUser.uid),
+        orderBy("createdAt", "desc"),
+        limit(10)
+      );
+
+      const rewardSnapshot = await getDocs(rewardQuery);
+
+      const rewardData = rewardSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      setRewards(rewardData);
+
+      const totalRewards = rewardData.reduce(
+        (total, item) => total + item.amount,
+        0
+      );
+
+      setRewardBalance(totalRewards);
+
     } catch (error) {
       console.error(error);
     } finally {
@@ -446,6 +478,24 @@ export default function WalletPage({ setPage }) {
           border-color: #C4956A !important;
         }
 
+        .reward-balance {
+          background: #FDFAF5;
+          padding: 20px;
+          border-radius: 18px;
+          text-align: center;
+          margin-bottom: 20px;
+        }
+
+        .reward-balance p {
+          color: #777;
+          margin: 0;
+        }
+
+        .reward-balance h2 {
+          color: #C4956A;
+          font-size: 32px;
+        }
+
         @media (max-width: 768px) {
           .wallet-actions {
             grid-template-columns: 1fr;
@@ -500,7 +550,10 @@ export default function WalletPage({ setPage }) {
             Add Money
           </button>
 
-          <button className="wallet-secondary-btn">
+          <button
+            className="wallet-secondary-btn"
+            onClick={() => setShowRewards(true)}
+          >
             Rewards
           </button>
         </div>
@@ -683,6 +736,60 @@ export default function WalletPage({ setPage }) {
               className="wallet-close-btn"
               style={{ marginTop: "20px" }}
               onClick={() => setShowTransactions(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Rewards Modal */}
+      {showRewards && (
+        <div className="wallet-modal-overlay">
+          <div className="wallet-modal transaction-modal">
+            <div className="wallet-section-header">
+              <h2>Rewards 🎁</h2>
+              <button
+                className="wallet-view-all"
+                onClick={() => setShowRewards(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="reward-balance">
+              <p>Available Rewards</p>
+              <h2>₹{rewardBalance}</h2>
+            </div>
+
+            {rewards.length === 0 ? (
+              <p style={{ textAlign: "center", color: "#777", padding: "20px 0" }}>
+                No rewards yet.
+              </p>
+            ) : (
+              <div className="wallet-transaction-list">
+                {rewards.map((reward) => (
+                  <div
+                    key={reward.id}
+                    className="wallet-transaction-item"
+                  >
+                    <div>
+                      <strong>{reward.title}</strong>
+                      <p>{reward.date}</p>
+                    </div>
+
+                    <h4 style={{ color: "#2E7D32" }}>
+                      +₹{reward.amount}
+                    </h4>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              className="wallet-close-btn"
+              style={{ marginTop: "20px" }}
+              onClick={() => setShowRewards(false)}
             >
               Close
             </button>
