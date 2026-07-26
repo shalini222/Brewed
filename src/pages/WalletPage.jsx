@@ -28,7 +28,8 @@ const [transactions, setTransactions] = useState([]);
 const [loading, setLoading] = useState(true);
 const [showAddMoney, setShowAddMoney] = useState(false);
 const [amount, setAmount] = useState("");
-  
+  const [showTransactions, setShowTransactions] = useState(false);
+const [filter, setFilter] = useState("all");
 
 
 
@@ -422,6 +423,30 @@ const handleAddMoney = async () => {
   border: none;
   background: #eee;
   cursor: pointer;
+}
+.transaction-modal {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.transaction-filters {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.transaction-filters button {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+}
+
+.active-filter {
+  background: #C4956A !important;
+  color: white;
+  border-color: #C4956A !important;
 }
 
         @media (max-width: 768px) {
