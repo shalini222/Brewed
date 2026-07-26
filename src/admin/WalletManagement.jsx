@@ -75,6 +75,14 @@ export default function WalletManagement({ setPage }) {
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
 
+  // Lock / Unlock Reason & Confirmation Modal States for Phase 6.2 & 6.5
+  const [showLockModal, setShowLockModal] = useState(false);
+  const [lockReason, setLockReason] = useState("");
+  const [confirmationText, setConfirmationText] = useState("");
+
+  // Wallet Audit History State for Phase 6.4
+  const [walletHistory, setWalletHistory] = useState([]);
+
   // Recent Transactions State for Phase 4.5
   const [recentTransactions, setRecentTransactions] = useState([]);
 
@@ -131,8 +139,8 @@ export default function WalletManagement({ setPage }) {
             rewardBalance: wallet?.rewardBalance || wallet?.rewards || 0,
             transactionCount: wallet?.transactionCount || wallet?.transactions?.length || 0,
             
-            // Status consistency with Customer Management page
-            status: user.active === false ? "Locked" : (wallet?.status || "Active"),
+            // Status consistency with Customer Management page and Phase 6.6
+            status: wallet?.status || (user.active === false ? "Locked" : "Active"),
             
             // Extra tracked stats if present in wallet document
             moneyAdded: wallet?.moneyAdded || 0,
@@ -187,6 +195,45 @@ export default function WalletManagement({ setPage }) {
     }
   }
 
+  async function loadWalletHistory(walletId) {
+    try {
+      const snapshot = await getDocs(collection(db, "walletAuditLogs"));
+
+      const history = snapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        .filter((item) => item.walletId === walletId)
+        .sort(
+          (a, b) =>
+            (b.createdAt?.seconds || 0) -
+            (a.createdAt?.seconds || 0)
+        );
+
+      setWalletHistory(history);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function sendWalletNotification(title, message) {
+    if (!selectedWallet) return;
+
+    try {
+      await addDoc(collection(db, "notifications"), {
+        userId: selectedWallet.id,
+        title,
+        message,
+        read: false,
+        createdAt: serverTimestamp(),
+        type: "wallet",
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   async function handleWalletAction() {
     if (!selectedWallet) return;
 
@@ -206,6 +253,10 @@ export default function WalletManagement({ setPage }) {
           moneyAdded: increment(value),
           updatedAt: serverTimestamp(),
         });
+        await sendWalletNotification(
+          "Money Added",
+          `₹${value} has been added to your Brewed Wallet.`
+        );
       }
 
       if (actionType === "debit") {
@@ -214,6 +265,10 @@ export default function WalletManagement({ setPage }) {
           moneySpent: increment(value),
           updatedAt: serverTimestamp(),
         });
+        await sendWalletNotification(
+          "Balance Updated",
+          `₹${value} has been deducted from your Brewed Wallet by an administrator.`
+        );
       }
 
       if (actionType === "reward") {
@@ -221,6 +276,10 @@ export default function WalletManagement({ setPage }) {
           rewardBalance: increment(value),
           updatedAt: serverTimestamp(),
         });
+        await sendWalletNotification(
+          "Rewards Added",
+          `${value} reward points have been added to your account.`
+        );
       }
 
       if (actionType === "refund") {
@@ -229,6 +288,10 @@ export default function WalletManagement({ setPage }) {
           refunds: increment(value),
           updatedAt: serverTimestamp(),
         });
+        await sendWalletNotification(
+          "Refund Received",
+          `₹${value} has been refunded to your Brewed Wallet.`
+        );
       }
 
       await addDoc(collection(db, "walletTransactions"), {
@@ -239,6 +302,20 @@ export default function WalletManagement({ setPage }) {
         amount: value,
         reason: reason,
         adminAction: true,
+        createdAt: serverTimestamp(),
+      });
+
+      let auditActionText = "Money Added";
+      if (actionType === "credit") auditActionText = `➕ Added ₹${value}`;
+      if (actionType === "debit") auditActionText = `➖ Removed ₹${value}`;
+      if (actionType === "reward") auditActionText = `🎁 Rewards Added (${value} points)`;
+      if (actionType === "refund") auditActionText = `💰 Refund Issued (₹${value})`;
+
+      await addDoc(collection(db, "walletAuditLogs"), {
+        walletId: selectedWallet.id,
+        customerName: selectedWallet.name,
+        action: auditActionText,
+        reason: reason || "No reason provided",
         createdAt: serverTimestamp(),
       });
 
@@ -305,6 +382,7 @@ export default function WalletManagement({ setPage }) {
 
         setSelectedWallet(updated);
         loadWalletTransactions(selectedWallet.id);
+        loadWalletHistory(selectedWallet.id);
       }
 
       alert("Wallet updated successfully.");
@@ -316,6 +394,149 @@ export default function WalletManagement({ setPage }) {
     } catch (err) {
       console.error(err);
       alert("Failed to update wallet.");
+    }
+  }
+
+  async function toggleWalletLock() {
+    if (!selectedWallet) return;
+
+    const expected =
+      selectedWallet.status === "Locked"
+        ? "UNLOCK"
+        : "LOCK";
+
+    if (confirmationText.trim().toUpperCase() !== expected) {
+      alert(`Please type "${expected}" to continue.`);
+      return;
+    }
+
+    if (!lockReason.trim()) {
+      alert("Please enter a reason.");
+      return;
+    }
+
+    try {
+      const nextStatus =
+        selectedWallet.status === "Locked"
+          ? "Active"
+          : "Locked";
+
+      await updateDoc(
+        doc(db, "wallets", selectedWallet.id),
+        {
+          status: nextStatus,
+          updatedAt: serverTimestamp(),
+        }
+      );
+
+      if (nextStatus === "Locked") {
+        await sendWalletNotification(
+          "Wallet Locked",
+          "Your Brewed Wallet has been locked by an administrator. Please contact support if you believe this is an error."
+        );
+      } else {
+        await sendWalletNotification(
+          "Wallet Unlocked",
+          "Your Brewed Wallet has been unlocked. You can now use it normally."
+        );
+      }
+
+      await addDoc(collection(db, "walletAuditLogs"), {
+        walletId: selectedWallet.id,
+        customerName: selectedWallet.name,
+        action:
+          nextStatus === "Locked"
+            ? "🔒 Wallet Locked"
+            : "🔓 Wallet Unlocked",
+        reason: lockReason,
+        createdAt: serverTimestamp(),
+      });
+
+      setSelectedWallet({
+        ...selectedWallet,
+        status: nextStatus,
+      });
+
+      setWallets((prev) =>
+        prev.map((wallet) =>
+          wallet.id === selectedWallet.id
+            ? {
+                ...wallet,
+                status: nextStatus,
+              }
+            : wallet
+        )
+      );
+
+      loadWalletHistory(selectedWallet.id);
+
+      setShowLockModal(false);
+      setLockReason("");
+      setConfirmationText("");
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function toggleFreeze() {
+    if (!selectedWallet) return;
+
+    const nextStatus =
+      selectedWallet.status === "Frozen"
+        ? "Active"
+        : "Frozen";
+
+    try {
+      await updateDoc(
+        doc(db, "wallets", selectedWallet.id),
+        {
+          status: nextStatus,
+          updatedAt: serverTimestamp(),
+        }
+      );
+
+      if (nextStatus === "Frozen") {
+        await sendWalletNotification(
+          "Wallet Frozen",
+          "Your Brewed Wallet has been frozen while we review your account."
+        );
+      } else {
+        await sendWalletNotification(
+          "Wallet Restored",
+          "Your Brewed Wallet has been restored and is ready to use again."
+        );
+      }
+
+      setWallets((prev) =>
+        prev.map((wallet) =>
+          wallet.id === selectedWallet.id
+            ? {
+                ...wallet,
+                status: nextStatus,
+              }
+            : wallet
+        )
+      );
+
+      setSelectedWallet({
+        ...selectedWallet,
+        status: nextStatus,
+      });
+
+      await addDoc(collection(db, "walletAuditLogs"), {
+        walletId: selectedWallet.id,
+        customerName: selectedWallet.name,
+        action:
+          nextStatus === "Frozen"
+            ? "FREEZE"
+            : "UNFREEZE",
+        reason: "Administrative action",
+        createdAt: serverTimestamp(),
+      });
+
+      loadWalletHistory(selectedWallet.id);
+    } catch (err) {
+      console.error(err);
     }
   }
 
@@ -468,6 +689,7 @@ export default function WalletManagement({ setPage }) {
             <option>All</option>
             <option>Active</option>
             <option>Locked</option>
+            <option>Frozen</option>
           </select>
 
           <select
@@ -592,7 +814,11 @@ export default function WalletManagement({ setPage }) {
                   </div>
 
                   <div style={{ marginBottom: 15, fontSize: 13, fontWeight: "500" }}>
-                    {wallet.status === "Active" ? "🟢 Active" : "🔒 Locked"}
+                    {wallet.status === "Active"
+                      ? "🟢 Active"
+                      : wallet.status === "Locked"
+                      ? "🔒 Locked"
+                      : "🧊 Frozen"}
                   </div>
                 </div>
 
@@ -600,6 +826,7 @@ export default function WalletManagement({ setPage }) {
                   onClick={() => {
                     setSelectedWallet(wallet);
                     loadWalletTransactions(wallet.id);
+                    loadWalletHistory(wallet.id);
                   }}
                   style={{
                     width: "100%",
@@ -820,11 +1047,15 @@ export default function WalletManagement({ setPage }) {
                     background:
                       selectedWallet.status === "Active"
                         ? "#E8F5E9"
-                        : "#FFEBEE",
+                        : selectedWallet.status === "Locked"
+                        ? "#FFEBEE"
+                        : "#F3E5F5",
                     color:
                       selectedWallet.status === "Active"
                         ? "#2E7D32"
-                        : "#C62828",
+                        : selectedWallet.status === "Locked"
+                        ? "#C62828"
+                        : "#6A1B9A",
                   }}
                 >
                   {selectedWallet.status}
@@ -968,23 +1199,48 @@ export default function WalletManagement({ setPage }) {
                 </button>
 
                 <button
+                  onClick={() => setShowLockModal(true)}
                   style={{
                     gridColumn: "1 / -1",
                     padding: 14,
+                    marginTop: 20,
+                    borderRadius: 10,
+                    border: "none",
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                    background:
+                      selectedWallet.status === "Locked"
+                        ? "#2E7D32"
+                        : "#C62828",
+                    color: "#fff",
+                  }}
+                >
+                  {selectedWallet.status === "Locked"
+                    ? "🔓 Unlock Wallet"
+                    : "🔒 Lock Wallet"}
+                </button>
+
+                <button
+                  onClick={toggleFreeze}
+                  style={{
+                    gridColumn: "1 / -1",
+                    width: "100%",
+                    marginTop: 4,
+                    padding: 12,
                     border: "none",
                     borderRadius: 10,
                     background:
-                      selectedWallet.status === "Active"
-                        ? "#444"
-                        : "#2E7D32",
+                      selectedWallet.status === "Frozen"
+                        ? "#2E7D32"
+                        : "#6A1B9A",
                     color: "#fff",
-                    fontWeight: 600,
+                    fontWeight: "bold",
                     cursor: "pointer",
                   }}
                 >
-                  {selectedWallet.status === "Active"
-                    ? "🔒 Lock Wallet"
-                    : "🔓 Unlock Wallet"}
+                  {selectedWallet.status === "Frozen"
+                    ? "❄️ Unfreeze Wallet"
+                    : "🧊 Freeze Wallet"}
                 </button>
               </div>
             </div>
@@ -1099,6 +1355,65 @@ export default function WalletManagement({ setPage }) {
                   </h3>
                 </div>
               </div>
+            </div>
+
+            {/* Wallet History Timeline (Phase 6.4) */}
+            <div
+              style={{
+                marginTop: 30,
+                background: "#FAF6F0",
+                borderRadius: 12,
+                padding: 20,
+              }}
+            >
+              <h3 style={{ marginTop: 0, color: "#3B1A08" }}>
+                📜 Wallet History
+              </h3>
+
+              {walletHistory.length === 0 ? (
+                <p style={{ color: "#777" }}>
+                  No activity recorded.
+                </p>
+              ) : (
+                walletHistory.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      padding: "12px 0",
+                      borderBottom: "1px solid #e5e5e5",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: "bold",
+                        color: "#3B1A08",
+                      }}
+                    >
+                      {item.action}
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "#666",
+                      }}
+                    >
+                      {item.reason}
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "#999",
+                        marginTop: 5,
+                      }}
+                    >
+                      {item.createdAt?.toDate?.().toLocaleString() ||
+                        "-"}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Transaction History */}
@@ -1399,6 +1714,132 @@ export default function WalletManagement({ setPage }) {
 
               <button
                 onClick={handleWalletAction}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#3B1A08",
+                  color: "#fff",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lock / Unlock Reason & Confirmation Modal */}
+      {showLockModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,.45)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 4000,
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              width: 420,
+              borderRadius: 18,
+              padding: 25,
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>
+              {selectedWallet?.status === "Locked"
+                ? "Unlock Wallet"
+                : "Lock Wallet"}
+            </h2>
+
+            <p style={{ color: "#666" }}>
+              Please enter the reason for this action.
+            </p>
+
+            <textarea
+              value={lockReason}
+              onChange={(e) => setLockReason(e.target.value)}
+              placeholder="Reason..."
+              style={{
+                width: "100%",
+                height: 100,
+                padding: 12,
+                borderRadius: 10,
+                border: "1px solid #ddd",
+                marginBottom: 10,
+                boxSizing: "border-box",
+                fontFamily: "sans-serif",
+              }}
+            />
+
+            <p
+              style={{
+                fontSize: 13,
+                color: "#666",
+                marginTop: 15,
+              }}
+            >
+              Type{" "}
+              <b>
+                {selectedWallet?.status === "Locked"
+                  ? "UNLOCK"
+                  : "LOCK"}
+              </b>{" "}
+              to confirm.
+            </p>
+
+            <input
+              type="text"
+              value={confirmationText}
+              onChange={(e) => setConfirmationText(e.target.value)}
+              placeholder={
+                selectedWallet?.status === "Locked"
+                  ? "Type UNLOCK"
+                  : "Type LOCK"
+              }
+              style={{
+                width: "100%",
+                padding: 12,
+                marginTop: 10,
+                borderRadius: 8,
+                border: "1px solid #ddd",
+                marginBottom: 20,
+                boxSizing: "border-box",
+              }}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 10,
+              }}
+            >
+              <button
+                onClick={() => {
+                  setShowLockModal(false);
+                  setLockReason("");
+                  setConfirmationText("");
+                }}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 8,
+                  border: "1px solid #ccc",
+                  background: "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={toggleWalletLock}
                 style={{
                   padding: "10px 18px",
                   borderRadius: 8,
