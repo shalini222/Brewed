@@ -49,6 +49,15 @@ export default function AdminPage({ setPage }) {
         />
       )} 
 
+
+      {activePage === "orderadmin" && (
+        <CouponManagement
+          setPage={setPage}
+          activePage={activePage}
+          setActivePage={setActivePage}
+        />
+      )} 
+
       {/* Future pages will go here */}
     </div>
   );
