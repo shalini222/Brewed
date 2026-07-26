@@ -584,6 +584,10 @@ return (
           title: "🔔 Notifications",
           page: "notificationsadmin",
         },
+      {
+          title: "👛 Wallet",
+          page: "walletadmin",
+        },
         {
           title: "⚙ Settings",
           page: "settingsadmin",
