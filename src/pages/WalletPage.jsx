@@ -1,8 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { doc, getDoc, collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
+import { db } from "../firebase";
+import { useAuth } from "../context/AuthContext";
 
 
 export default function WalletPage({ setPage }) {
 
+
+
+const { currentUser } = useAuth();
+
+const [balance, setBalance] = useState(0);
+const [promoBalance, setPromoBalance] = useState(0);
+const [transactions, setTransactions] = useState([]);
+const [loading, setLoading] = useState(true);
+
+  
 const [balance] = useState(0);
 const [promoBalance] = useState(0);
 
@@ -23,6 +36,52 @@ const transactions = [
   },
 ];
 
+
+useEffect(() => {
+  if (!currentUser) return;
+
+  loadWallet();
+}, [currentUser]);
+
+
+async function loadWallet() {
+  try {
+    setLoading(true);
+
+    const walletRef = doc(db, "wallets", currentUser.uid);
+    const walletSnap = await getDoc(walletRef);
+
+    if (walletSnap.exists()) {
+      const data = walletSnap.data();
+
+      setBalance(data.balance || 0);
+      setPromoBalance(data.promoBalance || 0);
+    }
+
+    const q = query(
+      collection(db, "walletTransactions"),
+      where("userId", "==", currentUser.uid),
+      orderBy("createdAt", "desc"),
+      limit(5)
+    );
+
+    const snapshot = await getDocs(q);
+
+    setTransactions(
+      snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+    );
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setLoading(false);
+  }
+}
+  
+
+  
 
   return (
     <div className="wallet-page">
