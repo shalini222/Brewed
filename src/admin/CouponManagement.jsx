@@ -114,7 +114,6 @@ export default function CouponManagement({setPage}) {
   const [filter, setFilter] = useState("All");
   const [toast, setToast] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [page, setPage] = useState("dashboard");
   const [revenueTimeframe, setRevenueTimeframe] = useState("30days");
 
   const [selectedCouponIds, setSelectedCouponIds] = useState([]);
@@ -696,8 +695,7 @@ export default function CouponManagement({setPage}) {
       }
     }
   `}</style>
-      
-  <div style={{ minHeight: "100vh", background: "#FAF6F0", padding: "40px 4%", fontFamily: "system-ui, -apple-system, sans-serif", transition: "all 0.3s ease" }}>
+      <div style={{ minHeight: "100vh", background: "#FAF6F0", padding: "40px 4%", fontFamily: "system-ui, -apple-system, sans-serif", transition: "all 0.3s ease" }}>
     
     {/* Dynamic Navigation Top Row */}
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "35px" }}>
@@ -749,7 +747,7 @@ export default function CouponManagement({setPage}) {
               <XAxis dataKey="label" stroke="#A8A096" style={{ fontSize: "11px" }} />
               <YAxis stroke="#A8A096" style={{ fontSize: "11px" }} />
               <Tooltip formatter={(v) => [`₹${v}`, "Captured Revenue"]} />
-              <Bar dataKey="amount" fill="#3B1A08" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="amount" fill="#C4956A" radius={[4, 4, 0, 0]} />
             </BarChart>
           ) : (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#A8A096" }}>Zero points parsed inside limits</div>
@@ -759,20 +757,20 @@ export default function CouponManagement({setPage}) {
 
       {/* Categories Pie Mixer Layout Block */}
       <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", boxShadow: "0 4px 20px rgba(0,0,0,0.01)", transition: "transform 0.3s ease, box-shadow 0.3s ease" }}
-           onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.04)"; }}
-           onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0px)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.01)"; }}>
-        <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", fontWeight: "700" }}>🥧 Dynamic Structural Mix Ratios</h3>
-        <ResponsiveContainer width="100%" height={240}>
-          <PieChart>
-            <Pie data={categoryData} dataKey="value" nameKey="name" outerRadius={75} innerRadius={50} paddingAngle={4}>
-              {categoryData.map((entry, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
-            </Pie>
-            <Tooltip />
-            <Legend wrapperStyle={{ fontSize: "12px" }} />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+     onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.04)"; }}
+     onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0px)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.01)"; }}>
+  <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", fontWeight: "700" }}>🥧 Dynamic Structural Mix Ratios</h3>
+  <ResponsiveContainer width="100%" height={240}>
+    <PieChart>
+      <Pie data={categoryData} dataKey="value" nameKey="name" outerRadius={75} innerRadius={50} paddingAngle={4}>
+        {categoryData.map((entry, index) => <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
+      </Pie>
+      <Tooltip />
+      <Legend wrapperStyle={{ fontSize: "12px" }} />
+    </PieChart>
+  </ResponsiveContainer>
+</div>
+      
 
     {/* EXTENDED RETROACTIVE MATRIX GRID SUMMARY */}
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "20px", marginBottom: "40px" }}>
@@ -795,7 +793,7 @@ export default function CouponManagement({setPage}) {
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             
             <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>Category Core Logic Class</label>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#544E48" }}>Category Core Logic Class</label>
               <select style={formInputStyle} value={newCoupon.category} onChange={(e) => setNewCoupon({ ...newCoupon, category: e.target.value })}>
                 <option value="General">🏷️ General </option>
                 <option value="New User">👤 First-Order / New User </option>
@@ -808,14 +806,14 @@ export default function CouponManagement({setPage}) {
 
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                <label style={{ fontSize: "13px", fontWeight: "600" }}>Unique Code Alphanumeric Token *</label>
-                <span onClick={handleGenerateRandomCode} style={{ fontSize: "12px", color: "#4F46E5", cursor: "pointer", fontWeight: "600" }}>⚙️ Engine Auto-Gen</span>
+                <label style={{ fontSize: "13px", fontWeight: "600", color: "#544E48" }}>Unique Code Alphanumeric Token *</label>
+                <span onClick={handleGenerateRandomCode} style={{ fontSize: "12px", color: "#C4956A", cursor: "pointer", fontWeight: "600" }}>⚙️ Engine Auto-Gen</span>
               </div>
               <input style={formInputStyle} placeholder="SUMMER50" value={newCoupon.code} onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase(), isAutoGenerated: false })} />
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>Audience Filter Pipeline</label>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#544E48" }}>Audience Filter Pipeline</label>
               <select style={formInputStyle} value={newCoupon.audienceType} onChange={(e) => setNewCoupon({ ...newCoupon, audienceType: e.target.value })}>
                 <option value="all">🌐 Open Public Ecosystem</option>
                 <option value="new_users_only">🆕 First-Order Accounts Only</option>
@@ -825,13 +823,13 @@ export default function CouponManagement({setPage}) {
 
             {newCoupon.audienceType === "specific_user" && (
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>Target Account Unique ID Constraint *</label>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#544E48" }}>Target Account Unique ID Constraint *</label>
                 <input style={formInputStyle} placeholder="usr_x28a31b" value={newCoupon.targetUserId} onChange={(e) => setNewCoupon({ ...newCoupon, targetUserId: e.target.value })} />
               </div>
             )}
 
             <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>System Automation Trigger Integration</label>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#544E48" }}>System Automation Trigger Integration</label>
               <select style={formInputStyle} value={newCoupon.triggerType} onChange={(e) => setNewCoupon({ ...newCoupon, triggerType: e.target.value })}>
                 <option value="manual">Manual Direct Assignment</option>
                 <option value="birthday_event">🎂 Auto-Generate on Profile Birthday Matches</option>
@@ -841,53 +839,53 @@ export default function CouponManagement({setPage}) {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>Discount Structure</label>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Discount Structure</label>
                 <select style={formInputStyle} value={newCoupon.type} onChange={(e) => setNewCoupon({ ...newCoupon, type: e.target.value })}>
                   <option value="percentage">Percentage (%)</option>
                   <option value="fixed">Fixed Flat (₹)</option>
                 </select>
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>Rate Value *</label>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Rate Value *</label>
                 <input type="number" style={formInputStyle} value={newCoupon.value} onChange={(e) => setNewCoupon({ ...newCoupon, value: e.target.value })} />
               </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>Order Constraint (₹) *</label>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Order Constraint (₹) *</label>
                 <input type="number" style={formInputStyle} value={newCoupon.minOrder} onChange={(e) => setNewCoupon({ ...newCoupon, minOrder: e.target.value })} />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>Max Discount Cap (₹)</label>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Max Discount Cap (₹)</label>
                 <input type="number" style={formInputStyle} value={newCoupon.maxDiscount} onChange={(e) => setNewCoupon({ ...newCoupon, maxDiscount: e.target.value })} />
               </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>Global Cap Threshold</label>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Global Cap Threshold</label>
                 <input type="number" style={formInputStyle} value={newCoupon.usageLimit} onChange={(e) => setNewCoupon({ ...newCoupon, usageLimit: e.target.value })} />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>Per-User Limit Cap</label>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Per-User Limit Cap</label>
                 <input type="number" style={formInputStyle} value={newCoupon.perUserLimit} onChange={(e) => setNewCoupon({ ...newCoupon, perUserLimit: e.target.value })} />
               </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>Scheduled Activation</label>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Scheduled Activation</label>
                 <input type="date" style={formInputStyle} value={newCoupon.starts} onChange={(e) => setNewCoupon({ ...newCoupon, starts: e.target.value })} />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>Horizon Expiry</label>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Horizon Expiry</label>
                 <input type="date" style={formInputStyle} value={newCoupon.expires} onChange={(e) => setNewCoupon({ ...newCoupon, expires: e.target.value })} />
               </div>
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px" }}>Allocation Mode</label>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Allocation Mode</label>
               <select style={formInputStyle} value={newCoupon.singleUse ? "single" : "multi"} onChange={(e) => setNewCoupon({ ...newCoupon, singleUse: e.target.value === "single" })}>
                 <option value="multi">🔄 Reusable Account Lifecycles</option>
                 <option value="single">1️⃣ Single Global Destruction Event</option>
@@ -1023,7 +1021,7 @@ export default function CouponManagement({setPage}) {
               <span style={{ fontSize: "14px", fontWeight: "600", color: "#3B1A08" }}>⚡ Batch Queue Execution Group: <strong>{selectedCouponIds.length}</strong> items checked</span>
               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                 <button onClick={() => handleBulkActivationToggle(true)} style={{ padding: "8px 14px", background: "#2E7D32", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>🟢 Bulk Enable</button>
-                <button onClick={() => handleBulkActivationToggle(false)} style={{ padding: "8px 14px", background: "#F5B942", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>🟡 Bulk Disable</button>
+                <button onClick={() => handleBulkActivationToggle(false)} style={{ padding: "8px 14px", background: "#C4956A", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>🟡 Bulk Disable</button>
                 <button onClick={handleBulkPurge} style={{ padding: "8px 14px", background: "#D32F2F", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>🔴 Permanent Bulk Delete</button>
                 <button onClick={() => setSelectedCouponIds([])} style={{ padding: "8px 12px", background: "transparent", border: "1px solid #DCD1C4", color: "#544E48", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}>Cancel</button>
               </div>
@@ -1088,7 +1086,7 @@ export default function CouponManagement({setPage}) {
                         background: styleSheet.cardBg, 
                         borderRadius: "16px", 
                         padding: "24px", 
-                        border: selectCheck ? "2px solid #4F46E5" : `1px solid ${styleSheet.border}`, 
+                        border: selectCheck ? "2px solid #C4956A" : `1px solid ${styleSheet.border}`, 
                         boxShadow: "0 6px 18px rgba(0,0,0,0.02)", 
                         display: "flex", 
                         flexDirection: "column", 
@@ -1140,7 +1138,7 @@ export default function CouponManagement({setPage}) {
                           </span>
 
                           {timeSpecs.variant === "expired" && <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 8px", borderRadius: "4px", background: "#D32F2F", color: "#fff" }}>🚨 EXPIRED</span>}
-                          {timeSpecs.variant === "warning" && <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 8px", borderRadius: "4px", background: "#FF9800", color: "#fff" }}>⏳ EXPIRING SOON</span>}
+                          {timeSpecs.variant === "warning" && <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 8px", borderRadius: "4px", background: "#C4956A", color: "#fff" }}>⏳ EXPIRING SOON</span>}
                         </div>
 
                         {/* Technical Configuration Specifications */}
@@ -1171,7 +1169,7 @@ export default function CouponManagement({setPage}) {
 
                       {/* Bottom Level Operation Drawers */}
                       <div style={{ display: "flex", gap: "8px", marginTop: "18px", borderTop: "1px dashed #DCD1C4", paddingTop: "14px" }}>
-                        <button onClick={() => toggleCoupon(coupon)} style={{ flex: 1, background: coupon?.active ? "#F5B942" : "#2E7D32", color: "#fff", border: "none", padding: "10px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px", transition: "opacity 0.2s" }}
+                        <button onClick={() => toggleCoupon(coupon)} style={{ flex: 1, background: coupon?.active ? "#C4956A" : "#2E7D32", color: "#fff", border: "none", padding: "10px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px", transition: "opacity 0.2s" }}
                                 onMouseEnter={(e) => e.currentTarget.style.opacity = "0.9"}
                                 onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}>
                           {coupon?.active ? "Disable" : "Enable"}
@@ -1284,6 +1282,8 @@ export default function CouponManagement({setPage}) {
     </div>
   )}
 
+
+  
  
 
 
