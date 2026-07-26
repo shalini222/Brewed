@@ -1,7 +1,7 @@
 import React from 'react';
 
 
-export function CustomerManagement({setPage}) {
+export default function CustomerManagement({setPage}) {
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
       <h1>cutomer page</h1>
