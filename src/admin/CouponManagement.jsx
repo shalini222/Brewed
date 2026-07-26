@@ -663,631 +663,625 @@ export default function CouponManagement({setPage}) {
   }
 
   // --- MASTER RENDER LAYER WITH CRASH SAFEGUARDS ---
+
   if (!db) {
-    return <div style={{ padding: "50px", textAlign: "center", color: "red" }}>Error: Firebase db connection configuration missing in context resources.</div>;
-  }
+  return <div style={{ padding: "50px", textAlign: "center", color: "red" }}>Error: Firebase db connection configuration missing in context resources.</div>;
+}
 
-  return (
-    <>
-      <style>{`
-    @keyframes pulse {
-      0% { opacity: 0.55; }
-      50% { opacity: 1; }
-      100% { opacity: 0.55; }
-    }
-       @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes slideInRight {
-      from {
-        opacity: 0;
-        transform: translateX(30px);
+return (
+  <>
+    <style>{`
+      @keyframes pulse {
+        0% { opacity: 0.55; }
+        50% { opacity: 1; }
+        100% { opacity: 0.55; }
       }
-      to {
-        opacity: 1;
-        transform: translateX(0);
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
       }
-    }
-  `}</style>
-      <div style={{ minHeight: "100vh", background: "#FAF6F0", padding: "40px 4%", fontFamily: "system-ui, -apple-system, sans-serif", transition: "all 0.3s ease" }}>
-    
-    {/* Dynamic Navigation Top Row */}
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "35px" }}>
-      <div>
-        <button 
-          onClick={() => setPage("dashboard")} 
-          style={{ background: "#fff", border: "1px solid #DCD1C4", padding: "10px 18px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", color: "#544E48", transition: "all 0.2s ease" }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "#F5F0EB"; e.currentTarget.style.borderColor = "#C4956A"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#DCD1C4"; }}
-        >
-          Dashboard
-        </button>
-        <h1 style={{ fontFamily: "Playfair Display, serif", marginTop: "16px", marginBottom: 0, fontSize: "34px", color: "#1E1B18" }}>
-          🎟️ Master Coupon Control Center
-        </h1>
-      </div>
-    </div>
-
-    {/* CORE LIVE TRANSACTIONAL SALES HUD */}
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px", marginBottom: "40px" }}>
-      <StatCard title="Sales Confirmed Today" value={`${salesTodayStats.count} Orders`} color="#fff" icon="🛍️" highlight={true} />
-      <StatCard title="Revenue Captured Today" value={`₹${salesTodayStats.revenue}`} color="#009688" icon="⚡" />
-      <StatCard title="All-Time Total Revenue" value={`₹${totalSalesRevenueCollection}`} color="#2E7D32" icon="💼" />
-      <StatCard title="Active Templates" value={safeCoupons.filter(c => c?.active).length} color="#3B1A08" icon="⚙️" />
-    </div>
-
-    {/* VISUAL CHART REPORT FLEX LAYOUT BLOCKS */}
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: "25px", marginBottom: "40px" }}>
-      
-      {/* Dynamic Windowed Income Distribution Graph Block */}
-      <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", boxShadow: "0 4px 20px rgba(0,0,0,0.01)", transition: "transform 0.3s ease, box-shadow 0.3s ease" }}
-           onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.04)"; }}
-           onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0px)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.01)"; }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700" }}>📊 Channel Income Processing Wave</h3>
-          <select value={revenueTimeframe} onChange={(e) => setRevenueTimeframe(e.target.value)} style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #DCD1C4", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
-            <option value="30days">📅 Last 30 Days</option>
-            <option value="14days">📅 Last 14 Days</option>
-            <option value="7days">📅 Last 7 Days</option>
-            <option value="3days">📆 Last 3 Days</option>
-            <option value="48hrs">⏳ Last 48 Hours</option>
-            <option value="24hrs">⏳ Last 24 Hours</option>
-          </select>
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes slideInRight {
+        from {
+          opacity: 0;
+          transform: translateX(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+    `}</style>
+    <div style={{ minHeight: "100vh", background: "#FAF6F0", padding: "40px 4%", fontFamily: "system-ui, -apple-system, sans-serif", transition: "all 0.3s ease" }}>
+  
+      {/* Dynamic Navigation Top Row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "35px" }}>
+        <div>
+          <button 
+            onClick={() => setPage("dashboard")} 
+            style={{ background: "#fff", border: "1px solid #DCD1C4", padding: "10px 18px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", color: "#544E48", transition: "all 0.2s ease" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#F5F0EB"; e.currentTarget.style.borderColor = "#C4956A"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#DCD1C4"; }}
+          >
+            Dashboard
+          </button>
+          <h1 style={{ fontFamily: "Playfair Display, serif", marginTop: "16px", marginBottom: 0, fontSize: "34px", color: "#1E1B18" }}>
+            🎟️ Master Coupon Control Center
+          </h1>
         </div>
-        <ResponsiveContainer width="100%" height={240}>
-          {revenueDataTimeline.length > 0 ? (
-            <BarChart data={revenueDataTimeline}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#FAF6F0" />
-              <XAxis dataKey="label" stroke="#A8A096" style={{ fontSize: "11px" }} />
-              <YAxis stroke="#A8A096" style={{ fontSize: "11px" }} />
-              <Tooltip formatter={(v) => [`₹${v}`, "Captured Revenue"]} />
-              <Bar dataKey="amount" fill="#C4956A" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#A8A096" }}>Zero points parsed inside limits</div>
-          )}
-        </ResponsiveContainer>
       </div>
 
-      {/* Categories Pie Mixer Layout Block */}
-      <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", boxShadow: "0 4px 20px rgba(0,0,0,0.01)", transition: "transform 0.3s ease, box-shadow 0.3s ease" }}
-     onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.04)"; }}
-     onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0px)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.01)"; }}>
-  <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", fontWeight: "700" }}>🥧 Dynamic Structural Mix Ratios</h3>
-  <ResponsiveContainer width="100%" height={240}>
-    <PieChart>
-      <Pie data={categoryData} dataKey="value" nameKey="name" outerRadius={75} innerRadius={50} paddingAngle={4}>
-        {categoryData.map((entry, index) => <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
-      </Pie>
-      <Tooltip />
-      <Legend wrapperStyle={{ fontSize: "12px" }} />
-    </PieChart>
-  </ResponsiveContainer>
-</div>
-      
+      {/* CORE LIVE TRANSACTIONAL SALES HUD */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px", marginBottom: "40px" }}>
+        <StatCard title="Sales Confirmed Today" value={`${salesTodayStats.count} Orders`} color="#fff" icon="🛍️" highlight={true} />
+        <StatCard title="Revenue Captured Today" value={`₹${salesTodayStats.revenue}`} color="#009688" icon="⚡" />
+        <StatCard title="All-Time Total Revenue" value={`₹${totalSalesRevenueCollection}`} color="#2E7D32" icon="💼" />
+        <StatCard title="Active Templates" value={safeCoupons.filter(c => c?.active).length} color="#3B1A08" icon="⚙️" />
+      </div>
 
-    {/* EXTENDED RETROACTIVE MATRIX GRID SUMMARY */}
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "20px", marginBottom: "40px" }}>
-      <StatCard title="Total Repository" value={safeCoupons.length} color="#3B1A08" icon="📋" />
-      <StatCard title="Total Redemptions" value={totalUses} color="#C4956A" icon="🔥" />
-      <StatCard title="Discounts Distributed" value={`₹${totalDiscount}`} color="#4F46E5" icon="💸" />
-      <StatCard title="System Efficiency" value={`${redemptionRate}%`} color="#FF9800" icon="📈" />
-      <StatCard title="Linked Asset Val" value={`₹${totalRevenue}`} color="#009688" icon="💰" />
-    </div>
-
-    {/* WORKSPACE COLUMN SPLIT ROUTER CONTAINER */}
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "30px", alignItems: "start" }}>
-      
-      {/* WORKSPACE FORM PANELS INTERACTIVE CONTROL SHEET */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "35px" }}>
+      {/* VISUAL CHART REPORT FLEX LAYOUT BLOCKS */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: "25px", marginBottom: "40px" }}>
         
-        {/* COMPLETE FORM WORKSPACE MATRIX */}
-        <div style={{ background: "#fff", borderRadius: "16px", padding: "28px", border: "1px solid #EAE1D4", boxShadow: "0 4px 25px rgba(0,0,0,0.02)" }}>
-          <h2 style={{ fontFamily: "Playfair Display, serif", margin: "0 0 24px 0", fontSize: "22px" }}>✨ Deploy System Engine Parameter</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            
-            <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#544E48" }}>Category Core Logic Class</label>
-              <select style={formInputStyle} value={newCoupon.category} onChange={(e) => setNewCoupon({ ...newCoupon, category: e.target.value })}>
-                <option value="General">🏷️ General </option>
-                <option value="New User">👤 First-Order / New User </option>
-                <option value="Festival">🎉 Seasonal </option>
-                <option value="Birthday">🎂 Birthday </option>
-                <option value="Referral">🤝 Referral Reward</option>
-                <option value="Loyalty">💎 Milestone Loyalty </option>
-              </select>
-            </div>
-
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                <label style={{ fontSize: "13px", fontWeight: "600", color: "#544E48" }}>Unique Code Alphanumeric Token *</label>
-                <span onClick={handleGenerateRandomCode} style={{ fontSize: "12px", color: "#C4956A", cursor: "pointer", fontWeight: "600" }}>⚙️ Engine Auto-Gen</span>
-              </div>
-              <input style={formInputStyle} placeholder="SUMMER50" value={newCoupon.code} onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase(), isAutoGenerated: false })} />
-            </div>
-
-            <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#544E48" }}>Audience Filter Pipeline</label>
-              <select style={formInputStyle} value={newCoupon.audienceType} onChange={(e) => setNewCoupon({ ...newCoupon, audienceType: e.target.value })}>
-                <option value="all">🌐 Open Public Ecosystem</option>
-                <option value="new_users_only">🆕 First-Order Accounts Only</option>
-                <option value="specific_user">👤 Customer-Specific (Explicit Target Mapping)</option>
-              </select>
-            </div>
-
-            {newCoupon.audienceType === "specific_user" && (
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#544E48" }}>Target Account Unique ID Constraint *</label>
-                <input style={formInputStyle} placeholder="usr_x28a31b" value={newCoupon.targetUserId} onChange={(e) => setNewCoupon({ ...newCoupon, targetUserId: e.target.value })} />
-              </div>
+        {/* Dynamic Windowed Income Distribution Graph Block */}
+        <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", boxShadow: "0 4px 20px rgba(0,0,0,0.01)", transition: "transform 0.3s ease, box-shadow 0.3s ease" }}
+             onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.04)"; }}
+             onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0px)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.01)"; }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700" }}>📊 Channel Income Processing Wave</h3>
+            <select value={revenueTimeframe} onChange={(e) => setRevenueTimeframe(e.target.value)} style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #DCD1C4", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+              <option value="30days">📅 Last 30 Days</option>
+              <option value="14days">📅 Last 14 Days</option>
+              <option value="7days">📅 Last 7 Days</option>
+              <option value="3days">📆 Last 3 Days</option>
+              <option value="48hrs">⏳ Last 48 Hours</option>
+              <option value="24hrs">⏳ Last 24 Hours</option>
+            </select>
+          </div>
+          <ResponsiveContainer width="100%" height={240}>
+            {revenueDataTimeline.length > 0 ? (
+              <BarChart data={revenueDataTimeline}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#FAF6F0" />
+                <XAxis dataKey="label" stroke="#A8A096" style={{ fontSize: "11px" }} />
+                <YAxis stroke="#A8A096" style={{ fontSize: "11px" }} />
+                <Tooltip formatter={(v) => [`₹${v}`, "Captured Revenue"]} />
+                <Bar dataKey="amount" fill="#C4956A" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#A8A096" }}>Zero points parsed inside limits</div>
             )}
+          </ResponsiveContainer>
+        </div>
 
-            <div>
-              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#544E48" }}>System Automation Trigger Integration</label>
-              <select style={formInputStyle} value={newCoupon.triggerType} onChange={(e) => setNewCoupon({ ...newCoupon, triggerType: e.target.value })}>
-                <option value="manual">Manual Direct Assignment</option>
-                <option value="birthday_event">🎂 Auto-Generate on Profile Birthday Matches</option>
-                <option value="referral_generation">🤝 Auto-Generate via Affiliate Tracker Hook</option>
-              </select>
-            </div>
+        {/* Categories Pie Mixer Layout Block */}
+        <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", boxShadow: "0 4px 20px rgba(0,0,0,0.01)", transition: "transform 0.3s ease, box-shadow 0.3s ease" }}
+             onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.04)"; }}
+             onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0px)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.01)"; }}>
+          <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", fontWeight: "700" }}>🥧 Dynamic Structural Mix Ratios</h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <PieChart>
+              <Pie data={categoryData} dataKey="value" nameKey="name" outerRadius={75} innerRadius={50} paddingAngle={4}>
+                {categoryData.map((entry, index) => <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
+              </Pie>
+              <Tooltip />
+              <Legend wrapperStyle={{ fontSize: "12px" }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+      </div>
+
+      {/* EXTENDED RETROACTIVE MATRIX GRID SUMMARY */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "20px", marginBottom: "40px" }}>
+        <StatCard title="Total Repository" value={safeCoupons.length} color="#3B1A08" icon="📋" />
+        <StatCard title="Total Redemptions" value={totalUses} color="#C4956A" icon="🔥" />
+        <StatCard title="Discounts Distributed" value={`₹${totalDiscount}`} color="#4F46E5" icon="💸" />
+        <StatCard title="System Efficiency" value={`${redemptionRate}%`} color="#FF9800" icon="📈" />
+        <StatCard title="Linked Asset Val" value={`₹${totalRevenue}`} color="#009688" icon="💰" />
+      </div>
+
+      {/* WORKSPACE COLUMN SPLIT ROUTER CONTAINER */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "30px", alignItems: "start" }}>
+        
+        {/* WORKSPACE FORM PANELS INTERACTIVE CONTROL SHEET */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "35px" }}>
+          
+          {/* COMPLETE FORM WORKSPACE MATRIX */}
+          <div style={{ background: "#fff", borderRadius: "16px", padding: "28px", border: "1px solid #EAE1D4", boxShadow: "0 4px 25px rgba(0,0,0,0.02)" }}>
+            <h2 style={{ fontFamily: "Playfair Display, serif", margin: "0 0 24px 0", fontSize: "22px" }}>✨ Deploy System Engine Parameter</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Discount Structure</label>
-                <select style={formInputStyle} value={newCoupon.type} onChange={(e) => setNewCoupon({ ...newCoupon, type: e.target.value })}>
-                  <option value="percentage">Percentage (%)</option>
-                  <option value="fixed">Fixed Flat (₹)</option>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#544E48" }}>Category Core Logic Class</label>
+                <select style={formInputStyle} value={newCoupon.category} onChange={(e) => setNewCoupon({ ...newCoupon, category: e.target.value })}>
+                  <option value="General">🏷️ General </option>
+                  <option value="New User">👤 First-Order / New User </option>
+                  <option value="Festival">🎉 Seasonal </option>
+                  <option value="Birthday">🎂 Birthday </option>
+                  <option value="Referral">🤝 Referral Reward</option>
+                  <option value="Loyalty">💎 Milestone Loyalty </option>
                 </select>
               </div>
-              <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Rate Value *</label>
-                <input type="number" style={formInputStyle} value={newCoupon.value} onChange={(e) => setNewCoupon({ ...newCoupon, value: e.target.value })} />
-              </div>
-            </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Order Constraint (₹) *</label>
-                <input type="number" style={formInputStyle} value={newCoupon.minOrder} onChange={(e) => setNewCoupon({ ...newCoupon, minOrder: e.target.value })} />
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                  <label style={{ fontSize: "13px", fontWeight: "600", color: "#544E48" }}>Unique Code Alphanumeric Token *</label>
+                  <span onClick={handleGenerateRandomCode} style={{ fontSize: "12px", color: "#C4956A", cursor: "pointer", fontWeight: "600" }}>⚙️ Engine Auto-Gen</span>
+                </div>
+                <input style={formInputStyle} placeholder="SUMMER50" value={newCoupon.code} onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase(), isAutoGenerated: false })} />
               </div>
-              <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Max Discount Cap (₹)</label>
-                <input type="number" style={formInputStyle} value={newCoupon.maxDiscount} onChange={(e) => setNewCoupon({ ...newCoupon, maxDiscount: e.target.value })} />
-              </div>
-            </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Global Cap Threshold</label>
-                <input type="number" style={formInputStyle} value={newCoupon.usageLimit} onChange={(e) => setNewCoupon({ ...newCoupon, usageLimit: e.target.value })} />
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#544E48" }}>Audience Filter Pipeline</label>
+                <select style={formInputStyle} value={newCoupon.audienceType} onChange={(e) => setNewCoupon({ ...newCoupon, audienceType: e.target.value })}>
+                  <option value="all">🌐 Open Public Ecosystem</option>
+                  <option value="new_users_only">🆕 First-Order Accounts Only</option>
+                  <option value="specific_user">👤 Customer-Specific (Explicit Target Mapping)</option>
+                </select>
               </div>
-              <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Per-User Limit Cap</label>
-                <input type="number" style={formInputStyle} value={newCoupon.perUserLimit} onChange={(e) => setNewCoupon({ ...newCoupon, perUserLimit: e.target.value })} />
-              </div>
-            </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Scheduled Activation</label>
-                <input type="date" style={formInputStyle} value={newCoupon.starts} onChange={(e) => setNewCoupon({ ...newCoupon, starts: e.target.value })} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Horizon Expiry</label>
-                <input type="date" style={formInputStyle} value={newCoupon.expires} onChange={(e) => setNewCoupon({ ...newCoupon, expires: e.target.value })} />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Allocation Mode</label>
-              <select style={formInputStyle} value={newCoupon.singleUse ? "single" : "multi"} onChange={(e) => setNewCoupon({ ...newCoupon, singleUse: e.target.value === "single" })}>
-                <option value="multi">🔄 Reusable Account Lifecycles</option>
-                <option value="single">1️⃣ Single Global Destruction Event</option>
-              </select>
-            </div>
-
-            <button
-              onClick={addCoupon}
-              disabled={saving}
-              style={{
-                background: saving ? "#A8A096" : "#3B1A08",
-                color: "#fff",
-                border: "none",
-                padding: "14px",
-                borderRadius: "10px",
-                cursor: saving ? "not-allowed" : "pointer",
-                fontWeight: "600",
-                marginTop: "8px",
-                width: "100%",
-                opacity: saving ? 0.75 : 1,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: "8px",
-                transition: "all 0.2s ease"
-              }}
-              onMouseEnter={(e) => { if (!saving) e.currentTarget.style.background = "#52250B"; }}
-              onMouseLeave={(e) => { if (!saving) e.currentTarget.style.background = "#3B1A08"; }}
-            >
-              {saving && (
-                <span style={{ width: "14px", height: "14px", border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block", animation: "spin 0.8s linear infinite" }} />
+              {newCoupon.audienceType === "specific_user" && (
+                <div>
+                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#544E48" }}>Target Account Unique ID Constraint *</label>
+                  <input style={formInputStyle} placeholder="usr_x28a31b" value={newCoupon.targetUserId} onChange={(e) => setNewCoupon({ ...newCoupon, targetUserId: e.target.value })} />
+                </div>
               )}
-              {saving ? "Creating Coupon..." : "Create Coupon Code"}
-            </button>
-          </div>
-        </div>
 
-        {/* EDIT WORKSPACE PANEL DESIGNS */}
-        {editing && (
-          <div style={{ background: "#fff", borderRadius: "16px", padding: "28px", border: "2px solid #C4956A", boxShadow: "0 10px 30px rgba(0,0,0,0.05)", animation: "fadeIn 0.3s ease" }}>
-            <h3 style={{ margin: "0 0 20px 0" }}>✏️ Adjust Configuration Matrix</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               <div>
-                <input
-                  style={{
-                    ...formInputStyle,
-                    background: Number(editing?.usageCount) > 0 ? "#F5F5F5" : "#FCFBFA",
-                    cursor: Number(editing?.usageCount) > 0 ? "not-allowed" : "text",
-                    width: "100%",
-                    boxSizing: "border-box",
-                  }}
-                  value={editCoupon.code || ""}
-                  disabled={Number(editing?.usageCount) > 0}
-                  onChange={(e) =>
-                    setEditCoupon({
-                      ...editCoupon,
-                      code: e.target.value.toUpperCase(),
-                    })
-                  }
-                />
-                {Number(editing?.usageCount) > 0 && (
-                  <p style={{ color: "#C62828", fontSize: "12px", marginTop: "6px", marginBottom: "0" }}>
-                    Coupon code cannot be changed after it has been redeemed.
-                  </p>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#544E48" }}>System Automation Trigger Integration</label>
+                <select style={formInputStyle} value={newCoupon.triggerType} onChange={(e) => setNewCoupon({ ...newCoupon, triggerType: e.target.value })}>
+                  <option value="manual">Manual Direct Assignment</option>
+                  <option value="birthday_event">🎂 Auto-Generate on Profile Birthday Matches</option>
+                  <option value="referral_generation">🤝 Auto-Generate via Affiliate Tracker Hook</option>
+                </select>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Discount Structure</label>
+                  <select style={formInputStyle} value={newCoupon.type} onChange={(e) => setNewCoupon({ ...newCoupon, type: e.target.value })}>
+                    <option value="percentage">Percentage (%)</option>
+                    <option value="fixed">Fixed Flat (₹)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Rate Value *</label>
+                  <input type="number" style={formInputStyle} value={newCoupon.value} onChange={(e) => setNewCoupon({ ...newCoupon, value: e.target.value })} />
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Order Constraint (₹) *</label>
+                  <input type="number" style={formInputStyle} value={newCoupon.minOrder} onChange={(e) => setNewCoupon({ ...newCoupon, minOrder: e.target.value })} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Max Discount Cap (₹)</label>
+                  <input type="number" style={formInputStyle} value={newCoupon.maxDiscount} onChange={(e) => setNewCoupon({ ...newCoupon, maxDiscount: e.target.value })} />
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Global Cap Threshold</label>
+                  <input type="number" style={formInputStyle} value={newCoupon.usageLimit} onChange={(e) => setNewCoupon({ ...newCoupon, usageLimit: e.target.value })} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Per-User Limit Cap</label>
+                  <input type="number" style={formInputStyle} value={newCoupon.perUserLimit} onChange={(e) => setNewCoupon({ ...newCoupon, perUserLimit: e.target.value })} />
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Scheduled Activation</label>
+                  <input type="date" style={formInputStyle} value={newCoupon.starts} onChange={(e) => setNewCoupon({ ...newCoupon, starts: e.target.value })} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Horizon Expiry</label>
+                  <input type="date" style={formInputStyle} value={newCoupon.expires} onChange={(e) => setNewCoupon({ ...newCoupon, expires: e.target.value })} />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "600", marginBottom: "4px", color: "#544E48" }}>Allocation Mode</label>
+                <select style={formInputStyle} value={newCoupon.singleUse ? "single" : "multi"} onChange={(e) => setNewCoupon({ ...newCoupon, singleUse: e.target.value === "single" })}>
+                  <option value="multi">🔄 Reusable Account Lifecycles</option>
+                  <option value="single">1️⃣ Single Global Destruction Event</option>
+                </select>
+              </div>
+
+              <button
+                onClick={addCoupon}
+                disabled={saving}
+                style={{
+                  background: saving ? "#A8A096" : "#3B1A08",
+                  color: "#fff",
+                  border: "none",
+                  padding: "14px",
+                  borderRadius: "10px",
+                  cursor: saving ? "not-allowed" : "pointer",
+                  fontWeight: "600",
+                  marginTop: "8px",
+                  width: "100%",
+                  opacity: saving ? 0.75 : 1,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: "8px",
+                  transition: "all 0.2s ease"
+                }}
+                onMouseEnter={(e) => { if (!saving) e.currentTarget.style.background = "#52250B"; }}
+                onMouseLeave={(e) => { if (!saving) e.currentTarget.style.background = "#3B1A08"; }}
+              >
+                {saving && (
+                  <span style={{ width: "14px", height: "14px", border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", display: "inline-block", animation: "spin 0.8s linear infinite" }} />
                 )}
-              </div>
-              
-              <select style={formInputStyle} value={editCoupon.audienceType || "all"} onChange={(e) => setEditCoupon({ ...editCoupon, audienceType: e.target.value })}>
-                <option value="all">🌐 Open Public</option>
-                <option value="new_users_only">🆕 First-Order Target</option>
-                <option value="specific_user">👤 Customer Target Mapping</option>
-              </select>
-              {editCoupon.audienceType === "specific_user" && (
-                <input style={formInputStyle} value={editCoupon.targetUserId || ""} onChange={(e) => setEditCoupon({ ...editCoupon, targetUserId: e.target.value })} />
-              )}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                <input type="number" style={formInputStyle} value={editCoupon.value || ""} onChange={(e) => setEditCoupon({ ...editCoupon, value: e.target.value })} />
-                <input type="number" style={formInputStyle} value={editCoupon.maxDiscount || ""} onChange={(e) => setEditCoupon({ ...editCoupon, maxDiscount: e.target.value })} />
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                <input type="date" style={formInputStyle} value={editCoupon.starts || ""} onChange={(e) => setEditCoupon({ ...editCoupon, starts: e.target.value })} />
-                <input type="date" style={formInputStyle} value={editCoupon.expires || ""} onChange={(e) => setEditCoupon({ ...editCoupon, expires: e.target.value })} />
-              </div>
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button onClick={updateCoupon} style={{ flex: 1, background: "#2E7D32", color: "#fff", border: "none", padding: "12px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", transition: "background 0.2s ease" }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = "#1B5E20"}
-                        onMouseLeave={(e) => e.currentTarget.style.background = "#2E7D32"}>
-                  💾 Commit Changes
-                </button>
-                <button onClick={() => setEditing(null)} style={{ background: "#FAF6F0", border: "1px solid #DCD1C4", padding: "12px", borderRadius: "8px", cursor: "pointer", transition: "background 0.2s ease" }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = "#F0EAE1"}
-                        onMouseLeave={(e) => e.currentTarget.style.background = "#FAF6F0"}>
-                  Cancel
-                </button>
-              </div>
+                {saving ? "Creating Coupon..." : "Create Coupon Code"}
+              </button>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* DISPLAY PIPELINE WORKSPACE FOR DYNAMIC REPOSITORIES */}
-      <div style={{ width: "100%", minWidth: 0 }}>
-        
-        {/* MASTER SEARCH & INTERACTIVE BATCH PROCESSING HUD HEADER */}
-        <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", marginBottom: "25px", boxShadow: "0 4px 20px rgba(0,0,0,0.01)" }}>
-          <div style={{ display: "flex", gap: "15px", marginBottom: "20px", flexWrap: "wrap" }}>
-            <input type="text" placeholder="🔍 Search unique parameter code indices..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ ...formInputStyle, flex: 1, minWidth: "220px" }} />
-            
-            <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ ...formInputStyle, width: "auto", cursor: "pointer" }}>
-              <option value="All">All Structural Filters</option>
-              <option value="Active">Active Loop States</option>
-              <option value="Disabled">Disabled Isolation States</option>
-              <option value="Expired">Past Horizon Expirations</option>
-            </select>
-
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ ...formInputStyle, width: "auto", cursor: "pointer" }}>
-              <option value="newest">📅 Array Order: Newest Created</option>
-              <option value="code">🔤 Alphabetical Match (A-Z)</option>
-              <option value="used">🔥 Volumetric Redemptions</option>
-              <option value="expiry">⏳ Critical Lifespans First</option>
-            </select>
-
-            <button onClick={handleExportToCSV} style={{ padding: "12px 18px", borderRadius: "10px", background: "#FAF6F0", border: "1px solid #DCD1C4", cursor: "pointer", fontWeight: "600", fontSize: "13px", transition: "background 0.2s ease" }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = "#F0EAE1"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = "#FAF6F0"}>
-              📥 Export Sheet (.CSV)
-            </button>
-          </div>
-
-          {/* INTERACTIVE BULK ACTION TOOLBAR DRAW PANEL */}
-          {selectedCouponIds.length > 0 && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#FAF6F0", border: "1px solid #C4956A", padding: "14px 20px", borderRadius: "10px", transition: "all 0.3s", flexWrap: "wrap", gap: "10px" }}>
-              <span style={{ fontSize: "14px", fontWeight: "600", color: "#3B1A08" }}>⚡ Batch Queue Execution Group: <strong>{selectedCouponIds.length}</strong> items checked</span>
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                <button onClick={() => handleBulkActivationToggle(true)} style={{ padding: "8px 14px", background: "#2E7D32", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>🟢 Bulk Enable</button>
-                <button onClick={() => handleBulkActivationToggle(false)} style={{ padding: "8px 14px", background: "#C4956A", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>🟡 Bulk Disable</button>
-                <button onClick={handleBulkPurge} style={{ padding: "8px 14px", background: "#D32F2F", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>🔴 Permanent Bulk Delete</button>
-                <button onClick={() => setSelectedCouponIds([])} style={{ padding: "8px 12px", background: "transparent", border: "1px solid #DCD1C4", color: "#544E48", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}>Cancel</button>
+          {/* EDIT WORKSPACE PANEL DESIGNS */}
+          {editing && (
+            <div style={{ background: "#fff", borderRadius: "16px", padding: "28px", border: "2px solid #C4956A", boxShadow: "0 10px 30px rgba(0,0,0,0.05)", animation: "fadeIn 0.3s ease" }}>
+              <h3 style={{ margin: "0 0 20px 0" }}>✏️ Adjust Configuration Matrix</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div>
+                  <input
+                    style={{
+                      ...formInputStyle,
+                      background: Number(editing?.usageCount) > 0 ? "#F5F5F5" : "#FCFBFA",
+                      cursor: Number(editing?.usageCount) > 0 ? "not-allowed" : "text",
+                      width: "100%",
+                      boxSizing: "border-box",
+                    }}
+                    value={editCoupon.code || ""}
+                    disabled={Number(editing?.usageCount) > 0}
+                    onChange={(e) =>
+                      setEditCoupon({
+                        ...editCoupon,
+                        code: e.target.value.toUpperCase(),
+                      })
+                    }
+                  />
+                  {Number(editing?.usageCount) > 0 && (
+                    <p style={{ color: "#C62828", fontSize: "12px", marginTop: "6px", marginBottom: "0" }}>
+                      Coupon code cannot be changed after it has been redeemed.
+                    </p>
+                  )}
+                </div>
+                
+                <select style={formInputStyle} value={editCoupon.audienceType || "all"} onChange={(e) => setEditCoupon({ ...editCoupon, audienceType: e.target.value })}>
+                  <option value="all">🌐 Open Public</option>
+                  <option value="new_users_only">🆕 First-Order Target</option>
+                  <option value="specific_user">👤 Customer Target Mapping</option>
+                </select>
+                {editCoupon.audienceType === "specific_user" && (
+                  <input style={formInputStyle} value={editCoupon.targetUserId || ""} onChange={(e) => setEditCoupon({ ...editCoupon, targetUserId: e.target.value })} />
+                )}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <input type="number" style={formInputStyle} value={editCoupon.value || ""} onChange={(e) => setEditCoupon({ ...editCoupon, value: e.target.value })} />
+                  <input type="number" style={formInputStyle} value={editCoupon.maxDiscount || ""} onChange={(e) => setEditCoupon({ ...editCoupon, maxDiscount: e.target.value })} />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <input type="date" style={formInputStyle} value={editCoupon.starts || ""} onChange={(e) => setEditCoupon({ ...editCoupon, starts: e.target.value })} />
+                  <input type="date" style={formInputStyle} value={editCoupon.expires || ""} onChange={(e) => setEditCoupon({ ...editCoupon, expires: e.target.value })} />
+                </div>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button onClick={updateCoupon} style={{ flex: 1, background: "#2E7D32", color: "#fff", border: "none", padding: "12px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", transition: "background 0.2s ease" }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "#1B5E20"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "#2E7D32"}>
+                    💾 Commit Changes
+                  </button>
+                  <button onClick={() => setEditing(null)} style={{ background: "#FAF6F0", border: "1px solid #DCD1C4", padding: "12px", borderRadius: "8px", cursor: "pointer", transition: "background 0.2s ease" }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "#F0EAE1"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "#FAF6F0"}>
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* DYNAMIC CARD VIEW GENERATION GRID LOOP */}
-        {loading ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "40px" }}>
-            {[1, 2, 3, 4, 5, 6].map((item) => (
-              <div key={item} style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", minHeight: "260px", animation: "pulse 1.5s infinite ease-in-out" }}>
-                <div style={{ height: "24px", width: "55%", background: "#ECE7DF", borderRadius: "6px", marginBottom: "18px" }} />
-                <div style={{ height: "14px", width: "90%", background: "#F2EEE8", borderRadius: "6px", marginBottom: "10px" }} />
-                <div style={{ height: "14px", width: "70%", background: "#F2EEE8", borderRadius: "6px", marginBottom: "10px" }} />
-                <div style={{ height: "14px", width: "80%", background: "#F2EEE8", borderRadius: "6px", marginBottom: "30px" }} />
-                <div style={{ height: "38px", width: "100%", background: "#ECE7DF", borderRadius: "10px" }} />
+        {/* DISPLAY PIPELINE WORKSPACE FOR DYNAMIC REPOSITORIES */}
+        <div style={{ width: "100%", minWidth: 0 }}>
+          
+          {/* MASTER SEARCH & INTERACTIVE BATCH PROCESSING HUD HEADER */}
+          <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", marginBottom: "25px", boxShadow: "0 4px 20px rgba(0,0,0,0.01)" }}>
+            <div style={{ display: "flex", gap: "15px", marginBottom: "20px", flexWrap: "wrap" }}>
+              <input type="text" placeholder="🔍 Search unique parameter code indices..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ ...formInputStyle, flex: 1, minWidth: "220px" }} />
+              
+              <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ ...formInputStyle, width: "auto", cursor: "pointer" }}>
+                <option value="All">All Structural Filters</option>
+                <option value="Active">Active Loop States</option>
+                <option value="Disabled">Disabled Isolation States</option>
+                <option value="Expired">Past Horizon Expirations</option>
+              </select>
+
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ ...formInputStyle, width: "auto", cursor: "pointer" }}>
+                <option value="newest">📅 Array Order: Newest Created</option>
+                <option value="code">🔤 Alphabetical Match (A-Z)</option>
+                <option value="used">🔥 Volumetric Redemptions</option>
+                <option value="expiry">⏳ Critical Lifespans First</option>
+              </select>
+
+              <button onClick={handleExportToCSV} style={{ padding: "12px 18px", borderRadius: "10px", background: "#FAF6F0", border: "1px solid #DCD1C4", cursor: "pointer", fontWeight: "600", fontSize: "13px", transition: "background 0.2s ease" }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#F0EAE1"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "#FAF6F0"}>
+                📥 Export Sheet (.CSV)
+              </button>
+            </div>
+
+            {/* INTERACTIVE BULK ACTION TOOLBAR DRAW PANEL */}
+            {selectedCouponIds.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#FAF6F0", border: "1px solid #C4956A", padding: "14px 20px", borderRadius: "10px", transition: "all 0.3s", flexWrap: "wrap", gap: "10px" }}>
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#3B1A08" }}>⚡ Batch Queue Execution Group: <strong>{selectedCouponIds.length}</strong> items checked</span>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                  <button onClick={() => handleBulkActivationToggle(true)} style={{ padding: "8px 14px", background: "#2E7D32", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>🟢 Bulk Enable</button>
+                  <button onClick={() => handleBulkActivationToggle(false)} style={{ padding: "8px 14px", background: "#C4956A", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>🟡 Bulk Disable</button>
+                  <button onClick={handleBulkPurge} style={{ padding: "8px 14px", background: "#D32F2F", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>🔴 Permanent Bulk Delete</button>
+                  <button onClick={() => setSelectedCouponIds([])} style={{ padding: "8px 12px", background: "transparent", border: "1px solid #DCD1C4", color: "#544E48", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}>Cancel</button>
+                </div>
               </div>
-            ))}
+            )}
           </div>
-        ) : (
-          (() => {
-            const filteredCoupons = safeCoupons.filter((c) => {
-              const matchesSearch = (c?.code || "").toLowerCase().includes(search.toLowerCase());
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              const expiryDate = c?.expires ? new Date(c.expires) : null;
-              if (expiryDate) expiryDate.setHours(0, 0, 0, 0);
-              const isExpired = expiryDate && expiryDate < today;
 
-              const matchesFilter =
-                filter === "All" ? true
-                : filter === "Active" ? c?.active
-                : filter === "Disabled" ? !c?.active
-                : filter === "Expired" ? isExpired
-                : true;
+          {/* DYNAMIC CARD VIEW GENERATION GRID LOOP */}
+          {loading ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "40px" }}>
+              {[1, 2, 3, 4, 5, 6].map((item) => (
+                <div key={item} style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", minHeight: "260px", animation: "pulse 1.5s infinite ease-in-out" }}>
+                  <div style={{ height: "24px", width: "55%", background: "#ECE7DF", borderRadius: "6px", marginBottom: "18px" }} />
+                  <div style={{ height: "14px", width: "90%", background: "#F2EEE8", borderRadius: "6px", marginBottom: "10px" }} />
+                  <div style={{ height: "14px", width: "70%", background: "#F2EEE8", borderRadius: "6px", marginBottom: "10px" }} />
+                  <div style={{ height: "14px", width: "80%", background: "#F2EEE8", borderRadius: "6px", marginBottom: "30px" }} />
+                  <div style={{ height: "38px", width: "100%", background: "#ECE7DF", borderRadius: "10px" }} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            (() => {
+              const filteredCoupons = safeCoupons.filter((c) => {
+                const matchesSearch = (c?.code || "").toLowerCase().includes(search.toLowerCase());
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const expiryDate = c?.expires ? new Date(c.expires) : null;
+                if (expiryDate) expiryDate.setHours(0, 0, 0, 0);
+                const isExpired = expiryDate && expiryDate < today;
 
-              return matchesSearch && matchesFilter;
-            });
+                const matchesFilter =
+                  filter === "All" ? true
+                  : filter === "Active" ? c?.active
+                  : filter === "Disabled" ? !c?.active
+                  : filter === "Expired" ? isExpired
+                  : true;
 
-            if (filteredCoupons.length === 0) {
+                return matchesSearch && matchesFilter;
+              });
+
+              if (filteredCoupons.length === 0) {
+                return (
+                  <div style={{ background: "#fff", borderRadius: "16px", padding: "60px 20px", textAlign: "center", border: "1px solid #EAE1D4", marginBottom: "40px" }}>
+                    <div style={{ fontSize: "42px", marginBottom: "12px" }}>🔍</div>
+                    <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", color: "#1E1B18" }}>No matching coupons found</h3>
+                    <p style={{ color: "#8A827C", fontSize: "14px", margin: 0 }}>Try modifying your search criteria or filter options.</p>
+                  </div>
+                );
+              }
+
               return (
-                <div style={{ background: "#fff", borderRadius: "16px", padding: "60px 20px", textAlign: "center", border: "1px solid #EAE1D4", marginBottom: "40px" }}>
-                  <div style={{ fontSize: "42px", marginBottom: "12px" }}>🔍</div>
-                  <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", color: "#1E1B18" }}>No matching coupons found</h3>
-                  <p style={{ color: "#8A827C", fontSize: "14px", margin: 0 }}>Try modifying your search criteria or filter options.</p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "40px" }}>
+                  {filteredCoupons.map((coupon) => {
+                    const styleSheet = getCategoryColor(coupon?.category);
+                    const timeSpecs = getExpiryStatus(coupon?.expires, coupon?.starts);
+                    const selectCheck = selectedCouponIds.includes(coupon.id);
+
+                    return (
+                      <div 
+                        key={coupon.id} 
+                        style={{ 
+                          background: styleSheet.cardBg, 
+                          borderRadius: "16px", 
+                          padding: "24px", 
+                          border: selectCheck ? "2px solid #C4956A" : `1px solid ${styleSheet.border}`, 
+                          boxShadow: "0 6px 18px rgba(0,0,0,0.02)", 
+                          display: "flex", 
+                          flexDirection: "column", 
+                          justifyContent: "space-between", 
+                          position: "relative",
+                          transition: "transform 0.25s ease, box-shadow 0.25s ease"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "translateY(-4px)";
+                          e.currentTarget.style.boxShadow = "0 12px 24px rgba(0,0,0,0.06)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "translateY(0px)";
+                          e.currentTarget.style.boxShadow = "0 6px 18px rgba(0,0,0,0.02)";
+                        }}
+                      >
+                        {/* Selection Box & Clipboard Hook Area */}
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                              <input type="checkbox" checked={selectCheck} onChange={() => toggleSelectCoupon(coupon.id)} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
+                              
+                              <div style={{ position: "relative" }}>
+                                <h2 onClick={() => copyToClipboard(coupon?.code)} style={{ margin: 0, fontFamily: "monospace", fontSize: "20px", color: "#1E1B18", cursor: "pointer", fontWeight: "700", wordBreak: "break-all" }} title="Click to copy parameter token">
+                                  {coupon?.code || "UNNAMED"} 📋
+                                </h2>
+                                {copiedCode === coupon?.code && (
+                                  <span style={{ position: "absolute", top: "-24px", left: 0, background: "#1E1B18", color: "#fff", fontSize: "10px", padding: "2px 6px", borderRadius: "4px" }}>Copied!</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <span style={{
+                              background: Number(coupon?.usageLimit) > 0 && Number(coupon?.usageCount) >= Number(coupon?.usageLimit) ? "#424242" : coupon?.active ? "#E8F5E9" : "#FFEBEE",
+                              color: Number(coupon?.usageLimit) > 0 && Number(coupon?.usageCount) >= Number(coupon?.usageLimit) ? "#fff" : coupon?.active ? "#2E7D32" : "#C62828",
+                              padding: "4px 10px", borderRadius: "20px", fontWeight: "700", fontSize: "12px", whiteSpace: "nowrap"
+                            }}>
+                              {Number(coupon?.usageLimit) > 0 && Number(coupon?.usageCount) >= Number(coupon?.usageLimit) ? "Exhausted" : coupon?.active ? "Active" : "Disabled"}
+                            </span>
+                          </div>
+
+                          {/* Tag Badges Metrics Panel */}
+                          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "14px" }}>
+                            <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 8px", borderRadius: "4px", background: styleSheet.bg, color: styleSheet.color, textTransform: "uppercase" }}>
+                              {coupon?.category || "General"}
+                            </span>
+                            <span style={{ fontSize: "11px", fontWeight: "600", padding: "4px 8px", borderRadius: "4px", background: "#FAF6F0", color: "#544E48" }}>
+                              {coupon?.audienceType === "specific_user" ? `👤 Only: ${coupon?.targetUserId}` : coupon?.audienceType === "new_users_only" ? "🆕 First-Order" : "🌐 Open Tier"}
+                            </span>
+
+                            {timeSpecs.variant === "expired" && <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 8px", borderRadius: "4px", background: "#D32F2F", color: "#fff" }}>🚨 EXPIRED</span>}
+                            {timeSpecs.variant === "warning" && <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 8px", borderRadius: "4px", background: "#C4956A", color: "#fff" }}>⏳ EXPIRING SOON</span>}
+                          </div>
+
+                          {/* Technical Configuration Specifications */}
+                          <div style={{ fontSize: "14px", display: "flex", flexDirection: "column", gap: "6px", color: "#3B342E" }}>
+                            <p style={{ margin: 0 }}><strong>Benefit Yield:</strong> {coupon?.type === "percentage" ? `${coupon?.value}% Off` : `₹${coupon?.value} Off`}{coupon?.type === "percentage" && Number(coupon?.maxDiscount) > 0 && ` (Max ₹${coupon?.maxDiscount})`}</p>
+                            <p style={{ margin: 0 }}><strong>Minimum Trigger:</strong> ₹{coupon?.minOrder}</p>
+                            <p style={{ margin: 0 }}><strong>Redemption Vol Cap:</strong> {coupon?.usageCount || 0} / {coupon?.usageLimit || "∞"}</p>
+                            <p style={{ margin: 0 }}><strong>Target Lifecycle:</strong> {coupon?.singleUse ? "Global Single Use" : "Reusable Pattern"}</p>
+                          </div>
+
+                          {/* DYNAMIC PROGRESS ACCELERATOR GRAPH PROGRESS SLIDER */}
+                          {Number(coupon?.usageLimit) > 0 && (
+                            <div style={{ marginTop: "15px", marginBottom: "15px" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#8A827C", marginBottom: "4px" }}>
+                                <span>Campaign Consumption Velocity</span>
+                                <strong>{Math.round(((coupon?.usageCount || 0) / coupon.usageLimit) * 100)}%</strong>
+                              </div>
+                              <div style={{ width: "100%", height: "6px", background: "#FAF6F0", borderRadius: "10px", border: "1px solid #EAE1D4", overflow: "hidden" }}>
+                                <div style={{ height: "100%", background: coupon?.active ? "#3B1A08" : "#A8A096", width: `${Math.min(((coupon?.usageCount || 0) / coupon.usageLimit) * 100, 100)}%`, transition: "width 0.4s ease" }} />
+                              </div>
+                            </div>
+                          )}
+
+                          <p style={{ fontWeight: "600", fontSize: "12px", marginTop: "12px", color: timeSpecs.variant === "expired" ? "#D32F2F" : "#C4956A" }}>
+                            {timeSpecs.label}
+                          </p>
+                        </div>
+
+                        {/* Bottom Level Operation Drawers */}
+                        <div style={{ display: "flex", gap: "8px", marginTop: "18px", borderTop: "1px dashed #DCD1C4", paddingTop: "14px" }}>
+                          <button onClick={() => toggleCoupon(coupon)} style={{ flex: 1, background: coupon?.active ? "#C4956A" : "#2E7D32", color: "#fff", border: "none", padding: "10px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px", transition: "opacity 0.2s" }}
+                                  onMouseEnter={(e) => e.currentTarget.style.opacity = "0.9"}
+                                  onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}>
+                            {coupon?.active ? "Disable" : "Enable"}
+                          </button>
+                          
+                          <button 
+                            onClick={() => { 
+                              setEditing(coupon); 
+                              setEditCoupon({
+                                code: coupon?.code || "",
+                                type: coupon?.type || "percentage",
+                                value: coupon?.value || "",
+                                maxDiscount: coupon?.maxDiscount || "",
+                                minOrder: coupon?.minOrder || "",
+                                category: coupon?.category || "General",
+                                starts: coupon?.starts || "",
+                                expires: coupon?.expires || "",
+                                usageLimit: coupon?.usageLimit || "",
+                                perUserLimit: coupon?.perUserLimit || 1,
+                                singleUse: coupon?.singleUse || false,
+                                audienceType: coupon?.audienceType || "all",
+                                targetUserId: coupon?.targetUserId || "",
+                                triggerType: coupon?.triggerType || "manual"
+                              }); 
+                            }} 
+                            style={{ flex: 1, background: "#C4956A", color: "#fff", border: "none", padding: "10px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px", transition: "opacity 0.2s" }}
+                            onMouseEnter={(e) => e.currentTarget.style.opacity = "0.9"}
+                            onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
+                          >
+                            ✏️ Parameters
+                          </button>
+
+                          <button onClick={() => deleteCoupon(coupon.id)} style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FFCDD2", padding: "10px 14px", borderRadius: "8px", cursor: "pointer", transition: "background 0.2s" }}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = "#FFCDD2"}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = "#FFEBEE"}>
+                            🗑️
+                          </button>
+                        </div>
+
+                      </div>
+                    );
+                  })}
                 </div>
               );
-            }
+            })()
+          )}
 
-            return (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "40px" }}>
-                {filteredCoupons.map((coupon) => {
-                  const styleSheet = getCategoryColor(coupon?.category);
-                  const timeSpecs = getExpiryStatus(coupon?.expires, coupon?.starts);
-                  const selectCheck = selectedCouponIds.includes(coupon.id);
-
-                  return (
-                    <div 
-                      key={coupon.id} 
-                      style={{ 
-                        background: styleSheet.cardBg, 
-                        borderRadius: "16px", 
-                        padding: "24px", 
-                        border: selectCheck ? "2px solid #C4956A" : `1px solid ${styleSheet.border}`, 
-                        boxShadow: "0 6px 18px rgba(0,0,0,0.02)", 
-                        display: "flex", 
-                        flexDirection: "column", 
-                        justifyContent: "space-between", 
-                        position: "relative",
-                        transition: "transform 0.25s ease, box-shadow 0.25s ease"
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = "translateY(-4px)";
-                        e.currentTarget.style.boxShadow = "0 12px 24px rgba(0,0,0,0.06)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = "translateY(0px)";
-                        e.currentTarget.style.boxShadow = "0 6px 18px rgba(0,0,0,0.02)";
-                      }}
-                    >
-                      {/* Selection Box & Clipboard Hook Area */}
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                            <input type="checkbox" checked={selectCheck} onChange={() => toggleSelectCoupon(coupon.id)} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
-                            
-                            <div style={{ position: "relative" }}>
-                              <h2 onClick={() => copyToClipboard(coupon?.code)} style={{ margin: 0, fontFamily: "monospace", fontSize: "20px", color: "#1E1B18", cursor: "pointer", fontWeight: "700", wordBreak: "break-all" }} title="Click to copy parameter token">
-                                {coupon?.code || "UNNAMED"} 📋
-                              </h2>
-                              {copiedCode === coupon?.code && (
-                                <span style={{ position: "absolute", top: "-24px", left: 0, background: "#1E1B18", color: "#fff", fontSize: "10px", padding: "2px 6px", borderRadius: "4px" }}>Copied!</span>
-                              )}
-                            </div>
-                          </div>
-
-                          <span style={{
-                            background: Number(coupon?.usageLimit) > 0 && Number(coupon?.usageCount) >= Number(coupon?.usageLimit) ? "#424242" : coupon?.active ? "#E8F5E9" : "#FFEBEE",
-                            color: Number(coupon?.usageLimit) > 0 && Number(coupon?.usageCount) >= Number(coupon?.usageLimit) ? "#fff" : coupon?.active ? "#2E7D32" : "#C62828",
-                            padding: "4px 10px", borderRadius: "20px", fontWeight: "700", fontSize: "12px", whiteSpace: "nowrap"
-                          }}>
-                            {Number(coupon?.usageLimit) > 0 && Number(coupon?.usageCount) >= Number(coupon?.usageLimit) ? "Exhausted" : coupon?.active ? "Active" : "Disabled"}
-                          </span>
-                        </div>
-
-                        {/* Tag Badges Metrics Panel */}
-                        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "14px" }}>
-                          <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 8px", borderRadius: "4px", background: styleSheet.bg, color: styleSheet.color, textTransform: "uppercase" }}>
-                            {coupon?.category || "General"}
-                          </span>
-                          <span style={{ fontSize: "11px", fontWeight: "600", padding: "4px 8px", borderRadius: "4px", background: "#FAF6F0", color: "#544E48" }}>
-                            {coupon?.audienceType === "specific_user" ? `👤 Only: ${coupon?.targetUserId}` : coupon?.audienceType === "new_users_only" ? "🆕 First-Order" : "🌐 Open Tier"}
-                          </span>
-
-                          {timeSpecs.variant === "expired" && <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 8px", borderRadius: "4px", background: "#D32F2F", color: "#fff" }}>🚨 EXPIRED</span>}
-                          {timeSpecs.variant === "warning" && <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 8px", borderRadius: "4px", background: "#C4956A", color: "#fff" }}>⏳ EXPIRING SOON</span>}
-                        </div>
-
-                        {/* Technical Configuration Specifications */}
-                        <div style={{ fontSize: "14px", display: "flex", flexDirection: "column", gap: "6px", color: "#3B342E" }}>
-                          <p style={{ margin: 0 }}><strong>Benefit Yield:</strong> {coupon?.type === "percentage" ? `${coupon?.value}% Off` : `₹${coupon?.value} Off`}{coupon?.type === "percentage" && Number(coupon?.maxDiscount) > 0 && ` (Max ₹${coupon?.maxDiscount})`}</p>
-                          <p style={{ margin: 0 }}><strong>Minimum Trigger:</strong> ₹{coupon?.minOrder}</p>
-                          <p style={{ margin: 0 }}><strong>Redemption Vol Cap:</strong> {coupon?.usageCount || 0} / {coupon?.usageLimit || "∞"}</p>
-                          <p style={{ margin: 0 }}><strong>Target Lifecycle:</strong> {coupon?.singleUse ? "Global Single Use" : "Reusable Pattern"}</p>
-                        </div>
-
-                        {/* DYNAMIC PROGRESS ACCELERATOR GRAPH PROGRESS SLIDER */}
-                        {Number(coupon?.usageLimit) > 0 && (
-                          <div style={{ marginTop: "15px", marginBottom: "15px" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#8A827C", marginBottom: "4px" }}>
-                              <span>Campaign Consumption Velocity</span>
-                              <strong>{Math.round(((coupon?.usageCount || 0) / coupon.usageLimit) * 100)}%</strong>
-                            </div>
-                            <div style={{ width: "100%", height: "6px", background: "#FAF6F0", borderRadius: "10px", border: "1px solid #EAE1D4", overflow: "hidden" }}>
-                              <div style={{ height: "100%", background: coupon?.active ? "#3B1A08" : "#A8A096", width: `${Math.min(((coupon?.usageCount || 0) / coupon.usageLimit) * 100, 100)}%`, transition: "width 0.4s ease" }} />
-                            </div>
-                          </div>
-                        )}
-
-                        <p style={{ fontWeight: "600", fontSize: "12px", marginTop: "12px", color: timeSpecs.variant === "expired" ? "#D32F2F" : "#C4956A" }}>
-                          {timeSpecs.label}
-                        </p>
-                      </div>
-
-                      {/* Bottom Level Operation Drawers */}
-                      <div style={{ display: "flex", gap: "8px", marginTop: "18px", borderTop: "1px dashed #DCD1C4", paddingTop: "14px" }}>
-                        <button onClick={() => toggleCoupon(coupon)} style={{ flex: 1, background: coupon?.active ? "#C4956A" : "#2E7D32", color: "#fff", border: "none", padding: "10px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px", transition: "opacity 0.2s" }}
-                                onMouseEnter={(e) => e.currentTarget.style.opacity = "0.9"}
-                                onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}>
-                          {coupon?.active ? "Disable" : "Enable"}
-                        </button>
-                        
-                        <button 
-                          onClick={() => { 
-                            setEditing(coupon); 
-                            setEditCoupon({
-                              code: coupon?.code || "",
-                              type: coupon?.type || "percentage",
-                              value: coupon?.value || "",
-                              maxDiscount: coupon?.maxDiscount || "",
-                              minOrder: coupon?.minOrder || "",
-                              category: coupon?.category || "General",
-                              starts: coupon?.starts || "",
-                              expires: coupon?.expires || "",
-                              usageLimit: coupon?.usageLimit || "",
-                              perUserLimit: coupon?.perUserLimit || 1,
-                              singleUse: coupon?.singleUse || false,
-                              audienceType: coupon?.audienceType || "all",
-                              targetUserId: coupon?.targetUserId || "",
-                              triggerType: coupon?.triggerType || "manual"
-                            }); 
-                          }} 
-                          style={{ flex: 1, background: "#C4956A", color: "#fff", border: "none", padding: "10px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px", transition: "opacity 0.2s" }}
-                          onMouseEnter={(e) => e.currentTarget.style.opacity = "0.9"}
-                          onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
-                        >
-                          ✏️ Parameters
-                        </button>
-
-                        <button onClick={() => deleteCoupon(coupon.id)} style={{ background: "#FFEBEE", color: "#C62828", border: "1px solid #FFCDD2", padding: "10px 14px", borderRadius: "8px", cursor: "pointer", transition: "background 0.2s" }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = "#FFCDD2"}
-                                onMouseLeave={(e) => e.currentTarget.style.background = "#FFEBEE"}>
-                          🗑️
-                        </button>
-                      </div>
-
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()
-        )}
-
-        {/* DYNAMIC HISTORICAL DATA AUDIT LOG DATAGRID TABLE */}
-        <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", boxShadow: "0 4px 20px rgba(0,0,0,0.01)" }}>
-          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: "700" }}>📜 Permanent Coupon System Audit Log</h3>
-          <p style={{ color: "#8A827C", fontSize: "13px", margin: "0 0 20px 0" }}>Real-time tracing of deployment loops, administrative parameter mutations, and state resets.</p>
-          
-          <div style={{ overflowX: "auto", maxHeight: "280px" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-              <thead>
-                <tr style={{ background: "#FAF6F0", borderBottom: "1px solid #EAE1D4", color: "#544E48" }}>
-                  <th style={{ padding: "12px", textAlign: "left" }}>Timestamp Trigger</th>
-                  <th style={{ padding: "12px", textAlign: "left" }}>Target Subject</th>
-                  <th style={{ padding: "12px", textAlign: "left" }}>Action Signature</th>
-                  <th style={{ padding: "12px", textAlign: "left" }}>Parameter Meta Scope</th>
-                </tr>
-              </thead>
-              <tbody>
-                {safeLogs.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" style={{ padding: "20px", textAlign: "center", color: "#A8A096" }}>No active logs stored in current execution pipelines.</td>
+          {/* DYNAMIC HISTORICAL DATA AUDIT LOG DATAGRID TABLE */}
+          <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", border: "1px solid #EAE1D4", boxShadow: "0 4px 20px rgba(0,0,0,0.01)" }}>
+            <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: "700" }}>📜 Permanent Coupon System Audit Log</h3>
+            <p style={{ color: "#8A827C", fontSize: "13px", margin: "0 0 20px 0" }}>Real-time tracing of deployment loops, administrative parameter mutations, and state resets.</p>
+            
+            <div style={{ overflowX: "auto", maxHeight: "280px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                <thead>
+                  <tr style={{ background: "#FAF6F0", borderBottom: "1px solid #EAE1D4", color: "#544E48" }}>
+                    <th style={{ padding: "12px", textAlign: "left" }}>Timestamp Trigger</th>
+                    <th style={{ padding: "12px", textAlign: "left" }}>Target Subject</th>
+                    <th style={{ padding: "12px", textAlign: "left" }}>Action Signature</th>
+                    <th style={{ padding: "12px", textAlign: "left" }}>Parameter Meta Scope</th>
                   </tr>
-                ) : (
-                  [...safeLogs]
-                    .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))
-                    .map((log, index) => (
-                      <tr key={log?.id || `${log?.code}-${log?.timestamp?.seconds}` || index} style={{ borderBottom: "1px solid #FAF6F0" }}>
-                        <td style={{ padding: "12px", color: "#544E48" }}>{log?.timestamp?.seconds ? new Date(log.timestamp.seconds * 1000).toLocaleString() : "Sync Processing"}</td>
-                        <td style={{ padding: "12px", fontWeight: "700", fontFamily: "monospace" }}>{log?.code || "SYSTEM"}</td>
-                        <td style={{ padding: "12px" }}>
-                          <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "700", background: log?.action?.includes("CREATE") ? "#E8F5E9" : log?.action?.includes("PURGE") || log?.action?.includes("DELETE") ? "#FFEBEE" : "#FFF3E0", color: log?.action?.includes("CREATE") ? "#1B5E20" : log?.action?.includes("PURGE") || log?.action?.includes("DELETE") ? "#C62828" : "#E65100" }}>
-                            {log?.action || "LOG_EVENT"}
-                          </span>
-                        </td>
-                        <td style={{ padding: "12px", color: "#8A827C" }}>{log?.category ? `${log?.category} Framework` : "Metadata Config Sync Override"}</td>
-                      </tr>
-                    ))
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {safeLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" style={{ padding: "20px", textAlign: "center", color: "#A8A096" }}>No active logs stored in current execution pipelines.</td>
+                    </tr>
+                  ) : (
+                    [...safeLogs]
+                      .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))
+                      .map((log, index) => (
+                        <tr key={log?.id || `${log?.code}-${log?.timestamp?.seconds}` || index} style={{ borderBottom: "1px solid #FAF6F0" }}>
+                          <td style={{ padding: "12px", color: "#544E48" }}>{log?.timestamp?.seconds ? new Date(log.timestamp.seconds * 1000).toLocaleString() : "Sync Processing"}</td>
+                          <td style={{ padding: "12px", fontWeight: "700", fontFamily: "monospace" }}>{log?.code || "SYSTEM"}</td>
+                          <td style={{ padding: "12px" }}>
+                            <span style={{ padding: "4px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "700", background: log?.action?.includes("CREATE") ? "#E8F5E9" : log?.action?.includes("PURGE") || log?.action?.includes("DELETE") ? "#FFEBEE" : "#FFF3E0", color: log?.action?.includes("CREATE") ? "#1B5E20" : log?.action?.includes("PURGE") || log?.action?.includes("DELETE") ? "#C62828" : "#E65100" }}>
+                              {log?.action || "LOG_EVENT"}
+                            </span>
+                          </td>
+                          <td style={{ padding: "12px", color: "#8A827C" }}>{log?.category ? `${log?.category} Framework` : "Metadata Config Sync Override"}</td>
+                        </tr>
+                      ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
+
         </div>
 
       </div>
-
     </div>
-  </div>
 
-  {/* TOAST NOTIFICATION */}
-  {toast && (
-    <div style={{
-      position: "fixed",
-      top: "24px",
-      right: "24px",
-      background: toast.type === "error" ? "#C62828" : "#2E7D32",
-      color: "#fff",
-      padding: "14px 20px",
-      borderRadius: "10px",
-      fontWeight: "600",
-      boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
-      zIndex: 100000,
-      animation: "slideInRight 0.3s ease"
-    }}>
-      {toast.message}
-    </div>
-  )}
-
-
-  
- </>
-
-
-  
+    {/* TOAST NOTIFICATION */}
+    {toast && (
+      <div style={{
+        position: "fixed",
+        top: "24px",
+        right: "24px",
+        background: toast.type === "error" ? "#C62828" : "#2E7D32",
+        color: "#fff",
+        padding: "14px 20px",
+        borderRadius: "10px",
+        fontWeight: "600",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+        zIndex: 100000,
+        animation: "slideInRight 0.3s ease"
+      }}>
+        {toast.message}
+      </div>
+    )}
   </>
 );
 }
