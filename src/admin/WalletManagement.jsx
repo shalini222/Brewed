@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -44,7 +44,7 @@ export default function WalletManagement({ setPage }) {
   const [statusFilter, setStatusFilter] = useState("All");
   const [sortBy, setSortBy] = useState("Balance");
 
-  // 6. Selected Wallet State for Phase 3
+  // Selected Wallet State for Phase 3
   const [selectedWallet, setSelectedWallet] = useState(null);
 
   // Load and Merge Data
@@ -71,7 +71,7 @@ export default function WalletManagement({ setPage }) {
           const user = userDoc.data();
           const wallet = walletsMap[userDoc.id];
 
-          // 2. Don't count users without wallets
+          // Don't count users without wallets
           if (!wallet) return;
 
           mergedData.push({
@@ -84,7 +84,7 @@ export default function WalletManagement({ setPage }) {
             rewardBalance: wallet?.rewardBalance || wallet?.rewards || 0,
             transactionCount: wallet?.transactionCount || wallet?.transactions?.length || 0,
             
-            // 7. Status consistency with Customer Management page
+            // Status consistency with Customer Management page
             status: user.active === false ? "Locked" : (wallet?.status || "Active"),
             
             // Extra tracked stats if present in wallet document
@@ -92,7 +92,7 @@ export default function WalletManagement({ setPage }) {
             moneySpent: wallet?.moneySpent || 0,
             refunds: wallet?.refunds || 0,
             
-            // 4. updatedAt for Newest sort support
+            // updatedAt for Newest sort support
             updatedAt: wallet?.updatedAt?.toMillis?.() || wallet?.updatedAt || 0,
           });
         });
@@ -116,24 +116,26 @@ export default function WalletManagement({ setPage }) {
   const totalRefunds = wallets.reduce((acc, curr) => acc + (Number(curr.refunds) || 0), 0);
   const totalRewards = wallets.reduce((acc, curr) => acc + (Number(curr.rewardBalance) || 0), 0);
 
-  // 3. Avoid mutating while sorting & 4. Newest sort support
-  const filteredWallets = [...wallets]
-    .filter((wallet) => {
-      const matchesSearch =
-        wallet.name.toLowerCase().includes(search.toLowerCase()) ||
-        wallet.email.toLowerCase().includes(search.toLowerCase());
+  // Filtered and Sorted Wallets using useMemo
+  const filteredWallets = useMemo(() => {
+    return [...wallets]
+      .filter((wallet) => {
+        const matchesSearch =
+          wallet.name.toLowerCase().includes(search.toLowerCase()) ||
+          wallet.email.toLowerCase().includes(search.toLowerCase());
 
-      const matchesStatus =
-        statusFilter === "All" || wallet.status === statusFilter;
+        const matchesStatus =
+          statusFilter === "All" || wallet.status === statusFilter;
 
-      return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => {
-      if (sortBy === "Balance") return b.balance - a.balance;
-      if (sortBy === "Transactions") return b.transactionCount - a.transactionCount;
-      if (sortBy === "Newest") return b.updatedAt - a.updatedAt;
-      return 0;
-    });
+        return matchesSearch && matchesStatus;
+      })
+      .sort((a, b) => {
+        if (sortBy === "Balance") return b.balance - a.balance;
+        if (sortBy === "Transactions") return b.transactionCount - a.transactionCount;
+        if (sortBy === "Newest") return b.updatedAt - a.updatedAt;
+        return 0;
+      });
+  }, [wallets, search, statusFilter, sortBy]);
 
   return (
     <div
@@ -305,11 +307,44 @@ export default function WalletManagement({ setPage }) {
                 }}
               >
                 <div>
-                  <div style={{ fontWeight: "bold", color: "#3B1A08", fontSize: 16, marginBottom: 4 }}>
-                    👤 {wallet.name}
-                  </div>
-                  <div style={{ color: "#777", fontSize: 13, marginBottom: 15 }}>
-                    📧 {wallet.email}
+                  {/* User Profile Info with Photo Avatar */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 15 }}>
+                    {wallet.photoURL ? (
+                      <img
+                        src={wallet.photoURL}
+                        alt={wallet.name}
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          border: "1px solid #e8dfd8",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: "50%",
+                          background: "#e8dfd8",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 18,
+                        }}
+                      >
+                        👤
+                      </div>
+                    )}
+                    <div style={{ overflow: "hidden" }}>
+                      <div style={{ fontWeight: "bold", color: "#3B1A08", fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {wallet.name}
+                      </div>
+                      <div style={{ color: "#777", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        📧 {wallet.email}
+                      </div>
+                    </div>
                   </div>
 
                   <div style={{ fontSize: 14, color: "#3B1A08", marginBottom: 6 }}>
@@ -348,7 +383,7 @@ export default function WalletManagement({ setPage }) {
         )}
       </div>
 
-      {/* 5. Recent Activity */}
+      {/* Recent Activity */}
       <div
         style={{
           background: "#fff",
@@ -375,6 +410,13 @@ export default function WalletManagement({ setPage }) {
           Recent wallet transactions will appear here.
         </p>
       </div>
+
+      {/* Selected Wallet Details Drawer Placeholder (Ready for Phase 3) */}
+      {selectedWallet && (
+        <div style={{ display: "none" }}>
+          {/* Phase 3 Wallet Details Drawer code will be rendered here */}
+        </div>
+      )}
     </div>
   );
 }
