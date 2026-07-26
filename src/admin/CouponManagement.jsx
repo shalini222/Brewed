@@ -103,7 +103,7 @@ const getCategoryColor = (category) => {
   }
 };
 
-export default function CouponManagement({ setPage = () => {} }) {
+export default function CouponManagement({ setPage }) {
   const [coupons, setCoupons] = useState([]);
   const [orders, setOrders] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
