@@ -26,9 +26,7 @@ import {
 } from "recharts";
 
 export default function OrderManagement({ setPage, setActivePage }) {
-  const [menu, setMenu] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
+  
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [orders, setOrders] = useState([]);
@@ -49,7 +47,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
   
 
   useEffect(() => {
-    loadMenu();
+    
 
     // Orders listener
     const unsubscribe = onSnapshot(
