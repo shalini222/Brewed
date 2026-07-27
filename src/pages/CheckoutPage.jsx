@@ -705,7 +705,7 @@ export default function CheckoutPage({ setPage }) {
     ? "Checking delivery..."
     : placingOrder
     ? "Placing Order..."
-    : "Place Order"
+    : "Place Order"}
 </button>
             </div>
           </div>
