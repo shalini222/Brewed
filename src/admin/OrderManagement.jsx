@@ -252,7 +252,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
              
-                        return (
+                          return (
     <div style={{ padding: 20 }}>
       {orderLoading ? (
         <p>Loading orders...</p>
@@ -472,8 +472,14 @@ export default function OrderManagement({ setPage, setActivePage }) {
                     <p>Subtotal: ₹{order.subtotal}</p>
                     <p>Tax: ₹{order.tax}</p>
                     <p>Delivery: ₹{order.delivery}</p>
+
+                    {order.walletUsed > 0 && (
+                      <p>Wallet Used: -₹{order.walletUsed}</p>
+                    )}
+
                     <hr />
-                    <h3>Total: ₹{order.total}</h3>
+
+                    <h3>Amount Paid: ₹{order.total}</h3>
                   </div>
 
                   <p>
@@ -533,5 +539,3 @@ export default function OrderManagement({ setPage, setActivePage }) {
     </div>
   );
 }
-
-                            
