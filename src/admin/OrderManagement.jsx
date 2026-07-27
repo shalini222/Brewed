@@ -228,7 +228,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
     .filter((o) => o.status === "Delivered")
     .reduce((sum, o) => sum + (o.total || 0), 0);
 
-  const totalProducts = menu.length;
+  
 
   const today = new Date().toDateString();
 
