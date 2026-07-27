@@ -570,7 +570,7 @@ return (
         },
         {
           title: "📦 Orders",
-          page: "ordersadmin",
+          page: "orderadmin",
         },
         {
           title: "👥 Customers",
