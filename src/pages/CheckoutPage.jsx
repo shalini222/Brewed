@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+ import { useState, useEffect, useMemo, useRef } from "react";
 import { useCart } from "../context/CartContext";
 import { auth, db } from "../firebase";
 import { serverTimestamp, collection, getDocs } from "firebase/firestore";
@@ -286,17 +286,15 @@ export default function CheckoutPage({ setPage }) {
     setPlacingOrder(true);
 
     try {
-      // Simulate online payment gateway confirmation if online payment method is chosen and there is a remaining amount
       if (paymentMethod === "online" && calculations.remainingAmount > 0) {
         const razorpayLoaded = await loadRazorpayScript();
         if (!razorpayLoaded) {
           throw new Error("Razorpay SDK failed to load.");
         }
 
-        // Mocking or executing Razorpay flow for demonstration/integration structure
         await new Promise((resolve, reject) => {
           const options = {
-            key: "rzp_test_mockkey", // Replace with actual test key if available
+            key: "rzp_test_mockkey",
             amount: calculations.remainingAmount * 100,
             currency: "INR",
             name: "Brewed Cafe",
@@ -317,12 +315,10 @@ export default function CheckoutPage({ setPage }) {
             theme: { color: THEME.colors.primary }
           };
 
-          // If standard test mode or fallback sandbox check:
           try {
             const rzp = new window.Razorpay(options);
             rzp.open();
           } catch (err) {
-            // Fallback for isolated local test environments without valid keys
             console.warn("Razorpay initialization warning, simulating success for flow progression:", err);
             resolve({ razorpay_payment_id: "mock_pay_" + Date.now() });
           }
@@ -512,7 +508,6 @@ export default function CheckoutPage({ setPage }) {
             <div style={styles.card}>
               <h2 style={styles.sectionTitle}>💳 Select Settlement Method</h2>
 
-              {/* Brewed Wallet Section integrated inside Payment section */}
               <div
                 style={{
                   background: "#FAF6F0",
@@ -721,6 +716,9 @@ export default function CheckoutPage({ setPage }) {
     </div>
   );
 }
+
+
+
 
 
 
