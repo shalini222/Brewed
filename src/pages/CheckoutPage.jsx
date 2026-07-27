@@ -373,9 +373,7 @@ export default function CheckoutPage({ setPage }) {
       const updatedWallet = await walletService.getWallet(auth.currentUser.uid);
       setWallet(updatedWallet);
 
-      if (typeof clearCart === "function") {
-        clearCart();
-      }
+    
 
       setUseWallet(false);
       setPage("orderSuccess");
@@ -707,7 +705,7 @@ export default function CheckoutPage({ setPage }) {
                   ? "Checking delivery..."
                   : placingOrder
                   ? "Placing Order..."
-                  : `Place Order · ₹{calculations.grandTotal}`}
+                  : : `Place Order · ₹${calculations.grandTotal}`
               </button>
             </div>
           </div>
