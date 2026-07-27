@@ -275,180 +275,178 @@ useEffect(() => {
     }
   };
 
-  const handleFormSubmission = async (e) => {
-    e.preventDefault();
 
-    if (placingOrder) return;
+const handleFormSubmission = async (e) => {
+  e.preventDefault();
 
-    if (cart.length === 0) {
-      alert("Your cart is empty.");
-      return;
-    }
-    if (!auth.currentUser) {
-      alert("Please log in to your Brewed account to place an order.");
-      setPage("login");
-      return;
-    }
-    if (!selectedAddress) {
-      alert("Please select a delivery address.");
-      return;
-    }
-    if (!selectedAddress.pincode) {
-      alert("Selected address doesn't have a valid pincode.");
-      return;
-    }
-    if (deliveryLoading) {
-      alert("Please wait while we verify delivery availability.");
-      return;
-    }
-    if (deliveryAvailable === false) {
-      alert("Sorry, we don't deliver to the selected address.");
-      return;
-    }
-    if (deliveryInfo && calculations.subtotal < deliveryInfo.minOrder) {
-      alert(`Minimum order for this area is ₹${deliveryInfo.minOrder}.`);
-      return;
-    }
+  if (placingOrder) return;
 
-    setPlacingOrder(true);
-
-
-    let paymentResponse = null;
-
-   
-    try {
-      if (paymentMethod === "online" && calculations.remainingAmount > 0) {
-        const razorpayLoaded = await loadRazorpayScript();
-        if (!razorpayLoaded) {
-          throw new Error("Razorpay SDK failed to load.");
-        }
-
-        paymentResponse = await new Promise((resolve, reject) => {
-          const options = {
-            key: "rzp_test_mockkey",
-            amount: calculations.remainingAmount * 100,
-            currency: "INR",
-            name: "Brewed Cafe",
-            description: "Online Order Settlement",
-            handler: function (response) {
-              resolve(response);
-            },
-            modal: {
-              ondismiss: function () {
-                reject(new Error("Payment cancelled by user."));
-              }
-            },
-            prefill: {
-              name: form.name,
-              email: form.email,
-              contact: form.phone
-            },
-            theme: { color: THEME.colors.primary }
-          };
-
-          try {
-            const rzp = new window.Razorpay(options);
-            rzp.open();
-          } catch (err) {
-            console.warn("Razorpay initialization warning, simulating success for flow progression:", err);
-            resolve({ razorpay_payment_id: "mock_pay_" + Date.now() });
-          }
-        });
-      }
-
-      let walletPaid = 0;
-      let refreshedWalletBalance = wallet ? wallet.balance : 0;
-
-      let walletTransaction = null;
-
-if (useWallet && calculations.walletDeduction > 0) {
-  walletTransaction = await walletService.deductMoney({
-    userId: auth.currentUser.uid,
-    amount: calculations.walletDeduction,
-  });
-}
-
-walletPaid = calculations.walletDeduction;
-refreshedWalletBalance = Math.max(0, refreshedWalletBalance - walletPaid);
-      }
-
-      const remainingAmount = calculations.remainingAmount;
-      const basePaymentLabel = paymentMethod === "cod" ? "Cash on Delivery" : "UPI/Card";
-
-      const finalPaymentMethod = walletPaid > 0
-        ? remainingAmount > 0
-          ? `Wallet + ${basePaymentLabel}`
-          : "Wallet"
-        : basePaymentLabel;
-
-      const orderData = {
-        customer: form,
-        userId: auth.currentUser.uid,
-        items: cart,
-        subtotal: calculations.subtotal,
-        tax: calculations.tax,
-        delivery: calculations.delivery,
-        deliveryZone: deliveryInfo?.zoneName || "",
-        estimatedDelivery: deliveryInfo?.estimatedTime || "",
-        minimumOrder: deliveryInfo?.minOrder || 0,
-        freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
-        walletPaid: walletPaid,
-        otherPayment: remainingAmount,
-        usedWallet: walletPaid > 0,
-        walletBalanceAfterPayment: refreshedWalletBalance,
-        total: calculations.grandTotal,
-        paymentMethod: finalPaymentMethod,
-        status: "New",
-       walletTransactionId: walletTransaction?.transactionId || null,
-       walletPayment: walletPaid,
-       walletStatus: walletPaid > 0 ? "PAID" : "NOT_USED",
-paymentStatus: "SUCCESS",
-       paymentGateway:
-  paymentMethod === "online" ? "Razorpay" : null,
-       paymentReference:
-  paymentResponse?.razorpay_payment_id || null,
-       refundStatus: "NOT_REFUNDED",
-       walletBalanceBeforePayment: wallet?.balance || 0,
-walletBalanceAfterPayment: refreshedWalletBalance,
-refundAmount: 0,
-refundTransactionId: null,
-cancelReason: null,
-cancelledAt: null,
-cancelledBy: null,
-      };
-
-      await placeOrder(orderData);
-
-      const updatedWallet = await walletService.getWallet(auth.currentUser.uid);
-      setWallet(updatedWallet);
-
-    
-
-      setUseWallet(false);
-      setPage("orderSuccess");
-      
-    } catch (err) {
-      console.error("Critical submission failure:", err);
-      alert(err.message || "Unable to complete your order. Please try again.");
-      setStatus("failure");
-    } finally {
-      setPlacingOrder(false);
-    }
-  };
-
-  if (status === "failure") {
-    return (
-      <div style={styles.confirmPage}>
-        <canvas ref={canvasRef} style={styles.confettiCanvas} />
-        <div style={styles.confirmCard}>
-          <h2 style={{ ...styles.confirmTitle, color: THEME.colors.danger }}>Payment Failed</h2>
-          <p style={styles.confirmSub}>We couldn't process your transaction.</p>
-          <button style={styles.payBtn} onClick={() => { setStatus("idle"); setPage("menu"); }}>Return to Menu</button>
-        </div>
-      </div>
-    );
+  if (cart.length === 0) {
+    alert("Your cart is empty.");
+    return;
+  }
+  if (!auth.currentUser) {
+    alert("Please log in to your Brewed account to place an order.");
+    setPage("login");
+    return;
+  }
+  if (!selectedAddress) {
+    alert("Please select a delivery address.");
+    return;
+  }
+  if (!selectedAddress.pincode) {
+    alert("Selected address doesn't have a valid pincode.");
+    return;
+  }
+  if (deliveryLoading) {
+    alert("Please wait while we verify delivery availability.");
+    return;
+  }
+  if (deliveryAvailable === false) {
+    alert("Sorry, we don't deliver to the selected address.");
+    return;
+  }
+  if (deliveryInfo && calculations.subtotal < deliveryInfo.minOrder) {
+    alert(`Minimum order for this area is ₹${deliveryInfo.minOrder}.`);
+    return;
   }
 
+  setPlacingOrder(true);
+
+  let paymentResponse = null;
+
+  try {
+    if (paymentMethod === "online" && calculations.remainingAmount > 0) {
+      const razorpayLoaded = await loadRazorpayScript();
+      if (!razorpayLoaded) {
+        throw new Error("Razorpay SDK failed to load.");
+      }
+
+      paymentResponse = await new Promise((resolve, reject) => {
+        const options = {
+          key: "rzp_test_mockkey",
+          amount: calculations.remainingAmount * 100,
+          currency: "INR",
+          name: "Brewed Cafe",
+          description: "Online Order Settlement",
+          handler: function (response) {
+            resolve(response);
+          },
+          modal: {
+            ondismiss: function () {
+              reject(new Error("Payment cancelled by user."));
+            }
+          },
+          prefill: {
+            name: form.name,
+            email: form.email,
+            contact: form.phone
+          },
+          theme: { color: THEME.colors.primary }
+        };
+
+        try {
+          const rzp = new window.Razorpay(options);
+          rzp.open();
+        } catch (err) {
+          console.warn("Razorpay initialization warning, simulating success for flow progression:", err);
+          resolve({ razorpay_payment_id: "mock_pay_" + Date.now() });
+        }
+      });
+    }
+
+    let walletPaid = 0;
+    let refreshedWalletBalance = wallet ? wallet.balance : 0;
+    let walletTransaction = null;
+
+    if (useWallet && calculations.walletDeduction > 0) {
+      walletTransaction = await walletService.deductMoney({
+        userId: auth.currentUser.uid,
+        amount: calculations.walletDeduction,
+      });
+    }
+
+    walletPaid = calculations.walletDeduction;
+    refreshedWalletBalance = Math.max(0, refreshedWalletBalance - walletPaid);
+
+    const remainingAmount = calculations.remainingAmount;
+    const basePaymentLabel = paymentMethod === "cod" ? "Cash on Delivery" : "UPI/Card";
+
+    const finalPaymentMethod = walletPaid > 0
+      ? remainingAmount > 0
+        ? `Wallet + ${basePaymentLabel}`
+        : "Wallet"
+      : basePaymentLabel;
+
+    const orderData = {
+      customer: form,
+      userId: auth.currentUser.uid,
+      items: cart,
+      subtotal: calculations.subtotal,
+      tax: calculations.tax,
+      delivery: calculations.delivery,
+      deliveryZone: deliveryInfo?.zoneName || "",
+      estimatedDelivery: deliveryInfo?.estimatedTime || "",
+      minimumOrder: deliveryInfo?.minOrder || 0,
+      freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
+      walletPaid: walletPaid,
+      otherPayment: remainingAmount,
+      usedWallet: walletPaid > 0,
+      walletBalanceAfterPayment: refreshedWalletBalance,
+      total: calculations.grandTotal,
+      paymentMethod: finalPaymentMethod,
+      status: "New",
+      walletTransactionId: walletTransaction?.transactionId || null,
+      walletPayment: walletPaid,
+      walletStatus: walletPaid > 0 ? "PAID" : "NOT_USED",
+      paymentStatus: "SUCCESS",
+      paymentGateway: paymentMethod === "online" ? "Razorpay" : null,
+      paymentReference: paymentResponse?.razorpay_payment_id || null,
+      refundStatus: "NOT_REFUNDED",
+      walletBalanceBeforePayment: wallet?.balance || 0,
+      refundAmount: 0,
+      refundTransactionId: null,
+      cancelReason: null,
+      cancelledAt: null,
+      cancelledBy: null,
+    };
+
+    await placeOrder(orderData);
+
+    const updatedWallet = await walletService.getWallet(auth.currentUser.uid);
+    setWallet(updatedWallet);
+
+    setUseWallet(false);
+    setPage("orderSuccess");
+    
+  } catch (err) {
+    console.error("Critical submission failure:", err);
+    alert(err.message || "Unable to complete your order. Please try again.");
+    setStatus("failure");
+  } finally {
+    setPlacingOrder(false);
+  }
+};
+
+if (status === "failure") {
+  return (
+    <div style={styles.confirmPage}>
+      <canvas ref={canvasRef} style={styles.confettiCanvas} />
+      <div style={styles.confirmCard}>
+        <h2 style={{ ...styles.confirmTitle, color: THEME.colors.danger }}>Payment Failed</h2>
+        <p style={styles.confirmSub}>We couldn't process your transaction.</p>
+        <button style={styles.payBtn} onClick={() => { setStatus("idle"); setPage("menu"); }}>Return to Menu</button>
+      </div>
+    </div>
+  );
+}
+
+
+
+
+
+ 
+ 
   return (
     <div style={styles.page}>
       <style>{`
