@@ -328,6 +328,8 @@ export default function CheckoutPage({ setPage }) {
           <h2 style={styles.confirmTitle}>Order Confirmed</h2>
           <p style={styles.confirmSub}>Thank you for ordering from Brewed!</p>
           <button style={styles.payBtn} onClick={() => setPage("menu")}>Return to Menu</button>
+                    <button style={styles.payBtn} onClick={() => setPage("tracking")}>Track Order</button>
+          
         </div>
       </div>
     );
@@ -447,7 +449,7 @@ export default function CheckoutPage({ setPage }) {
               }}
             >
               <h3 style={{ marginTop: 0, color: "#3B1A08" }}>
-                💳 Brewed Wallet
+                👛 Brewed Wallet
               </h3>
 
               {walletLoading ? (
