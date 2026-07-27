@@ -516,6 +516,30 @@ return (
     {item.temperature}
   </span>
 )}
+
+                                {typeof item.sweetness === "number" && (
+  <span style={chipStyle}>
+    Sweetness: {item.sweetness}%
+  </span>
+)}
+
+                                {Array.isArray(item.toppings) && item.toppings.length > 0 && (
+  <span style={chipStyle}>
+    Toppings: {item.toppings
+      .map(t => typeof t === "string" ? t : "")
+      .filter(Boolean)
+      .join(", ")}
+  </span>
+)}
+
+                                {Array.isArray(item.extras) && item.extras.length > 0 && (
+  <span style={chipStyle}>
+    Extras: {item.extras
+      .map(e => typeof e === "string" ? e : "")
+      .filter(Boolean)
+      .join(", ")}
+  </span>
+)}
                               
                               </div>
                             </div>
