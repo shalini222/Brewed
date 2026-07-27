@@ -312,6 +312,10 @@ useEffect(() => {
 
     setPlacingOrder(true);
 
+
+    let paymentResponse = null;
+
+   
     try {
       if (paymentMethod === "online" && calculations.remainingAmount > 0) {
         const razorpayLoaded = await loadRazorpayScript();
@@ -319,7 +323,7 @@ useEffect(() => {
           throw new Error("Razorpay SDK failed to load.");
         }
 
-        await new Promise((resolve, reject) => {
+        paymentResponse = await new Promise((resolve, reject) => {
           const options = {
             key: "rzp_test_mockkey",
             amount: calculations.remainingAmount * 100,
@@ -394,7 +398,20 @@ refreshedWalletBalance = Math.max(0, refreshedWalletBalance - walletPaid);
         status: "New",
        walletTransactionId: walletTransaction?.transactionId || null,
        walletPayment: walletPaid,
- 
+       walletStatus: walletPaid > 0 ? "PAID" : "NOT_USED",
+paymentStatus: "SUCCESS",
+       paymentGateway:
+  paymentMethod === "online" ? "Razorpay" : null,
+       paymentReference:
+  paymentResponse?.razorpay_payment_id || null,
+       refundStatus: "NOT_REFUNDED",
+       walletBalanceBeforePayment: wallet?.balance || 0,
+walletBalanceAfterPayment: refreshedWalletBalance,
+refundAmount: 0,
+refundTransactionId: null,
+cancelReason: null,
+cancelledAt: null,
+cancelledBy: null,
       };
 
       await placeOrder(orderData);
