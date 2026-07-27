@@ -22,6 +22,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import * as XLSX from "xlsx";
 
 const actionButtonStyle = {
   padding: 12,
@@ -584,6 +585,66 @@ export default function WalletManagement({ setPage }) {
     }
   }
 
+  function exportWallets() {
+    const exportData = filteredWallets.map((wallet) => ({
+      Customer: wallet.name,
+      Email: wallet.email,
+      Balance: wallet.balance,
+      Rewards: wallet.rewardBalance,
+      Transactions: wallet.transactionCount,
+      MoneyAdded: wallet.moneyAdded,
+      MoneySpent: wallet.moneySpent,
+      Refunds: wallet.refunds,
+      Status: wallet.status,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      "Wallet Report"
+    );
+
+    XLSX.writeFile(
+      workbook,
+      "Brewed_Wallet_Report.xlsx"
+    );
+  }
+
+  // Future:
+  // Export individual wallet transactions once each
+  // transaction is stored in Firestore with timestamps.
+  function exportFilteredTransactions() {
+    const data = filteredWallets.map((wallet) => ({
+      Customer: wallet.name,
+      Email: wallet.email,
+      Status: wallet.status,
+      Balance: wallet.balance,
+      Rewards: wallet.rewardBalance,
+      Transactions: wallet.transactionCount,
+      MoneyAdded: wallet.moneyAdded,
+      MoneySpent: wallet.moneySpent,
+      Refunds: wallet.refunds,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      "Filtered Wallets"
+    );
+
+    XLSX.writeFile(
+      workbook,
+      "Brewed_Filtered_Wallets.xlsx"
+    );
+  }
+
   // Dashboard Statistics Calculations from Merged Data
   const totalWalletUsers = wallets.length;
   const totalBalance = wallets.reduce((acc, curr) => acc + (Number(curr.balance) || 0), 0);
@@ -597,6 +658,155 @@ export default function WalletManagement({ setPage }) {
   const totalRewardLiability = totalRewards;
   const totalLiability =
     totalWalletLiability + totalRewardLiability;
+
+  // Phase 8.2 Financial Report Calculations
+  const financialReport = {
+    totalWalletBalance: totalBalance,
+    totalRewardBalance: totalRewards,
+    totalLiability: totalBalance + totalRewards,
+
+    totalMoneyAdded,
+    totalMoneySpent,
+    totalRefunds,
+
+    activeWallets: wallets.filter(
+      (wallet) => wallet.status === "Active"
+    ).length,
+
+    lockedWallets: wallets.filter(
+      (wallet) => wallet.status === "Locked"
+    ).length,
+
+    frozenWallets: wallets.filter(
+      (wallet) => wallet.status === "Frozen"
+    ).length,
+
+    totalWalletUsers,
+  };
+
+  // Phase 8.3 Settlement Report Calculations
+  const settlementReport = {
+    openingBalance: 0, // Future enhancement
+    totalCredits: totalMoneyAdded + totalRefunds,
+    totalDebits: totalMoneySpent,
+    rewardLiability: totalRewards,
+    walletLiability: totalBalance,
+
+    closingBalance:
+      totalBalance + totalRewards,
+
+    netMovement:
+      (totalMoneyAdded + totalRefunds) -
+      totalMoneySpent,
+  };
+
+  function exportFinancialReport() {
+    const report = [
+      {
+        Metric: "Total Wallet Users",
+        Value: financialReport.totalWalletUsers,
+      },
+      {
+        Metric: "Active Wallets",
+        Value: financialReport.activeWallets,
+      },
+      {
+        Metric: "Locked Wallets",
+        Value: financialReport.lockedWallets,
+      },
+      {
+        Metric: "Frozen Wallets",
+        Value: financialReport.frozenWallets,
+      },
+      {
+        Metric: "Total Wallet Balance",
+        Value: financialReport.totalWalletBalance,
+      },
+      {
+        Metric: "Reward Balance",
+        Value: financialReport.totalRewardBalance,
+      },
+      {
+        Metric: "Total Liability",
+        Value: financialReport.totalLiability,
+      },
+      {
+        Metric: "Money Added",
+        Value: financialReport.totalMoneyAdded,
+      },
+      {
+        Metric: "Money Spent",
+        Value: financialReport.totalMoneySpent,
+      },
+      {
+        Metric: "Refunds",
+        Value: financialReport.totalRefunds,
+      },
+    ];
+
+    const sheet = XLSX.utils.json_to_sheet(report);
+
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      sheet,
+      "Financial Report"
+    );
+
+    XLSX.writeFile(
+      workbook,
+      "Brewed_Financial_Report.xlsx"
+    );
+  }
+
+  function exportSettlementReport() {
+    const report = [
+      {
+        Metric: "Opening Balance",
+        Value: settlementReport.openingBalance,
+      },
+      {
+        Metric: "Credits",
+        Value: settlementReport.totalCredits,
+      },
+      {
+        Metric: "Debits",
+        Value: settlementReport.totalDebits,
+      },
+      {
+        Metric: "Wallet Liability",
+        Value: settlementReport.walletLiability,
+      },
+      {
+        Metric: "Reward Liability",
+        Value: settlementReport.rewardLiability,
+      },
+      {
+        Metric: "Closing Balance",
+        Value: settlementReport.closingBalance,
+      },
+      {
+        Metric: "Net Movement",
+        Value: settlementReport.netMovement,
+      },
+    ];
+
+    const sheet = XLSX.utils.json_to_sheet(report);
+
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      sheet,
+      "Settlement Report"
+    );
+
+    XLSX.writeFile(
+      workbook,
+      "Brewed_Settlement_Report.xlsx"
+    );
+  }
 
   // Phase 7.3 Top Wallet Users Calculations
   const topWalletUsers = [...wallets]
@@ -797,6 +1007,148 @@ export default function WalletManagement({ setPage }) {
             </LineChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* Financial Report Card (Phase 8.2) */}
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          padding: 24,
+          marginBottom: 30,
+          border: "1px solid #eee",
+          boxShadow: "0 8px 25px rgba(0,0,0,.05)",
+        }}
+      >
+        <h2
+          style={{
+            marginTop: 0,
+            color: "#3B1A08",
+            marginBottom: 20,
+          }}
+        >
+          📊 Financial Report
+        </h2>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+            gap: 20,
+          }}
+        >
+          <StatCard
+            title="Total Liability"
+            value={`₹${financialReport.totalLiability.toLocaleString("en-IN")}`}
+          />
+
+          <StatCard
+            title="Money Added"
+            value={`₹${financialReport.totalMoneyAdded.toLocaleString("en-IN")}`}
+          />
+
+          <StatCard
+            title="Money Spent"
+            value={`₹${financialReport.totalMoneySpent.toLocaleString("en-IN")}`}
+          />
+
+          <StatCard
+            title="Refunds"
+            value={`₹${financialReport.totalRefunds.toLocaleString("en-IN")}`}
+          />
+        </div>
+
+        <button
+          onClick={exportFinancialReport}
+          style={{
+            marginTop: 20,
+            padding: "12px 18px",
+            background: "#3B1A08",
+            color: "#fff",
+            border: "none",
+            borderRadius: 10,
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          📄 Export Financial Report
+        </button>
+      </div>
+
+      {/* Settlement Report Card (Phase 8.3) */}
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          padding: 24,
+          marginBottom: 30,
+          border: "1px solid #eee",
+          boxShadow: "0 8px 25px rgba(0,0,0,.05)",
+        }}
+      >
+        <h2
+          style={{
+            marginTop: 0,
+            marginBottom: 20,
+            color: "#3B1A08",
+          }}
+        >
+          🧾 Settlement Report
+        </h2>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+            gap: 20,
+          }}
+        >
+          <StatCard
+            title="Credits"
+            value={`₹${settlementReport.totalCredits.toLocaleString("en-IN")}`}
+          />
+
+          <StatCard
+            title="Debits"
+            value={`₹${settlementReport.totalDebits.toLocaleString("en-IN")}`}
+          />
+
+          <StatCard
+            title="Wallet Liability"
+            value={`₹${settlementReport.walletLiability.toLocaleString("en-IN")}`}
+          />
+
+          <StatCard
+            title="Reward Liability"
+            value={`₹${settlementReport.rewardLiability.toLocaleString("en-IN")}`}
+          />
+
+          <StatCard
+            title="Closing Balance"
+            value={`₹${settlementReport.closingBalance.toLocaleString("en-IN")}`}
+          />
+
+          <StatCard
+            title="Net Movement"
+            value={`₹${settlementReport.netMovement.toLocaleString("en-IN")}`}
+          />
+        </div>
+
+        <button
+          onClick={exportSettlementReport}
+          style={{
+            marginTop: 20,
+            padding: "12px 18px",
+            border: "none",
+            borderRadius: 10,
+            background: "#3B1A08",
+            color: "#fff",
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          🧾 Export Settlement Report
+        </button>
       </div>
 
       {/* Wallet Liability Section */}
@@ -1216,6 +1568,7 @@ export default function WalletManagement({ setPage }) {
             display: "flex",
             gap: 15,
             flexWrap: "wrap",
+            alignItems: "center",
           }}
         >
           <input
@@ -1260,6 +1613,21 @@ export default function WalletManagement({ setPage }) {
             <option>Transactions</option>
             <option>Newest</option>
           </select>
+
+          <button
+            onClick={exportWallets}
+            style={{
+              padding: "12px 18px",
+              background: "#3B1A08",
+              color: "#fff",
+              border: "none",
+              borderRadius: 10,
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            📄 Export Excel
+          </button>
         </div>
       </div>
 
@@ -1400,6 +1768,51 @@ export default function WalletManagement({ setPage }) {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Download Filtered Data Section (Phase 8.4) */}
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          padding: 24,
+          marginBottom: 30,
+          border: "1px solid #eee",
+          boxShadow: "0 8px 25px rgba(0,0,0,.05)",
+        }}
+      >
+        <h2
+          style={{
+            marginTop: 0,
+            color: "#3B1A08",
+          }}
+        >
+          📥 Download Filtered Data
+        </h2>
+
+        <p
+          style={{
+            color: "#777",
+            marginBottom: 20,
+          }}
+        >
+          Export only the wallets currently shown after applying search, filters, and sorting.
+        </p>
+
+        <button
+          onClick={exportFilteredTransactions}
+          style={{
+            padding: "12px 18px",
+            borderRadius: 10,
+            border: "none",
+            background: "#3B1A08",
+            color: "#fff",
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          📥 Download Filtered Wallets
+        </button>
       </div>
 
       {/* Recent Activity */}
