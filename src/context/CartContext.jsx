@@ -29,9 +29,30 @@ export function CartProvider({ children }) {
     }
 
     setCart((prev) => {
-      const incomingItem = { ...item, qty: item.qty || 1, size: item.size || "Medium", milk: item.milk || "Whole Milk", toppings: item.toppings || [], temperature: item.temperature || "Hot", iceLevel: item.iceLevel || "Regular", sweetness: item.sweetness ?? 50, instructions: item.instructions || "" };
+      const incomingItem = { 
+        ...item, 
+        qty: item.qty || 1, 
+        size: item.size || "Medium", 
+        milk: item.milk || "Whole Milk", 
+        toppings: item.toppings || [], 
+        extras: item.extras || [], 
+        temperature: item.temperature || "Hot", 
+        iceLevel: item.iceLevel || "Regular", 
+        sweetness: item.sweetness ?? 50, 
+        instructions: item.instructions || "" 
+      };
 
-      const existing = prev.find((i) => i.id === incomingItem.id && (i.size || "Medium") === incomingItem.size && (i.milk || "Whole Milk") === incomingItem.milk && JSON.stringify(i.toppings || []) === JSON.stringify(incomingItem.toppings) && (i.temperature || "Hot") === incomingItem.temperature && (i.iceLevel || "Regular") === incomingItem.iceLevel && (i.sweetness ?? 50) === incomingItem.sweetness && (i.instructions || "") === incomingItem.instructions);
+      const existing = prev.find((i) => 
+        i.id === incomingItem.id && 
+        (i.size || "Medium") === incomingItem.size && 
+        (i.milk || "Whole Milk") === incomingItem.milk && 
+        JSON.stringify(i.toppings || []) === JSON.stringify(incomingItem.toppings) && 
+        JSON.stringify(i.extras || []) === JSON.stringify(incomingItem.extras || []) && 
+        (i.temperature || "Hot") === incomingItem.temperature && 
+        (i.iceLevel || "Regular") === incomingItem.iceLevel && 
+        (i.sweetness ?? 50) === incomingItem.sweetness && 
+        (i.instructions || "") === incomingItem.instructions
+      );
 
       if (existing) {
         return prev.map((i) => i === existing ? { ...i, qty: i.qty + incomingItem.qty } : i);
@@ -49,67 +70,59 @@ export function CartProvider({ children }) {
  
   const clearCart = () => setCart([]);
 
-        const placeOrder = async (orderDetails) => {
-  if (!auth.currentUser) {
-    throw new Error("User must be logged in to place an order.");
-  }
+  const placeOrder = async (orderDetails) => {
+    if (!auth.currentUser) {
+      throw new Error("User must be logged in to place an order.");
+    }
 
-  try {
+    try {
+      const orderData = {
+        ...orderDetails,
+        userId: auth.currentUser.uid,
+        status: orderDetails.status || "New",
+        createdAt: serverTimestamp(),
+      };
 
-    const orderData = {
-      ...orderDetails,
+      const docRef = await addDoc(
+        collection(db, "orders"),
+        orderData
+      );
+      
+      alert("Order saved successfully!");
 
-      userId: auth.currentUser.uid,
+      for (const item of orderDetails.items) {
+        console.log(item);
+        console.log("Item ID:", item.id);
+        await updateDoc(
+          doc(db, "menu", item.firestoreId),
+          {
+            salesCount: increment(item.qty || item.quantity || 1),
+          }
+        );
+      }
+      clearCart();
 
-      status: orderDetails.status || "New",
+      return docRef.id;
 
-      createdAt: serverTimestamp(),
-    };
-
-
-    const docRef = await addDoc(
-      collection(db, "orders"),
-      orderData
-    );
-    
-    alert("Order saved successfully!");
-
-    
-    
-  for (const item of orderDetails.items) {
-    console.log(item);
- console.log("Item ID:", item.id);
-await updateDoc(
-   doc(db, "menu", item.firestoreId),
-  {
-   salesCount: increment(item.qty || item.quantity || 1),
-   }
-  );
-  }
-    clearCart();
-
-    return docRef.id;
-
-  } catch(error) {
-    console.error(error);
-    throw error;
-  }
-}; 
+    } catch(error) {
+      console.error(error);
+      throw error;
+    }
+  }; 
   
   const reorder = (itemsToReorder) => {
-  if (!auth.currentUser) {
-    alert("Please log in to reorder.");
-    return;
-  }
+    if (!auth.currentUser) {
+      alert("Please log in to reorder.");
+      return;
+    }
 
-  itemsToReorder.forEach(item => {
-    // By calling addToCart, you reuse your existing logic that 
-    // checks for duplicates and updates quantities automatically.
-    addToCart(item);
-  });
-  
-  alert("Items added to your cart!");
-};
+    itemsToReorder.forEach(item => {
+      addToCart(item);
+    });
+    
+    alert("Items added to your cart!");
+  };
+
   const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
   const count = cart.reduce((sum, i) => sum + i.qty, 0);
 
