@@ -251,20 +251,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
   
 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (loading) setLoading(false);
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [loading]);
-
-  if (loading) {
-    return (
-      <div style={{ padding: 100 }}>
-        Loading...
-      </div>
-    );
-  }
+ 
 
   return (
     <div style={{ padding: 20 }}>
