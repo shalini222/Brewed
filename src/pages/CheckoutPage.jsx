@@ -612,6 +612,9 @@ export default function CheckoutPage({ setPage }) {
   );
 }
 
+// Styling objects used above can be appended or kept as in your initial styles.
+
+
 
 
 
