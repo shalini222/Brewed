@@ -252,7 +252,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
              
-      return (
+        return (
     <div style={{ padding: "30px 20px", background: "#F7F4EF", minHeight: "100vh" }}>
       {orderLoading ? (
         <p style={{ textAlign: "center", color: "#70645C", fontSize: 16 }}>Loading orders...</p>
@@ -326,11 +326,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
             </div>
 
             {orders.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "60px 20px", background: "#FFFFFF", borderRadius: 24, border: "1px solid #EEE6DD" }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>📦</div>
-                <h3 style={{ fontFamily: "Playfair Display", color: "#3B1A08", margin: "0 0 8px" }}>No orders yet</h3>
-                <p style={{ color: "#70645C", fontSize: 14, margin: 0 }}>New customer orders will appear here.</p>
-              </div>
+              <p style={{ textAlign: "center", color: "#70645C", padding: 40 }}>No orders yet.</p>
             ) : (
               orders
                 .sort((a, b) =>
@@ -380,7 +376,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
                         <div>
                           <span style={{ fontSize: 13, color: "#9E8E85", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                            #{order.id.slice(0, 8).toUpperCase()}
+                            Order #{order.id.slice(0, 8)}
                           </span>
                           <p style={{ color: "#70645C", fontSize: 13, marginTop: 4 }}>
                             {order.createdAt?.toDate
@@ -426,11 +422,8 @@ export default function OrderManagement({ setPage, setActivePage }) {
                           border: "1px solid #F2ECE5",
                         }}
                       >
-                        <p style={{ margin: "0 0 10px", fontSize: 13, color: "#9E8E85", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                          👤 Customer Details
-                        </p>
                         <p style={{ margin: "0 0 6px", fontSize: 15, color: "#3B1A08" }}>
-                          <strong>{order.customer?.name}</strong>
+                          👤 <strong>{order.customer?.name}</strong>
                         </p>
                         <p style={{ margin: "0 0 6px", fontSize: 14, color: "#5C4F47" }}>
                           📞 {order.customer?.phone}
@@ -464,9 +457,9 @@ export default function OrderManagement({ setPage, setActivePage }) {
                                 src={item.img}
                                 alt={item.name}
                                 style={{
-                                  width: 80,
-                                  height: 80,
-                                  borderRadius: 16,
+                                  width: 70,
+                                  height: 70,
+                                  borderRadius: 12,
                                   objectFit: "cover",
                                   flexShrink: 0,
                                 }}
@@ -476,7 +469,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
                             <div style={{ flex: 1 }}>
                               <h4
                                 style={{
-                                  margin: "0 0 6px",
+                                  margin: "0 0 4px",
                                   fontFamily: "Playfair Display",
                                   fontSize: 16,
                                   color: "#3B1A08",
@@ -485,42 +478,20 @@ export default function OrderManagement({ setPage, setActivePage }) {
                                 ☕ {item.name}
                               </h4>
 
-                              <p style={{ margin: "0 0 8px", fontSize: 14, color: "#70645C" }}>
+                              <p style={{ margin: "0 0 6px", fontSize: 14, color: "#70645C" }}>
                                 <strong>{item.qty || item.quantity || 1}</strong> × ₹{item.price}
                               </p>
 
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                                {item.size && (
-                                  <span style={{ fontSize: 12, background: "#F2ECE5", padding: "3px 10px", borderRadius: 8, color: "#5C4F47", fontWeight: 500 }}>
-                                    {item.size}
-                                  </span>
-                                )}
-                                {item.milk && (
-                                  <span style={{ fontSize: 12, background: "#F2ECE5", padding: "3px 10px", borderRadius: 8, color: "#5C4F47", fontWeight: 500 }}>
-                                    {item.milk}
-                                  </span>
-                                )}
-                                {item.temperature && (
-                                  <span style={{ fontSize: 12, background: "#F2ECE5", padding: "3px 10px", borderRadius: 8, color: "#5C4F47", fontWeight: 500 }}>
-                                    {item.temperature}
-                                  </span>
-                                )}
-                                {item.iceLevel && (
-                                  <span style={{ fontSize: 12, background: "#F2ECE5", padding: "3px 10px", borderRadius: 8, color: "#5C4F47", fontWeight: 500 }}>
-                                    Ice: {item.iceLevel}
-                                  </span>
-                                )}
-                                {item.sweetness !== undefined && (
-                                  <span style={{ fontSize: 12, background: "#F2ECE5", padding: "3px 10px", borderRadius: 8, color: "#5C4F47", fontWeight: 500 }}>
-                                    {item.sweetness}% Sweetness
-                                  </span>
-                                )}
-                                {Array.isArray(item.toppings) && item.toppings.length > 0 && (
-                                  <span style={{ fontSize: 12, background: "#F2ECE5", padding: "3px 10px", borderRadius: 8, color: "#5C4F47", fontWeight: 500 }}>
-                                    {item.toppings.map((t) => (typeof t === "string" ? t : t?.name || "")).filter(Boolean).join(", ")}
-                                  </span>
-                                )}
-                              </div>
+                              {item.size && (
+                                <span style={{ fontSize: 12, background: "#F2ECE5", padding: "2px 8px", borderRadius: 6, color: "#5C4F47", marginRight: 6 }}>
+                                  Size: {item.size}
+                                </span>
+                              )}
+                              {item.milk && (
+                                <span style={{ fontSize: 12, background: "#F2ECE5", padding: "2px 8px", borderRadius: 6, color: "#5C4F47", marginRight: 6 }}>
+                                  Milk: {item.milk}
+                                </span>
+                              )}
                             </div>
                             
                             <div style={{ fontWeight: 600, color: "#3B1A08", fontSize: 15 }}>
@@ -530,16 +501,47 @@ export default function OrderManagement({ setPage, setActivePage }) {
                         ))}
                       </div>
 
-                      <div>
-                        Total: ₹{order.total}
+                      <div
+                        style={{
+                          background: "#F8F3ED",
+                          padding: 20,
+                          borderRadius: 16,
+                          marginBottom: 24,
+                          fontSize: 14,
+                          color: "#5C4F47",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                          <span>Subtotal</span>
+                          <span>₹{order.subtotal}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                          <span>Tax</span>
+                          <span>₹{order.tax}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                          <span>Delivery Fee</span>
+                          <span>₹{order.delivery}</span>
+                        </div>
+                        {order.walletUsed > 0 && (
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, color: "#C0392B" }}>
+                            <span>Wallet Used</span>
+                            <span>-₹{order.walletUsed}</span>
+                          </div>
+                        )}
+                        <hr style={{ border: "none", borderTop: "1px solid #E6DDD5", margin: "12px 0" }} />
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 16, fontWeight: 700, color: "#3B1A08" }}>Amount Paid</span>
+                          <span style={{ fontSize: 18, fontWeight: 700, color: "#3B1A08" }}>₹{order.total}</span>
+                        </div>
                       </div>
 
-                      <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+                      <div style={{ display: "flex", gap: 12 }}>
                         {order.status === "New" && (
                           <button
                             onClick={() => updateOrderStatus(order.id, "Preparing")}
                             style={{
-                              flex: 2,
+                              flex: 1,
                               background: "#3B1A08",
                               color: "white",
                               border: "none",
@@ -559,7 +561,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
                           <button
                             onClick={() => updateOrderStatus(order.id, "Ready")}
                             style={{
-                              flex: 2,
+                              flex: 1,
                               background: "#3B1A08",
                               color: "white",
                               border: "none",
@@ -578,7 +580,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
                           <button
                             onClick={() => updateOrderStatus(order.id, "Delivered")}
                             style={{
-                              flex: 2,
+                              flex: 1,
                               background: "#27AE60",
                               color: "white",
                               border: "none",
@@ -609,7 +611,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
                                 fontSize: 15,
                               }}
                             >
-                              ❌ Cancel
+                              ❌ Cancel Order
                             </button>
                           )}
                       </div>
@@ -623,4 +625,3 @@ export default function OrderManagement({ setPage, setActivePage }) {
     </div>
   );
 }
-
