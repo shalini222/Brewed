@@ -511,47 +511,8 @@ return (
                                   </span>
                                 )}
 
-                                {item.temperature && (
-                                  <span style={chipStyle}>
-                                    {item.temperature}
-                                  </span>
-                                )}
 
-                                {item.iceLevel && (
-                                  <span style={chipStyle}>
-                                    Ice: {item.iceLevel}
-                                  </span>
-                                )}
-
-                                {item.sweetness !== undefined && (
-                                  <span style={chipStyle}>
-                                    Sweetness: {item.sweetness}%
-                                  </span>
-                                )}
-
-                                {Array.isArray(item.toppings) && item.toppings.length > 0 && (
-                                  <span style={chipStyle}>
-                                    Toppings: {item.toppings
-                                      .map(t => typeof t === "string" ? t : t?.name)
-                                      .filter(Boolean)
-                                      .join(", ")}
-                                  </span>
-                                )}
-
-                                {Array.isArray(item.extras) && item.extras.length > 0 && (
-                                  <span style={chipStyle}>
-                                    Extras: {item.extras
-                                      .map(e => typeof e === "string" ? e : e?.name)
-                                      .filter(Boolean)
-                                      .join(", ")}
-                                  </span>
-                                )}
-
-                                {item.instructions && (
-                                  <span style={chipStyle}>
-                                    Note: {item.instructions}
-                                  </span>
-                                )}
+                              
                               </div>
                             </div>
                             
