@@ -252,7 +252,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
              
-                  return (
+                    return (
     <div style={{ padding: 20 }}>
       {orderLoading ? (
         <p>Loading orders...</p>
@@ -398,6 +398,23 @@ export default function OrderManagement({ setPage, setActivePage }) {
                     <p>{item.name}</p>
                     <p>₹{item.price}</p>
                     <p>Qty: {item.qty || item.quantity || 1}</p>
+
+                    {item.size && <p>Size: {item.size}</p>}
+                    {item.milk && <p>Milk: {item.milk}</p>}
+                    {item.temperature && <p>Temperature: {item.temperature}</p>}
+                    {item.iceLevel && <p>Ice: {item.iceLevel}</p>}
+                    {item.sweetness !== undefined && <p>Sweetness: {item.sweetness}%</p>}
+                    {item.instructions && <p>Note: {item.instructions}</p>}
+
+                    {Array.isArray(item.toppings) && item.toppings.length > 0 && (
+                      <p>
+                        Toppings:{" "}
+                        {item.toppings
+                          .map((t) => (typeof t === "string" ? t : t?.name))
+                          .filter(Boolean)
+                          .join(", ")}
+                      </p>
+                    )}
                   </div>
                 ))}
 
