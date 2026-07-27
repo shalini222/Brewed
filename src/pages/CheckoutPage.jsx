@@ -3,7 +3,7 @@ import { useCart } from "../context/CartContext";
 import { auth, db } from "../firebase";
 import { serverTimestamp, collection, getDocs } from "firebase/firestore";
 import { checkDelivery } from "../service/deliveryService";
-import walletService from "../services/walletService";
+import walletService from "../service/walletService";
 
 const THEME = {
   colors: {
