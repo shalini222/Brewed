@@ -248,7 +248,13 @@ export default function OrderManagement({ setPage, setActivePage }) {
       order.status !== "Cancelled"
   ).length;
 
-  
+  const chipStyle = {
+  fontSize: 12,
+  background: "#F2ECE5",
+  padding: "2px 8px",
+  borderRadius: 6,
+  color: "#5C4F47",
+};
 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
              
@@ -482,16 +488,66 @@ export default function OrderManagement({ setPage, setActivePage }) {
                                 <strong>{item.qty || item.quantity || 1}</strong> × ₹{item.price}
                               </p>
 
-                              {item.size && (
-                                <span style={{ fontSize: 12, background: "#F2ECE5", padding: "2px 8px", borderRadius: 6, color: "#5C4F47", marginRight: 6 }}>
-                                  Size: {item.size}
-                                </span>
-                              )}
-                              {item.milk && (
-                                <span style={{ fontSize: 12, background: "#F2ECE5", padding: "2px 8px", borderRadius: 6, color: "#5C4F47", marginRight: 6 }}>
-                                  Milk: {item.milk}
-                                </span>
-                              )}
+                             <div
+  style={{
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 6,
+  }}
+>
+  {item.size && (
+    <span style={chipStyle}>
+      Size: {item.size}
+    </span>
+  )}
+
+  {item.milk && (
+    <span style={chipStyle}>
+      Milk: {item.milk}
+    </span>
+  )}
+
+  {item.temperature && (
+    <span style={chipStyle}>
+      {item.temperature}
+    </span>
+  )}
+
+  {item.iceLevel && (
+    <span style={chipStyle}>
+      Ice: {item.iceLevel}
+    </span>
+  )}
+
+  {item.sweetness !== undefined && (
+    <span style={chipStyle}>
+      Sweetness: {item.sweetness}%
+    </span>
+  )}
+
+  {Array.isArray(item.toppings) && item.toppings.length > 0 && (
+    <span style={chipStyle}>
+      Toppings: {item.toppings
+        .map(t => typeof t === "string" ? t : t.name)
+        .join(", ")}
+    </span>
+  )}
+
+  {Array.isArray(item.extras) && item.extras.length > 0 && (
+    <span style={chipStyle}>
+      Extras: {item.extras
+        .map(e => typeof e === "string" ? e : e.name)
+        .join(", ")}
+    </span>
+  )}
+
+  {item.instructions && (
+    <span style={chipStyle}>
+      Note: {item.instructions}
+    </span>
+  )}
+</div>
                             </div>
                             
                             <div style={{ fontWeight: 600, color: "#3B1A08", fontSize: 15 }}>
