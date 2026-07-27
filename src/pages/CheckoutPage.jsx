@@ -54,6 +54,7 @@ export default function CheckoutPage({ setPage }) {
   const [wallet, setWallet] = useState(null);
   const [walletLoading, setWalletLoading] = useState(true);
   const [useWallet, setUseWallet] = useState(false);
+  const [placingOrder, setPlacingOrder] = useState(false);
 
   const canvasRef = useRef(null);
 
@@ -89,7 +90,19 @@ export default function CheckoutPage({ setPage }) {
       grandTotal = Math.max(0, baseTotal - walletDeduction);
     }
 
-    return { subtotal, tax, delivery, cod, discount, baseTotal, walletDeduction, grandTotal };
+    const remainingAmount = grandTotal;
+
+    return { 
+      subtotal, 
+      tax, 
+      delivery, 
+      cod, 
+      discount, 
+      baseTotal, 
+      walletDeduction, 
+      grandTotal,
+      remainingAmount 
+    };
   }, [total, paymentMethod, appliedCoupon, deliveryInfo, useWallet, wallet]);
 
   useEffect(() => { loadRazorpayScript(); }, []);
@@ -245,6 +258,8 @@ export default function CheckoutPage({ setPage }) {
   const handleFormSubmission = async (e) => {
     e.preventDefault();
 
+    if (placingOrder) return;
+
     if (!auth.currentUser) {
       alert("Please log in to your Brewed account to place an order.");
       setPage("login");
@@ -271,9 +286,21 @@ export default function CheckoutPage({ setPage }) {
       return;
     }
 
+    setPlacingOrder(true);
     setStatus("processing");
 
     try {
+      let walletPaid = 0;
+
+      if (useWallet && calculations.walletDeduction > 0) {
+        await walletService.deductMoney({
+          userId: auth.currentUser.uid,
+          amount: calculations.walletDeduction,
+        });
+
+        walletPaid = calculations.walletDeduction;
+      }
+
       const orderData = {
         customer: form,
         userId: auth.currentUser.uid,
@@ -285,7 +312,7 @@ export default function CheckoutPage({ setPage }) {
         estimatedDelivery: deliveryInfo?.estimatedTime || "",
         minimumOrder: deliveryInfo?.minOrder || 0,
         freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
-        walletDeduction: calculations.walletDeduction,
+        walletDeduction: walletPaid,
         total: calculations.grandTotal,
         paymentMethod: paymentMethod === "cod" ? "COD" : "Online",
         status: "New",
@@ -307,6 +334,8 @@ export default function CheckoutPage({ setPage }) {
       console.error("Critical submission failure:", err);
       alert(err.stack || err);
       setStatus("failure");
+    } finally {
+      setPlacingOrder(false);
     }
   };
 
@@ -510,7 +539,7 @@ export default function CheckoutPage({ setPage }) {
                         }}
                       >
                         <strong>Remaining Payment</strong>
-                        <strong>₹{calculations.grandTotal.toFixed(2)}</strong>
+                        <strong>₹{calculations.remainingAmount.toFixed(2)}</strong>
                       </div>
                     </div>
                   )}
@@ -631,6 +660,7 @@ export default function CheckoutPage({ setPage }) {
               <button
                 type="submit"
                 disabled={
+                  placingOrder ||
                   status === "processing" ||
                   deliveryLoading ||
                   !selectedAddress
@@ -639,8 +669,8 @@ export default function CheckoutPage({ setPage }) {
               >
                 {deliveryLoading
                   ? "Checking delivery..."
-                  : status === "processing"
-                  ? "Processing Order..."
+                  : placingOrder || status === "processing"
+                  ? "Placing Order..."
                   : `Place Order · ₹{calculations.grandTotal}`}
               </button>
             </div>
@@ -650,6 +680,7 @@ export default function CheckoutPage({ setPage }) {
     </div>
   );
 }
+
 
 // Styling objects used above can be appended or kept as in your initial styles.
 
