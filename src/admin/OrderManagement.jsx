@@ -251,7 +251,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
   
 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
-     return (
+       return (
     <div style={{ padding: 20 }}>
       {orderLoading ? (
         <p>Loading orders...</p>
@@ -344,6 +344,21 @@ export default function OrderManagement({ setPage, setActivePage }) {
                 <p>
                   <strong>Customer:</strong> {order.customer?.name}
                 </p>
+
+                <p>
+                  <strong>Phone:</strong> {order.customer?.phone}
+                </p>
+
+                <p>
+                  <strong>Address:</strong> {order.customer?.address}
+                </p>
+
+                {order.customer?.instructions && (
+                  <p>
+                    <strong>Instructions:</strong>{" "}
+                    {order.customer.instructions}
+                  </p>
+                )}
 
                 <p>
                   <strong>Total:</strong> ₹{order.total}
