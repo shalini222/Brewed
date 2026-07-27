@@ -114,8 +114,13 @@ export default function CheckoutPage({ setPage }) {
 
       try {
         setWalletLoading(true);
-        const walletData = await walletService.getWallet(auth.currentUser.uid);
-        setWallet(walletData);
+        let walletData = await walletService.getWallet(auth.currentUser.uid);
+
+if (!walletData) {
+  walletData = await walletService.createWallet(auth.currentUser.uid);
+}
+
+setWallet(walletData);
       } catch (err) {
         console.error(err);
         setWallet(null);
@@ -231,6 +236,17 @@ export default function CheckoutPage({ setPage }) {
 
     validateDelivery();
   }, [selectedAddress]);
+
+
+useEffect(() => {
+  if (auth.currentUser?.email) {
+    setForm(prev => ({
+      ...prev,
+      email: auth.currentUser.email,
+    }));
+  }
+}, []);
+ 
 
   const handleInputChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -365,7 +381,7 @@ export default function CheckoutPage({ setPage }) {
         total: calculations.grandTotal,
         paymentMethod: finalPaymentMethod,
         status: "New",
-        createdAt: serverTimestamp(),
+ 
       };
 
       await placeOrder(orderData);
@@ -524,7 +540,10 @@ export default function CheckoutPage({ setPage }) {
                 ) : (
                   <>
                     <p style={{ fontSize: "0.95rem", margin: "0.4rem 0" }}>
-                      Available Balance: <strong>₹{useWallet && wallet ? Math.max(0, wallet.balance - calculations.walletDeduction) : (wallet?.balance || 0)}</strong>
+                      Available Balance: <strong>₹{useWallet && wallet ? Math.max(
+  0,
+  (wallet?.balance || 0) - calculations.walletDeduction
+): (wallet?.balance || 0)}</strong>
                     </p>
 
                     <label
