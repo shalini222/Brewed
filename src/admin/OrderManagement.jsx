@@ -17,7 +17,7 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
-  XAxis,
+
   YAxis,
   Tooltip,
   CartesianGrid,
