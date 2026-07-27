@@ -325,9 +325,19 @@ export default function CheckoutPage({ setPage }) {
       <div style={styles.confirmPage}>
         <canvas ref={canvasRef} style={styles.confettiCanvas} />
         <div style={styles.confirmCard}>
+          <div style={styles.successIconBadge}>✓</div>
           <h2 style={styles.confirmTitle}>Order Confirmed</h2>
-          <p style={styles.confirmSub}>Thank you for ordering from Brewed!</p>
-          <button style={styles.payBtn} onClick={() => setPage("menu")}>Return to Menu</button>
+          <p style={styles.confirmSub}>Thank you for ordering from Brewed! Your fresh coffee is on its way.</p>
+          
+          <div style={styles.orderIdBox}>
+            <span>Order ID</span>
+            <strong>#{orderSnapshot.id?.slice(-6).toUpperCase() || "BREWED"}</strong>
+          </div>
+
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            <button style={styles.secondaryBtn} onClick={() => setPage("menu")}>Return to Menu</button>
+            <button style={styles.payBtn} onClick={() => setPage("orders")}>Track Order</button>
+          </div>
         </div>
       </div>
     );
@@ -436,46 +446,54 @@ export default function CheckoutPage({ setPage }) {
               </div>
             </div>
 
-            {/* Brewed Wallet Section */}
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: 16,
-                padding: 20,
-                marginBottom: 20,
-                border: "1px solid #eee",
-              }}
-            >
-              <h3 style={{ marginTop: 0, color: "#3B1A08" }}>
-                💳 Brewed Wallet
-              </h3>
+            {/* Polished & Aesthetic Brewed Wallet Section */}
+            <div style={styles.walletCard}>
+              <div style={styles.walletHeader}>
+                <div style={styles.walletTitleWrapper}>
+                  <span style={styles.walletIcon}>💳</span>
+                  <div>
+                    <h3 style={styles.walletTitle}>Brewed Wallet</h3>
+                    <p style={styles.walletSubtitle}>Use your cached cashback & balance instantly</p>
+                  </div>
+                </div>
+                <div style={styles.walletBadge}>
+                  {walletLoading ? "Syncing..." : `₹${wallet?.balance || 0} Available`}
+                </div>
+              </div>
 
               {walletLoading ? (
-                <p>Loading wallet...</p>
+                <div style={styles.walletLoadingBox}>Loading wallet balance...</div>
               ) : (
-                <>
-                  <p>
-                    Available Balance: <strong>₹{wallet?.balance || 0}</strong>
-                  </p>
-
-                  <label
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      cursor: "pointer",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={useWallet}
-                      disabled={!wallet || wallet.balance <= 0}
-                      onChange={(e) => setUseWallet(e.target.checked)}
-                    />
-
-                    Use Brewed Wallet
-                  </label>
-                </>
+                <div 
+                  className="clickable-row"
+                  style={{
+                    ...styles.walletCheckboxRow,
+                    borderColor: useWallet ? THEME.colors.primary : THEME.colors.cardBorder,
+                    backgroundColor: useWallet ? "#FCF9F5" : "#FFFFFF",
+                    opacity: (!wallet || wallet.balance <= 0) ? 0.6 : 1
+                  }}
+                  onClick={() => {
+                    if (wallet && wallet.balance > 0) {
+                      setUseWallet(!useWallet);
+                    }
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={useWallet}
+                    disabled={!wallet || wallet.balance <= 0}
+                    onChange={(e) => setUseWallet(e.target.checked)}
+                    style={styles.walletCheckbox}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <strong style={{ color: THEME.colors.textDark }}>Apply Brewed Wallet Balance</strong>
+                    <p style={{ margin: "0.1rem 0 0", fontSize: "0.82rem", color: THEME.colors.textMuted }}>
+                      {!wallet || wallet.balance <= 0 
+                        ? "No balance available in your wallet" 
+                        : `Dedits up to ₹${Math.min(wallet.balance, calculations.grandTotal + calculations.walletDeduction)} from your stash`}
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -494,19 +512,7 @@ export default function CheckoutPage({ setPage }) {
                 <input type="radio" checked={paymentMethod === "online"} readOnly />
               </div>
 
-              <div 
-                className="clickable-row"
-                style={{ ...styles.paymentSelector, borderColor: paymentMethod === "cod" ? THEME.colors.primary : THEME.colors.cardBorder }}
-                onClick={() => setPaymentMethod("cod")}
-              >
-                <span style={{ fontSize: "1.2rem" }}>💵</span>
-                <div style={{ flex: 1 }}>
-                  <strong>Cash / QR on Delivery</strong>
-                  <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>Extra handling charge of +₹{CONFIG.codFee}</p>
-                </div>
-                <input type="radio" checked={paymentMethod === "cod"} readOnly />
-              </div>
-            </div>
+               </div>
           </div>
 
           <div className="side-panel">
@@ -611,6 +617,7 @@ export default function CheckoutPage({ setPage }) {
     </div>
   );
 }
+  
 
 // Styling objects used above can be appended or kept as in your initial styles.
 
