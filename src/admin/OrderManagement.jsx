@@ -251,7 +251,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
   
 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
-       return (
+         return (
     <div style={{ padding: 20 }}>
       {orderLoading ? (
         <p>Loading orders...</p>
@@ -359,6 +359,28 @@ export default function OrderManagement({ setPage, setActivePage }) {
                     {order.customer.instructions}
                   </p>
                 )}
+
+                <p>
+                  <strong>Payment:</strong>{" "}
+                  <span
+                    style={{
+                      background:
+                        order.paymentMethod === "COD"
+                        ? "#FFF3CD"
+                        : "#D4EDDA",
+                      padding: "5px 10px",
+                      borderRadius: 999,
+                      fontSize: 14,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {order.paymentMethod}
+                  </span>
+                </p>
+
+                <h3>Items</h3>
+
+                <p>Items Count: {order.items?.length || 0}</p>
 
                 <p>
                   <strong>Total:</strong> ₹{order.total}
