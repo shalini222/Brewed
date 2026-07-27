@@ -102,6 +102,17 @@ export default function CheckoutPage({ setPage }) {
     };
   }, [total, paymentMethod, appliedCoupon, deliveryInfo, useWallet, wallet]);
 
+
+
+ useEffect(() => {
+  if (
+    paymentMethod === "cod" &&
+    calculations.remainingAmount === 0
+  ) {
+    setPaymentMethod("online");
+  }
+}, [paymentMethod, calculations.remainingAmount]);
+
   useEffect(() => { loadRazorpayScript(); }, []);
 
   useEffect(() => {
