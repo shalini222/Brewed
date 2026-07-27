@@ -722,33 +722,8 @@ export default function CheckoutPage({ setPage }) {
   );
 }
 
-const styles = {
-  page: { minHeight: "100vh", padding: "2rem 0" },
-  backLink: { background: "none", border: "none", color: THEME.colors.textMuted, cursor: "pointer", fontSize: "0.95rem", marginBottom: "1rem", padding: 0 },
-  heading: { fontFamily: THEME.fonts.serif, fontSize: "2rem", marginBottom: "1.5rem", color: THEME.colors.textDark },
-  card: { background: THEME.colors.cardBg, border: `1px solid ${THEME.colors.cardBorder}`, borderRadius: "12px", padding: "1.5rem", marginBottom: "1.5rem" },
-  sectionTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.25rem", marginBottom: "1rem", color: THEME.colors.textDark },
-  label: { display: "block", fontSize: "0.85rem", fontWeight: "600", color: THEME.colors.textMuted, marginBottom: "0.3rem" },
-  paymentSelector: { display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", borderRadius: "8px", border: "1.5px solid", marginBottom: "0.75rem", background: "#FFF" },
-  calcRow: { display: "flex", justifyContent: "space-between", marginBottom: "0.6rem", fontSize: "0.95rem", color: THEME.colors.textMuted },
-  payBtn: { width: "100%", padding: "1rem", background: THEME.colors.primary, color: "#FFF", border: "none", borderRadius: "8px", fontWeight: "bold", fontSize: "1rem", cursor: "pointer", marginTop: "1rem", transition: "opacity 0.2s" },
-  couponBtn: { background: THEME.colors.textDark, color: "#FFF", border: "none", borderRadius: "6px", padding: "0 1rem", fontWeight: "600", cursor: "pointer" },
-  couponPill: { display: "flex", justifyContent: "space-between", alignItems: "center", background: "#FAF6F0", border: `1px solid ${THEME.colors.cardBorder}`, padding: "0.5rem 0.8rem", borderRadius: "6px", fontSize: "0.9rem" },
-  removeBtn: { background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: THEME.colors.danger, lineHeight: 1 },
-  addressCard: { background: THEME.colors.cardBg, border: `1px solid ${THEME.colors.cardBorder}`, borderRadius: "12px", padding: "1.5rem", marginBottom: "1.5rem" },
-  addressHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" },
-  addressTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.25rem", margin: "0 0 0.5rem 0", color: THEME.colors.textDark },
-  addressName: { fontWeight: "bold", margin: "0 0 0.2rem 0" },
-  addressText: { margin: "0 0 0.1rem 0", color: THEME.colors.textMuted, fontSize: "0.95rem" },
-  changeButton: { background: "none", border: `1px solid ${THEME.colors.primary}`, color: THEME.colors.primary, padding: "0.3rem 0.8rem", borderRadius: "6px", cursor: "pointer", fontWeight: "600" },
-  addressPicker: { background: "#FFF", border: `1px solid ${THEME.colors.cardBorder}`, borderRadius: "12px", padding: "1rem", marginBottom: "1.5rem" },
-  addressOption: { padding: "0.8rem", borderBottom: `1px solid ${THEME.colors.cardBorder}`, cursor: "pointer" },
-  confirmPage: { display: "flex", justifyContent: "center", alignItems: "center", minHeight: "80vh", textAlign: "center" },
-  confettiCanvas: { position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", pointerEvents: "none", zIndex: 1000 },
-  confirmCard: { background: "#FFF", padding: "2.5rem", borderRadius: "16px", border: `1px solid ${THEME.colors.cardBorder}`, maxWidth: "400px", width: "100%", zIndex: 1001, boxShadow: "0 10px 30px rgba(0,0,0,0.05)" },
-  confirmTitle: { fontFamily: THEME.fonts.serif, fontSize: "1.8rem", color: THEME.colors.success, margin: "0 0 0.5rem 0" },
-  confirmSub: { color: THEME.colors.textMuted, marginBottom: "1.5rem" }
-};
+
+
 
 
 
