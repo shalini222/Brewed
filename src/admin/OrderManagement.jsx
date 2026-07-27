@@ -252,7 +252,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
              
-                      return (
+                        return (
     <div style={{ padding: 20 }}>
       {orderLoading ? (
         <p>Loading orders...</p>
@@ -456,51 +456,6 @@ export default function OrderManagement({ setPage, setActivePage }) {
                               <br />
                             </>
                           )}
-
-                          {item.milk && (
-                            <>
-                              Milk: {item.milk}
-                              <br />
-                            </>
-                          )}
-
-                          {Array.isArray(item.toppings) && item.toppings.length > 0 && (
-                            <>
-                              Toppings:{" "}
-                              {item.toppings
-                                .map((t) =>
-                                  typeof t === "string" ? t : t?.name || ""
-                                )
-                                .filter(Boolean)
-                                .join(", ")}
-                              <br />
-                            </>
-                          )}
-
-                          {item.temperature && (
-                            <>
-                              Temperature: {item.temperature}
-                              <br />
-                            </>
-                          )}
-
-                          {item.iceLevel && (
-                            <>
-                              Ice: {item.iceLevel}
-                              <br />
-                            </>
-                          )}
-
-                          {item.sweetness !== undefined && (
-                            <>
-                              Sweetness: {item.sweetness}%
-                              <br />
-                            </>
-                          )}
-
-                          {item.instructions && (
-                            <>Note: {item.instructions}</>
-                          )}
                         </p>
                       </div>
                     </div>
@@ -578,3 +533,5 @@ export default function OrderManagement({ setPage, setActivePage }) {
     </div>
   );
 }
+
+                            
