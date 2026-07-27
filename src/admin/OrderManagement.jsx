@@ -511,7 +511,11 @@ return (
                                   </span>
                                 )}
 
-
+                               {item.temperature && typeof item.temperature === "string" && (
+  <span style={chipStyle}>
+    {item.temperature}
+  </span>
+)}
                               
                               </div>
                             </div>
