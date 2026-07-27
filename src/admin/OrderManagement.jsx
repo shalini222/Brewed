@@ -260,6 +260,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
           
 
+
 return (
     <div style={{ padding: "30px 20px", background: "#F7F4EF", minHeight: "100vh" }}>
       {orderLoading ? (
@@ -531,7 +532,8 @@ return (
                                 {Array.isArray(item.toppings) && item.toppings.length > 0 && (
                                   <span style={chipStyle}>
                                     Toppings: {item.toppings
-                                      .map(t => typeof t === "string" ? t : t.name)
+                                      .map(t => typeof t === "string" ? t : t?.name)
+                                      .filter(Boolean)
                                       .join(", ")}
                                   </span>
                                 )}
@@ -539,7 +541,8 @@ return (
                                 {Array.isArray(item.extras) && item.extras.length > 0 && (
                                   <span style={chipStyle}>
                                     Extras: {item.extras
-                                      .map(e => typeof e === "string" ? e : e.name)
+                                      .map(e => typeof e === "string" ? e : e?.name)
+                                      .filter(Boolean)
                                       .join(", ")}
                                   </span>
                                 )}
@@ -682,5 +685,5 @@ return (
       )}
     </div>
 );
-}   
+}
        
