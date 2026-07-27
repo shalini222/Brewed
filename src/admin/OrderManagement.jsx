@@ -252,7 +252,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
              
-                    return (
+                      return (
     <div style={{ padding: 20 }}>
       {orderLoading ? (
         <p>Loading orders...</p>
@@ -321,108 +321,257 @@ export default function OrderManagement({ setPage, setActivePage }) {
           {orders.length === 0 ? (
             <p>No orders yet.</p>
           ) : (
-            orders.map((order) => (
-              <div
-                key={order.id}
-                style={{
-                  background: "#fff",
-                  padding: 20,
-                  marginBottom: 10,
-                  borderRadius: 10,
-                }}
-              >
-                <p>
-                  <strong>ID:</strong> {order.id}
-                </p>
+            orders
+              .sort((a, b) =>
+                (b.createdAt?.seconds || 0) -
+                (a.createdAt?.seconds || 0)
+              )
+              .filter((order) => {
+                const matchesStatus =
+                  orderFilter === "All" ||
+                  order.status === orderFilter;
 
-                <p>
-                  <strong>Placed:</strong>{" "}
-                  {order.createdAt?.toDate
-                    ? order.createdAt.toDate().toLocaleString()
-                    : "Just now"}
-                </p>
+                const searchText = orderSearch.toLowerCase();
 
-                <p>
-                  <strong>Customer:</strong> {order.customer?.name}
-                </p>
+                const matchesSearch =
+                  order.customer?.name
+                    ?.toLowerCase()
+                    .includes(searchText) ||
+                  order.id.toLowerCase().includes(searchText);
 
-                <p>
-                  <strong>Phone:</strong> {order.customer?.phone}
-                </p>
-
-                <p>
-                  <strong>Address:</strong> {order.customer?.address}
-                </p>
-
-                {order.customer?.instructions && (
-                  <p>
-                    <strong>Instructions:</strong>{" "}
-                    {order.customer.instructions}
-                  </p>
-                )}
-
-                <p>
-                  <strong>Payment:</strong>{" "}
-                  <span
+                return matchesStatus && matchesSearch;
+              })
+              .map((order) => (
+                <div
+                  key={order.id}
+                  style={{
+                    background: "#fff",
+                    borderRadius: 20,
+                    padding: 25,
+                    marginBottom: 20,
+                    boxShadow: "0 10px 30px rgba(0,0,0,.08)",
+                  }}
+                >
+                  <p
                     style={{
-                      background:
-                        order.paymentMethod === "COD"
-                        ? "#FFF3CD"
-                        : "#D4EDDA",
-                      padding: "5px 10px",
-                      borderRadius: 999,
+                      color: "#70645C",
                       fontSize: 14,
-                      fontWeight: 600,
                     }}
                   >
-                    {order.paymentMethod}
-                  </span>
-                </p>
+                    Placed:{" "}
+                    {order.createdAt?.toDate
+                      ? order.createdAt.toDate().toLocaleString()
+                      : "Just now"}
+                  </p>
 
-                <h3>Items</h3>
+                  <p>
+                    <strong>Customer:</strong> {order.customer?.name}
+                  </p>
 
-                {order.items?.map((item, index) => (
-                  <div key={index}>
-                    {item.img && (
-                      <img
-                        src={item.img}
-                        alt={item.name}
-                        style={{
-                          width: 80,
-                          height: 80,
-                          objectFit: "cover",
-                          borderRadius: 10,
-                        }}
-                      />
-                    )}
-                    <p>{item.name}</p>
-                    <p>₹{item.price}</p>
-                    <p>Qty: {item.qty || item.quantity || 1}</p>
+                  <p>
+                    <strong>Phone:</strong> {order.customer?.phone}
+                  </p>
 
-                    {item.size && <p>Size: {item.size}</p>}
-                    {item.milk && <p>Milk: {item.milk}</p>}
-                    {item.temperature && <p>Temperature: {item.temperature}</p>}
-                    {item.iceLevel && <p>Ice: {item.iceLevel}</p>}
-                    {item.sweetness !== undefined && <p>Sweetness: {item.sweetness}%</p>}
-                    {item.instructions && <p>Note: {item.instructions}</p>}
+                  <p>
+                    <strong>Address:</strong> {order.customer?.address}
+                  </p>
 
-                    {Array.isArray(item.toppings) && item.toppings.length > 0 && (
-                      <p>
-                        Toppings:{" "}
-                        {item.toppings
-                          .map((t) => (typeof t === "string" ? t : t?.name))
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
-                    )}
+                  {order.customer?.instructions && (
+                    <p>
+                      <strong>Instructions:</strong>{" "}
+                      {order.customer.instructions}
+                    </p>
+                  )}
+
+                  <p>
+                    <strong>Payment:</strong>{" "}
+                    <span
+                      style={{
+                        background:
+                          order.paymentMethod === "COD"
+                          ? "#FFF3CD"
+                          : "#D4EDDA",
+                        padding: "5px 10px",
+                        borderRadius: 999,
+                        fontSize: 14,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {order.paymentMethod}
+                    </span>
+                  </p>
+
+                  <h3>Items</h3>
+
+                  {order.items?.map((item, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: "flex",
+                        gap: 15,
+                        padding: "15px 0",
+                        borderBottom: "1px solid #eee",
+                      }}
+                    >
+                      {item.img && (
+                        <img
+                          src={item.img}
+                          alt={item.name}
+                          style={{
+                            width: 80,
+                            height: 80,
+                            borderRadius: 14,
+                            objectFit: "cover",
+                          }}
+                        />
+                      )}
+
+                      <div>
+                        <h3
+                          style={{
+                            margin: "0 0 8px",
+                            fontFamily: "Playfair Display",
+                          }}
+                        >
+                          ☕ {item.name}
+                        </h3>
+
+                        <p style={{ margin: 0 }}>
+                          <strong>
+                            {item.qty || item.quantity || 1} ×
+                          </strong>{" "}
+                          ₹{item.price}
+                        </p>
+
+                        <p
+                          style={{
+                            marginTop: 8,
+                            fontSize: 14,
+                            color: "#70645C",
+                          }}
+                        >
+                          {item.size && (
+                            <>
+                              Size: {item.size}
+                              <br />
+                            </>
+                          )}
+
+                          {item.milk && (
+                            <>
+                              Milk: {item.milk}
+                              <br />
+                            </>
+                          )}
+
+                          {Array.isArray(item.toppings) && item.toppings.length > 0 && (
+                            <>
+                              Toppings:{" "}
+                              {item.toppings
+                                .map((t) =>
+                                  typeof t === "string" ? t : t?.name || ""
+                                )
+                                .filter(Boolean)
+                                .join(", ")}
+                              <br />
+                            </>
+                          )}
+
+                          {item.temperature && (
+                            <>
+                              Temperature: {item.temperature}
+                              <br />
+                            </>
+                          )}
+
+                          {item.iceLevel && (
+                            <>
+                              Ice: {item.iceLevel}
+                              <br />
+                            </>
+                          )}
+
+                          {item.sweetness !== undefined && (
+                            <>
+                              Sweetness: {item.sweetness}%
+                              <br />
+                            </>
+                          )}
+
+                          {item.instructions && (
+                            <>Note: {item.instructions}</>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div
+                    style={{
+                      background: "#F8F3ED",
+                      padding: 15,
+                      borderRadius: 12,
+                      marginTop: 20,
+                    }}
+                  >
+                    <p>Subtotal: ₹{order.subtotal}</p>
+                    <p>Tax: ₹{order.tax}</p>
+                    <p>Delivery: ₹{order.delivery}</p>
+                    <hr />
+                    <h3>Total: ₹{order.total}</h3>
                   </div>
-                ))}
 
-                <p>
-                  <strong>Total:</strong> ₹{order.total}
-                </p>
-              </div>
-            ))
+                  <p>
+                    Status:{" "}
+                    <strong>{order.status}</strong>
+                  </p>
+
+                  {order.status === "New" && (
+                    <button
+                      onClick={() => updateOrderStatus(order.id, "Preparing")}
+                      style={{
+                        background: "#C4956A",
+                        color: "white",
+                        border: "none",
+                        padding: "10px 16px",
+                        borderRadius: 10,
+                        cursor: "pointer",
+                      }}
+                    >
+                      ✅ Accept Order
+                    </button>
+                  )}
+
+                  {order.status === "Preparing" && (
+                    <button onClick={() => updateOrderStatus(order.id, "Ready")}>
+                      ☕ Ready
+                    </button>
+                  )}
+
+                  {order.status === "Ready" && (
+                    <button onClick={() => updateOrderStatus(order.id, "Delivered")}>
+                      🚚 Delivered
+                    </button>
+                  )}
+
+                  {order.status !== "Delivered" &&
+                    order.status !== "Cancelled" && (
+                      <button
+                        onClick={() => updateOrderStatus(order.id, "Cancelled")}
+                        style={{
+                          background: "#DE6B48",
+                          color: "white",
+                          border: "none",
+                          padding: "10px 16px",
+                          borderRadius: 10,
+                          cursor: "pointer",
+                        }}
+                      >
+                        ❌ Cancel
+                      </button>
+                    )}
+                </div>
+              ))
           )}
         </>
       )}
