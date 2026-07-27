@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useCart } from "../context/CartContext";
 import { auth, db } from "../firebase";
@@ -34,7 +35,7 @@ const loadRazorpayScript = () =>
   });
 
 export default function CheckoutPage({ setPage }) {
-  const { cart = [], total = 0, placeOrder } = useCart();
+  const { cart = [], total = 0, placeOrder, clearCart } = useCart();
   
   const [status, setStatus] = useState("idle"); 
   const [paymentMethod, setPaymentMethod] = useState("online");
@@ -301,6 +302,15 @@ export default function CheckoutPage({ setPage }) {
         walletPaid = calculations.walletDeduction;
       }
 
+      const remainingAmount = calculations.remainingAmount;
+      const basePaymentLabel = paymentMethod === "cod" ? "Cash on Delivery" : "Online";
+
+      const finalPaymentMethod = walletPaid > 0
+        ? remainingAmount > 0
+          ? `Wallet + ${basePaymentLabel}`
+          : "Wallet"
+        : basePaymentLabel;
+
       const orderData = {
         customer: form,
         userId: auth.currentUser.uid,
@@ -313,13 +323,29 @@ export default function CheckoutPage({ setPage }) {
         minimumOrder: deliveryInfo?.minOrder || 0,
         freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
         walletDeduction: walletPaid,
+        walletPaid: walletPaid,
+        otherPayment: remainingAmount,
+        usedWallet: walletPaid > 0,
+        walletBalanceAfterPayment: wallet ? wallet.balance - walletPaid : 0,
         total: calculations.grandTotal,
-        paymentMethod: paymentMethod === "cod" ? "COD" : "Online",
+        paymentMethod: finalPaymentMethod,
         status: "New",
         createdAt: serverTimestamp(),
       };
 
       const orderId = await placeOrder(orderData);
+
+      // Refresh wallet balance
+      const updatedWallet = await walletService.getWallet(auth.currentUser.uid);
+      setWallet(updatedWallet);
+
+      // Clear cart
+      if (typeof clearCart === "function") {
+        clearCart();
+      }
+
+      // Reset wallet toggle state
+      setUseWallet(false);
 
       setOrderSnapshot({ 
         id: orderId, 
@@ -329,10 +355,11 @@ export default function CheckoutPage({ setPage }) {
         method: paymentMethod 
       });
       setStatus("success");
+      setPage("orderSuccess");
       
     } catch (err) {
       console.error("Critical submission failure:", err);
-      alert(err.stack || err);
+      alert("Unable to complete your order. Please try again.");
       setStatus("failure");
     } finally {
       setPlacingOrder(false);
