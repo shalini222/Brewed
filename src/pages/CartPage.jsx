@@ -6,17 +6,27 @@ export default function CartPage({ setPage }) {
 
   // Helper to format item modifications into a neat comma-separated string
   const formatCustomizations = (item) => {
-    const modifications = [];
-    if (item.size) modifications.push(`Size: ${item.size}`);
-    if (item.milk) modifications.push(item.milk);
-    if (item.temperature) modifications.push(item.temperature);
-    if (item.iceLevel && item.temperature !== "Hot") modifications.push(`Ice: ${item.iceLevel}`);
-    if (item.sweetness !== undefined) modifications.push(`Sweetness: ${item.sweetness}%`);
-    if (item.toppings && item.toppings.length > 0) {
-      modifications.push(`Toppings: ${item.toppings.join(", ")}`);
-    }
-    return modifications.join(" | ");
-  };
+  const modifications = [];
+
+  if (item.size) modifications.push(`Size: ${item.size}`);
+  if (item.milk) modifications.push(`Milk: ${item.milk}`);
+  if (item.temperature) modifications.push(`Temp: ${item.temperature}`);
+  if (item.iceLevel && item.temperature !== "Hot")
+    modifications.push(`Ice: ${item.iceLevel}`);
+  if (item.sweetness !== undefined)
+    modifications.push(`Sweetness: ${item.sweetness}%`);
+
+  if (item.toppings?.length)
+    modifications.push(`Toppings: ${item.toppings.join(", ")}`);
+
+  if (item.extras?.length)
+    modifications.push(`Extras: ${item.extras.map(e => e.name || e).join(", ")}`);
+
+  if (item.instructions)
+    modifications.push(`Note: ${item.instructions}`);
+
+  return modifications.join(" | ");
+};
 
   return (
     <div style={styles.container}>
