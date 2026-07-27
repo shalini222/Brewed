@@ -692,21 +692,21 @@ export default function CheckoutPage({ setPage }) {
                 <span>₹{calculations.grandTotal}</span>
               </div>
 
-              <button
-                type="submit"
-                disabled={
-                  placingOrder ||
-                  deliveryLoading ||
-                  !selectedAddress
-                }
-                style={styles.payBtn}
-              >
-                {deliveryLoading
-                  ? "Checking delivery..."
-                  : placingOrder
-                  ? "Placing Order..."
-                  : `Place Order · ₹${calculations.grandTotal}`
-              </button>
+            <button
+  type="submit"
+  disabled={
+    placingOrder ||
+    deliveryLoading ||
+    !selectedAddress
+  }
+  style={styles.payBtn}
+>
+  {deliveryLoading
+    ? "Checking delivery..."
+    : placingOrder
+    ? "Placing Order..."
+    : `Place Order · ₹${calculations.grandTotal}`}
+</button>
             </div>
           </div>
         </form>
@@ -714,6 +714,7 @@ export default function CheckoutPage({ setPage }) {
     </div>
   );
 }
+
 
 
 
