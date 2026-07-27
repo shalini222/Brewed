@@ -215,15 +215,15 @@ export async function deductMoney({
     });
   });
 
-  await createTransaction({
-    userId,
-    type: TRANSACTION_TYPES.PAYMENT,
-    amount,
-    orderId,
-    description,
-  });
+  const transaction = await createTransaction({
+  userId,
+  type: TRANSACTION_TYPES.PAYMENT,
+  amount,
+  orderId,
+  description,
+});
 
-  return true;
+return transaction;
 }
 
 export async function refundMoney({
