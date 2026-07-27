@@ -10,7 +10,7 @@ import {
   arrayUnion,
 } from "firebase/firestore";
 
-import { db } from "../firebase";
+import { db } from "../firebase.js";
 
 export const TRANSACTION_TYPES = Object.freeze({
   ADD_MONEY: "ADD_MONEY",
