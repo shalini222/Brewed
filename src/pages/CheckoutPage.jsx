@@ -3,6 +3,7 @@ import { useCart } from "../context/CartContext";
 import { auth, db } from "../firebase";
 import { serverTimestamp, collection, getDocs } from "firebase/firestore";
 import { checkDelivery } from "../service/deliveryService";
+import walletService from "../services/walletService";
 
 const THEME = {
   colors: {
@@ -49,6 +50,11 @@ export default function CheckoutPage({ setPage }) {
   const [deliveryInfo, setDeliveryInfo] = useState(null);
   const [orderSnapshot, setOrderSnapshot] = useState(null);
 
+  // Wallet states
+  const [wallet, setWallet] = useState(null);
+  const [walletLoading, setWalletLoading] = useState(true);
+  const [useWallet, setUseWallet] = useState(false);
+
   const canvasRef = useRef(null);
 
   const CONFIG = {
@@ -71,12 +77,43 @@ export default function CheckoutPage({ setPage }) {
 
     const cod = paymentMethod === "cod" ? CONFIG.codFee : 0;
     const discount = appliedCoupon ? appliedCoupon.discount : 0;
-    const grandTotal = Math.max(0, Math.round(subtotal + tax + delivery + cod - discount));
+    let grandTotal = Math.max(0, Math.round(subtotal + tax + delivery + cod - discount));
 
-    return { subtotal, tax, delivery, cod, discount, grandTotal };
-  }, [total, paymentMethod, appliedCoupon, deliveryInfo]);
+    // Deduct wallet balance if applied
+    let walletDeduction = 0;
+    if (useWallet && wallet && wallet.balance > 0) {
+      walletDeduction = Math.min(wallet.balance, grandTotal);
+      grandTotal = Math.max(0, grandTotal - walletDeduction);
+    }
+
+    return { subtotal, tax, delivery, cod, discount, walletDeduction, grandTotal };
+  }, [total, paymentMethod, appliedCoupon, deliveryInfo, useWallet, wallet]);
 
   useEffect(() => { loadRazorpayScript(); }, []);
+
+  // Load User Wallet
+  useEffect(() => {
+    async function loadWallet() {
+      if (!auth.currentUser) {
+        setWallet(null);
+        setWalletLoading(false);
+        return;
+      }
+
+      try {
+        setWalletLoading(true);
+        const walletData = await walletService.getWallet(auth.currentUser.uid);
+        setWallet(walletData);
+      } catch (err) {
+        console.error(err);
+        setWallet(null);
+      } finally {
+        setWalletLoading(false);
+      }
+    }
+
+    loadWallet();
+  }, []);
 
   useEffect(() => {
     async function loadAddresses() {
@@ -245,6 +282,7 @@ export default function CheckoutPage({ setPage }) {
         estimatedDelivery: deliveryInfo?.estimatedTime || "",
         minimumOrder: deliveryInfo?.minOrder || 0,
         freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
+        walletDeduction: calculations.walletDeduction,
         total: calculations.grandTotal,
         paymentMethod: paymentMethod === "cod" ? "COD" : "Online",
         status: "New",
@@ -398,6 +436,49 @@ export default function CheckoutPage({ setPage }) {
               </div>
             </div>
 
+            {/* Brewed Wallet Section */}
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: 16,
+                padding: 20,
+                marginBottom: 20,
+                border: "1px solid #eee",
+              }}
+            >
+              <h3 style={{ marginTop: 0, color: "#3B1A08" }}>
+                💳 Brewed Wallet
+              </h3>
+
+              {walletLoading ? (
+                <p>Loading wallet...</p>
+              ) : (
+                <>
+                  <p>
+                    Available Balance: <strong>₹{wallet?.balance || 0}</strong>
+                  </p>
+
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={useWallet}
+                      disabled={!wallet || wallet.balance <= 0}
+                      onChange={(e) => setUseWallet(e.target.checked)}
+                    />
+
+                    Use Brewed Wallet
+                  </label>
+                </>
+              )}
+            </div>
+
             <div style={styles.card}>
               <h2 style={styles.sectionTitle}>💳 Select Settlement Method</h2>
               <div 
@@ -500,6 +581,7 @@ export default function CheckoutPage({ setPage }) {
 
               {paymentMethod === "cod" && <div style={styles.calcRow}><span>COD Surcharge</span><span>₹{calculations.cod}</span></div>}
               {calculations.discount > 0 && <div style={{ ...styles.calcRow, color: THEME.colors.success }}><span>Discounts</span><span>-₹{calculations.discount}</span></div>}
+              {calculations.walletDeduction > 0 && <div style={{ ...styles.calcRow, color: THEME.colors.success }}><span>Wallet Used</span><span>-₹{calculations.walletDeduction}</span></div>}
               
               <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "1rem 0" }} />
               <div style={{ ...styles.calcRow, fontWeight: "bold", fontSize: "1.1rem" }}>
@@ -529,6 +611,8 @@ export default function CheckoutPage({ setPage }) {
     </div>
   );
 }
+
+
 
 
 
