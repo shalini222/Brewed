@@ -356,13 +356,13 @@ useEffect(() => {
       let refreshedWalletBalance = wallet ? wallet.balance : 0;
 
       if (useWallet && calculations.walletDeduction > 0) {
-        await walletService.deductMoney({
-          userId: auth.currentUser.uid,
-          amount: calculations.walletDeduction,
-        });
+        const walletTransaction = await walletService.deductMoney({
+  userId: auth.currentUser.uid,
+  amount: calculations.walletDeduction,
+});
 
-        walletPaid = calculations.walletDeduction;
-        refreshedWalletBalance = Math.max(0, refreshedWalletBalance - walletPaid);
+walletPaid = calculations.walletDeduction;
+refreshedWalletBalance = Math.max(0, refreshedWalletBalance - walletPaid);
       }
 
       const remainingAmount = calculations.remainingAmount;
@@ -392,6 +392,8 @@ useEffect(() => {
         total: calculations.grandTotal,
         paymentMethod: finalPaymentMethod,
         status: "New",
+       walletTransactionId: walletTransaction?.transactionId || null,
+       walletPayment: walletPaid,
  
       };
 
