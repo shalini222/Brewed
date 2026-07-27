@@ -359,11 +359,14 @@ useEffect(() => {
       let walletPaid = 0;
       let refreshedWalletBalance = wallet ? wallet.balance : 0;
 
-      if (useWallet && calculations.walletDeduction > 0) {
-        const walletTransaction = await walletService.deductMoney({
-  userId: auth.currentUser.uid,
-  amount: calculations.walletDeduction,
-});
+      let walletTransaction = null;
+
+if (useWallet && calculations.walletDeduction > 0) {
+  walletTransaction = await walletService.deductMoney({
+    userId: auth.currentUser.uid,
+    amount: calculations.walletDeduction,
+  });
+}
 
 walletPaid = calculations.walletDeduction;
 refreshedWalletBalance = Math.max(0, refreshedWalletBalance - walletPaid);
