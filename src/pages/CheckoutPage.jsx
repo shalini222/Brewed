@@ -1,5 +1,4 @@
-
-Import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useCart } from "../context/CartContext";
 import { auth, db } from "../firebase";
 import { serverTimestamp, collection, getDocs } from "firebase/firestore";
