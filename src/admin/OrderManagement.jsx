@@ -251,8 +251,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
   
 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
- 
-  return (
+   return (
     <div style={{ padding: 20 }}>
       {orderLoading ? (
         <p>Loading orders...</p>
@@ -322,8 +321,24 @@ export default function OrderManagement({ setPage, setActivePage }) {
             <p>No orders yet.</p>
           ) : (
             orders.map((order) => (
-              <div key={order.id}>
-                {order.id}
+              <div
+                key={order.id}
+                style={{
+                  background: "#fff",
+                  padding: 20,
+                  marginBottom: 10,
+                  borderRadius: 10,
+                }}
+              >
+                <p>
+                  <strong>ID:</strong> {order.id}
+                </p>
+                <p>
+                  <strong>Customer:</strong> {order.customer?.name}
+                </p>
+                <p>
+                  <strong>Total:</strong> ₹{order.total}
+                </p>
               </div>
             ))
           )}
@@ -334,6 +349,3 @@ export default function OrderManagement({ setPage, setActivePage }) {
 }
 
   
-
-    
-
