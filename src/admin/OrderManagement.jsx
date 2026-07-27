@@ -251,7 +251,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
   
 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
-           return (
+             return (
     <div style={{ padding: 20 }}>
       {orderLoading ? (
         <p>Loading orders...</p>
@@ -383,6 +383,8 @@ export default function OrderManagement({ setPage, setActivePage }) {
                 {order.items?.map((item, index) => (
                   <div key={index}>
                     <p>{item.name}</p>
+                    <p>₹{item.price}</p>
+                    <p>Qty: {item.qty || item.quantity || 1}</p>
                   </div>
                 ))}
 
