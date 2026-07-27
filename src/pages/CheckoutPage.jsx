@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+
+Import { useState, useEffect, useMemo, useRef } from "react";
 import { useCart } from "../context/CartContext";
 import { auth, db } from "../firebase";
 import { serverTimestamp, collection, getDocs } from "firebase/firestore";
@@ -77,16 +78,19 @@ export default function CheckoutPage({ setPage }) {
 
     const cod = paymentMethod === "cod" ? CONFIG.codFee : 0;
     const discount = appliedCoupon ? appliedCoupon.discount : 0;
-    let grandTotal = Math.max(0, Math.round(subtotal + tax + delivery + cod - discount));
+    
+    // Base total before wallet deduction
+    const baseTotal = Math.max(0, Math.round(subtotal + tax + delivery + cod - discount));
+    let grandTotal = baseTotal;
 
     // Deduct wallet balance if applied
     let walletDeduction = 0;
     if (useWallet && wallet && wallet.balance > 0) {
-      walletDeduction = Math.min(wallet.balance, grandTotal);
-      grandTotal = Math.max(0, grandTotal - walletDeduction);
+      walletDeduction = Math.min(wallet.balance, baseTotal);
+      grandTotal = Math.max(0, baseTotal - walletDeduction);
     }
 
-    return { subtotal, tax, delivery, cod, discount, walletDeduction, grandTotal };
+    return { subtotal, tax, delivery, cod, discount, baseTotal, walletDeduction, grandTotal };
   }, [total, paymentMethod, appliedCoupon, deliveryInfo, useWallet, wallet]);
 
   useEffect(() => { loadRazorpayScript(); }, []);
@@ -328,9 +332,8 @@ export default function CheckoutPage({ setPage }) {
           <h2 style={styles.confirmTitle}>Order Confirmed</h2>
           <p style={styles.confirmSub}>Thank you for ordering from Brewed!</p>
           <button style={styles.payBtn} onClick={() => setPage("menu")}>Return to Menu</button>
-          < br/>
-                    <button style={styles.payBtn} onClick={() => setPage("tracking")}>Track Order</button>
-          
+          <br />
+          <button style={styles.payBtn} onClick={() => setPage("tracking")}>Track Order</button>
         </div>
       </div>
     );
@@ -475,9 +478,43 @@ export default function CheckoutPage({ setPage }) {
                       disabled={!wallet || wallet.balance <= 0}
                       onChange={(e) => setUseWallet(e.target.checked)}
                     />
-
                     Use Brewed Wallet
                   </label>
+
+                  {useWallet && (
+                    <div
+                      style={{
+                        marginTop: 15,
+                        padding: 15,
+                        borderRadius: 12,
+                        background: "#FAF6F0",
+                        border: "1px solid #eee",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <span>Order Total</span>
+                        <strong>₹{calculations.baseTotal.toFixed(2)}</strong>
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <span>Wallet Used</span>
+                        <strong>₹{calculations.walletDeduction.toFixed(2)}</strong>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          marginTop: 10,
+                          paddingTop: 10,
+                          borderTop: "1px solid #ddd",
+                        }}
+                      >
+                        <strong>Remaining Payment</strong>
+                        <strong>₹{calculations.grandTotal.toFixed(2)}</strong>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -605,7 +642,7 @@ export default function CheckoutPage({ setPage }) {
                   ? "Checking delivery..."
                   : status === "processing"
                   ? "Processing Order..."
-                  : `Place Order · ₹${calculations.grandTotal}`}
+                  : `Place Order · ₹{calculations.grandTotal}`}
               </button>
             </div>
           </div>
