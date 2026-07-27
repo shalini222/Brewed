@@ -252,7 +252,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
              
-                          return (
+                    return (
     <div style={{ padding: 20 }}>
       {orderLoading ? (
         <p>Loading orders...</p>
@@ -539,3 +539,5 @@ export default function OrderManagement({ setPage, setActivePage }) {
     </div>
   );
 }
+        
+                
