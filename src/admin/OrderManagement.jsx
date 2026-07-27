@@ -46,59 +46,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
   const [userNotifications, setUserNotifications] = useState([]);
   const lastUserId = useRef(null);
 
-  const [newItem, setNewItem] = useState({
-    name: "",
-    category: "Coffee",
-    price: "",
-    desc: "",
-    emoji: "",
-    img: "",
-
-    available: true,
-    isFeatured: false,
-
-    prepTime: "5–8 mins",
-    servedAs: "Hot",
-    dietType: "Vegetarian",
-
-    salesCount: 0,
-    rating: 0,
-    reviews: 0,
-
-    sizes: [],
-    milkOptions: [],
-    temperatureOptions: [],
-    customExtras: [],
-    customExtrasMaxSelection: 3,
-    sweetnessOptions: [],
-    specialInstructions: true,
-  });
-
-  const [editing, setEditing] = useState(null);
-
-  const [editItem, setEditItem] = useState({
-    name: "",
-    category: "Coffee",
-    price: "",
-    desc: "",
-    emoji: "",
-    img: "",
-
-    available: true,
-    isFeatured: false,
-
-    prepTime: "5–8 mins",
-    servedAs: "Hot",
-    dietType: "Vegetarian",
-
-    sizes: [],
-    milkOptions: [],
-    temperatureOptions: [],
-    customExtras: [],
-    customExtrasMaxSelection: 3,
-    sweetnessOptions: [],
-    specialInstructions: true,
-  });
+  
 
   useEffect(() => {
     loadMenu();
@@ -245,150 +193,10 @@ export default function OrderManagement({ setPage, setActivePage }) {
     setTopProducts(ranked);
   }, [orders]);
 
-  useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        const snapshot = await getDocs(
-          collection(db, "specialRequests")
-        );
-
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        setSpecialRequests(data);
-      } catch (error) {
-        console.error("Error fetching special requests:", error);
-      }
-    };
-
-    fetchRequests();
-  }, []);
-
-  async function loadMenu() {
-    try {
-      const snapshot = await getDocs(collection(db, "menu"));
-
-      const items = snapshot.docs.map((doc) => ({
-        ...doc.data(),
-        firestoreId: doc.id,
-      }));
-
-      setMenu(items);
-    } catch (error) {
-      console.error("Error loading menu:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function addProduct() {
-    if (!newItem.name || !newItem.price) {
-      alert("Please fill in the product name and price.");
-      return;
-    }
-
-    await addDoc(collection(db, "menu"), {
-      ...newItem,
-      price: Number(newItem.price),
-      available: newItem.available,
-      isFeatured: newItem.isFeatured,
-      sizes: newItem.sizes,
-      prepTime: newItem.prepTime,
-      servedAs: newItem.servedAs,
-      dietType: newItem.dietType,
-      milkOptions: newItem.milkOptions,
-      temperatureOptions: newItem.temperatureOptions,
-      customExtras: newItem.customExtras,
-      customExtrasMaxSelection: Number(newItem.customExtrasMaxSelection),
-      sweetnessOptions: newItem.sweetnessOptions,
-      specialInstructions: newItem.specialInstructions,
-      salesCount: 0,
-      rating: 0,
-      reviews: 0,
-    });
-
-    setNewItem({
-      name: "",
-      category: "Coffee",
-      price: "",
-      desc: "",
-      emoji: "",
-      img: "",
-      available: true,
-      isFeatured: false,
-      isBestSeller: false,
-      prepTime: "5–8 mins",
-      servedAs: "Hot",
-      dietType: "Vegetarian",
-      salesCount: 0,
-      rating: 0,
-      reviews: 0,
-      sizes: [],
-      milkOptions: [],
-    });
-
-    setShowAdd(false);
-    loadMenu();
-  }
-
-  async function deleteProduct(id) {
-    const confirmed = window.confirm("Delete this product?");
-    if (!confirmed) return;
-
-    await deleteDoc(doc(db, "menu", id));
-    loadMenu();
-  }
-
-  async function toggleAvailability(item) {
-    await updateDoc(
-      doc(db, "menu", item.firestoreId),
-      {
-        available: item.available === false ? true : false,
-      }
-    );
-
-    loadMenu();
-  }
   
-  async function updateProduct() {
-    if (!editing) return;
+  
 
-    alert("Document ID = " + editing.firestoreId);
-
-    try {
-      await updateDoc(
-        doc(db, "menu", editing.firestoreId),
-        {
-          name: editItem.name,
-          category: editItem.category,
-          price: Number(editItem.price),
-          desc: editItem.desc,
-          emoji: editItem.emoji,
-          img: editItem.img,
-          available: editItem.available,
-          isFeatured: editItem.isFeatured,
-          sizes: editItem.sizes,
-          milkOptions: editItem.milkOptions,
-          temperatureOptions: editItem.temperatureOptions,
-          customExtras: editItem.customExtras,
-          customExtrasMaxSelection: Number(editItem.customExtrasMaxSelection),
-          sweetnessOptions: editItem.sweetnessOptions,
-          specialInstructions: editItem.specialInstructions,
-          prepTime: editItem.prepTime,
-          servedAs: editItem.servedAs,
-          dietType: editItem.dietType,
-        }
-      );
-
-      alert("Updated!");
-      setEditing(null);
-      loadMenu();
-    } catch (e) {
-      alert("Error:\n" + String(e));
-    }
-  }
+  
 
   async function updateOrderStatus(id, status) {
     if (status === "Cancelled") {
@@ -406,33 +214,8 @@ export default function OrderManagement({ setPage, setActivePage }) {
     );
   }
 
-  const defaultSpecialRequests = [
-    "Less Ice",
-    "Extra Hot",
-    "No Sugar",
-    "Extra Shot",
-    "Less Foam",
-    "Extra Caramel",
-  ];
-
-  const createSpecialRequests = async () => {
-    try {
-      for (const request of defaultSpecialRequests) {
-        await addDoc(
-          collection(db, "specialRequests"),
-          {
-            name: request,
-            active: true,
-            order: defaultSpecialRequests.indexOf(request) + 1,
-          }
-        );
-      }
-
-      alert("Special requests added!");
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  
+  
 
   const totalOrders = orders.length;
 
@@ -467,20 +250,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
       order.status !== "Cancelled"
   ).length;
 
-  const addSpecialRequest = async () => {
-    if (!newRequest.trim()) return;
-
-    await addDoc(
-      collection(db, "specialRequests"),
-      {
-        name: newRequest,
-        active: true,
-        order: specialRequests.length + 1,
-      }
-    );
-
-    setNewRequest("");
-  };
+  
 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
   useEffect(() => {
