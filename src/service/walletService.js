@@ -46,7 +46,7 @@ export async function getWallet(userId) {
   const snapshot = await getDoc(walletRef);
 
   if (!snapshot.exists()) {
-    return null;
+     return await createWallet(userId);
   }
 
   return {
@@ -77,7 +77,6 @@ export async function createWallet(userId) {
     moneySpent: 0,
     refunds: 0,
     transactionCount: 0,
-    transactions: [],
     status: "Active",
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -210,7 +209,7 @@ export async function deductMoney({
 
     transaction.update(walletRef, {
       balance: increment(-amount),
-      moneySpent: increment(amount),
+      moneySpent: increment(Number(amount)),
       transactionCount: increment(1),
       updatedAt: serverTimestamp(),
     });
