@@ -705,7 +705,7 @@ export default function CheckoutPage({ setPage }) {
     ? "Checking delivery..."
     : placingOrder
     ? "Placing Order..."
-    : `Place Order · ₹${calculations.grandTotal}`}
+    : "Place Order"
 </button>
             </div>
           </div>
