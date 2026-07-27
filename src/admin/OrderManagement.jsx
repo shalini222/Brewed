@@ -252,13 +252,88 @@ export default function OrderManagement({ setPage, setActivePage }) {
 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
  
-
   return (
-  <div style={{ padding: 20 }}>
-    <h1>Orders</h1>
-    <p>Loading: {String(orderLoading)}</p>
-    <p>Total Orders: {orders.length}</p>
-  </div>
-);
-    
+    <div style={{ padding: 20 }}>
+      {orderLoading ? (
+        <p>Loading orders...</p>
+      ) : (
+        <>
+          <h1
+            style={{
+              marginBottom: 10,
+              fontFamily: "Playfair Display",
+            }}
+          >
+            📦 Orders ({orders.length})
+          </h1>
+
+          <input
+            type="text"
+            placeholder="🔍 Search orders..."
+            value={orderSearch}
+            onChange={(e) => setOrderSearch(e.target.value)}
+            style={{
+              width: "100%",
+              maxWidth: 450,
+              padding: "14px 18px",
+              borderRadius: 14,
+              border: "1px solid #ddd",
+              fontSize: 16,
+              marginBottom: 20,
+              outline: "none",
+              background: "#fff",
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              marginBottom: 30,
+            }}
+          >
+            {["All", "New", "Preparing", "Ready", "Delivered", "Cancelled"].map((status) => (
+              <button
+                key={status}
+                onClick={() => setOrderFilter(status)}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 999,
+                  border: "none",
+                  cursor: "pointer",
+                  background:
+                    orderFilter === status
+                    ? "#3B1A08"
+                    : "#F2ECE5",
+                  color:
+                    orderFilter === status
+                    ? "white"
+                    : "#3B1A08",
+                  fontWeight: 600,
+                }}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
+
+          {orders.length === 0 ? (
+            <p>No orders yet.</p>
+          ) : (
+            orders.map((order) => (
+              <div key={order.id}>
+                {order.id}
+              </div>
+            ))
+          )}
+        </>
+      )}
+    </div>
+  );
 }
+
+  
+
+    
+
