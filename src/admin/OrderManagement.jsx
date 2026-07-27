@@ -104,45 +104,62 @@ export default function OrderManagement({ setPage, setActivePage }) {
     loadMenu();
 
     // Orders listener
-    const unsubscribe = onSnapshot(collection(db, "orders"), (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+    const unsubscribe = onSnapshot(
+      collection(db, "orders"),
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
-      setOrders(data);
-      setOrderLoading(false);
+        setOrders(data);
+        setOrderLoading(false);
 
-      if (data.length > 0) {
-        const newest = [...data].sort(
-          (a, b) =>
-            (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
-        )[0];
+        if (data.length > 0) {
+          const newest = [...data].sort(
+            (a, b) =>
+              (b.createdAt?.seconds || 0) -
+              (a.createdAt?.seconds || 0)
+          )[0];
 
-        if (lastOrderId.current && newest.id !== lastOrderId.current) {
-          setNotifications((prev) => [
-            {
-              id: newest.id,
-              text: `🛎️ New order from ${newest.customer?.name}`,
-            },
-            ...prev,
-          ]);
+          if (
+            lastOrderId.current &&
+            newest.id !== lastOrderId.current
+          ) {
+            setNotifications((prev) => [
+              {
+                id: newest.id,
+                text: `🛎️ New order from ${newest.customer?.name}`,
+              },
+              ...prev,
+            ]);
+          }
+
+          lastOrderId.current = newest.id;
         }
-
-        lastOrderId.current = newest.id;
+      },
+      (error) => {
+        console.error("Orders listener error:", error);
+        setOrderLoading(false);
       }
-    });
+    );
 
     // User registration listener
     const unsubscribeUsers = onSnapshot(
-      query(collection(db, "users"), orderBy("createdAt", "desc")),
+      query(
+        collection(db, "users"),
+        orderBy("createdAt", "desc")
+      ),
       (snapshot) => {
         if (snapshot.empty) return;
 
         const newest = snapshot.docs[0];
         const user = newest.data();
 
-        if (lastUserId.current && newest.id !== lastUserId.current) {
+        if (
+          lastUserId.current &&
+          newest.id !== lastUserId.current
+        ) {
           setUserNotifications((prev) => [
             {
               id: newest.id,
@@ -153,6 +170,9 @@ export default function OrderManagement({ setPage, setActivePage }) {
         }
 
         lastUserId.current = newest.id;
+      },
+      (error) => {
+        console.error("Users listener error:", error);
       }
     );
 
@@ -194,7 +214,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
 
     setAnalytics(data);
   }, [orders, range]);
-
+  
   useEffect(() => {
     const stats = {};
 
@@ -227,33 +247,40 @@ export default function OrderManagement({ setPage, setActivePage }) {
 
   useEffect(() => {
     const fetchRequests = async () => {
-      const snapshot = await getDocs(collection(db, "specialRequests"));
+      try {
+        const snapshot = await getDocs(
+          collection(db, "specialRequests")
+        );
 
-      const data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
-      setSpecialRequests(data);
+        setSpecialRequests(data);
+      } catch (error) {
+        console.error("Error fetching special requests:", error);
+      }
     };
 
     fetchRequests();
   }, []);
 
   async function loadMenu() {
-    const snapshot = await getDocs(collection(db, "menu"));
+    try {
+      const snapshot = await getDocs(collection(db, "menu"));
 
-    const items = snapshot.docs.map((doc) => ({
-      ...doc.data(),
-      firestoreId: doc.id,
-    }));
+      const items = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        firestoreId: doc.id,
+      }));
 
-    setMenu(items);
-    setLoading(false);
-  }
-
-  if (loading) {
-    return <div style={{ padding: 100 }}>Loading...</div>;
+      setMenu(items);
+    } catch (error) {
+      console.error("Error loading menu:", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function addProduct() {
@@ -315,39 +342,45 @@ export default function OrderManagement({ setPage, setActivePage }) {
   }
 
   async function toggleAvailability(item) {
-    await updateDoc(doc(db, "menu", item.firestoreId), {
-      available: item.available === false ? true : false,
-    });
+    await updateDoc(
+      doc(db, "menu", item.firestoreId),
+      {
+        available: item.available === false ? true : false,
+      }
+    );
 
     loadMenu();
   }
-
+  
   async function updateProduct() {
     if (!editing) return;
 
     alert("Document ID = " + editing.firestoreId);
 
     try {
-      await updateDoc(doc(db, "menu", editing.firestoreId), {
-        name: editItem.name,
-        category: editItem.category,
-        price: Number(editItem.price),
-        desc: editItem.desc,
-        emoji: editItem.emoji,
-        img: editItem.img,
-        available: editItem.available,
-        isFeatured: editItem.isFeatured,
-        sizes: editItem.sizes,
-        milkOptions: editItem.milkOptions,
-        temperatureOptions: editItem.temperatureOptions,
-        customExtras: editItem.customExtras,
-        customExtrasMaxSelection: Number(editItem.customExtrasMaxSelection),
-        sweetnessOptions: editItem.sweetnessOptions,
-        specialInstructions: editItem.specialInstructions,
-        prepTime: editItem.prepTime,
-        servedAs: editItem.servedAs,
-        dietType: editItem.dietType,
-      });
+      await updateDoc(
+        doc(db, "menu", editing.firestoreId),
+        {
+          name: editItem.name,
+          category: editItem.category,
+          price: Number(editItem.price),
+          desc: editItem.desc,
+          emoji: editItem.emoji,
+          img: editItem.img,
+          available: editItem.available,
+          isFeatured: editItem.isFeatured,
+          sizes: editItem.sizes,
+          milkOptions: editItem.milkOptions,
+          temperatureOptions: editItem.temperatureOptions,
+          customExtras: editItem.customExtras,
+          customExtrasMaxSelection: Number(editItem.customExtrasMaxSelection),
+          sweetnessOptions: editItem.sweetnessOptions,
+          specialInstructions: editItem.specialInstructions,
+          prepTime: editItem.prepTime,
+          servedAs: editItem.servedAs,
+          dietType: editItem.dietType,
+        }
+      );
 
       alert("Updated!");
       setEditing(null);
@@ -365,9 +398,12 @@ export default function OrderManagement({ setPage, setActivePage }) {
       if (!confirmed) return;
     }
 
-    await updateDoc(doc(db, "orders", id), {
-      status,
-    });
+    await updateDoc(
+      doc(db, "orders", id),
+      {
+        status,
+      }
+    );
   }
 
   const defaultSpecialRequests = [
@@ -382,11 +418,14 @@ export default function OrderManagement({ setPage, setActivePage }) {
   const createSpecialRequests = async () => {
     try {
       for (const request of defaultSpecialRequests) {
-        await addDoc(collection(db, "specialRequests"), {
-          name: request,
-          active: true,
-          order: defaultSpecialRequests.indexOf(request) + 1,
-        });
+        await addDoc(
+          collection(db, "specialRequests"),
+          {
+            name: request,
+            active: true,
+            order: defaultSpecialRequests.indexOf(request) + 1,
+          }
+        );
       }
 
       alert("Special requests added!");
@@ -399,7 +438,9 @@ export default function OrderManagement({ setPage, setActivePage }) {
 
   const pendingOrders = orders.filter(
     (o) =>
-      o.status === "New" || o.status === "Preparing" || o.status === "Ready"
+      o.status === "New" ||
+      o.status === "Preparing" ||
+      o.status === "Ready"
   ).length;
 
   const totalRevenue = orders
@@ -429,14 +470,25 @@ export default function OrderManagement({ setPage, setActivePage }) {
   const addSpecialRequest = async () => {
     if (!newRequest.trim()) return;
 
-    await addDoc(collection(db, "specialRequests"), {
-      name: newRequest,
-      active: true,
-      order: specialRequests.length + 1,
-    });
+    await addDoc(
+      collection(db, "specialRequests"),
+      {
+        name: newRequest,
+        active: true,
+        order: specialRequests.length + 1,
+      }
+    );
 
     setNewRequest("");
   };
+
+  if (loading) {
+    return (
+      <div style={{ padding: 100 }}>
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: 20 }}>
@@ -479,41 +531,50 @@ export default function OrderManagement({ setPage, setActivePage }) {
               marginBottom: 30,
             }}
           >
-            {["All", "New", "Preparing", "Ready", "Delivered", "Cancelled"].map(
-              (status) => (
-                <button
-                  key={status}
-                  onClick={() => setOrderFilter(status)}
-                  style={{
-                    padding: "10px 18px",
-                    borderRadius: 999,
-                    border: "none",
-                    cursor: "pointer",
-                    background: orderFilter === status ? "#3B1A08" : "#F2ECE5",
-                    color: orderFilter === status ? "white" : "#3B1A08",
-                    fontWeight: 600,
-                  }}
-                >
-                  {status}
-                </button>
-              )
-            )}
+            {["All", "New", "Preparing", "Ready", "Delivered", "Cancelled"].map((status) => (
+              <button
+                key={status}
+                onClick={() => setOrderFilter(status)}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 999,
+                  border: "none",
+                  cursor: "pointer",
+                  background:
+                    orderFilter === status
+                    ? "#3B1A08"
+                    : "#F2ECE5",
+                  color:
+                    orderFilter === status
+                    ? "white"
+                    : "#3B1A08",
+                  fontWeight: 600,
+                }}
+              >
+                {status}
+              </button>
+            ))}
           </div>
 
           {orders.length === 0 ? (
             <p>No orders yet.</p>
           ) : (
             orders
-              .sort(
-                (a, b) =>
-                  (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+              .sort((a, b) =>
+                (b.createdAt?.seconds || 0) -
+                (a.createdAt?.seconds || 0)
               )
               .filter((order) => {
                 const matchesStatus =
-                  orderFilter === "All" || order.status === orderFilter;
+                  orderFilter === "All" ||
+                  order.status === orderFilter;
+
                 const searchText = orderSearch.toLowerCase();
+
                 const matchesSearch =
-                  order.customer?.name?.toLowerCase().includes(searchText) ||
+                  order.customer?.name
+                    ?.toLowerCase()
+                    .includes(searchText) ||
                   order.id.toLowerCase().includes(searchText);
 
                 return matchesStatus && matchesSearch;
@@ -565,7 +626,9 @@ export default function OrderManagement({ setPage, setActivePage }) {
                     <span
                       style={{
                         background:
-                          order.paymentMethod === "COD" ? "#FFF3CD" : "#D4EDDA",
+                          order.paymentMethod === "COD"
+                          ? "#FFF3CD"
+                          : "#D4EDDA",
                         padding: "5px 10px",
                         borderRadius: 999,
                         fontSize: 14,
@@ -612,8 +675,10 @@ export default function OrderManagement({ setPage, setActivePage }) {
                         </h3>
 
                         <p style={{ margin: 0 }}>
-                          <strong>{item.qty || item.quantity || 1} ×</strong> ₹
-                          {item.price}
+                          <strong>
+                            {item.qty || item.quantity || 1} ×
+                          </strong>{" "}
+                          ₹{item.price}
                         </p>
 
                         <p
@@ -641,7 +706,9 @@ export default function OrderManagement({ setPage, setActivePage }) {
                             <>
                               Toppings:{" "}
                               {item.toppings
-                                .map((t) => (typeof t === "string" ? t : t.name))
+                                .map((t) =>
+                                  typeof t === "string" ? t : t.name
+                                )
                                 .join(", ")}
                               <br />
                             </>
@@ -668,7 +735,9 @@ export default function OrderManagement({ setPage, setActivePage }) {
                             </>
                           )}
 
-                          {item.instructions && <>Note: {item.instructions}</>}
+                          {item.instructions && (
+                            <>Note: {item.instructions}</>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -683,19 +752,15 @@ export default function OrderManagement({ setPage, setActivePage }) {
                     }}
                   >
                     <p>Subtotal: ₹{order.subtotal}</p>
-
                     <p>Tax: ₹{order.tax}</p>
-
                     <p>Delivery: ₹{order.delivery}</p>
-
                     <hr />
-
                     <h3>Total: ₹{order.total}</h3>
                   </div>
 
                   <p>
-                    Status:
-                    <strong> {order.status}</strong>
+                    Status:{" "}
+                    <strong>{order.status}</strong>
                   </p>
 
                   {order.status === "New" && (
@@ -721,9 +786,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
                   )}
 
                   {order.status === "Ready" && (
-                    <button
-                      onClick={() => updateOrderStatus(order.id, "Delivered")}
-                    >
+                    <button onClick={() => updateOrderStatus(order.id, "Delivered")}>
                       🚚 Delivered
                     </button>
                   )}
