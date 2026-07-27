@@ -252,7 +252,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
              
-    return (
+      return (
     <div style={{ padding: "30px 20px", background: "#F7F4EF", minHeight: "100vh" }}>
       {orderLoading ? (
         <p style={{ textAlign: "center", color: "#70645C", fontSize: 16 }}>Loading orders...</p>
@@ -530,43 +530,11 @@ export default function OrderManagement({ setPage, setActivePage }) {
                         ))}
                       </div>
 
-                      <div
-                        style={{
-                          background: "#FFF8F2",
-                          padding: 20,
-                          borderRadius: 16,
-                          marginBottom: 24,
-                          fontSize: 14,
-                          color: "#5C4F47",
-                          border: "2px solid #C4956A",
-                        }}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                          <span>Subtotal</span>
-                          <span>₹{order.subtotal}</span>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                          <span>Tax</span>
-                          <span>₹{order.tax}</span>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                          <span>Delivery Fee</span>
-                          <span>₹{order.delivery}</span>
-                        </div>
-                        {order.walletUsed > 0 && (
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, color: "#C0392B" }}>
-                            <span>Wallet Used</span>
-                            <span>-₹{order.walletUsed}</span>
-                          </div>
-                        )}
-                        <hr style={{ border: "none", borderTop: "1px solid #E6DDD5", margin: "12px 0" }} />
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 16, fontWeight: 700, color: "#3B1A08" }}>Amount Paid</span>
-                          <span style={{ fontSize: 18, fontWeight: 700, color: "#3B1A08" }}>₹{order.total}</span>
-                        </div>
+                      <div>
+                        Total: ₹{order.total}
                       </div>
 
-                      <div style={{ display: "flex", gap: 12 }}>
+                      <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
                         {order.status === "New" && (
                           <button
                             onClick={() => updateOrderStatus(order.id, "Preparing")}
@@ -655,3 +623,4 @@ export default function OrderManagement({ setPage, setActivePage }) {
     </div>
   );
 }
+
