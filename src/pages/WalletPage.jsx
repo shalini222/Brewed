@@ -262,7 +262,7 @@ export default function WalletPage({ setPage }) {
       {/* Wallet UI Render Placeholder */}
     </div>
   );
-}
+
 
 
   return (
