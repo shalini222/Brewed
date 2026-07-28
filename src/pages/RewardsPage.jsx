@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { doc, getDoc, collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, orderBy, serverTimestamp } from "firebase/firestore";
 
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
@@ -81,6 +81,48 @@ export default function RewardsPage({ setPage }) {
 
     loadRewards();
   }, [currentUser]);
+
+  const claimReward = async (reward) => {
+    try {
+      if (points < reward.pointsRequired) {
+        alert("Not enough points");
+        return;
+      }
+      const userRef = doc(
+        db,
+        "users",
+        currentUser.uid
+      );
+      const newPoints = points - reward.pointsRequired;
+      // Update user points
+      await updateDoc(
+        userRef,
+        { rewardPoints: newPoints }
+      );
+      // Create redemption record
+      await addDoc(
+        collection(db, "redemptions"),
+        {
+          userId: currentUser.uid,
+          rewardId: reward.id,
+          rewardTitle: reward.title,
+          pointsUsed: reward.pointsRequired,
+          status: "active",
+          code: "BREW" + Math.floor(Math.random() * 100000),
+          createdAt: serverTimestamp()
+        }
+      );
+      setPoints(newPoints);
+      alert(
+        "Reward claimed successfully 🎉"
+      );
+    } catch (error) {
+      console.log(
+        "Claim reward error:",
+        error
+      );
+    }
+  };
 
   const getTier = (points) => {
     if (points >= 5000)
@@ -324,6 +366,12 @@ export default function RewardsPage({ setPage }) {
           border: none;
           padding: 12px 25px;
           border-radius: 25px;
+          cursor: pointer;
+        }
+
+        .reward-card button:disabled {
+          background: #ccc;
+          cursor: not-allowed;
         }
       `}</style>
 
@@ -409,7 +457,10 @@ export default function RewardsPage({ setPage }) {
                     {reward.pointsRequired} Points
                   </strong>
 
-                  <button disabled={points < reward.pointsRequired}>
+                  <button
+                    disabled={points < reward.pointsRequired}
+                    onClick={() => claimReward(reward)}
+                  >
                     {
                       points >= reward.pointsRequired
                       ? "Claim Reward"
