@@ -540,6 +540,17 @@ return (
   </span>
 )}
 
+
+                                {Array.isArray(item.specialRequests) && item.specialRequests.length > 0 && (
+  <span style={chipStyle}>
+    Special Request: {item.specialRequests
+      .map(req => typeof req === "string" ? req : req.name)
+      .join(", ")}
+  </span>
+)}
+
+
+                                
                                                    
                               </div>
                             </div>
