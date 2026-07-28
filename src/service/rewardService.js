@@ -1,4 +1,10 @@
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  setDoc,
+} from "firebase/firestore";
+
 import { db } from "../firebase.js";
 import walletService from "./walletService.js";
 
@@ -13,15 +19,34 @@ async function giveSignupReward(userId) {
   // Already claimed
   if (user.signupRewardClaimed) return;
 
-  // Load reward settings
+  // Reward settings
   const settingsRef = doc(db, "rewardSettings", "default");
+
+  let settings;
+
   const settingsSnap = await getDoc(settingsRef);
 
-  
+  if (!settingsSnap.exists()) {
+    settings = {
+      cashbackEnabled: true,
+      cashbackPercent: 5,
+      minimumOrder: 200,
+      maximumCashback: 150,
+      birthdayReward: 200,
+      referralReward: 100,
+      signupReward: 50,
+      rewardExpiryDays: 365,
+    };
 
-  const settings = settingsSnap.data();
+    await setDoc(settingsRef, settings);
+  } else {
+    settings = settingsSnap.data();
+  }
 
-  if (!settings.signupReward || settings.signupReward <= 0) { return; }
+  // No signup reward configured
+  if (!settings.signupReward || settings.signupReward <= 0) {
+    return;
+  }
 
   await walletService.addReward({
     userId,
@@ -37,8 +62,6 @@ async function giveSignupReward(userId) {
   });
 }
 
-
 export default {
   giveSignupReward,
-  // keep your other reward functions here
 };
