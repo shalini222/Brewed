@@ -68,7 +68,7 @@ export default function ProductPage({
   const [quantity, setQuantity] = useState(1);
   const [selectedExtras, setSelectedExtras] = useState([]);
   const [specialInstructions, setSpecialInstructions] = useState("");
-  const [quickRequests, setQuickRequests] = useState([]);
+  
   const [selectedRequests, setSelectedRequests] = useState([]);
   const [reviewSort, setReviewSort] = useState("newest");
   const [reviewFilter, setReviewFilter] = useState("all");
@@ -163,26 +163,7 @@ useEffect(() => {
   setSweetnessIndex(0);
 }, [product]);
 
-useEffect(() => {
 
- const fetchRequests = async () => {
-
-  const q = query(
-    collection(db,"specialRequests"),
-    where("active","==",true)
-  );
-
-  const snapshot = await getDocs(q);
-
-  const data = snapshot.docs.map(doc => doc.data().name);
-
-  setQuickRequests(data);
-
- };
-
- fetchRequests();
-
-}, []);
 
 
 useEffect(() => {
@@ -2773,32 +2754,39 @@ gap:30px;
   </h2>
 
   <div className="quick-request-grid">
-    {(product?.specialRequests || []).map((request) => (
-      <button
-        key={request}
-        type="button"
-        className={
-          instructions.split(", ").includes(request)
-            ? "quick-chip active"
-            : "quick-chip"
-        }
-        onClick={() => {
-          const current = instructions
-            ? instructions.split(", ")
-            : [];
+    {(product?.specialRequests || []).map((request) => {
+      const requestName =
+        typeof request === "string" ? request : request.name;
 
-          if (current.includes(request)) {
-            setInstructions(
-              current.filter((r) => r !== request).join(", ")
-            );
-          } else {
-            setInstructions([...current, request].join(", "));
+      return (
+        <button
+          key={requestName}
+          type="button"
+          className={
+            instructions.split(", ").includes(requestName)
+              ? "quick-chip active"
+              : "quick-chip"
           }
-        }}
-      >
-        {request}
-      </button>
-    ))}
+          onClick={() => {
+            const current = instructions
+              ? instructions.split(", ")
+              : [];
+
+            if (current.includes(requestName)) {
+              setInstructions(
+                current.filter((r) => r !== requestName).join(", ")
+              );
+            } else {
+              setInstructions(
+                [...current, requestName].join(", ")
+              );
+            }
+          }}
+        >
+          {requestName}
+        </button>
+      );
+    })}
   </div>
 
   <div className="instructions-card">
