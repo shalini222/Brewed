@@ -10,6 +10,7 @@ export default function RewardsPage({ setPage }) {
   const [points, setPoints] = useState(0);
   const [lifetimePoints, setLifetimePoints] = useState(0);
   const [transactions, setTransactions] = useState([]);
+  const [rewards, setRewards] = useState([]);
 
   const [loading, setLoading] = useState(true);
 
@@ -50,6 +51,18 @@ export default function RewardsPage({ setPage }) {
 
         setTransactions(
           transactionSnap.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+        );
+
+        const rewardsQuery = query(
+          collection(db, "rewards"),
+          where("active", "==", true)
+        );
+        const rewardsSnap = await getDocs(rewardsQuery);
+        setRewards(
+          rewardsSnap.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
           }))
@@ -374,6 +387,45 @@ export default function RewardsPage({ setPage }) {
         <section className="rewards-section">
 
           <h2>
+            Available Rewards
+          </h2>
+
+          <div className="reward-grid">
+            {
+              rewards.map(reward => (
+                <div
+                  className="reward-card"
+                  key={reward.id}
+                >
+                  <h3>
+                    {reward.icon} {reward.title}
+                  </h3>
+
+                  <p>
+                    {reward.description}
+                  </p>
+
+                  <strong>
+                    {reward.pointsRequired} Points
+                  </strong>
+
+                  <button disabled={points < reward.pointsRequired}>
+                    {
+                      points >= reward.pointsRequired
+                      ? "Claim Reward"
+                      : "Need More Points"
+                    }
+                  </button>
+                </div>
+              ))
+            }
+          </div>
+
+        </section>
+
+        <section className="rewards-section" style={{ marginTop: "40px" }}>
+
+          <h2>
             Reward History
           </h2>
 
@@ -389,6 +441,7 @@ export default function RewardsPage({ setPage }) {
                 <div
                   className="reward-card"
                   key={item.id}
+                  style={{ marginTop: "15px" }}
                 >
                   <h3>
                     {item.reason}
