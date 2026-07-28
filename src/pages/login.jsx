@@ -7,6 +7,8 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider, db } from "../firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import walletService from "../service/walletService";
+import rewardService from "../service/rewardService";
 
 export default function Login({setPage}) {
   const [isLogin, setIsLogin] = useState(true);
@@ -67,6 +69,10 @@ if (!userSnap.exists()) {
   photoURL: user.photoURL || "",
 
   createdAt: serverTimestamp(),
+  signupRewardClaimed: false,
+  birthdayRewardYear: null,
+  referredBy: null,
+  referralRewardClaimed: false,
 
   settings: {
     notifications: true,
@@ -84,6 +90,9 @@ if (!userSnap.exists()) {
 });
     
 }
+
+    await walletService.createWallet(user.uid);
+    await rewardService.giveSignupReward(user.uid);
 
 
     
@@ -128,6 +137,10 @@ if (!userSnap.exists()) {
   photoURL: user.photoURL || "",
 
   createdAt: serverTimestamp(),
+  signupRewardClaimed: false,
+  birthdayRewardYear: null,
+  referredBy: null,
+  referralRewardClaimed: false,
 
   settings: {
     notifications: true,
@@ -144,6 +157,9 @@ if (!userSnap.exists()) {
   },
 });
 }
+
+    await walletService.createWallet(user.uid);
+    await rewardService.giveSignupReward(user.uid);
 
     setUserName(user.displayName);
     setShowGreeting(true);
@@ -170,6 +186,9 @@ if (!userSnap.exists()) {
       setMessage(error.message);
     }
   }
+
+
+
 
   return (
     <>
