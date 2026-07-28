@@ -221,7 +221,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
     (o) =>
       o.status === "New" ||
       o.status === "Preparing" ||
-      o.status === "Ready"
+       o.status === "Ready" ||
      o.status === "Assigned to Rider"
   ).length;
 
