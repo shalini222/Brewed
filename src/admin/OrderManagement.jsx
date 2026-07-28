@@ -13,6 +13,8 @@ import {
 
 import { db } from "../firebase";
 
+import walletService from "../service/walletService";
+
 import {
   ResponsiveContainer,
   LineChart,
@@ -197,20 +199,46 @@ export default function OrderManagement({ setPage, setActivePage }) {
   
 
   async function updateOrderStatus(id, status) {
-    if (status === "Cancelled") {
-      const confirmed = window.confirm(
-        "Are you sure you want to cancel this order?"
-      );
-      if (!confirmed) return;
-    }
+  const order = orders.find((o) => o.id === id);
 
-    await updateDoc(
-      doc(db, "orders", id),
-      {
-        status,
-      }
+  if (!order) return;
+
+  if (status === "Cancelled") {
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel this order?"
     );
+
+    if (!confirmed) return;
+
+    // Refund only if wallet was used
+    if (
+      order.usedWallet &&
+      order.walletPaid > 0 &&
+      order.walletStatus !== "REFUNDED"
+    ) {
+      await walletService.refundMoney({
+        userId: order.userId,
+        amount: order.walletPaid,
+        orderId: order.id,
+        description: `Refund for cancelled order #${order.id}`,
+      });
+    }
   }
+
+  await updateDoc(doc(db, "orders", id), {
+    status,
+
+    ...(status === "Cancelled" &&
+      order.usedWallet &&
+      order.walletPaid > 0 &&
+      order.walletStatus !== "REFUNDED"
+      ? {
+          walletStatus: "REFUNDED",
+          paymentStatus: "REFUNDED",
+        }
+      : {}),
+  });
+}
 
   
   
