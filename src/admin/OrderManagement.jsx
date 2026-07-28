@@ -195,68 +195,21 @@ export default function OrderManagement({ setPage, setActivePage }) {
 
   
   
-
- async function updateOrderStatus(id, status) {
-  const order = orders.find((o) => o.id === id);
-
-  if (!order) return;
-
-  const cashbackPercentage = 5;
-  const cashback = Math.floor(
-    (Number(order.total || 0) * cashbackPercentage) / 100
-  );
-
-  if (status === "Cancelled") {
-    const confirmed = window.confirm(
-      "Are you sure you want to cancel this order?"
-    );
-
-    if (!confirmed) return;
-
-    // Refund only if wallet was used
-    if (
-      order.usedWallet &&
-      order.walletPaid > 0 &&
-      order.walletStatus !== "REFUNDED"
-    ) {
-      await walletService.refundMoney({
-        userId: order.userId,
-        amount: order.walletPaid,
-        orderId: order.id,
-        description: `Refund for cancelled order #${order.id}`,
-      });
-    }
+if (
+  status === "Delivered" &&
+  order.rewardStatus === "PENDING"
+) {
+  try {
+    await walletService.addReward({
+      userId: order.userId,
+      amount: cashback,
+      orderId: order.id,
+      description: `Cashback for order #${order.id}`,
+    });
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
   }
-
-  // Handle cashback reward if delivered
-  if (status === "Delivered" && order.rewardStatus === "PENDING") {
-    try {
-      await walletService.addReward({
-        userId: order.userId,
-        amount: cashback,
-        orderId: order.id,
-        description: `Cashback for order #${order.id}`,
-      });
-
-      console.log("Reward added successfully");
-    } catch (err) {
-      console.error("Reward error:", err);
-    }
-  }
-
-  // Update Firestore document
-  await updateDoc(doc(db, "orders", id), {
-    status,
-    ...(status === "Cancelled" &&
-    order.usedWallet &&
-    order.walletPaid > 0 &&
-    order.walletStatus !== "REFUNDED"
-      ? {
-          walletStatus: "REFUNDED",
-          paymentStatus: "REFUNDED",
-        }
-      : {}),
-  });
 }
 
   
