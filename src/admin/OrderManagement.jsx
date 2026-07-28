@@ -517,14 +517,12 @@ return (
   </span>
 )}
 
-{item.sweetness !== undefined &&
- item.sweetness !== null && (
+{item.sweetness && (
   <span style={chipStyle}>
-    Sweetness: {
-      typeof item.sweetness === "object"
-        ? item.sweetness.level || item.sweetness.value || JSON.stringify(item.sweetness)
-        : item.sweetness
-    }%
+    Sweetness:{" "}
+    {typeof item.sweetness === "string"
+      ? item.sweetness
+      : item.sweetness.name}
   </span>
 )}
 
@@ -533,17 +531,7 @@ return (
 
 
                                 
-                              {Array.isArray(item.toppings) && item.toppings.length > 0 && (
-  <span style={chipStyle}>
-    Toppings: {item.toppings
-      .map(topping =>
-        typeof topping === "string"
-          ? topping
-          : topping.name
-      )
-      .join(", ")}
-  </span>
-)}
+                              
             {Array.isArray(item.extras) && item.extras.length > 0 && (
   <span style={chipStyle}>
     Extras: {item.extras
