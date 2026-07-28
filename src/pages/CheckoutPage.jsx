@@ -42,7 +42,7 @@ export default function CheckoutPage({ setPage }) {
   const [coupon, setCoupon] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(null); 
   const [couponError, setCouponError] = useState("");
- const [useRewards, setUseRewards] = useState(false);
+  const [useRewards, setUseRewards] = useState(false);
   const [addresses, setAddresses] = useState([]);
   const [showAddressPicker, setShowAddressPicker] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -81,26 +81,22 @@ export default function CheckoutPage({ setPage }) {
     
     const baseTotal = Math.max(0, Math.round(subtotal + tax + delivery + cod - discount));
 
+    let grandTotal = baseTotal;
 
-     let grandTotal = baseTotal;
+    let walletDeduction = 0;
+    if (useWallet && wallet?.balance > 0) {
+      walletDeduction = Math.min(wallet.balance, grandTotal);
+      grandTotal -= walletDeduction;
+    }
 
-let walletDeduction = 0;
+    let rewardDeduction = 0;
+    if (useRewards && wallet && wallet.rewardBalance > 0) {
+      rewardDeduction = Math.min(wallet.rewardBalance, grandTotal);
+      grandTotal -= rewardDeduction;
+    }
 
-if (useWallet && wallet?.balance > 0) {
-  walletDeduction = Math.min(wallet.balance, grandTotal);
-  grandTotal -= walletDeduction;
-}
-
-let rewardDeduction = 0;
-
-if (useRewards && wallet?.rewardBalance > 0) {
-  rewardDeduction = Math.min(wallet.rewardBalance, grandTotal);
-  grandTotal -= rewardDeduction;
-}
-
-grandTotal = Math.max(0, grandTotal);
-
-const remainingAmount = grandTotal;
+    grandTotal = Math.max(0, grandTotal);
+    const remainingAmount = grandTotal;
 
     return { 
       subtotal, 
@@ -111,21 +107,19 @@ const remainingAmount = grandTotal;
       baseTotal, 
       walletDeduction, 
       grandTotal,
-     rewardDeduction,
+      rewardDeduction,
       remainingAmount 
     };
   }, [total, paymentMethod, appliedCoupon, deliveryInfo, useWallet, wallet, useRewards]);
 
-
-
- useEffect(() => {
-  if (
-    paymentMethod === "cod" &&
-    calculations.remainingAmount === 0
-  ) {
-    setPaymentMethod("online");
-  }
-}, [paymentMethod, calculations.remainingAmount]);
+  useEffect(() => {
+    if (
+      paymentMethod === "cod" &&
+      calculations.remainingAmount === 0
+    ) {
+      setPaymentMethod("online");
+    }
+  }, [paymentMethod, calculations.remainingAmount]);
 
   useEffect(() => { loadRazorpayScript(); }, []);
 
@@ -141,11 +135,11 @@ const remainingAmount = grandTotal;
         setWalletLoading(true);
         let walletData = await walletService.getWallet(auth.currentUser.uid);
 
-if (!walletData) {
-  walletData = await walletService.createWallet(auth.currentUser.uid);
-}
+        if (!walletData) {
+          walletData = await walletService.createWallet(auth.currentUser.uid);
+        }
 
-setWallet(walletData);
+        setWallet(walletData);
       } catch (err) {
         console.error(err);
         setWallet(null);
@@ -262,16 +256,14 @@ setWallet(walletData);
     validateDelivery();
   }, [selectedAddress]);
 
-
-useEffect(() => {
-  if (auth.currentUser?.email) {
-    setForm(prev => ({
-      ...prev,
-      email: auth.currentUser.email,
-    }));
-  }
-}, []);
- 
+  useEffect(() => {
+    if (auth.currentUser?.email) {
+      setForm(prev => ({
+        ...prev,
+        email: auth.currentUser.email,
+      }));
+    }
+  }, []);
 
   const handleInputChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -289,194 +281,201 @@ useEffect(() => {
     }
   };
 
+  const handleFormSubmission = async (e) => {
+    e.preventDefault();
 
-const handleFormSubmission = async (e) => {
-  e.preventDefault();
+    if (placingOrder) return;
 
-  if (placingOrder) return;
+    if (cart.length === 0) {
+      alert("Your cart is empty.");
+      return;
+    }
+    if (!auth.currentUser) {
+      alert("Please log in to your Brewed account to place an order.");
+      setPage("login");
+      return;
+    }
+    if (!selectedAddress) {
+      alert("Please select a delivery address.");
+      return;
+    }
+    if (!selectedAddress.pincode) {
+      alert("Selected address doesn't have a valid pincode.");
+      return;
+    }
+    if (deliveryLoading) {
+      alert("Please wait while we verify delivery availability.");
+      return;
+    }
+    if (deliveryAvailable === false) {
+      alert("Sorry, we don't deliver to the selected address.");
+      return;
+    }
+    if (deliveryInfo && calculations.subtotal < deliveryInfo.minOrder) {
+      alert(`Minimum order for this area is ₹${deliveryInfo.minOrder}.`);
+      return;
+    }
 
-  if (cart.length === 0) {
-    alert("Your cart is empty.");
-    return;
-  }
-  if (!auth.currentUser) {
-    alert("Please log in to your Brewed account to place an order.");
-    setPage("login");
-    return;
-  }
-  if (!selectedAddress) {
-    alert("Please select a delivery address.");
-    return;
-  }
-  if (!selectedAddress.pincode) {
-    alert("Selected address doesn't have a valid pincode.");
-    return;
-  }
-  if (deliveryLoading) {
-    alert("Please wait while we verify delivery availability.");
-    return;
-  }
-  if (deliveryAvailable === false) {
-    alert("Sorry, we don't deliver to the selected address.");
-    return;
-  }
-  if (deliveryInfo && calculations.subtotal < deliveryInfo.minOrder) {
-    alert(`Minimum order for this area is ₹${deliveryInfo.minOrder}.`);
-    return;
-  }
+    setPlacingOrder(true);
 
-  setPlacingOrder(true);
+    let paymentResponse = null;
 
-  let paymentResponse = null;
+    try {
+      if (paymentMethod === "online" && calculations.remainingAmount > 0) {
+        const razorpayLoaded = await loadRazorpayScript();
+        if (!razorpayLoaded) {
+          throw new Error("Razorpay SDK failed to load.");
+        }
 
-  try {
-    if (paymentMethod === "online" && calculations.remainingAmount > 0) {
-      const razorpayLoaded = await loadRazorpayScript();
-      if (!razorpayLoaded) {
-        throw new Error("Razorpay SDK failed to load.");
+        paymentResponse = await new Promise((resolve, reject) => {
+          const options = {
+            key: "rzp_test_mockkey",
+            amount: calculations.remainingAmount * 100,
+            currency: "INR",
+            name: "Brewed Cafe",
+            description: "Online Order Settlement",
+            handler: function (response) {
+              resolve(response);
+            },
+            modal: {
+              ondismiss: function () {
+                reject(new Error("Payment cancelled by user."));
+              }
+            },
+            prefill: {
+              name: form.name,
+              email: form.email,
+              contact: form.phone
+            },
+            theme: { color: THEME.colors.primary }
+          };
+
+          try {
+            const rzp = new window.Razorpay(options);
+            rzp.open();
+          } catch (err) {
+            console.warn("Razorpay initialization warning, simulating success for flow progression:", err);
+            resolve({ razorpay_payment_id: "mock_pay_" + Date.now() });
+          }
+        });
       }
 
-      paymentResponse = await new Promise((resolve, reject) => {
-        const options = {
-          key: "rzp_test_mockkey",
-          amount: calculations.remainingAmount * 100,
-          currency: "INR",
-          name: "Brewed Cafe",
-          description: "Online Order Settlement",
-          handler: function (response) {
-            resolve(response);
-          },
-          modal: {
-            ondismiss: function () {
-              reject(new Error("Payment cancelled by user."));
-            }
-          },
-          prefill: {
-            name: form.name,
-            email: form.email,
-            contact: form.phone
-          },
-          theme: { color: THEME.colors.primary }
-        };
+      let walletPaid = 0;
+      let refreshedWalletBalance = wallet ? wallet.balance : 0;
+      let walletTransaction = null;
 
-        try {
-          const rzp = new window.Razorpay(options);
-          rzp.open();
-        } catch (err) {
-          console.warn("Razorpay initialization warning, simulating success for flow progression:", err);
-          resolve({ razorpay_payment_id: "mock_pay_" + Date.now() });
-        }
-      });
-    }
+      let rewardPaid = 0;
+      let refreshedRewardBalance = wallet ? wallet.rewardBalance : 0;
 
-    let walletPaid = 0;
-    let refreshedWalletBalance = wallet ? wallet.balance : 0;
-    let walletTransaction = null;
+      if (useWallet && calculations.walletDeduction > 0) {
+        walletTransaction = await walletService.deductMoney({
+          userId: auth.currentUser.uid,
+          amount: calculations.walletDeduction,
+        });
+        walletPaid = calculations.walletDeduction;
+        refreshedWalletBalance = Math.max(0, refreshedWalletBalance - walletPaid);
+      }
 
-    if (useWallet && calculations.walletDeduction > 0) {
-      walletTransaction = await walletService.deductMoney({
+      if (useRewards && calculations.rewardDeduction > 0) {
+        await walletService.redeemReward({
+          userId: auth.currentUser.uid,
+          amount: calculations.rewardDeduction,
+          description: "Reward Redemption",
+        });
+        rewardPaid = calculations.rewardDeduction;
+        refreshedRewardBalance = Math.max(0, refreshedRewardBalance - rewardPaid);
+      }
+
+      const remainingAmount = calculations.remainingAmount;
+      const basePaymentLabel = paymentMethod === "cod" ? "Cash on Delivery" : "UPI/Card";
+
+      const finalPaymentMethod = walletPaid > 0 || rewardPaid > 0
+        ? remainingAmount > 0
+          ? `Wallet/Rewards + ${basePaymentLabel}`
+          : "Wallet/Rewards"
+        : basePaymentLabel;
+
+      const orderData = {
+        customer: form,
         userId: auth.currentUser.uid,
-        amount: calculations.walletDeduction,
-      });
+        items: cart,
+        subtotal: calculations.subtotal,
+        tax: calculations.tax,
+        delivery: calculations.delivery,
+        deliveryZone: deliveryInfo?.zoneName || "",
+        estimatedDelivery: deliveryInfo?.estimatedTime || "",
+        minimumOrder: deliveryInfo?.minOrder || 0,
+        freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
+        walletPaid,
+        usedWallet: walletPaid > 0,
+        walletBalanceBeforePayment: wallet?.balance || 0,
+        walletBalanceAfterPayment: refreshedWalletBalance,
+        usedRewards: rewardPaid > 0,
+        rewardPaid,
+        rewardBalanceBeforePayment: wallet?.rewardBalance || 0,
+        rewardBalanceAfterPayment: refreshedRewardBalance,
+        otherPayment: remainingAmount,
+        total: calculations.grandTotal,
+        paymentMethod: finalPaymentMethod,
+        status: "New",
+        walletTransactionId: walletTransaction?.transactionId || null,
+        walletPayment: walletPaid,
+        walletStatus: walletPaid > 0 ? "PAID" : "NOT_USED",
+        paymentStatus: "SUCCESS",
+        paymentGateway: paymentMethod === "online" ? "Razorpay" : null,
+        paymentReference: paymentResponse?.razorpay_payment_id || null,
+        refundStatus: "NOT_REFUNDED",
+        refundAmount: 0,
+        refundTransactionId: null,
+        cancelReason: null,
+        cancelledAt: null,
+        cancelledBy: null,
+        rewardStatus: rewardPaid > 0 ? "REDEEMED" : "PENDING",
+        rewardAmount: rewardPaid,
+        rewardCreditedAt: rewardPaid > 0 ? serverTimestamp() : null,
+        createdAt: serverTimestamp(),
+      };
+
+      const orderId = await placeOrder(orderData);
+
+      const updatedWallet = await walletService.getWallet(
+        auth.currentUser.uid
+      );
+
+      setWallet(updatedWallet);
+      setUseWallet(false);
+      setUseRewards(false);
+
+      setPage("orderSuccess");
+      
+    } catch (err) {
+      console.error("Critical submission failure:", err);
+      alert(err.message || "Unable to complete your order. Please try again.");
+      setStatus("failure");
+    } finally {
+      setPlacingOrder(false);
     }
+  };
 
-    walletPaid = calculations.walletDeduction;
-    refreshedWalletBalance = Math.max(0, refreshedWalletBalance - walletPaid);
-
-    let rewardPaid = 0;
-    if (useRewards && calculations.rewardDeduction > 0) {
-      await walletService.deductRewards({
-        userId: auth.currentUser.uid,
-        amount: calculations.rewardDeduction,
-      });
-      rewardPaid = calculations.rewardDeduction;
-    }
-
-    const remainingAmount = calculations.remainingAmount;
-    const basePaymentLabel = paymentMethod === "cod" ? "Cash on Delivery" : "UPI/Card";
-
-    const finalPaymentMethod = walletPaid > 0 || rewardPaid > 0
-      ? remainingAmount > 0
-        ? `Wallet/Rewards + ${basePaymentLabel}`
-        : "Wallet/Rewards"
-      : basePaymentLabel;
-
-    const orderData = {
-      customer: form,
-      userId: auth.currentUser.uid,
-      items: cart,
-      subtotal: calculations.subtotal,
-      tax: calculations.tax,
-      delivery: calculations.delivery,
-      deliveryZone: deliveryInfo?.zoneName || "",
-      estimatedDelivery: deliveryInfo?.estimatedTime || "",
-      minimumOrder: deliveryInfo?.minOrder || 0,
-      freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
-      walletPaid: walletPaid,
-      rewardPaid: rewardPaid,
-      otherPayment: remainingAmount,
-      usedWallet: walletPaid > 0,
-      usedRewards: rewardPaid > 0,
-      walletBalanceAfterPayment: refreshedWalletBalance,
-      total: calculations.grandTotal,
-      paymentMethod: finalPaymentMethod,
-      status: "New",
-      walletTransactionId: walletTransaction?.transactionId || null,
-      walletPayment: walletPaid,
-      walletStatus: walletPaid > 0 ? "PAID" : "NOT_USED",
-      paymentStatus: "SUCCESS",
-      paymentGateway: paymentMethod === "online" ? "Razorpay" : null,
-      paymentReference: paymentResponse?.razorpay_payment_id || null,
-      refundStatus: "NOT_REFUNDED",
-      walletBalanceBeforePayment: wallet?.balance || 0,
-      refundAmount: 0,
-      refundTransactionId: null,
-      cancelReason: null,
-      cancelledAt: null,
-      cancelledBy: null,
-      rewardStatus: rewardPaid > 0 ? "REDEEMED" : "PENDING",
-      rewardAmount: rewardPaid,
-      rewardCreditedAt: rewardPaid > 0 ? serverTimestamp() : null,
-      createdAt: serverTimestamp(),
-    };
-
-    await placeOrder(orderData);
-
-    const updatedWallet = await walletService.getWallet(auth.currentUser.uid);
-    setWallet(updatedWallet);
-
-    setUseWallet(false);
-    setUseRewards(false);
-    setPage("orderSuccess");
-    
-  } catch (err) {
-    console.error("Critical submission failure:", err);
-    alert(err.message || "Unable to complete your order. Please try again.");
-    setStatus("failure");
-  } finally {
-    setPlacingOrder(false);
-  }
-};
-
-if (status === "failure") {
-  return (
-    <div style={styles.confirmPage}>
-      <canvas ref={canvasRef} style={styles.confettiCanvas} />
-      <div style={styles.confirmCard}>
-        <h2 style={{ ...styles.confirmTitle, color: THEME.colors.danger }}>Payment Failed</h2>
-        <p style={styles.confirmSub}>We couldn't process your transaction.</p>
-        <button style={styles.payBtn} onClick={() => { setStatus("idle"); setPage("menu"); }}>Return to Menu</button>
+  if (status === "failure") {
+    return (
+      <div style={styles.confirmPage}>
+        <canvas ref={canvasRef} style={styles.confettiCanvas} />
+        <div style={styles.confirmCard}>
+          <h2 style={{ ...styles.confirmTitle, color: THEME.colors.danger }}>Payment Failed</h2>
+          <p style={styles.confirmSub}>We couldn't process your transaction.</p>
+          <button style={styles.payBtn} onClick={() => { setStatus("idle"); setPage("menu"); }}>Return to Menu</button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 }
 
 
 
 
- 
- 
-  return (
+
+ return (
     <div style={styles.page}>
       <style>{`
         body { background-color: ${THEME.colors.bgPage}; margin: 0; font-family: ${THEME.fonts.sans}; color: ${THEME.colors.textDark}; }
@@ -624,6 +623,11 @@ if (status === "failure") {
                       Use Brewed Wallet
                     </label>
 
+                    <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: "0.95rem", marginTop: 10, }} >
+                      <input type="checkbox" checked={useRewards} disabled={!wallet || wallet.rewardBalance <= 0} onChange={(e) => setUseRewards(e.target.checked)} />
+                      Use Reward Balance (₹{wallet?.rewardBalance || 0})
+                    </label>
+
                     {useWallet && (
                       <div
                         style={{
@@ -764,6 +768,7 @@ if (status === "failure") {
               {paymentMethod === "cod" && <div style={styles.calcRow}><span>COD Surcharge</span><span>₹{calculations.cod}</span></div>}
               {calculations.discount > 0 && <div style={{ ...styles.calcRow, color: THEME.colors.success }}><span>Discounts</span><span>-₹{calculations.discount}</span></div>}
               {calculations.walletDeduction > 0 && <div style={{ ...styles.calcRow, color: THEME.colors.success }}><span>Wallet Used</span><span>-₹{calculations.walletDeduction}</span></div>}
+              {calculations.rewardDeduction > 0 && ( <div style={{ ...styles.calcRow, color: THEME.colors.success }}> <span>Reward Balance Used</span> <span>-₹{calculations.rewardDeduction}</span> </div> )}
               
               <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "1rem 0" }} />
               <div style={{ ...styles.calcRow, fontWeight: "bold", fontSize: "1.1rem" }}>
@@ -772,20 +777,20 @@ if (status === "failure") {
               </div>
 
             <button
-  type="submit"
-  disabled={
-    placingOrder ||
-    deliveryLoading ||
-    !selectedAddress
-  }
-  style={styles.payBtn}
->
-  {deliveryLoading
-    ? "Checking delivery..."
-    : placingOrder
-    ? "Placing Order..."
-    : "Place Order"}
-</button>
+              type="submit"
+              disabled={
+                placingOrder ||
+                deliveryLoading ||
+                !selectedAddress
+              }
+              style={styles.payBtn}
+            >
+              {deliveryLoading
+                ? "Checking delivery..."
+                : placingOrder
+                ? "Placing Order..."
+                : "Place Order"}
+            </button>
             </div>
           </div>
         </form>
@@ -794,7 +799,7 @@ if (status === "failure") {
   );
 }
 
-
+ 
 
 
 
