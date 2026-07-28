@@ -203,6 +203,12 @@ export default function OrderManagement({ setPage, setActivePage }) {
 
   if (!order) return;
 
+    const cashbackPercentage = 5;
+
+const cashback = Math.floor(
+  (Number(order.total || 0) * cashbackPercentage) / 100
+);
+
   if (status === "Cancelled") {
     const confirmed = window.confirm(
       "Are you sure you want to cancel this order?"
@@ -225,19 +231,42 @@ export default function OrderManagement({ setPage, setActivePage }) {
     }
   }
 
-  await updateDoc(doc(db, "orders", id), {
-    status,
 
-    ...(status === "Cancelled" &&
-      order.usedWallet &&
-      order.walletPaid > 0 &&
-      order.walletStatus !== "REFUNDED"
-      ? {
-          walletStatus: "REFUNDED",
-          paymentStatus: "REFUNDED",
-        }
-      : {}),
+      if (
+  status === "Delivered" &&
+  order.rewardStatus === "PENDING"
+) {
+  await walletService.addReward({
+    userId: order.userId,
+    amount: cashback,
+    orderId: order.id,
+    description: `Cashback for order #${order.id}`,
   });
+}
+
+    
+  await updateDoc(doc(db, "orders", id), {
+  status,
+
+  ...(status === "Cancelled" &&
+    order.usedWallet &&
+    order.walletPaid > 0 &&
+    order.walletStatus !== "REFUNDED"
+    ? {
+        walletStatus: "REFUNDED",
+        paymentStatus: "REFUNDED",
+      }
+    : {}),
+
+  ...(status === "Delivered" &&
+  order.rewardStatus === "PENDING"
+    ? {
+        rewardStatus: "CREDITED",
+        rewardAmount: cashback,
+        rewardCreditedAt: new Date(),
+      }
+    : {}),
+});
 }
 
   
