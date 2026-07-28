@@ -531,16 +531,13 @@ return (
       .join(", ")}
   </span>
 )}
-
-                                {Array.isArray(item.extras) && item.extras.length > 0 && (
-  <span style={chipStyle}>
-    Extras: {item.extras
-      .map(e => typeof e === "string" ? e : "")
-      .filter(Boolean)
-      .join(", ")}
-  </span>
+                                {Array.isArray(item.extras) && (
+  <pre style={{ fontSize: 11 }}>
+    {JSON.stringify(item.extras, null, 2)}
+  </pre>
 )}
-                              
+
+                                                   
                               </div>
                             </div>
                             
