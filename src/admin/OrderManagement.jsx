@@ -531,10 +531,12 @@ return (
       .join(", ")}
   </span>
 )}
-                                {Array.isArray(item.extras) && (
-  <pre style={{ fontSize: 11 }}>
-    {JSON.stringify(item.extras, null, 2)}
-  </pre>
+            {Array.isArray(item.extras) && item.extras.length > 0 && (
+  <span style={chipStyle}>
+    Extras: {item.extras
+      .map(extra => typeof extra === "string" ? extra : extra.name)
+      .join(", ")}
+  </span>
 )}
 
                                                    
