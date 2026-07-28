@@ -42,6 +42,7 @@ export default function CheckoutPage({ setPage }) {
   const [coupon, setCoupon] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(null); 
   const [couponError, setCouponError] = useState("");
+ const [useRewards, setUseRewards] = useState(false);
   const [addresses, setAddresses] = useState([]);
   const [showAddressPicker, setShowAddressPicker] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -79,15 +80,27 @@ export default function CheckoutPage({ setPage }) {
     const discount = appliedCoupon ? appliedCoupon.discount : 0;
     
     const baseTotal = Math.max(0, Math.round(subtotal + tax + delivery + cod - discount));
-    let grandTotal = baseTotal;
 
-    let walletDeduction = 0;
-    if (useWallet && wallet && wallet.balance > 0) {
-      walletDeduction = Math.min(wallet.balance, baseTotal);
-      grandTotal = Math.max(0, baseTotal - walletDeduction);
-    }
 
-    const remainingAmount = grandTotal;
+     let grandTotal = baseTotal;
+
+let walletDeduction = 0;
+
+if (useWallet && wallet?.balance > 0) {
+  walletDeduction = Math.min(wallet.balance, grandTotal);
+  grandTotal -= walletDeduction;
+}
+
+let rewardDeduction = 0;
+
+if (useRewards && wallet?.rewardBalance > 0) {
+  rewardDeduction = Math.min(wallet.rewardBalance, grandTotal);
+  grandTotal -= rewardDeduction;
+}
+
+grandTotal = Math.max(0, grandTotal);
+
+const remainingAmount = grandTotal;
 
     return { 
       subtotal, 
@@ -98,6 +111,7 @@ export default function CheckoutPage({ setPage }) {
       baseTotal, 
       walletDeduction, 
       grandTotal,
+     rewardDeduction,
       remainingAmount 
     };
   }, [total, paymentMethod, appliedCoupon, deliveryInfo, useWallet, wallet]);
