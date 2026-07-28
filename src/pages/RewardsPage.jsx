@@ -11,6 +11,7 @@ export default function RewardsPage({ setPage }) {
   const [lifetimePoints, setLifetimePoints] = useState(0);
   const [transactions, setTransactions] = useState([]);
   const [rewards, setRewards] = useState([]);
+  const [redemptions, setRedemptions] = useState([]);
 
   const [loading, setLoading] = useState(true);
 
@@ -67,6 +68,18 @@ export default function RewardsPage({ setPage }) {
             ...doc.data()
           }))
         );
+
+        const redemptionsQuery = query(
+          collection(db, "redemptions"),
+          where("userId", "==", currentUser.uid)
+        );
+        const redemptionsSnap = await getDocs(redemptionsQuery);
+        setRedemptions(
+          redemptionsSnap.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+        );
       }
       catch (error) {
         console.log(
@@ -100,19 +113,25 @@ export default function RewardsPage({ setPage }) {
         { rewardPoints: newPoints }
       );
       // Create redemption record
-      await addDoc(
+      const newRedemption = {
+        userId: currentUser.uid,
+        rewardId: reward.id,
+        rewardTitle: reward.title,
+        pointsUsed: reward.pointsRequired,
+        status: "active",
+        code: "BREW" + Math.floor(Math.random() * 100000),
+        createdAt: new Date()
+      };
+      const docRef = await addDoc(
         collection(db, "redemptions"),
         {
-          userId: currentUser.uid,
-          rewardId: reward.id,
-          rewardTitle: reward.title,
-          pointsUsed: reward.pointsRequired,
-          status: "active",
-          code: "BREW" + Math.floor(Math.random() * 100000),
+          ...newRedemption,
           createdAt: serverTimestamp()
         }
       );
+      
       setPoints(newPoints);
+      setRedemptions(prev => [{ id: docRef.id, ...newRedemption }, ...prev]);
       alert(
         "Reward claimed successfully 🎉"
       );
@@ -348,6 +367,15 @@ export default function RewardsPage({ setPage }) {
           background: #C4956A;
         }
 
+        .rewards-section {
+          margin-top: 40px;
+        }
+
+        .rewards-section h2 {
+          margin-bottom: 20px;
+          font-family: "Playfair Display", serif;
+        }
+
         .reward-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
@@ -358,6 +386,7 @@ export default function RewardsPage({ setPage }) {
           background: white;
           padding: 25px;
           border-radius: 20px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.04);
         }
 
         .reward-card button {
@@ -367,6 +396,7 @@ export default function RewardsPage({ setPage }) {
           padding: 12px 25px;
           border-radius: 25px;
           cursor: pointer;
+          margin-top: 15px;
         }
 
         .reward-card button:disabled {
@@ -435,6 +465,51 @@ export default function RewardsPage({ setPage }) {
         <section className="rewards-section">
 
           <h2>
+            My Active Rewards
+          </h2>
+
+          {
+            redemptions.length === 0
+            ? (
+              <p>
+                No active rewards yet. Claim some below!
+              </p>
+            )
+            : (
+              <div className="reward-grid">
+                {
+                  redemptions.map(item => (
+                    <div
+                      className="reward-card"
+                      key={item.id}
+                    >
+                      <h3>
+                        ☕ {item.rewardTitle}
+                      </h3>
+
+                      <p>
+                        Code: <strong>{item.code}</strong>
+                      </p>
+
+                      <p>
+                        Status: <span style={{ textTransform: "capitalize", color: "#C4956A", fontWeight: "bold" }}>{item.status}</span>
+                      </p>
+
+                      <button onClick={() => alert(`Use code: ${item.code} at checkout!`)}>
+                        Use Reward
+                      </button>
+                    </div>
+                  ))
+                }
+              </div>
+            )
+          }
+
+        </section>
+
+        <section className="rewards-section">
+
+          <h2>
             Available Rewards
           </h2>
 
@@ -457,16 +532,18 @@ export default function RewardsPage({ setPage }) {
                     {reward.pointsRequired} Points
                   </strong>
 
-                  <button
-                    disabled={points < reward.pointsRequired}
-                    onClick={() => claimReward(reward)}
-                  >
-                    {
-                      points >= reward.pointsRequired
-                      ? "Claim Reward"
-                      : "Need More Points"
-                    }
-                  </button>
+                  <div>
+                    <button
+                      disabled={points < reward.pointsRequired}
+                      onClick={() => claimReward(reward)}
+                    >
+                      {
+                        points >= reward.pointsRequired
+                        ? "Claim Reward"
+                        : "Need More Points"
+                      }
+                    </button>
+                  </div>
                 </div>
               ))
             }
@@ -474,7 +551,7 @@ export default function RewardsPage({ setPage }) {
 
         </section>
 
-        <section className="rewards-section" style={{ marginTop: "40px" }}>
+        <section className="rewards-section">
 
           <h2>
             Reward History
