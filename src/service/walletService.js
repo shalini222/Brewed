@@ -271,11 +271,14 @@ export async function refundMoney({
   return true;
 }
 
+
+
 export async function addReward({
   userId,
   amount,
   description = "Reward Credit",
   orderId = null,
+  metadata = {},
 }) {
   if (!userId) {
     throw new Error("User ID is required.");
@@ -301,19 +304,39 @@ export async function addReward({
     });
   });
 
-  await createTransaction({
+  const transactionId =
+    "TXN-" +
+    Date.now() +
+    "-" +
+    Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  await addDoc(collection(db, "walletTransactions"), {
+    transactionId,
     userId,
-    type: TRANSACTION_TYPES.REWARD,
+
+    type: "REWARD",
+    status: "SUCCESS",
+
     amount,
-    orderId,
+
     description,
-    metadata: {
-      rewardType: "CASHBACK",
-    },
+
+    orderId,
+
+    metadata,
+
+    createdAt: serverTimestamp(),
   });
 
-  return true;
+  return {
+    success: true,
+    transactionId,
+  };
 }
+
+
+
+
 
 export async function redeemReward({
   userId,
