@@ -128,8 +128,10 @@ setTransactions(loadedTransactions);
         .reduce((sum, item) => sum + item.amount, 0);
 
       const rewardData = loadedTransactions.filter(
-        item => item.type === "REWARD"
-      );
+  item =>
+    item.type === "REWARD" &&
+    !item.claimed
+);
 
       setRewards(rewardData);
 
@@ -239,6 +241,40 @@ setTransactions(loadedTransactions);
       alert("Something went wrong");
     }
   };
+
+const handleClaimReward = async (reward) => {
+  try {
+    const walletRef = doc(db, "wallets", currentUser.uid);
+
+    await updateDoc(walletRef, {
+      balance: increment(reward.amount),
+      rewardBalance: increment(-reward.amount),
+      updatedAt: serverTimestamp(),
+    });
+
+    await addDoc(collection(db, "walletTransactions"), {
+      userId: currentUser.uid,
+      type: "REWARD_REDEEM",
+      amount: reward.amount,
+      description: `Claimed ${reward.description || reward.title}`,
+      status: "SUCCESS",
+      createdAt: serverTimestamp(),
+    });
+
+    await updateDoc(doc(db, "walletTransactions", reward.id), {
+      claimed: true,
+      claimedAt: serverTimestamp(),
+    });
+
+    loadWallet();
+    alert("Reward claimed successfully!");
+
+  } catch (error) {
+    console.error(error);
+    alert("Failed to claim reward.");
+  }
+};
+  
 
   const updateWalletSettings = async (key, value) => {
     const updated = {
@@ -938,21 +974,34 @@ setTransactions(loadedTransactions);
             ) : (
               <div className="wallet-transaction-list">
                 {rewards.map((reward) => (
-                  <div
-                    key={reward.id}
-                    className="wallet-transaction-item"
-                  >
-                    <div>
-                      <strong>{reward.description || reward.title}</strong>
-                      <p>{reward.date || reward.status}</p>
-                    </div>
+                 <div
+  key={reward.id}
+  className="wallet-transaction-item"
+>
+  <div>
+    <strong>{reward.description || reward.title}</strong>
+    <p>{reward.status}</p>
+  </div>
 
-                    <h4 style={{ color: "#2E7D32" }}>
-                      +₹{reward.amount}
-                    </h4>
-                  </div>
-                ))}
-              </div>
+  <div style={{ textAlign: "right" }}>
+    <h4 style={{ color: "#2E7D32", marginBottom: 8 }}>
+      ₹{reward.amount}
+    </h4>
+
+    {reward.claimed ? (
+      <button disabled>
+        Claimed ✓
+      </button>
+    ) : (
+      <button
+        className="wallet-primary-btn"
+        onClick={() => handleClaimReward(reward)}
+      >
+        Claim
+      </button>
+    )}
+  </div>
+</div>
             )}
 
             <button
