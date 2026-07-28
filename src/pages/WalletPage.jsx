@@ -1043,28 +1043,37 @@ const handleClaimReward = async (reward) => {
               </div>
             ) : (
               <div className="wallet-transaction-list">
-                {refunds.map((refund) => (
-                  <div
-                    key={refund.id}
-                    className="wallet-transaction-item"
-                  >
-                    <div>
-                      <strong>
-                        {refund.reason || refund.description}
-                      </strong>
-                      <p>
-                        {refund.status}
-                      </p>
-                    </div>
+                
+{rewards.map((reward) => (
+  <div
+    key={reward.id}
+    className="wallet-transaction-item"
+  >
+    <div>
+      <strong>{reward.description || reward.title}</strong>
+      <p>{reward.status}</p>
+    </div>
 
-                    <h4 style={{ color: "#2E7D32" }}>
-                      +₹{refund.amount}
-                    </h4>
-                  </div>
-                ))}
-              </div>
-            )}
+    <div style={{ textAlign: "right" }}>
+      <h4 style={{ color: "#2E7D32", marginBottom: 8 }}>
+        ₹{reward.amount}
+      </h4>
 
+      {reward.claimed ? (
+        <button disabled>
+          Claimed ✓
+        </button>
+      ) : (
+        <button
+          className="wallet-primary-btn"
+          onClick={() => handleClaimReward(reward)}
+        >
+          Claim
+        </button>
+      )}
+    </div>
+  </div>
+))}
             <button
               className="wallet-close-btn"
               style={{ marginTop: "20px" }}
