@@ -752,40 +752,41 @@ setRewards(rewardTransactions);
         </div>
 
         {transactions.length === 0 ? (
-  <div className="wallet-empty-state">
-    <div className="wallet-empty-icon">💰</div>
-    <h4>No Transactions Yet</h4>
-    <p>
-      Add money or make your first purchase to
-      see your wallet activity.
-    </p>
-  </div>
-) : (
-  <div className="wallet-transaction-list">
-    {transactions.slice(0, 3).map((transaction) => {
-      const isPositive = ["REWARD", "ADD_MONEY", "REFUND"].includes(transaction.type);
-      
-      return (
-        <div
-          key={transaction.id}
-          className="wallet-transaction-item"
-        >
-          <div>
-            <strong>{transaction.title || transaction.description}</strong>
-
-            <h4
-              style={{
-                color: isPositive ? "#2E7D32" : "#C62828",
-              }}
-            >
-              {isPositive ? "+" : "-"}₹{transaction.amount}
-            </h4>
+          <div className="wallet-empty-state">
+            <div className="wallet-empty-icon">💰</div>
+            <h4>No Transactions Yet</h4>
+            <p>
+              Add money or make your first purchase to
+              see your wallet activity.
+            </p>
           </div>
-        </div>
-      );
-    })}
-  </div>
-)}
+        ) : (
+          <div className="wallet-transaction-list">
+            {transactions.slice(0, 3).map((transaction) => {
+              const isPositive = ["REWARD", "ADD_MONEY", "REFUND"].includes(transaction.type);
+              
+              return (
+                <div
+                  key={transaction.id}
+                  className="wallet-transaction-item"
+                >
+                  <div>
+                    <strong>{transaction.title || transaction.description}</strong>
+
+                    <h4
+                      style={{
+                        color: isPositive ? "#2E7D32" : "#C62828",
+                      }}
+                    >
+                      {isPositive ? "+" : "-"}₹{transaction.amount}
+                    </h4>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Add Money Modal */}
       {showAddMoney && (
@@ -1200,3 +1201,5 @@ setRewards(rewardTransactions);
     </div>
   );
 }
+
+    
