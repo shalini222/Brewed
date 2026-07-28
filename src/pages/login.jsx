@@ -92,7 +92,11 @@ if (!userSnap.exists()) {
 }
 
     await walletService.createWallet(user.uid);
-    await rewardService.giveSignupReward(user.uid);
+    try {
+  await rewardService.giveSignupReward(user.uid);
+} catch (error) {
+  alert("Signup reward failed:", error);
+    }
 
 
     
