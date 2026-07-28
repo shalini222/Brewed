@@ -409,6 +409,11 @@ const handleFormSubmission = async (e) => {
       cancelReason: null,
       cancelledAt: null,
       cancelledBy: null,
+     rewardStatus: "PENDING",
+     rewardAmount: 0,
+     rewardCreditedAt: null,
+     createdAt: serverTimestamp(),
+    
     };
 
     await placeOrder(orderData);
