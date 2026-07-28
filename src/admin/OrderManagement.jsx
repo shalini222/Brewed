@@ -517,12 +517,22 @@ return (
   </span>
 )}
 
-                                {typeof item.sweetness === "number" && (
+{item.sweetness !== undefined &&
+ item.sweetness !== null && (
   <span style={chipStyle}>
-    Sweetness: {item.sweetness}%
+    Sweetness: {
+      typeof item.sweetness === "object"
+        ? item.sweetness.level || item.sweetness.value || JSON.stringify(item.sweetness)
+        : item.sweetness
+    }%
   </span>
 )}
 
+
+
+
+
+                                
                                 {Array.isArray(item.toppings) && item.toppings.length > 0 && (
   <span style={chipStyle}>
     Toppings: {item.toppings
