@@ -523,7 +523,7 @@ const deleteReview = async () => {
     sweetness: selectedSweetness,
 
     // Special requests
-    instructions,
+    instructions: specialInstructions,
 
     // Extras
     extras: selectedExtras,
@@ -533,6 +533,16 @@ const deleteReview = async () => {
 };
   
 
+
+
+
+
+
+
+
+
+
+  
 
 const toggleFavorite = async () => {
   if (!currentUser) {
