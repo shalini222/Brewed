@@ -17,7 +17,7 @@ async function giveSignupReward(userId) {
   const settingsRef = doc(db, "rewardSettings", "default");
   const settingsSnap = await getDoc(settingsRef);
 
-  if (!settingsSnap.exists()) { console.warn("Reward settings not found."); return; }
+  
 
   const settings = settingsSnap.data();
 
