@@ -11,6 +11,8 @@ import {
   orderBy,
 } from "firebase/firestore";
 
+import { getDoc, setDoc } from "firebase/firestore";
+
 import { db } from "../firebase";
 
 import walletService from "../service/walletService";
@@ -192,6 +194,36 @@ export default function OrderManagement({ setPage, setActivePage }) {
 
     setTopProducts(ranked);
   }, [orders]);
+
+
+
+async function getRewardSettings() {
+  const settingsRef = doc(db, "rewardSettings", "default");
+
+  const snapshot = await getDoc(settingsRef);
+
+  if (!snapshot.exists()) {
+    const defaults = {
+      cashbackEnabled: true,
+      cashbackPercent: 5,
+      minimumOrder: 200,
+      maximumCashback: 150,
+      birthdayReward: 200,
+      referralReward: 100,
+      signupReward: 50,
+      rewardExpiryDays: 365,
+    };
+
+    await setDoc(settingsRef, defaults);
+
+    return defaults;
+  }
+
+  return snapshot.data();
+}
+
+
+
 
   
   async function updateOrderStatus(id, status) {
