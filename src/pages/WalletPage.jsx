@@ -72,8 +72,8 @@ export default function WalletPage({ setPage }) {
         const data = walletSnap.data();
 
         setBalance(data.balance || 0);
-setRewardBalance(data.rewardBalance || 0);
-setPromoBalance(data.promoBalance || 0);
+        setRewardBalance(data.rewardBalance || 0);
+        setPromoBalance(data.promoBalance || 0);
       }
 
       // Load more transactions for analytics and display
@@ -92,15 +92,6 @@ setPromoBalance(data.promoBalance || 0);
       }));
 
       setTransactions(loadedTransactions);
-
-      const rewardTransactions = loadedTransactions.filter(
-  (t) => t.type === "REWARD"
-);
-
-setRewards(rewardTransactions);
-    
-
-
 
       // Load Refunds From Firestore
       const refundQuery = query(
@@ -131,15 +122,27 @@ setRewards(rewardTransactions);
       const totalRefunds = refundData
         .reduce((sum, item) => sum + item.amount, 0);
 
-      const calculatedRewards = loadedTransactions
-  .filter((item) => item.type === "REWARD")
-  .reduce((sum, item) => sum + item.amount, 0);
+      const rewardData = loadedTransactions.filter(
+        item => item.type === "REWARD"
+      );
+
+      setRewards(rewardData);
+
+      setRewardBalance(
+        rewardData.reduce(
+          (sum, item) => sum + item.amount,
+          0
+        )
+      );
+
+      const walletSnapForAnalytics = await getDoc(doc(db, "wallets", currentUser.uid));
+      const walletDataForAnalytics = walletSnapForAnalytics.exists() ? walletSnapForAnalytics.data() : {};
 
       setAnalytics({
         totalAdded,
         totalSpent,
         totalRefunds,
-        totalRewards: data.rewardBalance || 0,
+        totalRewards: walletDataForAnalytics.rewardBalance || 0,
       });
 
       // Load Payment Methods From Firestore
@@ -253,6 +256,14 @@ setRewards(rewardTransactions);
       : transactions.filter(
           (item) => item.type === filter
         );
+
+  return (
+    <div>
+      {/* Wallet UI Render Placeholder */}
+    </div>
+  );
+}
+
 
   return (
     <div className="wallet-page">
@@ -648,6 +659,7 @@ setRewards(rewardTransactions);
         }
       `}</style>
 
+  
       {/* Header */}
       <header className="wallet-header">
         <button
@@ -845,7 +857,7 @@ setRewards(rewardTransactions);
             </div>
 
             <div className="transaction-filters">
-              {["all", "credit", "debit"].map((type) => (
+              {["all", "ADD_MONEY", "PAYMENT", "REFUND", "REWARD"].map((type) => (
                 <button
                   key={type}
                   onClick={() => setFilter(type)}
@@ -870,20 +882,18 @@ setRewards(rewardTransactions);
                     className="wallet-transaction-item"
                   >
                     <div>
-                      <strong>{item.title}</strong>
+                      <strong>{item.description}</strong>
                       <p>{item.status}</p>
                     </div>
 
                     <h4
                       style={{
-                        color:
-                          item.type === "credit"
-                            ? "#2E7D32"
-                            : "#C62828",
+                        color: ["REWARD", "REFUND", "ADD_MONEY"].includes(item.type)
+                          ? "#2E7D32"
+                          : "#C62828",
                       }}
                     >
-                      {item.type === "credit" ? "+" : "-"}₹
-                      {item.amount}
+                      {["REWARD", "REFUND", "ADD_MONEY"].includes(item.type) ? "+" : "-"} ₹{item.amount}
                     </h4>
                   </div>
                 ))}
@@ -932,8 +942,8 @@ setRewards(rewardTransactions);
                     className="wallet-transaction-item"
                   >
                     <div>
-                      <strong>{reward.title}</strong>
-                      <p>{reward.date}</p>
+                      <strong>{reward.description || reward.title}</strong>
+                      <p>{reward.date || reward.status}</p>
                     </div>
 
                     <h4 style={{ color: "#2E7D32" }}>
@@ -990,7 +1000,7 @@ setRewards(rewardTransactions);
                   >
                     <div>
                       <strong>
-                        {refund.reason}
+                        {refund.reason || refund.description}
                       </strong>
                       <p>
                         {refund.status}
@@ -1201,5 +1211,3 @@ setRewards(rewardTransactions);
     </div>
   );
 }
-
-    
