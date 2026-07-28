@@ -222,6 +222,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
       o.status === "New" ||
       o.status === "Preparing" ||
       o.status === "Ready"
+     o.status === "Assigned to Rider"
   ).length;
 
   const totalRevenue = orders
@@ -306,7 +307,7 @@ return (
                 marginBottom: 32,
               }}
             >
-              {["All", "New", "Preparing", "Ready", "Delivered", "Cancelled"].map((status) => (
+              {["All", "New", "Preparing", "Ready", "Assigned to Rider","Delivered", "Cancelled"].map((status) => (
                 <button
                   key={status}
                   onClick={() => setOrderFilter(status)}
@@ -363,6 +364,11 @@ return (
                       case "New": return { bg: "#FFF3CD", color: "#856404" };
                       case "Preparing": return { bg: "#FFE5D0", color: "#A04000" };
                       case "Ready": return { bg: "#D1ECF1", color: "#0C5460" };
+                        case "Assigned to Rider":
+  return {
+    bg: "#E3F2FD",
+    color: "#1565C0",
+  };
                       case "Delivered": return { bg: "#D4EDDA", color: "#155724" };
                       case "Cancelled": return { bg: "#F8D7DA", color: "#721C24" };
                       default: return { bg: "#E2E3E5", color: "#383D41" };
@@ -594,86 +600,107 @@ return (
                           <span style={{ fontSize: 18, fontWeight: 700, color: "#3B1A08" }}>₹{order.total}</span>
                         </div>
                       </div>
+<div style={{ display: "flex", gap: 12 }}>
+  {order.status === "New" && (
+    <button
+      onClick={() => updateOrderStatus(order.id, "Preparing")}
+      style={{
+        flex: 1,
+        background: "#3B1A08",
+        color: "white",
+        border: "none",
+        padding: "14px 20px",
+        borderRadius: 12,
+        cursor: "pointer",
+        fontWeight: 600,
+        fontSize: 15,
+        boxShadow: "0 4px 12px rgba(59,26,8,0.2)",
+      }}
+    >
+      🟤 Accept Order
+    </button>
+  )}
 
-                      <div style={{ display: "flex", gap: 12 }}>
-                        {order.status === "New" && (
-                          <button
-                            onClick={() => updateOrderStatus(order.id, "Preparing")}
-                            style={{
-                              flex: 1,
-                              background: "#3B1A08",
-                              color: "white",
-                              border: "none",
-                              padding: "14px 20px",
-                              borderRadius: 12,
-                              cursor: "pointer",
-                              fontWeight: 600,
-                              fontSize: 15,
-                              boxShadow: "0 4px 12px rgba(59,26,8,0.2)",
-                            }}
-                          >
-                            🟤 Accept Order
-                          </button>
-                        )}
+  {order.status === "Preparing" && (
+    <button
+      onClick={() => updateOrderStatus(order.id, "Ready")}
+      style={{
+        flex: 1,
+        background: "#3B1A08",
+        color: "white",
+        border: "none",
+        padding: "14px 20px",
+        borderRadius: 12,
+        cursor: "pointer",
+        fontWeight: 600,
+        fontSize: 15,
+      }}
+    >
+      ☕ Mark Ready
+    </button>
+  )}
 
-                        {order.status === "Preparing" && (
-                          <button
-                            onClick={() => updateOrderStatus(order.id, "Ready")}
-                            style={{
-                              flex: 1,
-                              background: "#3B1A08",
-                              color: "white",
-                              border: "none",
-                              padding: "14px 20px",
-                              borderRadius: 12,
-                              cursor: "pointer",
-                              fontWeight: 600,
-                              fontSize: 15,
-                            }}
-                          >
-                            ☕ Mark Ready
-                          </button>
-                        )}
+  {order.status === "Ready" && (
+    <button
+      onClick={() =>
+        updateOrderStatus(order.id, "Assigned to Rider")
+      }
+      style={{
+        flex: 1,
+        background: "#1565C0",
+        color: "white",
+        border: "none",
+        padding: "14px 20px",
+        borderRadius: 12,
+        cursor: "pointer",
+        fontWeight: 600,
+        fontSize: 15,
+      }}
+    >
+      🛵 Assign to Rider
+    </button>
+  )}
 
-                        {order.status === "Ready" && (
-                          <button
-                            onClick={() => updateOrderStatus(order.id, "Delivered")}
-                            style={{
-                              flex: 1,
-                              background: "#27AE60",
-                              color: "white",
-                              border: "none",
-                              padding: "14px 20px",
-                              borderRadius: 12,
-                              cursor: "pointer",
-                              fontWeight: 600,
-                              fontSize: 15,
-                            }}
-                          >
-                            🚚 Mark Delivered
-                          </button>
-                        )}
+  {order.status === "Assigned to Rider" && (
+    <button
+      onClick={() => updateOrderStatus(order.id, "Delivered")}
+      style={{
+        flex: 1,
+        background: "#27AE60",
+        color: "white",
+        border: "none",
+        padding: "14px 20px",
+        borderRadius: 12,
+        cursor: "pointer",
+        fontWeight: 600,
+        fontSize: 15,
+      }}
+    >
+      🚚 Mark Delivered
+    </button>
+  )}
 
-                        {order.status !== "Delivered" &&
-                          order.status !== "Cancelled" && (
-                            <button
-                              onClick={() => updateOrderStatus(order.id, "Cancelled")}
-                              style={{
-                                flex: 1,
-                                background: "#FFFFFF",
-                                color: "#C0392B",
-                                border: "1px solid #F5C6CB",
-                                padding: "14px 20px",
-                                borderRadius: 12,
-                                cursor: "pointer",
-                                fontWeight: 600,
-                                fontSize: 15,
-                              }}
-                            >
-                              ❌ Cancel Order
-                            </button>
-                          )}
-                      </div>
+  {order.status !== "Delivered" &&
+    order.status !== "Cancelled" && (
+      <button
+        onClick={() => updateOrderStatus(order.id, "Cancelled")}
+        style={{
+          flex: 1,
+          background: "#FFFFFF",
+          color: "#C0392B",
+          border: "1px solid #F5C6CB",
+          padding: "14px 20px",
+          borderRadius: 12,
+          cursor: "pointer",
+          fontWeight: 600,
+          fontSize: 15,
+        }}
+      >
+        ❌ Cancel Order
+      </button>
+    )}
+</div>
+                   
                     </div>
                   );
                 })
