@@ -1,4 +1,4 @@
- import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useCart } from "../context/CartContext";
 import { auth, db } from "../firebase";
 import { serverTimestamp, collection, getDocs } from "firebase/firestore";
@@ -114,7 +114,7 @@ const remainingAmount = grandTotal;
      rewardDeduction,
       remainingAmount 
     };
-  }, [total, paymentMethod, appliedCoupon, deliveryInfo, useWallet, wallet]);
+  }, [total, paymentMethod, appliedCoupon, deliveryInfo, useWallet, wallet, useRewards]);
 
 
 
@@ -383,13 +383,22 @@ const handleFormSubmission = async (e) => {
     walletPaid = calculations.walletDeduction;
     refreshedWalletBalance = Math.max(0, refreshedWalletBalance - walletPaid);
 
+    let rewardPaid = 0;
+    if (useRewards && calculations.rewardDeduction > 0) {
+      await walletService.deductRewards({
+        userId: auth.currentUser.uid,
+        amount: calculations.rewardDeduction,
+      });
+      rewardPaid = calculations.rewardDeduction;
+    }
+
     const remainingAmount = calculations.remainingAmount;
     const basePaymentLabel = paymentMethod === "cod" ? "Cash on Delivery" : "UPI/Card";
 
-    const finalPaymentMethod = walletPaid > 0
+    const finalPaymentMethod = walletPaid > 0 || rewardPaid > 0
       ? remainingAmount > 0
-        ? `Wallet + ${basePaymentLabel}`
-        : "Wallet"
+        ? `Wallet/Rewards + ${basePaymentLabel}`
+        : "Wallet/Rewards"
       : basePaymentLabel;
 
     const orderData = {
@@ -404,8 +413,10 @@ const handleFormSubmission = async (e) => {
       minimumOrder: deliveryInfo?.minOrder || 0,
       freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
       walletPaid: walletPaid,
+      rewardPaid: rewardPaid,
       otherPayment: remainingAmount,
       usedWallet: walletPaid > 0,
+      usedRewards: rewardPaid > 0,
       walletBalanceAfterPayment: refreshedWalletBalance,
       total: calculations.grandTotal,
       paymentMethod: finalPaymentMethod,
@@ -423,11 +434,10 @@ const handleFormSubmission = async (e) => {
       cancelReason: null,
       cancelledAt: null,
       cancelledBy: null,
-     rewardStatus: "PENDING",
-     rewardAmount: 0,
-     rewardCreditedAt: null,
-     createdAt: serverTimestamp(),
-    
+      rewardStatus: rewardPaid > 0 ? "REDEEMED" : "PENDING",
+      rewardAmount: rewardPaid,
+      rewardCreditedAt: rewardPaid > 0 ? serverTimestamp() : null,
+      createdAt: serverTimestamp(),
     };
 
     await placeOrder(orderData);
@@ -436,6 +446,7 @@ const handleFormSubmission = async (e) => {
     setWallet(updatedWallet);
 
     setUseWallet(false);
+    setUseRewards(false);
     setPage("orderSuccess");
     
   } catch (err) {
@@ -459,7 +470,6 @@ if (status === "failure") {
     </div>
   );
 }
-
 
 
 
