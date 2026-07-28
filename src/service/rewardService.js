@@ -1,6 +1,6 @@
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase.js";
-import walletService from "./walletService";
+import walletService from "./walletService.js";
 
 async function giveSignupReward(userId) {
   const userRef = doc(db, "users", userId);
