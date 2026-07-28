@@ -194,8 +194,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
   }, [orders]);
 
   
-  
-async function updateOrderStatus(id, status) {
+  async function updateOrderStatus(id, status) {
   const order = orders.find((o) => o.id === id);
 
   if (!order) return;
@@ -248,10 +247,20 @@ async function updateOrderStatus(id, status) {
   // Update Firestore document
   await updateDoc(doc(db, "orders", id), {
     status,
+
+    ...(status === "Delivered" &&
+      order.rewardStatus === "PENDING"
+      ? {
+          rewardStatus: "CREDITED",
+          rewardAmount: cashback,
+          rewardCreditedAt: new Date(),
+        }
+      : {}),
+
     ...(status === "Cancelled" &&
-    order.usedWallet &&
-    order.walletPaid > 0 &&
-    order.walletStatus !== "REFUNDED"
+      order.usedWallet &&
+      order.walletPaid > 0 &&
+      order.walletStatus !== "REFUNDED"
       ? {
           walletStatus: "REFUNDED",
           paymentStatus: "REFUNDED",
@@ -259,6 +268,8 @@ async function updateOrderStatus(id, status) {
       : {}),
   });
 }
+
+
 
 
   
