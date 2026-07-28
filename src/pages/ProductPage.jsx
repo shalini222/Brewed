@@ -69,6 +69,7 @@ export default function ProductPage({
   const [selectedExtras, setSelectedExtras] = useState([]);
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [quickRequests, setQuickRequests] = useState([]);
+  const [selectedRequests, setSelectedRequests] = useState([]);
   const [reviewSort, setReviewSort] = useState("newest");
   const [reviewFilter, setReviewFilter] = useState("all");
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -523,7 +524,8 @@ const deleteReview = async () => {
     sweetness: selectedSweetness,
 
     // Special requests
-    instructions: specialInstructions,
+    instructions,
+    specialRequests: selectedRequests,
 
     // Extras
     extras: selectedExtras,
@@ -2771,22 +2773,28 @@ gap:30px;
   </h2>
 
   <div className="quick-request-grid">
-    {quickRequests.map((request) => (
+    {(product?.specialRequests || []).map((request) => (
       <button
         key={request}
         type="button"
         className={
-          instructions.includes(request)
+          instructions.split(", ").includes(request)
             ? "quick-chip active"
             : "quick-chip"
         }
-        onClick={() =>
-          setInstructions((prev) =>
-            prev
-              ? `${prev}, ${request}`
-              : request
-          )
-        }
+        onClick={() => {
+          const current = instructions
+            ? instructions.split(", ")
+            : [];
+
+          if (current.includes(request)) {
+            setInstructions(
+              current.filter((r) => r !== request).join(", ")
+            );
+          } else {
+            setInstructions([...current, request].join(", "));
+          }
+        }}
       >
         {request}
       </button>
@@ -2799,9 +2807,7 @@ gap:30px;
       placeholder="Any additional instructions for your barista..."
       maxLength={200}
       value={instructions}
-      onChange={(e) =>
-        setInstructions(e.target.value)
-      }
+      onChange={(e) => setInstructions(e.target.value)}
     />
 
     <div className="character-count">
