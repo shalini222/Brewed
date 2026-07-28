@@ -768,21 +768,24 @@ setRewards(rewardTransactions);
                 className="wallet-transaction-item"
               >
                 <div>
-                  <strong>{transaction.title}</strong>
-                  <p>{transaction.status}</p>
-                </div>
+                  <strong>{transaction.title || transaction.description}</strong>
 
-                <h4
-                  style={{
-                    color:
-                      transaction.type === "credit"
-                        ? "#2E7D32"
-                        : "#C62828",
-                  }}
-                >
-                  {transaction.type === "credit" ? "+" : "-"}₹
-                  {transaction.amount}
-                </h4>
+<h4
+  style={{
+    color:
+      transaction.type === "REWARD" ||
+      transaction.type === "ADD_MONEY" ||
+      transaction.type === "REFUND"
+        ? "#2E7D32"
+        : "#C62828",
+  }}
+>
+  {(transaction.type === "REWARD" ||
+    transaction.type === "ADD_MONEY" ||
+    transaction.type === "REFUND")
+    ? "+"
+    : "-"}₹{transaction.amount}
+</h4>
               </div>
             ))}
           </div>
