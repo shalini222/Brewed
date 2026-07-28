@@ -231,9 +231,28 @@ async function getRewardSettings() {
 
   if (!order) return;
 
-  const cashbackPercentage = 5;
-  const cashback = Math.floor(
+  const rewardSettings = await getRewardSettings();
+
+  if (!rewardSettings.cashbackEnabled) {
+    return updateDoc(doc(db, "orders", id), {
+      status,
+    });
+  }
+
+  const cashbackPercentage = rewardSettings.cashbackPercent;
+  let cashback = Math.floor(
     (Number(order.total || 0) * cashbackPercentage) / 100
+  );
+
+  // Minimum order check
+  if (Number(order.total || 0) < rewardSettings.minimumOrder) {
+    cashback = 0;
+  }
+
+  // Maximum cashback limit
+  cashback = Math.min(
+    cashback,
+    rewardSettings.maximumCashback
   );
 
   if (status === "Cancelled") {
@@ -286,6 +305,7 @@ async function getRewardSettings() {
           rewardStatus: "CREDITED",
           rewardAmount: cashback,
           rewardCreditedAt: new Date(),
+          cashbackPercent: rewardSettings.cashbackPercent,
         }
       : {}),
 
