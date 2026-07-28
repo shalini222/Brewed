@@ -257,11 +257,7 @@ export default function WalletPage({ setPage }) {
           (item) => item.type === filter
         );
 
-  return (
-    <div>
-      {/* Wallet UI Render Placeholder */}
-    </div>
-  );
+ 
 
 
 
