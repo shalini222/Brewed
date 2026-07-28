@@ -72,7 +72,8 @@ export default function WalletPage({ setPage }) {
         const data = walletSnap.data();
 
         setBalance(data.balance || 0);
-        setPromoBalance(data.promoBalance || 0);
+setRewardBalance(data.rewardBalance || 0);
+setPromoBalance(data.promoBalance || 0);
       }
 
       // Load more transactions for analytics and display
@@ -92,31 +93,14 @@ export default function WalletPage({ setPage }) {
 
       setTransactions(loadedTransactions);
 
-      // Load Rewards From Firestore
-      const rewardsRef = collection(db, "rewards");
+      const rewardTransactions = loadedTransactions.filter(
+  (t) => t.type === "REWARD"
+);
 
-      const rewardQuery = query(
-        rewardsRef,
-        where("userId", "==", currentUser.uid),
-        orderBy("createdAt", "desc"),
-        limit(50)
-      );
+setRewards(rewardTransactions);
+    
 
-      const rewardSnapshot = await getDocs(rewardQuery);
 
-      const rewardData = rewardSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      setRewards(rewardData);
-
-      const totalRewards = rewardData.reduce(
-        (total, item) => total + item.amount,
-        0
-      );
-
-      setRewardBalance(totalRewards);
 
       // Load Refunds From Firestore
       const refundQuery = query(
@@ -147,14 +131,15 @@ export default function WalletPage({ setPage }) {
       const totalRefunds = refundData
         .reduce((sum, item) => sum + item.amount, 0);
 
-      const calculatedRewards = rewardData
-        .reduce((sum, item) => sum + item.amount, 0);
+      const calculatedRewards = loadedTransactions
+  .filter((item) => item.type === "REWARD")
+  .reduce((sum, item) => sum + item.amount, 0);
 
       setAnalytics({
         totalAdded,
         totalSpent,
         totalRefunds,
-        totalRewards: calculatedRewards,
+        totalRewards: data.rewardBalance || 0,
       });
 
       // Load Payment Methods From Firestore
