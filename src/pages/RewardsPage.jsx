@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, orderBy, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, runTransaction, addDoc, collection, query, where, getDocs, orderBy, serverTimestamp, Timestamp } from "firebase/firestore";
 
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
@@ -75,10 +75,15 @@ export default function RewardsPage({ setPage }) {
         );
         const redemptionsSnap = await getDocs(redemptionsQuery);
         setRedemptions(
-          redemptionsSnap.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
+          redemptionsSnap.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              // Check and update local status if expired
+              isExpired: data.expiresAt && data.expiresAt.toDate() < new Date()
+            };
+          })
         );
       }
       catch (error) {
@@ -101,45 +106,62 @@ export default function RewardsPage({ setPage }) {
         alert("Not enough points");
         return;
       }
-      const userRef = doc(
-        db,
-        "users",
-        currentUser.uid
-      );
-      const newPoints = points - reward.pointsRequired;
-      // Update user points
-      await updateDoc(
-        userRef,
-        { rewardPoints: newPoints }
-      );
+
+      const userRef = doc(db, "users", currentUser.uid);
+      const codeValue = "BREW" + Math.floor(Math.random() * 100000);
+      
+      // Calculate expiry date: 30 days from now
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 30);
+
+      let updatedPoints = 0;
+
+      // Firestore Transaction for atomic safety preventing race conditions
+      await runTransaction(db, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists()) {
+          throw "User does not exist!";
+        }
+
+        const currentPoints = userDoc.data().rewardPoints || 0;
+        if (currentPoints < reward.pointsRequired) {
+          throw "Not enough points!";
+        }
+
+        updatedPoints = currentPoints - reward.pointsRequired;
+        transaction.update(userRef, { rewardPoints: updatedPoints });
+      });
+
       // Create redemption record
-      const newRedemption = {
+      const redemptionData = {
         userId: currentUser.uid,
         rewardId: reward.id,
         rewardTitle: reward.title,
         pointsUsed: reward.pointsRequired,
         status: "active",
-        code: "BREW" + Math.floor(Math.random() * 100000),
-        createdAt: new Date()
+        code: codeValue,
+        createdAt: serverTimestamp(),
+        expiresAt: Timestamp.fromDate(expiryDate)
       };
+
       const docRef = await addDoc(
         collection(db, "redemptions"),
-        {
-          ...newRedemption,
-          createdAt: serverTimestamp()
-        }
+        redemptionData
       );
       
-      setPoints(newPoints);
-      setRedemptions(prev => [{ id: docRef.id, ...newRedemption }, ...prev]);
-      alert(
-        "Reward claimed successfully 🎉"
-      );
+      setPoints(updatedPoints);
+      setRedemptions(prev => [{ 
+        id: docRef.id, 
+        ...redemptionData, 
+        createdAt: new Date(), 
+        expiresAt: expiryDate,
+        isExpired: false 
+      }, ...prev]);
+
+      alert("Reward claimed successfully 🎉");
     } catch (error) {
-      console.log(
-        "Claim reward error:",
-        error
-      );
+      console.log("Claim reward error:", error);
+      alert(typeof error === "string" ? error : "Failed to claim reward");
     }
   };
 
@@ -478,28 +500,49 @@ export default function RewardsPage({ setPage }) {
             : (
               <div className="reward-grid">
                 {
-                  redemptions.map(item => (
-                    <div
-                      className="reward-card"
-                      key={item.id}
-                    >
-                      <h3>
-                        ☕ {item.rewardTitle}
-                      </h3>
+                  redemptions.map(item => {
+                    const expiryDateFormatted = item.expiresAt?.toDate 
+                      ? item.expiresAt.toDate().toLocaleDateString() 
+                      : (item.expiresAt instanceof Date ? item.expiresAt.toLocaleDateString() : "30 days");
+                    
+                    return (
+                      <div
+                        className="reward-card"
+                        key={item.id}
+                      >
+                        <h3>
+                          ☕ {item.rewardTitle}
+                        </h3>
 
-                      <p>
-                        Code: <strong>{item.code}</strong>
-                      </p>
+                        <p>
+                          Code: <strong>{item.code}</strong>
+                        </p>
 
-                      <p>
-                        Status: <span style={{ textTransform: "capitalize", color: "#C4956A", fontWeight: "bold" }}>{item.status}</span>
-                      </p>
+                        <p>
+                          Status: <span style={{ textTransform: "capitalize", color: item.isExpired ? "#999" : "#C4956A", fontWeight: "bold" }}>
+                            {item.isExpired ? "Expired" : item.status}
+                          </span>
+                        </p>
 
-                      <button onClick={() => alert(`Use code: ${item.code} at checkout!`)}>
-                        Use Reward
-                      </button>
-                    </div>
-                  ))
+                        <p style={{ fontSize: "12px", color: "#666" }}>
+                          Expires: {expiryDateFormatted}
+                        </p>
+
+                        <button 
+                          disabled={item.isExpired || item.status !== "active"}
+                          onClick={() => {
+                            if (setPage) {
+                              setPage("checkout");
+                            } else {
+                              alert(`Apply code: ${item.code} at checkout!`);
+                            }
+                          }}
+                        >
+                          {item.isExpired ? "Expired" : "Use Reward"}
+                        </button>
+                      </div>
+                    );
+                  })
                 }
               </div>
             )
