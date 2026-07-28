@@ -79,9 +79,8 @@ export default function WalletPage({ setPage }) {
       // Load more transactions for analytics and display
       const q = query(
         collection(db, "walletTransactions"),
-        where("userId", "==", currentUser.uid),
-        orderBy("createdAt", "desc"),
-        limit(50)
+        where("userId", "==", currentUser.uid)
+        
       );
 
       const snapshot = await getDocs(q);
