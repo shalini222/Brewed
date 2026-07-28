@@ -258,14 +258,23 @@ const cashback = Math.floor(
       }
     : {}),
 
-  ...(status === "Delivered" &&
+  if (
+  status === "Delivered" &&
   order.rewardStatus === "PENDING"
-    ? {
-        rewardStatus: "CREDITED",
-        rewardAmount: cashback,
-        rewardCreditedAt: new Date(),
-      }
-    : {}),
+) {
+  try {
+    await walletService.addReward({
+      userId: order.userId,
+      amount: cashback,
+      orderId: order.id,
+      description: `Cashback for order #${order.id}`,
+    });
+
+    console.log("Reward added successfully");
+  } catch (err) {
+    console.error("Reward error:", err);
+  }
+}
 });
 }
 
