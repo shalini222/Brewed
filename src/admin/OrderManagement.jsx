@@ -533,11 +533,14 @@ return (
 
 
                                 
-                                {Array.isArray(item.toppings) && item.toppings.length > 0 && (
+                              {Array.isArray(item.toppings) && item.toppings.length > 0 && (
   <span style={chipStyle}>
     Toppings: {item.toppings
-      .map(t => typeof t === "string" ? t : "")
-      .filter(Boolean)
+      .map(topping =>
+        typeof topping === "string"
+          ? topping
+          : topping.name
+      )
       .join(", ")}
   </span>
 )}
