@@ -979,6 +979,7 @@ const handleClaimReward = async (reward) => {
       </div>
 
       {rewards.length === 0 ? (
+    <p>Rewards Count: {rewards.length}</p>
         <p
           style={{
             textAlign: "center",
