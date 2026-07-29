@@ -265,6 +265,7 @@ const handleClaimReward = async () => {
       amount: rewardBalance,
       description: "Rewards Claimed",
       status: "SUCCESS",
+      
       createdAt: serverTimestamp(),
     });
 
