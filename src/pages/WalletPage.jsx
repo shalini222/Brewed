@@ -144,22 +144,22 @@ alert(
       
       
       const rewardData = loadedTransactions.filter(
-  item =>
+  (item) =>
     item.type === "REWARD" &&
     item.claimed === false
 );
 
-alert("Rewards found: " + rewardData.length);
-
-setRewards(rewardData);
+alert(JSON.stringify(rewardData));
   
 
-      setRewardBalance(
-        rewardData.reduce(
-          (sum, item) => sum + item.amount,
-          0
-        )
-      );
+      setRewards(rewardData);
+
+setRewardBalance(
+  rewardData.reduce(
+    (sum, item) => sum + item.amount,
+    0
+  )
+);
 
       const walletSnapForAnalytics = await getDoc(doc(db, "wallets", currentUser.uid));
       const walletDataForAnalytics = walletSnapForAnalytics.exists() ? walletSnapForAnalytics.data() : {};
