@@ -1,73 +1,19 @@
 import { useState, useEffect } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  getDocs,
+  updateDoc,
+  increment,
+  addDoc,
+  collection,
+  serverTimestamp,
+  query,
+  where,
+  orderBy
+} from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
-
-const rewards = [
-  {
-    id: 1,
-    title: "Free Espresso",
-    icon: "☕",
-    points: 200,
-    color: "#F8F3ED",
-  },
-  {
-    id: 2,
-    title: "Free Croissant",
-    icon: "🥐",
-    points: 300,
-    color: "#FFF5E8",
-  },
-  {
-    id: 3,
-    title: "Cheesecake Slice",
-    icon: "🍰",
-    points: 450,
-    color: "#FFF2F2",
-  },
-  {
-    id: 4,
-    title: "₹100 Wallet Credit",
-    icon: "💳",
-    points: 1000,
-    color: "#EEF8F0",
-  },
-];
-
-const activities = [
-  {
-    id: 1,
-    type: "earned",
-    title: "Welcome Bonus",
-    points: 100,
-    date: "Today",
-    icon: "🎉",
-  },
-  {
-    id: 2,
-    type: "earned",
-    title: "Flat White",
-    points: 45,
-    date: "Yesterday",
-    icon: "☕",
-  },
-  {
-    id: 3,
-    type: "redeemed",
-    title: "Free Espresso",
-    points: -200,
-    date: "24 Jul",
-    icon: "🎁",
-  },
-  {
-    id: 4,
-    type: "earned",
-    title: "Birthday Reward",
-    points: 250,
-    date: "15 Jul",
-    icon: "🎂",
-  },
-];
 
 export default function LoyaltyPage({ setPage }) {
   const [loading, setLoading] = useState(true);
@@ -75,65 +21,140 @@ export default function LoyaltyPage({ setPage }) {
   const [lifetimePoints, setLifetimePoints] = useState(0);
   const [loyaltyTier, setLoyaltyTier] = useState("Bronze");
   
+  const [rewards, setRewards] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [successModal, setSuccessModal] = useState(false);
+  const [redeemedRewardData, setRedeemedRewardData] = useState(null);
+  
   const { currentUser } = useAuth();
 
   useEffect(() => {
     if (!currentUser) return;
 
-    async function loadLoyalty() {
+    async function loadLoyaltyData() {
       try {
         setLoading(true);
 
+        // 1. Load User Data
         const userRef = doc(db, "users", currentUser.uid);
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
           const data = userSnap.data();
-
           setLoyaltyPoints(data.loyaltyPoints || 0);
           setLifetimePoints(data.lifetimePoints || 0);
           setLoyaltyTier(data.loyaltyTier || "Bronze");
         }
+
+        // 2. Load Rewards from Firestore
+        const rewardsSnapshot = await getDocs(
+          collection(db, "loyaltyRewards")
+        );
+        const rewardsData = rewardsSnapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .filter(r => r.active !== false);
+
+        setRewards(rewardsData);
+
+        // 3. Load Transactions/Activities from Firestore
+        const txQuery = query(
+          collection(db, "loyaltyTransactions"),
+          where("userId", "==", currentUser.uid),
+          orderBy("createdAt", "desc")
+        );
+        
+        try {
+          const txSnapshot = await getDocs(txQuery);
+          const txData = txSnapshot.docs.map(doc => {
+            const data = doc.data();
+            // Format date nicely if available
+            let dateStr = "Recent";
+            if (data.createdAt && data.createdAt.toDate) {
+              dateStr = data.createdAt.toDate().toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric"
+              });
+            }
+            return {
+              id: doc.id,
+              type: data.type || "earned",
+              title: data.description || "Loyalty Event",
+              points: data.points || 0,
+              date: dateStr,
+              icon: data.type === "redeem" ? "🎁" : (data.icon || "☕")
+            };
+          });
+          setActivities(txData);
+        } catch (txErr) {
+          console.error("Error loading transactions (index may be required):", txErr);
+          // Fallback if query fails due to missing index
+          setActivities([]);
+        }
+
       } catch (err) {
-        console.error("Error loading loyalty:", err);
+        console.error("Error loading loyalty data:", err);
       } finally {
         setLoading(false);
       }
     }
 
-    loadLoyalty();
-  }, [currentUser]);
+    loadLoyaltyData();
+  }, [currentUser, successModal]);
+
+  const redeemReward = async (reward) => {
+    const pointsNeeded = reward.pointsRequired || reward.points;
+
+    if (loyaltyPoints < pointsNeeded) {
+      alert("Not enough points.");
+      return;
+    }
+
+    try {
+      const userRef = doc(db, "users", currentUser.uid);
+
+      await updateDoc(userRef, {
+        loyaltyPoints: increment(-pointsNeeded)
+      });
+
+      await addDoc(
+        collection(db, "loyaltyTransactions"),
+        {
+          userId: currentUser.uid,
+          type: "redeem",
+          points: -pointsNeeded,
+          description: reward.title,
+          rewardId: reward.id,
+          createdAt: serverTimestamp()
+        }
+      );
+
+      // Update local state immediately for instant UI feedback
+      setLoyaltyPoints(prev => prev - pointsNeeded);
+      setRedeemedRewardData({
+        title: reward.title,
+        points: pointsNeeded,
+        remaining: loyaltyPoints - pointsNeeded
+      });
+      setSuccessModal(true);
+
+    } catch (err) {
+      console.error("Error redeeming reward:", err);
+      alert("Failed to redeem reward. Please try again.");
+    }
+  };
 
   const TIERS = [
-    {
-      name: "Bronze",
-      min: 0,
-      max: 499,
-    },
-    {
-      name: "Silver",
-      min: 500,
-      max: 1499,
-    },
-    {
-      name: "Gold",
-      min: 1500,
-      max: 2999,
-    },
-    {
-      name: "Platinum",
-      min: 3000,
-      max: Infinity,
-    },
+    { name: "Bronze", min: 0, max: 499 },
+    { name: "Silver", min: 500, max: 1499 },
+    { name: "Gold", min: 1500, max: 2999 },
+    { name: "Platinum", min: 3000, max: Infinity },
   ];
 
-  const currentTier = TIERS.find(
-    (tier) => tier.name === loyaltyTier
-  );
-
-  const nextTier = TIERS.find(
-    (tier) => tier.min > loyaltyPoints
-  );
+  const currentTier = TIERS.find(tier => tier.name === loyaltyTier);
+  const nextTier = TIERS.find(tier => tier.min > loyaltyPoints);
 
   let progress = 100;
   let pointsToNext = 0;
@@ -610,6 +631,102 @@ export default function LoyaltyPage({ setPage }) {
           margin: 0;
         }
 
+        /* Success Modal Styles */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0,0,0,0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+          backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+          background: #fff;
+          padding: 35px;
+          border-radius: 24px;
+          width: 90%;
+          max-width: 400px;
+          text-align: center;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+          animation: modalPopup 0.3s ease-out;
+        }
+
+        @keyframes modalPopup {
+          0% { transform: scale(0.9); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-icon {
+          font-size: 48px;
+          margin-bottom: 15px;
+        }
+
+        .modal-content h3 {
+          font-family: "Playfair Display", serif;
+          color: #3F2B22;
+          font-size: 24px;
+          margin: 0 0 10px 0;
+        }
+
+        .modal-reward-title {
+          font-size: 18px;
+          font-weight: 600;
+          color: #6F4E37;
+          margin-bottom: 8px;
+        }
+
+        .modal-deduction {
+          color: #C62828;
+          font-size: 14px;
+          margin-bottom: 15px;
+          font-weight: 500;
+        }
+
+        .modal-remaining {
+          background: #FDFAF5;
+          padding: 12px;
+          border-radius: 12px;
+          margin-bottom: 25px;
+          font-size: 14px;
+          color: #555;
+          border: 1px solid #EFE6DA;
+        }
+
+        .modal-remaining span {
+          font-weight: 700;
+          color: #3F2B22;
+        }
+
+        .modal-actions {
+          display: flex;
+          gap: 12px;
+        }
+
+        .modal-btn {
+          flex: 1;
+          padding: 12px;
+          border-radius: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          border: none;
+        }
+
+        .modal-btn.secondary {
+          background: #F8F3ED;
+          color: #6F4E37;
+        }
+
+        .modal-btn.primary {
+          background: #6F4E37;
+          color: white;
+        }
+
         @media (max-width: 768px) {
           .loyalty-page-container {
             padding: 0 24px;
@@ -843,8 +960,8 @@ export default function LoyaltyPage({ setPage }) {
           <div className="rewards-scroll">
 
             {rewards.map((reward) => {
-
-              const canRedeem = loyaltyPoints >= reward.points;
+              const reqPoints = reward.pointsRequired || reward.points || 0;
+              const canRedeem = loyaltyPoints >= reqPoints;
 
               return (
 
@@ -855,14 +972,14 @@ export default function LoyaltyPage({ setPage }) {
 
                   <div
                     className="reward-icon"
-                    style={{ background: reward.color }}
+                    style={{ background: reward.color || "#F8F3ED" }}
                   >
-                    {reward.icon}
+                    {reward.icon || "🎁"}
                   </div>
 
                   <h3>{reward.title}</h3>
 
-                  <p>{reward.points} Points</p>
+                  <p>{reqPoints} Points</p>
 
                   <button
                     className={
@@ -870,6 +987,7 @@ export default function LoyaltyPage({ setPage }) {
                         ? "redeem-btn"
                         : "redeem-btn disabled"
                     }
+                    onClick={() => redeemReward(reward)}
                     disabled={!canRedeem}
                   >
                     {canRedeem
@@ -892,30 +1010,34 @@ export default function LoyaltyPage({ setPage }) {
           </div>
           
           <div className="activity-list">
-            {activities.map((activity) => (
-              <div key={activity.id} className="activity-card">
-                <div className="activity-left">
-                  <div className="activity-icon">
-                    {activity.icon}
+            {activities.length === 0 ? (
+              <p style={{ color: "#777" }}>No recent activity found.</p>
+            ) : (
+              activities.map((activity) => (
+                <div key={activity.id} className="activity-card">
+                  <div className="activity-left">
+                    <div className="activity-icon">
+                      {activity.icon}
+                    </div>
+                    <div>
+                      <h4>{activity.title}</h4>
+                      <span>{activity.date}</span>
+                    </div>
                   </div>
-                  <div>
-                    <h4>{activity.title}</h4>
-                    <span>{activity.date}</span>
+                  
+                  <div
+                    className={
+                      activity.points > 0
+                        ? "activity-points earned"
+                        : "activity-points redeemed"
+                    }
+                  >
+                    {activity.points > 0 ? "+" : ""}
+                    {activity.points} pts
                   </div>
                 </div>
-                
-                <div
-                  className={
-                    activity.points > 0
-                      ? "activity-points earned"
-                      : "activity-points redeemed"
-                  }
-                >
-                  {activity.points > 0 ? "+" : ""}
-                  {activity.points} pts
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -991,6 +1113,36 @@ export default function LoyaltyPage({ setPage }) {
         </div>
 
       </div>
+
+      {successModal && redeemedRewardData && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-icon">🎉</div>
+            <h3>Reward Redeemed!</h3>
+            <p className="modal-reward-title">{redeemedRewardData.title}</p>
+            <p className="modal-deduction">{redeemedRewardData.points} points deducted</p>
+            
+            <div className="modal-remaining">
+              Remaining Points: <span>{redeemedRewardData.remaining}</span>
+            </div>
+
+            <div className="modal-actions">
+              <button 
+                className="modal-btn secondary"
+                onClick={() => setSuccessModal(false)}
+              >
+                View Rewards
+              </button>
+              <button 
+                className="modal-btn primary"
+                onClick={() => setSuccessModal(false)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
