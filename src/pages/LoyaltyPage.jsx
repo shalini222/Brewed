@@ -99,7 +99,7 @@ export default function LoyaltyPage({ setPage }) {
         }
 
         .hero-overlay {
-          padding: 24px 28px;
+          padding: 20px 22px;
         }
 
         .hero-top {
@@ -109,55 +109,55 @@ export default function LoyaltyPage({ setPage }) {
         }
 
         .hero-subtitle {
-          font-size: 12px;
+          font-size: 11px;
           letter-spacing: 2px;
           text-transform: uppercase;
           opacity: .8;
-          margin-bottom: 4px;
+          margin-bottom: 3px;
         }
 
         .hero-title {
-          font-size: 28px;
+          font-size: 24px;
           margin: 0;
           font-family: "Playfair Display", serif;
         }
 
         .coffee-icon {
-          font-size: 34px;
+          font-size: 30px;
         }
 
         .hero-main-flex {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-top: 16px;
+          margin-top: 12px;
         }
 
         .hero-points-group {
           display: flex;
           align-items: baseline;
-          gap: 10px;
+          gap: 8px;
         }
 
         .hero-points {
-          font-size: 44px;
+          font-size: 38px;
           font-weight: 700;
           line-height: 1;
         }
 
         .hero-label {
-          font-size: 15px;
+          font-size: 14px;
           opacity: .85;
         }
 
         .progress-wrapper {
           flex: 1;
-          margin-left: 40px;
+          margin-left: 30px;
         }
 
         .progress-track {
           width: 100%;
-          height: 8px;
+          height: 7px;
           background: rgba(255,255,255,.15);
           border-radius: 999px;
           overflow: hidden;
@@ -171,47 +171,47 @@ export default function LoyaltyPage({ setPage }) {
         }
 
         .progress-text {
-          margin-top: 6px;
-          font-size: 13px;
+          margin-top: 5px;
+          font-size: 12px;
           color: #F6E9D5;
         }
 
         .stats-grid {
-          margin-top: 20px;
+          margin-top: 16px;
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 12px;
+          gap: 10px;
         }
 
         .stat-card {
           background: rgba(255,255,255,.12);
           backdrop-filter: blur(14px);
           border: 1px solid rgba(255,255,255,.15);
-          border-radius: 12px;
-          padding: 12px 16px;
+          border-radius: 10px;
+          padding: 10px 12px;
           text-align: center;
         }
 
         .stat-number {
           display: block;
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 700;
         }
 
         .stat-title {
           display: block;
-          margin-top: 4px;
-          font-size: 12px;
+          margin-top: 3px;
+          font-size: 11px;
           opacity: .8;
         }
 
         @media (max-width: 768px) {
           .hero-overlay {
-            padding: 18px;
+            padding: 14px 16px;
           }
 
           .hero-title {
-            font-size: 22px;
+            font-size: 20px;
           }
 
           .hero-main-flex {
@@ -221,12 +221,12 @@ export default function LoyaltyPage({ setPage }) {
 
           .progress-wrapper {
             margin-left: 0;
-            margin-top: 14px;
+            margin-top: 10px;
             width: 100%;
           }
 
           .hero-points {
-            font-size: 36px;
+            font-size: 32px;
           }
 
           .stats-grid {
