@@ -957,8 +957,7 @@ const handleClaimReward = async (reward) => {
       )}
 
       {/* Rewards Modal */}
-      {/* Rewards Modal */}
-        {/* Rewards Modal */}
+    {/* Rewards Modal */}
 {showRewards && (
   <div className="wallet-modal-overlay">
     <div className="wallet-modal transaction-modal">
@@ -979,17 +978,18 @@ const handleClaimReward = async (reward) => {
       </div>
 
       {rewards.length === 0 ? (
-    <>
-    <p>Rewards Count: {rewards.length}</p>
-        <p
-          style={{
-            textAlign: "center",
-            color: "#777",
-            padding: "20px 0",
-          }}
-        >
-          No rewards yet.
-        </p>
+        <>
+          <p>Rewards Count: {rewards.length}</p>
+          <p
+            style={{
+              textAlign: "center",
+              color: "#777",
+              padding: "20px 0",
+            }}
+          >
+            No rewards yet.
+          </p>
+        </>
       ) : (
         <div className="wallet-transaction-list">
           {rewards.map((reward) => (
@@ -1043,8 +1043,10 @@ const handleClaimReward = async (reward) => {
       </button>
     </div>
   </div>
-  </>
 )}
+
+
+
 
       {/* Refunds Modal */}
       {showRefunds && (
