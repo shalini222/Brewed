@@ -126,10 +126,10 @@ export default function WalletPage({ setPage }) {
 
       // Filter rewards that are not yet claimed
       const rewardData = loadedTransactions.filter(
-        (item) =>
-          item.type === "REWARD" &&
-          item.claimed !== true
-      );
+  (item) =>
+    (item.type === "REWARD" || item.type === "reward") &&
+    item.claimed !== true
+);
 
       setRewards(rewardData);
 
