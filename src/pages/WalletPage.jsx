@@ -244,7 +244,7 @@ setTransactions(loadedTransactions);
   };
 
 
-const handleClaimReward = async () => {
+const handleClaimReward = async (reward) => {
   try {
     if (rewardBalance <= 0) {
       alert("No rewards to claim.");
@@ -259,13 +259,24 @@ const handleClaimReward = async () => {
       updatedAt: serverTimestamp(),
     });
 
+
+  await updateDoc(
+  doc(db, "walletTransactions", reward.id),
+  {
+    claimed: true,
+    claimedAt: serverTimestamp(),
+  }
+);
+
+    
+
     await addDoc(collection(db, "walletTransactions"), {
       userId: currentUser.uid,
       type: "REWARD_REDEEM",
       amount: rewardBalance,
       description: "Rewards Claimed",
       status: "SUCCESS",
-      
+       
       createdAt: serverTimestamp(),
     });
 
