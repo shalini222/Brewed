@@ -93,7 +93,7 @@ export default function WalletPage({ setPage }) {
 
       setTransactions(loadedTransactions);
 
-      alert("All wallet transactions:", loadedTransactions);
+      alert(JSON.stringify(loadedTransactions[0], null, 2));
 
       // Load Refunds From Firestore
       const refundQuery = query(
