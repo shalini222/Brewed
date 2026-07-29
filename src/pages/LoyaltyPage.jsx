@@ -89,22 +89,22 @@ export default function LoyaltyPage({ setPage }) {
     <>
       <style>{`
         .loyalty-page-container {
-          padding: 0 24px;
+          padding: 0 40px;
           max-width: 1200px;
           margin: 0 auto;
         }
 
         .loyalty-hero {
           background: linear-gradient(135deg,#4A2C2A,#6D4434,#8A5A42);
-          border-radius: 20px;
+          border-radius: 18px;
           color: white;
           overflow: hidden;
-          margin: 25px auto;
-          box-shadow: 0 12px 35px rgba(0,0,0,.15);
+          margin: 20px auto;
+          box-shadow: 0 10px 30px rgba(0,0,0,.15);
         }
 
         .hero-overlay {
-          padding: 20px 28px;
+          padding: 16px 22px;
         }
 
         .hero-top {
@@ -114,55 +114,55 @@ export default function LoyaltyPage({ setPage }) {
         }
 
         .hero-subtitle {
-          font-size: 11px;
+          font-size: 10px;
           letter-spacing: 2px;
           text-transform: uppercase;
           opacity: .8;
-          margin-bottom: 3px;
+          margin-bottom: 2px;
         }
 
         .hero-title {
-          font-size: 24px;
+          font-size: 21px;
           margin: 0;
           font-family: "Playfair Display", serif;
         }
 
         .coffee-icon {
-          font-size: 30px;
+          font-size: 26px;
         }
 
         .hero-main-flex {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-top: 12px;
+          margin-top: 10px;
         }
 
         .hero-points-group {
           display: flex;
           align-items: baseline;
-          gap: 8px;
+          gap: 6px;
         }
 
         .hero-points {
-          font-size: 38px;
+          font-size: 32px;
           font-weight: 700;
           line-height: 1;
         }
 
         .hero-label {
-          font-size: 14px;
+          font-size: 13px;
           opacity: .85;
         }
 
         .progress-wrapper {
           flex: 1;
-          margin-left: 30px;
+          margin-left: 24px;
         }
 
         .progress-track {
           width: 100%;
-          height: 7px;
+          height: 6px;
           background: rgba(255,255,255,.15);
           border-radius: 999px;
           overflow: hidden;
@@ -176,51 +176,51 @@ export default function LoyaltyPage({ setPage }) {
         }
 
         .progress-text {
-          margin-top: 5px;
-          font-size: 12px;
+          margin-top: 4px;
+          font-size: 11px;
           color: #F6E9D5;
         }
 
         .stats-grid {
-          margin-top: 16px;
+          margin-top: 14px;
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 10px;
+          gap: 8px;
         }
 
         .stat-card {
           background: rgba(255,255,255,.12);
           backdrop-filter: blur(14px);
           border: 1px solid rgba(255,255,255,.15);
-          border-radius: 10px;
-          padding: 10px 12px;
+          border-radius: 8px;
+          padding: 8px 10px;
           text-align: center;
         }
 
         .stat-number {
           display: block;
-          font-size: 18px;
+          font-size: 16px;
           font-weight: 700;
         }
 
         .stat-title {
           display: block;
-          margin-top: 3px;
-          font-size: 11px;
+          margin-top: 2px;
+          font-size: 10px;
           opacity: .8;
         }
 
         @media (max-width: 768px) {
           .loyalty-page-container {
-            padding: 0 16px;
+            padding: 0 24px;
           }
 
           .hero-overlay {
-            padding: 14px 16px;
+            padding: 12px 14px;
           }
 
           .hero-title {
-            font-size: 20px;
+            font-size: 18px;
           }
 
           .hero-main-flex {
@@ -230,12 +230,12 @@ export default function LoyaltyPage({ setPage }) {
 
           .progress-wrapper {
             margin-left: 0;
-            margin-top: 10px;
+            margin-top: 8px;
             width: 100%;
           }
 
           .hero-points {
-            font-size: 32px;
+            font-size: 28px;
           }
 
           .stats-grid {
