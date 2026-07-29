@@ -972,7 +972,7 @@ const handleClaimReward = async (reward) => {
   className="wallet-primary-btn"
   style={{ width: "100%", marginBottom: "20px" }}
   disabled={rewardBalance <= 0}
-  onClick={handleClaimReward}
+  onClick={() => handleClaimReward(reward)}
 >
   Claim ₹{rewardBalance}
 </button>
