@@ -263,7 +263,7 @@ export default function HeadlessNavbar({ currentPage, setPage }) {
                 </button>
 
                 <button onClick={() => { setShowMenu(false); setPage("rewards"); }}>
-                  <span>⭐</span> Rewards
+                  <span>⭐</span> Loyalty Program 
                 </button>
  <button onClick={() => { setShowMenu(false); setPage("wallet"); }}>
                   <span>👛</span> Wallet
