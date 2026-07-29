@@ -145,20 +145,24 @@ if (loadedTransactions.length > 0) {
         .reduce((sum, item) => sum + item.amount, 0);
 
       // Flexible reward filter to catch any variation of type "REWARD" and ensure it's not claimed
-      const rewardData = loadedTransactions;
-
-      console.log("Found rewards for list:", rewardData);
+      
 
 
+
+const rewardData = loadedTransactions.filter(
+  (item) => item.type === "REWARD"
+);
 
 alert(
-  "Loaded: " +
-    loadedTransactions.length +
-    "\nRewards: " +
-    rewardData.length
+  `Transactions: ${loadedTransactions.length}\nRewards: ${rewardData.length}`
 );
+
+setRewards(rewardData);
+return;
+
+
+
       
-      setRewards(rewardData);
 
       setRewardBalance(
         rewardData.reduce(
