@@ -63,8 +63,6 @@ export default function WalletPage({ setPage }) {
   }, [currentUser]);
 
 
-
-
   async function loadWallet() {
     try {
       setLoading(true);
@@ -80,7 +78,7 @@ export default function WalletPage({ setPage }) {
         setPromoBalance(data.promoBalance || 0);
       }
 
-      // Load more transactions for analytics and display
+      // Load transactions for this user
       const q = query(
         collection(db, "walletTransactions"),
         where("userId", "==", currentUser.uid)
@@ -104,34 +102,32 @@ export default function WalletPage({ setPage }) {
       );
 
       const refundSnapshot = await getDocs(refundQuery);
-
       const refundData = refundSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-
       setRefunds(refundData);
 
       // Calculate Analytics
       const totalAdded = loadedTransactions
-        .filter(item => item.type === "credit")
+        .filter(item => item.type === "credit" || item.type === "ADD_MONEY")
         .reduce((sum, item) => sum + item.amount, 0);
 
       const totalSpent = loadedTransactions
-        .filter(item => item.type === "debit")
+        .filter(item => item.type === "debit" || item.type === "PAYMENT")
         .reduce((sum, item) => sum + item.amount, 0);
 
       const totalRefunds = refundData
         .reduce((sum, item) => sum + item.amount, 0);
 
-      // Filter rewards that are not yet claimed
-      // Replace your reward filter in loadWallet with this:
-const rewardData = loadedTransactions.filter(
-  (item) =>
-    (item.type === "REWARD" || item.type === "reward") &&
-    item.claimed !== true
-);
-      
+      // Flexible reward filter to catch any variation of type "REWARD" and ensure it's not claimed
+      const rewardData = loadedTransactions.filter(
+        (item) =>
+          (item.type === "REWARD" || item.type === "reward") &&
+          item.claimed !== true
+      );
+
+      console.log("Found rewards for list:", rewardData);
 
       setRewards(rewardData);
 
@@ -157,35 +153,29 @@ const rewardData = loadedTransactions.filter(
         collection(db, "paymentMethods"),
         where("userId", "==", currentUser.uid)
       );
-
       const paymentSnapshot = await getDocs(paymentQuery);
-
       const paymentData = paymentSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-
       setPaymentMethods(paymentData);
 
       // Load Settings From Firestore
-      const settingsRef = doc(
-        db,
-        "walletSettings",
-        currentUser.uid
-      );
-
+      const settingsRef = doc(db, "walletSettings", currentUser.uid);
       const settingsSnap = await getDoc(settingsRef);
-
       if (settingsSnap.exists()) {
         setWalletSettings(settingsSnap.data());
       }
 
     } catch (error) {
-      console.error(error);
+      console.error("Error loading wallet:", error);
     } finally {
       setLoading(false);
     }
   }
+
+
+
 
 
 
