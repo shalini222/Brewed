@@ -70,7 +70,6 @@ export default function LoyaltyPage({ setPage }) {
           const txSnapshot = await getDocs(txQuery);
           const txData = txSnapshot.docs.map(doc => {
             const data = doc.data();
-            // Format date nicely if available
             let dateStr = "Recent";
             if (data.createdAt && data.createdAt.toDate) {
               dateStr = data.createdAt.toDate().toLocaleDateString("en-US", {
@@ -89,8 +88,7 @@ export default function LoyaltyPage({ setPage }) {
           });
           setActivities(txData);
         } catch (txErr) {
-          console.error("Error loading transactions (index may be required):", txErr);
-          // Fallback if query fails due to missing index
+          console.error("Error loading transactions:", txErr);
           setActivities([]);
         }
 
@@ -131,12 +129,12 @@ export default function LoyaltyPage({ setPage }) {
         }
       );
 
-      // Update local state immediately for instant UI feedback
-      setLoyaltyPoints(prev => prev - pointsNeeded);
+      const newPoints = loyaltyPoints - pointsNeeded;
+      setLoyaltyPoints(newPoints);
       setRedeemedRewardData({
         title: reward.title,
         points: pointsNeeded,
-        remaining: loyaltyPoints - pointsNeeded
+        remaining: newPoints
       });
       setSuccessModal(true);
 
