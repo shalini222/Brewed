@@ -62,6 +62,9 @@ export default function WalletPage({ setPage }) {
     loadWallet();
   }, [currentUser]);
 
+
+
+
   async function loadWallet() {
     try {
       setLoading(true);
@@ -81,36 +84,16 @@ export default function WalletPage({ setPage }) {
       const q = query(
         collection(db, "walletTransactions"),
         where("userId", "==", currentUser.uid)
-        
       );
 
       const snapshot = await getDocs(q);
-
-      alert("Docs found: " + snapshot.size);
       
       const loadedTransactions = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
       }));
 
-      console.log(loadedTransactions);
-alert(JSON.stringify(loadedTransactions.map(t => ({
-  type: t.type,
-  description: t.description,
-  amount: t.amount
-}))));
-
-
-      
-setTransactions(loadedTransactions);
-
-alert(
-  JSON.stringify(
-    loadedTransactions[0],
-    null,
-    2
-  )
-);
+      setTransactions(loadedTransactions);
 
       // Load Refunds From Firestore
       const refundQuery = query(
@@ -141,25 +124,21 @@ alert(
       const totalRefunds = refundData
         .reduce((sum, item) => sum + item.amount, 0);
 
-      
-      
+      // Filter rewards that are not yet claimed
       const rewardData = loadedTransactions.filter(
-  (item) =>
-    item.type === "REWARD" &&
-    item.claimed === false
-);
-
-alert(JSON.stringify(rewardData));
-  
+        (item) =>
+          item.type === "REWARD" &&
+          item.claimed !== true
+      );
 
       setRewards(rewardData);
 
-setRewardBalance(
-  rewardData.reduce(
-    (sum, item) => sum + item.amount,
-    0
-  )
-);
+      setRewardBalance(
+        rewardData.reduce(
+          (sum, item) => sum + item.amount,
+          0
+        )
+      );
 
       const walletSnapForAnalytics = await getDoc(doc(db, "wallets", currentUser.uid));
       const walletDataForAnalytics = walletSnapForAnalytics.exists() ? walletSnapForAnalytics.data() : {};
@@ -205,6 +184,11 @@ setRewardBalance(
       setLoading(false);
     }
   }
+
+
+
+
+  
   
   const handleAddMoney = async () => {
     if (!amount || amount <= 0) {
@@ -261,33 +245,40 @@ setRewardBalance(
     }
   };
 
+  const handleClaimReward = async (reward) => {
+    try {
+      const walletRef = doc(db, "wallets", currentUser.uid);
 
-const handleClaimReward = async (reward) => {
-  try {
-    const walletRef = doc(db, "wallets", currentUser.uid);
+      // 1. Update wallet balance and reward balance
+      await updateDoc(walletRef, {
+        balance: increment(reward.amount),
+        rewardBalance: increment(-reward.amount),
+        updatedAt: serverTimestamp(),
+      });
 
-    await updateDoc(walletRef, {
-      balance: increment(reward.amount),
-      rewardBalance: increment(-reward.amount),
-      updatedAt: serverTimestamp(),
-    });
+      // 2. Mark the specific reward transaction as claimed
+      const rewardTxRef = doc(db, "walletTransactions", reward.id);
+      await updateDoc(rewardTxRef, {
+        claimed: true,
+      });
 
-    await addDoc(collection(db, "walletTransactions"), {
-      userId: currentUser.uid,
-      type: "REWARD_REDEEM",
-      amount: reward.amount,
-      description: reward.description,
-      status: "SUCCESS",
-      createdAt: serverTimestamp(),
-    });
+      // 3. Log the redemption transaction
+      await addDoc(collection(db, "walletTransactions"), {
+        userId: currentUser.uid,
+        type: "REWARD_REDEEM",
+        amount: reward.amount,
+        description: `Claimed: ${reward.description || reward.title}`,
+        status: "SUCCESS",
+        createdAt: serverTimestamp(),
+      });
 
-    alert("Reward claimed successfully!");
-    loadWallet();
-  } catch (error) {
-    console.error(error);
-    alert(error.message);
-  }
-};
+      alert("Reward claimed successfully!");
+      loadWallet();
+    } catch (error) {
+      console.error(error);
+      alert(error.message);
+    }
+  };
 
 
 
