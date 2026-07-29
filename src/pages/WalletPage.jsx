@@ -141,27 +141,18 @@ alert(
       const totalRefunds = refundData
         .reduce((sum, item) => sum + item.amount, 0);
 
+      
+      
       const rewardData = loadedTransactions.filter(
-  item => {
-    alert(
-      `type=${item.type}\nclaimed=${item.claimed}\nmatch=${
-        item.type === "REWARD" && item.claimed !== true
-      }`
-    );
-    return item.type === "REWARD" && item.claimed !== true;
-  }
+  item =>
+    item.type === "REWARD" &&
+    item.claimed === false
 );
 
-alert("rewardData length = " + rewardData.length);
+alert("Rewards found: " + rewardData.length);
 
-      setRewards([
-  {
-    id: "test",
-    description: "Test Reward",
-    amount: 50,
-    status: "Available",
-  },
-]);
+setRewards(rewardData);
+  
 
       setRewardBalance(
         rewardData.reduce(
