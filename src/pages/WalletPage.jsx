@@ -131,7 +131,7 @@ setTransactions(loadedTransactions);
       const rewardData = loadedTransactions.filter(
   item =>
     item.type === "REWARD" &&
-    !item.claimed
+    item.claimed !== true
 );
 
       setRewards(rewardData);
