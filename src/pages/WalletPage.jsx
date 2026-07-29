@@ -129,9 +129,7 @@ setTransactions(loadedTransactions);
         .reduce((sum, item) => sum + item.amount, 0);
 
       const rewardData = loadedTransactions.filter(
-  item =>
-    item.type === "REWARD" &&
-    item.claimed !== true
+  item => item.amount === 50
 );
 
       setRewards([
