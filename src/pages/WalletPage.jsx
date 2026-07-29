@@ -951,6 +951,7 @@ const handleClaimReward = async (reward) => {
 
       {/* Rewards Modal */}
       {/* Rewards Modal */}
+        {/* Rewards Modal */}
 {showRewards && (
   <div className="wallet-modal-overlay">
     <div className="wallet-modal transaction-modal">
@@ -997,11 +998,10 @@ const handleClaimReward = async (reward) => {
 
               <div
                 style={{
-                  textAlign: "right",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "8px",
                   alignItems: "flex-end",
+                  gap: "8px",
                 }}
               >
                 <h4
@@ -1010,24 +1010,15 @@ const handleClaimReward = async (reward) => {
                     margin: 0,
                   }}
                 >
-                  ₹{reward.amount}
+                  +₹{reward.amount}
                 </h4>
 
-                {reward.claimed ? (
-                  <button
-                    className="wallet-primary-btn"
-                    disabled
-                  >
-                    Claimed ✓
-                  </button>
-                ) : (
-                  <button
-                    className="wallet-primary-btn"
-                    onClick={() => handleClaimReward(reward)}
-                  >
-                    Claim
-                  </button>
-                )}
+                <button
+                  className="wallet-primary-btn"
+                  onClick={() => handleClaimReward(reward)}
+                >
+                  Claim
+                </button>
               </div>
             </div>
           ))}
