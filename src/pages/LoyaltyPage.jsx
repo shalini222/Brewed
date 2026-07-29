@@ -4,7 +4,7 @@ import { doc, getDoc, runTransaction, addDoc, collection, query, where, getDocs,
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 
-export default function RewardsPage({ setPage }) {
+export default function LoyaltyPage({ setPage }) {
   const { currentUser } = useAuth();
 
   const [points, setPoints] = useState(0);
