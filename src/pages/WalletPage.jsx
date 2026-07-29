@@ -125,11 +125,13 @@ export default function WalletPage({ setPage }) {
         .reduce((sum, item) => sum + item.amount, 0);
 
       // Filter rewards that are not yet claimed
-      const rewardData = loadedTransactions.filter(
+      // Replace your reward filter in loadWallet with this:
+const rewardData = loadedTransactions.filter(
   (item) =>
     (item.type === "REWARD" || item.type === "reward") &&
     item.claimed !== true
 );
+      
 
       setRewards(rewardData);
 
