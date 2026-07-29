@@ -79,111 +79,33 @@ export default function WalletPage({ setPage }) {
       }
 
       // Load transactions for this user
-
-
 const q = query(
   collection(db, "walletTransactions"),
   where("userId", "==", currentUser.uid)
 );
-      
-      
-let loadedTransactions = [];
 
-try {
-  const snapshot = await getDocs(collection(db, "walletTransactions"));
+const snapshot = await getDocs(q);
 
-  alert("Docs found: " + snapshot.size);
-
-  loadedTransactions = snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
-
-
-alert(JSON.stringify({
-  uid: currentUser.uid,
-  totalTransactions: loadedTransactions.length,
-  rewards: loadedTransactions.filter(
-    (item) => item.type === "REWARD"
-  ).length,
-  rewardItems: loadedTransactions.filter(
-    (item) => item.type === "REWARD"
-  )
-}, null, 2));
-
-
-  
-  alert(JSON.stringify(loadedTransactions));
-} catch (e) {
-  alert(e.message);
-}
+const loadedTransactions = snapshot.docs.map((doc) => ({
+  id: doc.id,
+  ...doc.data(),
+}));
 
 setTransactions(loadedTransactions);
-
-if (loadedTransactions.length > 0) {
-  alert(JSON.stringify(loadedTransactions[0], null, 2));
-}
-      
-
-
-      
-  
-
-  
-
-      // Load Refunds From Firestore
-      const refundQuery = query(
-        collection(db, "refunds"),
-        where("userId", "==", currentUser.uid),
-        orderBy("createdAt", "desc"),
-        limit(50)
-      );
-
-      const refundSnapshot = await getDocs(refundQuery);
-      const refundData = refundSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setRefunds(refundData);
-
-      // Calculate Analytics
-      const totalAdded = loadedTransactions
-        .filter(item => item.type === "credit" || item.type === "ADD_MONEY")
-        .reduce((sum, item) => sum + item.amount, 0);
-
-      const totalSpent = loadedTransactions
-        .filter(item => item.type === "debit" || item.type === "PAYMENT")
-        .reduce((sum, item) => sum + item.amount, 0);
-
-      const totalRefunds = refundData
-        .reduce((sum, item) => sum + item.amount, 0);
-
-      // Flexible reward filter to catch any variation of type "REWARD" and ensure it's not claimed
-      
-
-
 
 const rewardData = loadedTransactions.filter(
   (item) => item.type === "REWARD"
 );
 
-alert(
-  `Transactions: ${loadedTransactions.length}\nRewards: ${rewardData.length}`
+setRewards(rewardData);
+
+setRewardBalance(
+  rewardData.reduce(
+    (sum, item) => sum + (item.amount || 0),
+    0
+  )
 );
 
-setRewards(rewardData);
-return;
-
-
-
-      
-
-      setRewardBalance(
-        rewardData.reduce(
-          (sum, item) => sum + item.amount,
-          0
-        )
-      );
 
       const walletSnapForAnalytics = await getDoc(doc(db, "wallets", currentUser.uid));
       const walletDataForAnalytics = walletSnapForAnalytics.exists() ? walletSnapForAnalytics.data() : {};
