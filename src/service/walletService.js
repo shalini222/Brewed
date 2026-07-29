@@ -324,7 +324,7 @@ export async function addReward({
     orderId,
 
     metadata,
-
+  claimed: false,
     createdAt: serverTimestamp(),
   });
 
