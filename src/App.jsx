@@ -15,7 +15,7 @@ import TrackingPage from "./pages/TrackingPage";
 import Login from "./pages/login";
 import ProfilePage from "./pages/ProfilePage";
 import OrdersPage from "./pages/OrdersPage";
-import RewardsPage from "./pages/RewardsPage";
+import LoyaltyPage from "./pages/LoyaltyPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -60,7 +60,7 @@ export default function App() {
     "cart",
     "checkout",
     "product",
-    "rewards",
+    "loyalty",
     "notifications",
     "tracking", 
     "settings",
@@ -179,8 +179,8 @@ export default function App() {
             <OrdersPage setPage={navigateTo} />
           )}
 
-          {page === "rewards" && (
-            <RewardsPage setPage={navigateTo} />
+          {page === "loyalty" && (
+            <LoyaltyPage setPage={navigateTo} />
           )}
 
           {page === "favorites" && (
