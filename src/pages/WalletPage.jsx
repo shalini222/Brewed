@@ -245,6 +245,12 @@ setTransactions(loadedTransactions);
 
 
 const handleClaimReward = async (reward) => {
+
+
+  console.log("Reward:", reward);
+  alert(JSON.stringify(reward));
+
+  
   try {
     if (rewardBalance <= 0) {
       alert("No rewards to claim.");
