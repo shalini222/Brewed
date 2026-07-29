@@ -99,6 +99,20 @@ try {
     ...doc.data(),
   }));
 
+
+alert(JSON.stringify({
+  uid: currentUser.uid,
+  totalTransactions: loadedTransactions.length,
+  rewards: loadedTransactions.filter(
+    (item) => item.type === "REWARD"
+  ).length,
+  rewardItems: loadedTransactions.filter(
+    (item) => item.type === "REWARD"
+  )
+}, null, 2));
+
+
+  
   alert(JSON.stringify(loadedTransactions));
 } catch (e) {
   alert(e.message);
