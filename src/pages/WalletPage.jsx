@@ -128,11 +128,7 @@ setTransactions(loadedTransactions);
       const totalRefunds = refundData
         .reduce((sum, item) => sum + item.amount, 0);
 
-      const rewardData = loadedTransactions.filter(
-  item =>
-    item.type === "REWARD" &&
-    item.claimed !== true
-);
+      const rewardData = loadedTransactions;
 
       setRewards(rewardData);
 
