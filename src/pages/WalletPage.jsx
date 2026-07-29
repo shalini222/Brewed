@@ -950,82 +950,100 @@ const handleClaimReward = async (reward) => {
       )}
 
       {/* Rewards Modal */}
-      {showRewards && (
-        <div className="wallet-modal-overlay">
-          <div className="wallet-modal transaction-modal">
-            <div className="wallet-section-header">
-              <h2>Rewards 🎁</h2>
-              <button
-                className="wallet-view-all"
-                onClick={() => setShowRewards(false)}
-              >
-                ✕
-              </button>
-            </div>
+      {/* Rewards Modal */}
+{showRewards && (
+  <div className="wallet-modal-overlay">
+    <div className="wallet-modal transaction-modal">
+      <div className="wallet-section-header">
+        <h2>Rewards 🎁</h2>
 
-            <div className="reward-balance">
-              <p>Available Rewards</p>
-              <h2>₹{rewardBalance}</h2>
-            </div>
+        <button
+          className="wallet-view-all"
+          onClick={() => setShowRewards(false)}
+        >
+          ✕
+        </button>
+      </div>
 
-            <button
-  className="wallet-primary-btn"
-  style={{ width: "100%", marginBottom: "20px" }}
-  disabled={rewardBalance <= 0}
-  onClick={() => handleClaimReward(reward)}
->
-  Claim ₹{rewardBalance}
-</button>
+      <div className="reward-balance">
+        <p>Available Rewards</p>
+        <h2>₹{rewardBalance}</h2>
+      </div>
 
-            {rewards.length === 0 ? (
-              <p style={{ textAlign: "center", color: "#777", padding: "20px 0" }}>
-                No rewards yet.
-              </p>
-            ) : (
-              <div className="wallet-transaction-list">
-                {rewards.map((reward) => (
-                  <div
-                    key={reward.id}
-                    className="wallet-transaction-item"
-                  >
-                    <div>
-                      <strong>{reward.description || reward.title}</strong>
-                      <p>{reward.status}</p>
-                    </div>
-
-                    <div style={{ textAlign: "right" }}>
-                      <h4 style={{ color: "#2E7D32", marginBottom: 8 }}>
-                        ₹{reward.amount}
-                      </h4>
-
-                      {reward.claimed ? (
-                        <button disabled>
-                          Claimed ✓
-                        </button>
-                      ) : (
-                        <button
-                          className="wallet-primary-btn"
-                          onClick={() => handleClaimReward(reward)}
-                        >
-                          Claim
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <button
-              className="wallet-close-btn"
-              style={{ marginTop: "20px" }}
-              onClick={() => setShowRewards(false)}
+      {rewards.length === 0 ? (
+        <p
+          style={{
+            textAlign: "center",
+            color: "#777",
+            padding: "20px 0",
+          }}
+        >
+          No rewards yet.
+        </p>
+      ) : (
+        <div className="wallet-transaction-list">
+          {rewards.map((reward) => (
+            <div
+              key={reward.id}
+              className="wallet-transaction-item"
             >
-              Close
-            </button>
-          </div>
+              <div>
+                <strong>
+                  {reward.description || reward.title}
+                </strong>
+
+                <p>{reward.status}</p>
+              </div>
+
+              <div
+                style={{
+                  textAlign: "right",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                  alignItems: "flex-end",
+                }}
+              >
+                <h4
+                  style={{
+                    color: "#2E7D32",
+                    margin: 0,
+                  }}
+                >
+                  ₹{reward.amount}
+                </h4>
+
+                {reward.claimed ? (
+                  <button
+                    className="wallet-primary-btn"
+                    disabled
+                  >
+                    Claimed ✓
+                  </button>
+                ) : (
+                  <button
+                    className="wallet-primary-btn"
+                    onClick={() => handleClaimReward(reward)}
+                  >
+                    Claim
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
+
+      <button
+        className="wallet-close-btn"
+        style={{ marginTop: "20px" }}
+        onClick={() => setShowRewards(false)}
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
 
       {/* Refunds Modal */}
       {showRefunds && (
