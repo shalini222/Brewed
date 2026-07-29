@@ -79,21 +79,40 @@ export default function WalletPage({ setPage }) {
       }
 
       // Load transactions for this user
+
+
+const q = query(collection(db, "walletTransactions"));
+      
+      
+let loadedTransactions = [];
+
+try {
+  const snapshot = await getDocs(collection(db, "walletTransactions"));
+
+  alert("Docs found: " + snapshot.size);
+
+  loadedTransactions = snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+
+  alert(JSON.stringify(loadedTransactions));
+} catch (e) {
+  alert(e.message);
+}
+
+setTransactions(loadedTransactions);
+
+if (loadedTransactions.length > 0) {
+  alert(JSON.stringify(loadedTransactions[0], null, 2));
+}
       
 
 
-      const q = query(collection(db, "walletTransactions"));
-
-      const snapshot = await getDocs(q);
       
-      const loadedTransactions = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+  
 
-      setTransactions(loadedTransactions);
-
-      alert(JSON.stringify(loadedTransactions[0], null, 2));
+  
 
       // Load Refunds From Firestore
       const refundQuery = query(
