@@ -242,38 +242,44 @@ setTransactions(loadedTransactions);
     }
   };
 
-const handleClaimReward = async (reward) => {
+
+const handleClaimReward = async () => {
   try {
+    if (rewardBalance <= 0) {
+      alert("No rewards to claim.");
+      return;
+    }
+
     const walletRef = doc(db, "wallets", currentUser.uid);
 
     await updateDoc(walletRef, {
-      balance: increment(reward.amount),
-      rewardBalance: increment(-reward.amount),
+      balance: increment(rewardBalance),
+      rewardBalance: increment(-rewardBalance),
       updatedAt: serverTimestamp(),
     });
 
     await addDoc(collection(db, "walletTransactions"), {
       userId: currentUser.uid,
       type: "REWARD_REDEEM",
-      amount: reward.amount,
-      description: `Claimed ${reward.description || reward.title}`,
+      amount: rewardBalance,
+      description: "Rewards Claimed",
       status: "SUCCESS",
       createdAt: serverTimestamp(),
     });
 
-    await updateDoc(doc(db, "walletTransactions", reward.id), {
-      claimed: true,
-      claimedAt: serverTimestamp(),
-    });
+    alert("Rewards claimed successfully!");
 
     loadWallet();
-    alert("Reward claimed successfully!");
-
   } catch (error) {
     console.error(error);
-    alert("Failed to claim reward.");
+    alert("Failed to claim rewards.");
   }
 };
+
+
+
+
+
   
 
   const updateWalletSettings = async (key, value) => {
@@ -967,6 +973,15 @@ const handleClaimReward = async (reward) => {
               <p>Available Rewards</p>
               <h2>₹{rewardBalance}</h2>
             </div>
+
+            <button
+  className="wallet-primary-btn"
+  style={{ width: "100%", marginBottom: "20px" }}
+  disabled={rewardBalance <= 0}
+  onClick={handleClaimReward}
+>
+  Claim ₹{rewardBalance}
+</button>
 
             {rewards.length === 0 ? (
               <p style={{ textAlign: "center", color: "#777", padding: "20px 0" }}>
