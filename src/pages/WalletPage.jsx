@@ -123,11 +123,7 @@ export default function WalletPage({ setPage }) {
         .reduce((sum, item) => sum + item.amount, 0);
 
       // Flexible reward filter to catch any variation of type "REWARD" and ensure it's not claimed
-      const rewardData = loadedTransactions.filter(
-        (item) =>
-          (item.type === "REWARD" || item.type === "reward") &&
-          item.claimed !== true
-      );
+      const rewardData = loadedTransactions;
 
       console.log("Found rewards for list:", rewardData);
 
