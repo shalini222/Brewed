@@ -90,62 +90,74 @@ export default function LoyaltyPage({ setPage }) {
       <style>{`
         .loyalty-hero {
           background: linear-gradient(135deg,#4A2C2A,#6D4434,#8A5A42);
-          border-radius: 24px;
+          border-radius: 20px;
           color: white;
           overflow: hidden;
-          margin: 40px auto;
+          margin: 25px auto;
           max-width: 1200px;
-          box-shadow: 0 18px 45px rgba(0,0,0,.18);
+          box-shadow: 0 12px 35px rgba(0,0,0,.15);
         }
 
         .hero-overlay {
-          padding: 40px;
+          padding: 24px 28px;
         }
 
         .hero-top {
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
+          align-items: center;
         }
 
         .hero-subtitle {
-          font-size: 14px;
-          letter-spacing: 3px;
+          font-size: 12px;
+          letter-spacing: 2px;
           text-transform: uppercase;
           opacity: .8;
-          margin-bottom: 8px;
+          margin-bottom: 4px;
         }
 
         .hero-title {
-          font-size: 40px;
+          font-size: 28px;
           margin: 0;
           font-family: "Playfair Display", serif;
         }
 
         .coffee-icon {
-          font-size: 46px;
+          font-size: 34px;
+        }
+
+        .hero-main-flex {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 16px;
+        }
+
+        .hero-points-group {
+          display: flex;
+          align-items: baseline;
+          gap: 10px;
         }
 
         .hero-points {
-          margin-top: 35px;
-          font-size: 64px;
+          font-size: 44px;
           font-weight: 700;
           line-height: 1;
         }
 
         .hero-label {
-          font-size: 18px;
+          font-size: 15px;
           opacity: .85;
-          margin-top: 8px;
         }
 
         .progress-wrapper {
-          margin-top: 30px;
+          flex: 1;
+          margin-left: 40px;
         }
 
         .progress-track {
           width: 100%;
-          height: 12px;
+          height: 8px;
           background: rgba(255,255,255,.15);
           border-radius: 999px;
           overflow: hidden;
@@ -159,50 +171,62 @@ export default function LoyaltyPage({ setPage }) {
         }
 
         .progress-text {
-          margin-top: 10px;
+          margin-top: 6px;
+          font-size: 13px;
           color: #F6E9D5;
         }
 
         .stats-grid {
-          margin-top: 35px;
+          margin-top: 20px;
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 18px;
+          gap: 12px;
         }
 
         .stat-card {
           background: rgba(255,255,255,.12);
           backdrop-filter: blur(14px);
           border: 1px solid rgba(255,255,255,.15);
-          border-radius: 18px;
-          padding: 20px;
+          border-radius: 12px;
+          padding: 12px 16px;
           text-align: center;
         }
 
         .stat-number {
           display: block;
-          font-size: 28px;
+          font-size: 20px;
           font-weight: 700;
         }
 
         .stat-title {
           display: block;
-          margin-top: 8px;
-          font-size: 14px;
+          margin-top: 4px;
+          font-size: 12px;
           opacity: .8;
         }
 
         @media (max-width: 768px) {
           .hero-overlay {
-            padding: 24px;
+            padding: 18px;
           }
 
           .hero-title {
-            font-size: 28px;
+            font-size: 22px;
+          }
+
+          .hero-main-flex {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .progress-wrapper {
+            margin-left: 0;
+            margin-top: 14px;
+            width: 100%;
           }
 
           .hero-points {
-            font-size: 48px;
+            font-size: 36px;
           }
 
           .stats-grid {
@@ -233,29 +257,30 @@ export default function LoyaltyPage({ setPage }) {
             <div className="coffee-icon">☕</div>
           </div>
 
-          <div className="hero-points">
-            {loyaltyPoints.toLocaleString()}
-          </div>
-
-          <div className="hero-label">
-            Loyalty Points
-          </div>
-
-          <div className="progress-wrapper">
-            <div className="progress-track">
-              <div
-                className="progress-fill"
-                style={{
-                  width: `${Math.min(progress, 100)}%`,
-                }}
-              />
+          <div className="hero-main-flex">
+            <div>
+              <div className="hero-points-group">
+                <span className="hero-points">{loyaltyPoints.toLocaleString()}</span>
+                <span className="hero-label">Points</span>
+              </div>
             </div>
 
-            <p className="progress-text">
-              {nextTier
-                ? `${pointsToNext} points until ${nextTier.name}`
-                : "Highest Tier Achieved 🎉"}
-            </p>
+            <div className="progress-wrapper">
+              <div className="progress-track">
+                <div
+                  className="progress-fill"
+                  style={{
+                    width: `${Math.min(progress, 100)}%`,
+                  }}
+                />
+              </div>
+
+              <p className="progress-text">
+                {nextTier
+                  ? `${pointsToNext} points until ${nextTier.name}`
+                  : "Highest Tier Achieved 🎉"}
+              </p>
+            </div>
           </div>
 
           <div className="stats-grid">
