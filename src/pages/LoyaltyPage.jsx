@@ -89,80 +89,216 @@ export default function LoyaltyPage({ setPage }) {
     <>
       <style>{`
         .loyalty-hero {
-          background: linear-gradient(135deg, #4A2C2A, #7B4F3A);
+          background: linear-gradient(135deg,#4A2C2A,#6D4434,#8A5A42);
+          border-radius: 24px;
           color: white;
-          padding: 30px;
-          border-radius: 20px;
-          margin-bottom: 24px;
-          text-align: center;
+          overflow: hidden;
+          margin: 40px auto;
+          max-width: 1200px;
+          box-shadow: 0 18px 45px rgba(0,0,0,.18);
         }
 
-        .loyalty-title {
-          font-size: 28px;
-          font-weight: 700;
-          margin-bottom: 12px;
+        .hero-overlay {
+          padding: 40px;
         }
 
-        .tier-name {
-          font-size: 20px;
-          margin-bottom: 10px;
+        .hero-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
         }
 
-        .points {
+        .hero-subtitle {
+          font-size: 14px;
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          opacity: .8;
+          margin-bottom: 8px;
+        }
+
+        .hero-title {
           font-size: 40px;
-          font-weight: bold;
-          margin-bottom: 20px;
+          margin: 0;
+          font-family: "Playfair Display", serif;
         }
 
-        .progress-bar {
+        .coffee-icon {
+          font-size: 46px;
+        }
+
+        .hero-points {
+          margin-top: 35px;
+          font-size: 64px;
+          font-weight: 700;
+          line-height: 1;
+        }
+
+        .hero-label {
+          font-size: 18px;
+          opacity: .85;
+          margin-top: 8px;
+        }
+
+        .progress-wrapper {
+          margin-top: 30px;
+        }
+
+        .progress-track {
           width: 100%;
           height: 12px;
-          background: rgba(255,255,255,0.2);
+          background: rgba(255,255,255,.15);
           border-radius: 999px;
           overflow: hidden;
         }
 
         .progress-fill {
           height: 100%;
-          background: #D4AF37;
-          transition: width .4s ease;
+          border-radius: 999px;
+          background: linear-gradient(90deg,#F7D774,#D4AF37);
+          transition: .4s;
         }
 
-        .loyalty-hero p {
-          margin-top: 12px;
-          opacity: .9;
+        .progress-text {
+          margin-top: 10px;
+          color: #F6E9D5;
+        }
+
+        .stats-grid {
+          margin-top: 35px;
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 18px;
+        }
+
+        .stat-card {
+          background: rgba(255,255,255,.12);
+          backdrop-filter: blur(14px);
+          border: 1px solid rgba(255,255,255,.15);
+          border-radius: 18px;
+          padding: 20px;
+          text-align: center;
+        }
+
+        .stat-number {
+          display: block;
+          font-size: 28px;
+          font-weight: 700;
+        }
+
+        .stat-title {
+          display: block;
+          margin-top: 8px;
+          font-size: 14px;
+          opacity: .8;
+        }
+
+        @media (max-width: 768px) {
+          .hero-overlay {
+            padding: 24px;
+          }
+
+          .hero-title {
+            font-size: 28px;
+          }
+
+          .hero-points {
+            font-size: 48px;
+          }
+
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .coffee-icon {
+            display: none;
+          }
         }
       `}</style>
 
       <div className="loyalty-hero">
-        <div className="loyalty-title">
-          ☕ Brewed Loyalty
-        </div>
+        <div className="hero-overlay">
 
-        <div className="tier-name">
-          {loyaltyTier} Member
-        </div>
+          <div className="hero-top">
+            <div>
+              <p className="hero-subtitle">Brewed Loyalty</p>
+              <h1 className="hero-title">
+                {loyaltyTier === "Bronze" && "🥉"}
+                {loyaltyTier === "Silver" && "🥈"}
+                {loyaltyTier === "Gold" && "🥇"}
+                {loyaltyTier === "Platinum" && "💎"}{" "}
+                {loyaltyTier} Member
+              </h1>
+            </div>
 
-        <div className="points">
-          {loyaltyPoints.toLocaleString()} Points
-        </div>
+            <div className="coffee-icon">☕</div>
+          </div>
 
-        <div className="progress-bar">
-          <div
-            className="progress-fill"
-            style={{
-              width: `${Math.min(progress, 100)}%`,
-            }}
-          />
-        </div>
+          <div className="hero-points">
+            {loyaltyPoints.toLocaleString()}
+          </div>
 
-        {nextTier ? (
-          <p>
-            {pointsToNext} points until {nextTier.name}
-          </p>
-        ) : (
-          <p>Highest Tier Achieved 🎉</p>
-        )}
+          <div className="hero-label">
+            Loyalty Points
+          </div>
+
+          <div className="progress-wrapper">
+            <div className="progress-track">
+              <div
+                className="progress-fill"
+                style={{
+                  width: `${Math.min(progress, 100)}%`,
+                }}
+              />
+            </div>
+
+            <p className="progress-text">
+              {nextTier
+                ? `${pointsToNext} points until ${nextTier.name}`
+                : "Highest Tier Achieved 🎉"}
+            </p>
+          </div>
+
+          <div className="stats-grid">
+
+            <div className="stat-card">
+              <span className="stat-number">
+                {loyaltyPoints.toLocaleString()}
+              </span>
+              <span className="stat-title">
+                Current Points
+              </span>
+            </div>
+
+            <div className="stat-card">
+              <span className="stat-number">
+                {lifetimePoints.toLocaleString()}
+              </span>
+              <span className="stat-title">
+                Lifetime
+              </span>
+            </div>
+
+            <div className="stat-card">
+              <span className="stat-number">
+                {nextTier ? nextTier.name : "MAX"}
+              </span>
+              <span className="stat-title">
+                Next Tier
+              </span>
+            </div>
+
+            <div className="stat-card">
+              <span className="stat-number">
+                {pointsToNext.toLocaleString()}
+              </span>
+              <span className="stat-title">
+                Remaining
+              </span>
+            </div>
+
+          </div>
+
+        </div>
       </div>
     </>
   );
