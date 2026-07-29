@@ -86,6 +86,8 @@ export default function WalletPage({ setPage }) {
 
       const snapshot = await getDocs(q);
 
+      alert("Docs found: " + snapshot.size);
+      
       const loadedTransactions = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
