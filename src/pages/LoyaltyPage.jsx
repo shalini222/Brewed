@@ -88,18 +88,23 @@ export default function LoyaltyPage({ setPage }) {
   return (
     <>
       <style>{`
+        .loyalty-page-container {
+          padding: 0 24px;
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+
         .loyalty-hero {
           background: linear-gradient(135deg,#4A2C2A,#6D4434,#8A5A42);
           border-radius: 20px;
           color: white;
           overflow: hidden;
           margin: 25px auto;
-          max-width: 1200px;
           box-shadow: 0 12px 35px rgba(0,0,0,.15);
         }
 
         .hero-overlay {
-          padding: 20px 22px;
+          padding: 20px 28px;
         }
 
         .hero-top {
@@ -206,6 +211,10 @@ export default function LoyaltyPage({ setPage }) {
         }
 
         @media (max-width: 768px) {
+          .loyalty-page-container {
+            padding: 0 16px;
+          }
+
           .hero-overlay {
             padding: 14px 16px;
           }
@@ -239,90 +248,92 @@ export default function LoyaltyPage({ setPage }) {
         }
       `}</style>
 
-      <div className="loyalty-hero">
-        <div className="hero-overlay">
+      <div className="loyalty-page-container">
+        <div className="loyalty-hero">
+          <div className="hero-overlay">
 
-          <div className="hero-top">
-            <div>
-              <p className="hero-subtitle">Brewed Loyalty</p>
-              <h1 className="hero-title">
-                {loyaltyTier === "Bronze" && "🥉"}
-                {loyaltyTier === "Silver" && "🥈"}
-                {loyaltyTier === "Gold" && "🥇"}
-                {loyaltyTier === "Platinum" && "💎"}{" "}
-                {loyaltyTier} Member
-              </h1>
+            <div className="hero-top">
+              <div>
+                <p className="hero-subtitle">Brewed Loyalty</p>
+                <h1 className="hero-title">
+                  {loyaltyTier === "Bronze" && "🥉"}
+                  {loyaltyTier === "Silver" && "🥈"}
+                  {loyaltyTier === "Gold" && "🥇"}
+                  {loyaltyTier === "Platinum" && "💎"}{" "}
+                  {loyaltyTier} Member
+                </h1>
+              </div>
+
+              <div className="coffee-icon">☕</div>
             </div>
 
-            <div className="coffee-icon">☕</div>
-          </div>
+            <div className="hero-main-flex">
+              <div>
+                <div className="hero-points-group">
+                  <span className="hero-points">{loyaltyPoints.toLocaleString()}</span>
+                  <span className="hero-label">Points</span>
+                </div>
+              </div>
 
-          <div className="hero-main-flex">
-            <div>
-              <div className="hero-points-group">
-                <span className="hero-points">{loyaltyPoints.toLocaleString()}</span>
-                <span className="hero-label">Points</span>
+              <div className="progress-wrapper">
+                <div className="progress-track">
+                  <div
+                    className="progress-fill"
+                    style={{
+                      width: `${Math.min(progress, 100)}%`,
+                    }}
+                  />
+                </div>
+
+                <p className="progress-text">
+                  {nextTier
+                    ? `${pointsToNext} points until ${nextTier.name}`
+                    : "Highest Tier Achieved 🎉"}
+                </p>
               </div>
             </div>
 
-            <div className="progress-wrapper">
-              <div className="progress-track">
-                <div
-                  className="progress-fill"
-                  style={{
-                    width: `${Math.min(progress, 100)}%`,
-                  }}
-                />
+            <div className="stats-grid">
+
+              <div className="stat-card">
+                <span className="stat-number">
+                  {loyaltyPoints.toLocaleString()}
+                </span>
+                <span className="stat-title">
+                  Current Points
+                </span>
               </div>
 
-              <p className="progress-text">
-                {nextTier
-                  ? `${pointsToNext} points until ${nextTier.name}`
-                  : "Highest Tier Achieved 🎉"}
-              </p>
-            </div>
-          </div>
+              <div className="stat-card">
+                <span className="stat-number">
+                  {lifetimePoints.toLocaleString()}
+                </span>
+                <span className="stat-title">
+                  Lifetime
+                </span>
+              </div>
 
-          <div className="stats-grid">
+              <div className="stat-card">
+                <span className="stat-number">
+                  {nextTier ? nextTier.name : "MAX"}
+                </span>
+                <span className="stat-title">
+                  Next Tier
+                </span>
+              </div>
 
-            <div className="stat-card">
-              <span className="stat-number">
-                {loyaltyPoints.toLocaleString()}
-              </span>
-              <span className="stat-title">
-                Current Points
-              </span>
-            </div>
+              <div className="stat-card">
+                <span className="stat-number">
+                  {pointsToNext.toLocaleString()}
+                </span>
+                <span className="stat-title">
+                  Remaining
+                </span>
+              </div>
 
-            <div className="stat-card">
-              <span className="stat-number">
-                {lifetimePoints.toLocaleString()}
-              </span>
-              <span className="stat-title">
-                Lifetime
-              </span>
-            </div>
-
-            <div className="stat-card">
-              <span className="stat-number">
-                {nextTier ? nextTier.name : "MAX"}
-              </span>
-              <span className="stat-title">
-                Next Tier
-              </span>
-            </div>
-
-            <div className="stat-card">
-              <span className="stat-number">
-                {pointsToNext.toLocaleString()}
-              </span>
-              <span className="stat-title">
-                Remaining
-              </span>
             </div>
 
           </div>
-
         </div>
       </div>
     </>
