@@ -245,56 +245,31 @@ setTransactions(loadedTransactions);
 
 
 const handleClaimReward = async (reward) => {
-
-
-  console.log("Reward:", reward);
-  alert(JSON.stringify(reward));
-
-  
   try {
-    if (rewardBalance <= 0) {
-      alert("No rewards to claim.");
-      return;
-    }
-
     const walletRef = doc(db, "wallets", currentUser.uid);
 
     await updateDoc(walletRef, {
-      balance: increment(rewardBalance),
-      rewardBalance: increment(-rewardBalance),
+      balance: increment(reward.amount),
+      rewardBalance: increment(-reward.amount),
       updatedAt: serverTimestamp(),
     });
-
-
-  await updateDoc(
-  doc(db, "walletTransactions", reward.id),
-  {
-    claimed: true,
-    claimedAt: serverTimestamp(),
-  }
-);
-
-    
 
     await addDoc(collection(db, "walletTransactions"), {
       userId: currentUser.uid,
       type: "REWARD_REDEEM",
-      amount: rewardBalance,
-      description: "Rewards Claimed",
+      amount: reward.amount,
+      description: reward.description,
       status: "SUCCESS",
-       
       createdAt: serverTimestamp(),
     });
 
-    alert("Rewards claimed successfully!");
-
+    alert("Reward claimed successfully!");
     loadWallet();
   } catch (error) {
     console.error(error);
-   alert(error.message);
+    alert(error.message);
   }
 };
-
 
 
 
