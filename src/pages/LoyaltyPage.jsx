@@ -3,6 +3,37 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 
+const rewards = [
+  {
+    id: 1,
+    title: "Free Espresso",
+    icon: "☕",
+    points: 200,
+    color: "#F8F3ED",
+  },
+  {
+    id: 2,
+    title: "Free Croissant",
+    icon: "🥐",
+    points: 300,
+    color: "#FFF5E8",
+  },
+  {
+    id: 3,
+    title: "Cheesecake Slice",
+    icon: "🍰",
+    points: 450,
+    color: "#FFF2F2",
+  },
+  {
+    id: 4,
+    title: "₹100 Wallet Credit",
+    icon: "💳",
+    points: 1000,
+    color: "#EEF8F0",
+  },
+];
+
 export default function LoyaltyPage({ setPage }) {
   const [loading, setLoading] = useState(true);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
@@ -269,6 +300,103 @@ export default function LoyaltyPage({ setPage }) {
           box-shadow: 0 8px 20px rgba(0,0,0,.08);
         }
 
+        .rewards-section {
+          margin: 40px auto;
+        }
+
+        .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+        }
+
+        .section-header h2 {
+          font-family: "Playfair Display", serif;
+          color: #3F2B22;
+          margin: 0;
+          font-size: 28px;
+        }
+
+        .view-all-btn {
+          background: none;
+          border: none;
+          color: #8B5E3C;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .rewards-scroll {
+          display: flex;
+          gap: 20px;
+          overflow-x: auto;
+          padding-bottom: 10px;
+          scrollbar-width: none;
+        }
+
+        .rewards-scroll::-webkit-scrollbar {
+          display: none;
+        }
+
+        .reward-card {
+          min-width: 240px;
+          background: #fff;
+          border-radius: 20px;
+          padding: 24px;
+          box-shadow: 0 10px 25px rgba(0,0,0,.08);
+          transition: .3s;
+          flex-shrink: 0;
+          border: 1px solid #EFE6DA;
+        }
+
+        .reward-card:hover {
+          transform: translateY(-5px);
+        }
+
+        .reward-icon {
+          width: 70px;
+          height: 70px;
+          border-radius: 18px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          font-size: 34px;
+          margin-bottom: 18px;
+        }
+
+        .reward-card h3 {
+          margin-bottom: 10px;
+          color: #3F2B22;
+          margin-top: 0;
+        }
+
+        .reward-card p {
+          color: #777;
+          margin-bottom: 20px;
+          margin-top: 0;
+        }
+
+        .redeem-btn {
+          width: 100%;
+          border: none;
+          border-radius: 12px;
+          padding: 12px;
+          background: #6F4E37;
+          color: white;
+          cursor: pointer;
+          font-weight: 600;
+        }
+
+        .redeem-btn:hover {
+          background: #5C3E2C;
+        }
+
+        .redeem-btn.disabled {
+          background: #D7D7D7;
+          cursor: not-allowed;
+          color: #666;
+        }
+
         @media (max-width: 768px) {
           .loyalty-page-container {
             padding: 0 24px;
@@ -464,6 +592,62 @@ export default function LoyaltyPage({ setPage }) {
           </div>
 
         </div>
+
+        <div className="rewards-section">
+
+          <div className="section-header">
+            <h2>Available Rewards</h2>
+            <button className="view-all-btn">
+              View All →
+            </button>
+          </div>
+
+          <div className="rewards-scroll">
+
+            {rewards.map((reward) => {
+
+              const canRedeem = loyaltyPoints >= reward.points;
+
+              return (
+
+                <div
+                  key={reward.id}
+                  className="reward-card"
+                >
+
+                  <div
+                    className="reward-icon"
+                    style={{ background: reward.color }}
+                  >
+                    {reward.icon}
+                  </div>
+
+                  <h3>{reward.title}</h3>
+
+                  <p>{reward.points} Points</p>
+
+                  <button
+                    className={
+                      canRedeem
+                        ? "redeem-btn"
+                        : "redeem-btn disabled"
+                    }
+                    disabled={!canRedeem}
+                  >
+                    {canRedeem
+                      ? "Redeem"
+                      : "Need More Points"}
+                  </button>
+
+                </div>
+
+              );
+            })}
+
+          </div>
+
+        </div>
+
       </div>
     </>
   );
