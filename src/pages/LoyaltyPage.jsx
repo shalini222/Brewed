@@ -210,6 +210,65 @@ export default function LoyaltyPage({ setPage }) {
           opacity: .8;
         }
 
+        .membership-card {
+          background: #fff;
+          border-radius: 22px;
+          padding: 30px;
+          margin: 30px auto;
+          box-shadow: 0 12px 30px rgba(0,0,0,.08);
+        }
+
+        .membership-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 25px;
+        }
+
+        .membership-header h2 {
+          margin: 0;
+          font-size: 28px;
+          color: #3F2B22;
+          font-family: "Playfair Display", serif;
+        }
+
+        .membership-header p {
+          margin-top: 6px;
+          color: #777;
+        }
+
+        .tier-badge {
+          width: 70px;
+          height: 70px;
+          border-radius: 50%;
+          background: #F8F3ED;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 34px;
+        }
+
+        .benefits-list {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 18px;
+        }
+
+        .benefit-item {
+          background: #FDFAF5;
+          border: 1px solid #EFE6DA;
+          border-radius: 16px;
+          padding: 18px;
+          font-size: 16px;
+          color: #4A2C2A;
+          transition: .25s;
+        }
+
+        .benefit-item:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 8px 20px rgba(0,0,0,.08);
+        }
+
         @media (max-width: 768px) {
           .loyalty-page-container {
             padding: 0 24px;
@@ -244,6 +303,20 @@ export default function LoyaltyPage({ setPage }) {
 
           .coffee-icon {
             display: none;
+          }
+
+          .membership-card {
+            padding: 20px;
+          }
+
+          .membership-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+          }
+
+          .benefits-list {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
@@ -334,6 +407,62 @@ export default function LoyaltyPage({ setPage }) {
             </div>
 
           </div>
+        </div>
+
+        <div className="membership-card">
+
+          <div className="membership-header">
+            <div>
+              <h2>Your Membership</h2>
+              <p>{loyaltyTier} Member</p>
+            </div>
+
+            <div className="tier-badge">
+              {loyaltyTier === "Bronze" && "🥉"}
+              {loyaltyTier === "Silver" && "🥈"}
+              {loyaltyTier === "Gold" && "🥇"}
+              {loyaltyTier === "Platinum" && "💎"}
+            </div>
+          </div>
+
+          <div className="benefits-list">
+
+            <div className="benefit-item">
+              ☕ Earn {loyaltyTier === "Bronze"
+                ? "5"
+                : loyaltyTier === "Silver"
+                ? "10"
+                : loyaltyTier === "Gold"
+                ? "15"
+                : "20"} points per ₹100 spent
+            </div>
+
+            <div className="benefit-item">
+              🎂 Birthday Reward
+            </div>
+
+            <div className="benefit-item">
+              🎁 Exclusive Member Offers
+            </div>
+
+            <div className="benefit-item">
+              🚀 Early Access to Seasonal Drinks
+            </div>
+
+            {loyaltyTier === "Gold" || loyaltyTier === "Platinum" ? (
+              <div className="benefit-item">
+                🚚 Free Delivery Days
+              </div>
+            ) : null}
+
+            {loyaltyTier === "Platinum" ? (
+              <div className="benefit-item">
+                💎 Platinum Exclusive Menu
+              </div>
+            ) : null}
+
+          </div>
+
         </div>
       </div>
     </>
