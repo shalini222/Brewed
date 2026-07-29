@@ -10,7 +10,8 @@ import {
   setDoc,
   addDoc,
   collection,
-  serverTimestamp
+  serverTimestamp,
+  increment 
 } from "firebase/firestore";
 
 export default function WalletPage({ setPage }) {
