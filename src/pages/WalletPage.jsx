@@ -99,7 +99,18 @@ alert(JSON.stringify(loadedTransactions.map(t => ({
   description: t.description,
   amount: t.amount
 }))));
+
+
+      
 setTransactions(loadedTransactions);
+
+alert(
+  JSON.stringify(
+    loadedTransactions[0],
+    null,
+    2
+  )
+);
 
       // Load Refunds From Firestore
       const refundQuery = query(
