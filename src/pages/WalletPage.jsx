@@ -285,7 +285,7 @@ const handleClaimReward = async (reward) => {
     loadWallet();
   } catch (error) {
     console.error(error);
-    alert("Failed to claim rewards.");
+   alert(error.message);
   }
 };
 
