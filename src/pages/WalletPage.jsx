@@ -81,7 +81,10 @@ export default function WalletPage({ setPage }) {
       // Load transactions for this user
 
 
-const q = query(collection(db, "walletTransactions"));
+const q = query(
+  collection(db, "walletTransactions"),
+  where("userId", "==", currentUser.uid)
+);
       
       
 let loadedTransactions = [];
@@ -146,6 +149,15 @@ if (loadedTransactions.length > 0) {
 
       console.log("Found rewards for list:", rewardData);
 
+
+
+alert(
+  "Loaded: " +
+    loadedTransactions.length +
+    "\nRewards: " +
+    rewardData.length
+);
+      
       setRewards(rewardData);
 
       setRewardBalance(
