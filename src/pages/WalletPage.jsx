@@ -142,8 +142,17 @@ alert(
         .reduce((sum, item) => sum + item.amount, 0);
 
       const rewardData = loadedTransactions.filter(
-  item => item.amount === 50
+  item => {
+    alert(
+      `type=${item.type}\nclaimed=${item.claimed}\nmatch=${
+        item.type === "REWARD" && item.claimed !== true
+      }`
+    );
+    return item.type === "REWARD" && item.claimed !== true;
+  }
 );
+
+alert("rewardData length = " + rewardData.length);
 
       setRewards([
   {
