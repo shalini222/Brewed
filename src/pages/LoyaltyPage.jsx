@@ -34,6 +34,41 @@ const rewards = [
   },
 ];
 
+const activities = [
+  {
+    id: 1,
+    type: "earned",
+    title: "Welcome Bonus",
+    points: 100,
+    date: "Today",
+    icon: "🎉",
+  },
+  {
+    id: 2,
+    type: "earned",
+    title: "Flat White",
+    points: 45,
+    date: "Yesterday",
+    icon: "☕",
+  },
+  {
+    id: 3,
+    type: "redeemed",
+    title: "Free Espresso",
+    points: -200,
+    date: "24 Jul",
+    icon: "🎁",
+  },
+  {
+    id: 4,
+    type: "earned",
+    title: "Birthday Reward",
+    points: 250,
+    date: "15 Jul",
+    icon: "🎂",
+  },
+];
+
 export default function LoyaltyPage({ setPage }) {
   const [loading, setLoading] = useState(true);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
@@ -247,6 +282,7 @@ export default function LoyaltyPage({ setPage }) {
           padding: 30px;
           margin: 30px auto;
           box-shadow: 0 12px 30px rgba(0,0,0,.08);
+          border: 1px solid #EFE6DA;
         }
 
         .membership-header {
@@ -397,6 +433,183 @@ export default function LoyaltyPage({ setPage }) {
           color: #666;
         }
 
+        .activity-section {
+          margin: 40px auto;
+        }
+
+        .activity-list {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .activity-card {
+          background: #fff;
+          border-radius: 18px;
+          padding: 18px 22px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          box-shadow: 0 8px 22px rgba(0,0,0,.08);
+          transition: .25s;
+          border: 1px solid #EFE6DA;
+        }
+
+        .activity-card:hover {
+          transform: translateY(-2px);
+        }
+
+        .activity-left {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .activity-icon {
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          background: #F8F3ED;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 26px;
+        }
+
+        .activity-left h4 {
+          margin: 0;
+          color: #3F2B22;
+        }
+
+        .activity-left span {
+          color: #888;
+          font-size: 14px;
+        }
+
+        .activity-points {
+          font-weight: 700;
+          font-size: 18px;
+        }
+
+        .activity-points.earned {
+          color: #1E8E3E;
+        }
+
+        .activity-points.redeemed {
+          color: #C62828;
+        }
+
+        .tier-journey {
+          background: #fff;
+          border-radius: 22px;
+          padding: 35px;
+          margin: 40px auto;
+          box-shadow: 0 10px 25px rgba(0,0,0,.08);
+          border: 1px solid #EFE6DA;
+        }
+
+        .tier-journey .section-header {
+          margin-bottom: 35px;
+        }
+
+        .tier-journey .section-header p {
+          color: #777;
+          margin-top: 8px;
+        }
+
+        .tier-line {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .tier-step {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          flex: 1;
+        }
+
+        .tier-circle {
+          width: 72px;
+          height: 72px;
+          border-radius: 50%;
+          background: #F5F5F5;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 34px;
+          border: 3px solid #DDD;
+          transition: .3s;
+        }
+
+        .tier-step.active .tier-circle {
+          background: #6F4E37;
+          border-color: #6F4E37;
+          color: #fff;
+          transform: scale(1.08);
+        }
+
+        .tier-step h4 {
+          margin: 14px 0 6px;
+          color: #3F2B22;
+        }
+
+        .tier-step span {
+          color: #777;
+          font-size: 14px;
+        }
+
+        .tier-connector {
+          height: 4px;
+          flex: 1;
+          background: #DDD;
+          margin: 0 12px;
+          border-radius: 999px;
+        }
+
+        .loyalty-info {
+          margin: 40px auto 60px;
+        }
+
+        .loyalty-info h2 {
+          font-family: "Playfair Display", serif;
+          color: #3F2B22;
+          font-size: 28px;
+          margin-bottom: 24px;
+        }
+
+        .info-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 24px;
+        }
+
+        .info-card {
+          background: #fff;
+          border-radius: 20px;
+          padding: 30px;
+          text-align: center;
+          box-shadow: 0 8px 22px rgba(0,0,0,.08);
+          border: 1px solid #EFE6DA;
+        }
+
+        .info-card span {
+          font-size: 42px;
+        }
+
+        .info-card h3 {
+          margin: 18px 0 10px;
+          color: #3F2B22;
+        }
+
+        .info-card p {
+          color: #777;
+          line-height: 1.6;
+          margin: 0;
+        }
+
         @media (max-width: 768px) {
           .loyalty-page-container {
             padding: 0 24px;
@@ -444,6 +657,31 @@ export default function LoyaltyPage({ setPage }) {
           }
 
           .benefits-list {
+            grid-template-columns: 1fr;
+          }
+
+          .activity-card {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+          }
+
+          .activity-points {
+            margin-left: 72px;
+          }
+
+          .tier-line {
+            flex-direction: column;
+            gap: 25px;
+          }
+
+          .tier-connector {
+            width: 4px;
+            height: 40px;
+            margin: 0;
+          }
+
+          .info-grid {
             grid-template-columns: 1fr;
           }
         }
@@ -645,6 +883,110 @@ export default function LoyaltyPage({ setPage }) {
             })}
 
           </div>
+
+        </div>
+
+        <div className="activity-section">
+          <div className="section-header">
+            <h2>Loyalty Activity</h2>
+          </div>
+          
+          <div className="activity-list">
+            {activities.map((activity) => (
+              <div key={activity.id} className="activity-card">
+                <div className="activity-left">
+                  <div className="activity-icon">
+                    {activity.icon}
+                  </div>
+                  <div>
+                    <h4>{activity.title}</h4>
+                    <span>{activity.date}</span>
+                  </div>
+                </div>
+                
+                <div
+                  className={
+                    activity.points > 0
+                      ? "activity-points earned"
+                      : "activity-points redeemed"
+                  }
+                >
+                  {activity.points > 0 ? "+" : ""}
+                  {activity.points} pts
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="tier-journey">
+
+          <div className="section-header">
+            <h2>Tier Journey</h2>
+            <p>Unlock more benefits as you earn points.</p>
+          </div>
+
+          <div className="tier-line">
+
+            <div className={`tier-step ${loyaltyPoints >= 0 ? "active" : ""}`}>
+              <div className="tier-circle">🥉</div>
+              <h4>Bronze</h4>
+              <span>0 pts</span>
+            </div>
+
+            <div className="tier-connector" />
+
+            <div className={`tier-step ${loyaltyPoints >= 500 ? "active" : ""}`}>
+              <div className="tier-circle">🥈</div>
+              <h4>Silver</h4>
+              <span>500 pts</span>
+            </div>
+
+            <div className="tier-connector" />
+
+            <div className={`tier-step ${loyaltyPoints >= 1500 ? "active" : ""}`}>
+              <div className="tier-circle">🥇</div>
+              <h4>Gold</h4>
+              <span>1500 pts</span>
+            </div>
+
+            <div className="tier-connector" />
+
+            <div className={`tier-step ${loyaltyPoints >= 3000 ? "active" : ""}`}>
+              <div className="tier-circle">💎</div>
+              <h4>Platinum</h4>
+              <span>3000 pts</span>
+            </div>
+
+          </div>
+
+        </div>
+
+        <div className="loyalty-info">
+
+            <h2>How Brewed Loyalty Works</h2>
+
+            <div className="info-grid">
+
+                <div className="info-card">
+                    <span>☕</span>
+                    <h3>Earn</h3>
+                    <p>Collect loyalty points every time you place an order.</p>
+                </div>
+
+                <div className="info-card">
+                    <span>🎁</span>
+                    <h3>Redeem</h3>
+                    <p>Use your points for free drinks, food and exclusive rewards.</p>
+                </div>
+
+                <div className="info-card">
+                    <span>🏆</span>
+                    <h3>Upgrade</h3>
+                    <p>Reach higher tiers to unlock even better benefits.</p>
+                </div>
+
+            </div>
 
         </div>
 
