@@ -1,164 +1,191 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   doc,
   getDoc,
   getDocs,
-  updateDoc,
-  increment,
-  addDoc,
   collection,
   serverTimestamp,
   query,
   where,
-  orderBy
+  orderBy,
+  runTransaction
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
+
+const TIERS = [
+  { name: "Bronze", min: 0, max: 499 },
+  { name: "Silver", min: 500, max: 1499 },
+  { name: "Gold", min: 1500, max: 2999 },
+  { name: "Platinum", min: 3000, max: Infinity },
+];
 
 export default function LoyaltyPage({ setPage }) {
   const [loading, setLoading] = useState(true);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
   const [lifetimePoints, setLifetimePoints] = useState(0);
-  const [loyaltyTier, setLoyaltyTier] = useState("Bronze");
   
   const [rewards, setRewards] = useState([]);
   const [activities, setActivities] = useState([]);
   const [successModal, setSuccessModal] = useState(false);
+  const [errorModal, setErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [redeemedRewardData, setRedeemedRewardData] = useState(null);
+  const [redeemingRewardId, setRedeemingRewardId] = useState(null);
   
+  const rewardsRef = useRef(null);
   const { currentUser } = useAuth();
 
-  useEffect(() => {
+  const loadLoyaltyData = useCallback(async () => {
     if (!currentUser) return;
-
-    async function loadLoyaltyData() {
-      try {
-        setLoading(true);
-
-        // 1. Load User Data
-        const userRef = doc(db, "users", currentUser.uid);
-        const userSnap = await getDoc(userRef);
-
-        if (userSnap.exists()) {
-          const data = userSnap.data();
-          setLoyaltyPoints(data.loyaltyPoints || 0);
-          setLifetimePoints(data.lifetimePoints || 0);
-          setLoyaltyTier(data.loyaltyTier || "Bronze");
-        }
-
-        // 2. Load Rewards from Firestore
-        const rewardsSnapshot = await getDocs(
-          collection(db, "loyaltyRewards")
-        );
-        const rewardsData = rewardsSnapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-          .filter(r => r.active !== false);
-
-        setRewards(rewardsData);
-
-        // 3. Load Transactions/Activities from Firestore
-        const txQuery = query(
-          collection(db, "loyaltyTransactions"),
-          where("userId", "==", currentUser.uid),
-          orderBy("createdAt", "desc")
-        );
-        
-        try {
-          const txSnapshot = await getDocs(txQuery);
-          const txData = txSnapshot.docs.map(doc => {
-            const data = doc.data();
-            let dateStr = "Recent";
-            if (data.createdAt && data.createdAt.toDate) {
-              dateStr = data.createdAt.toDate().toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric"
-              });
-            }
-            return {
-              id: doc.id,
-              type: data.type || "earned",
-              title: data.description || "Loyalty Event",
-              points: data.points || 0,
-              date: dateStr,
-              icon: data.type === "redeem" ? "🎁" : (data.icon || "☕")
-            };
-          });
-          setActivities(txData);
-        } catch (txErr) {
-          console.error("Error loading transactions:", txErr);
-          setActivities([]);
-        }
-
-      } catch (err) {
-        console.error("Error loading loyalty data:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadLoyaltyData();
-  }, [currentUser, successModal]);
-
-  const redeemReward = async (reward) => {
-    const pointsNeeded = reward.pointsRequired || reward.points;
-
-    if (loyaltyPoints < pointsNeeded) {
-      alert("Not enough points.");
-      return;
-    }
-
     try {
       const userRef = doc(db, "users", currentUser.uid);
 
-      await updateDoc(userRef, {
-        loyaltyPoints: increment(-pointsNeeded)
-      });
+      const [userSnap, rewardsSnapshot, txSnapshotResult] = await Promise.all([
+        getDoc(userRef),
+        getDocs(query(collection(db, "loyaltyRewards"), orderBy("pointsRequired"))),
+        getDocs(
+          query(
+            collection(db, "loyaltyTransactions"),
+            where("userId", "==", currentUser.uid),
+            orderBy("createdAt", "desc")
+          )
+        ).catch((txErr) => {
+          console.error("Error loading transactions:", txErr);
+          return { docs: [] };
+        })
+      ]);
 
-      await addDoc(
-        collection(db, "loyaltyTransactions"),
-        {
+      if (userSnap.exists()) {
+        const data = userSnap.data();
+        setLoyaltyPoints(data.loyaltyPoints || 0);
+        setLifetimePoints(data.lifetimePoints || 0);
+      }
+
+      const rewardsData = rewardsSnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        .filter(r => r.active !== false);
+
+      setRewards(rewardsData);
+
+      const txData = txSnapshotResult.docs.map(doc => {
+        const data = doc.data();
+        let dateStr = "Recent";
+        if (data.createdAt && data.createdAt.toDate) {
+          dateStr = data.createdAt.toDate().toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric"
+          });
+        }
+        return {
+          id: doc.id,
+          type: data.type || "earned",
+          title: data.description || "Loyalty Event",
+          points: data.points || 0,
+          date: dateStr,
+          icon: data.type === "redeem" ? "🎁" : (data.icon || "☕")
+        };
+      });
+      setActivities(txData);
+
+    } catch (err) {
+      console.error("Error loading loyalty data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    loadLoyaltyData();
+  }, [currentUser, loadLoyaltyData]);
+
+  const loyaltyTier = loyaltyPoints >= 3000 ? "Platinum" : loyaltyPoints >= 1500 ? "Gold" : loyaltyPoints >= 500 ? "Silver" : "Bronze";
+
+  const redeemReward = async (reward) => {
+    if (redeemingRewardId) return;
+
+    const pointsNeeded = reward.pointsRequired || reward.points || 0;
+
+    if (loyaltyPoints < pointsNeeded) {
+      setErrorMessage("Not enough points to redeem this reward.");
+      setErrorModal(true);
+      return;
+    }
+
+    setRedeemingRewardId(reward.id);
+
+    try {
+      const userRef = doc(db, "users", currentUser.uid);
+      let updatedPoints = loyaltyPoints;
+
+      await runTransaction(db, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists()) {
+          throw new Error("User does not exist!");
+        }
+
+        const currentPoints = userDoc.data().loyaltyPoints || 0;
+        if (currentPoints < pointsNeeded) {
+          throw new Error("Not enough points.");
+        }
+
+        updatedPoints = currentPoints - pointsNeeded;
+
+        transaction.update(userRef, {
+          loyaltyPoints: updatedPoints
+        });
+
+        const newTxRef = doc(collection(db, "loyaltyTransactions"));
+        transaction.set(newTxRef, {
           userId: currentUser.uid,
           type: "redeem",
           points: -pointsNeeded,
           description: reward.title,
           rewardId: reward.id,
           createdAt: serverTimestamp()
-        }
-      );
+        });
+      });
 
-      const newPoints = loyaltyPoints - pointsNeeded;
-      setLoyaltyPoints(newPoints);
       setRedeemedRewardData({
         title: reward.title,
         points: pointsNeeded,
-        remaining: newPoints
+        remaining: updatedPoints
       });
       setSuccessModal(true);
 
+      await loadLoyaltyData();
+
     } catch (err) {
       console.error("Error redeeming reward:", err);
-      alert("Failed to redeem reward. Please try again.");
+      setErrorMessage(err.message || "Failed to redeem reward. Please try again.");
+      setErrorModal(true);
+    } finally {
+      setRedeemingRewardId(null);
     }
   };
 
-  const TIERS = [
-    { name: "Bronze", min: 0, max: 499 },
-    { name: "Silver", min: 500, max: 1499 },
-    { name: "Gold", min: 1500, max: 2999 },
-    { name: "Platinum", min: 3000, max: Infinity },
-  ];
+  const scrollToRewards = () => {
+    setSuccessModal(false);
+    rewardsRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const currentTier = TIERS.find(tier => tier.name === loyaltyTier);
   const nextTier = TIERS.find(tier => tier.min > loyaltyPoints);
 
-  let progress = 100;
+  let calculatedProgress = 100;
   let pointsToNext = 0;
 
   if (nextTier && currentTier) {
-    progress =
+    calculatedProgress =
       ((loyaltyPoints - currentTier.min) /
         (nextTier.min - currentTier.min)) *
       100;
@@ -166,352 +193,336 @@ export default function LoyaltyPage({ setPage }) {
     pointsToNext = nextTier.min - loyaltyPoints;
   }
 
-  if (loading) {
-    return <div style={{ textAlign: "center", padding: "40px" }}>Loading loyalty info...</div>;
-  }
+  const progress = Math.min(100, Math.max(0, calculatedProgress));
 
   return (
     <>
       <style>{`
         .loyalty-page-container {
-          padding: 0 40px;
           max-width: 1200px;
           margin: 0 auto;
+          padding: 24px;
+          font-family: inherit;
+          color: #333;
         }
 
         .loyalty-hero {
-          background: linear-gradient(135deg,#4A2C2A,#6D4434,#8A5A42);
-          border-radius: 18px;
-          color: white;
+          background: linear-gradient(135deg, #2C1810 0%, #4A2E1B 100%);
+          border-radius: 20px;
+          color: #fff;
           overflow: hidden;
-          margin: 20px auto;
-          box-shadow: 0 10px 30px rgba(0,0,0,.15);
+          margin-bottom: 32px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
         .hero-overlay {
-          padding: 16px 22px;
+          padding: 32px;
         }
 
         .hero-top {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          margin-bottom: 24px;
         }
 
         .hero-subtitle {
-          font-size: 10px;
-          letter-spacing: 2px;
           text-transform: uppercase;
-          opacity: .8;
-          margin-bottom: 2px;
+          font-size: 12px;
+          letter-spacing: 1.5px;
+          color: #D4A373;
+          margin-bottom: 4px;
         }
 
         .hero-title {
-          font-size: 21px;
+          font-size: 28px;
+          font-weight: 700;
           margin: 0;
-          font-family: "Playfair Display", serif;
         }
 
         .coffee-icon {
-          font-size: 26px;
+          font-size: 36px;
+          background: rgba(255,255,255,0.1);
+          padding: 12px;
+          border-radius: 50%;
         }
 
         .hero-main-flex {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-top: 10px;
+          gap: 24px;
+          margin-bottom: 32px;
+          flex-wrap: wrap;
         }
 
         .hero-points-group {
           display: flex;
           align-items: baseline;
-          gap: 6px;
+          gap: 8px;
         }
 
         .hero-points {
-          font-size: 32px;
-          font-weight: 700;
+          font-size: 48px;
+          font-weight: 800;
           line-height: 1;
         }
 
         .hero-label {
-          font-size: 13px;
-          opacity: .85;
+          font-size: 16px;
+          color: #D4A373;
+          align-self: flex-end;
+          padding-bottom: 6px;
         }
 
         .progress-wrapper {
           flex: 1;
-          margin-left: 24px;
+          min-width: 280px;
         }
 
         .progress-track {
-          width: 100%;
-          height: 6px;
-          background: rgba(255,255,255,.15);
-          border-radius: 999px;
+          background: rgba(255,255,255,0.2);
+          height: 10px;
+          border-radius: 5px;
           overflow: hidden;
+          margin-bottom: 8px;
         }
 
         .progress-fill {
+          background: #D4A373;
           height: 100%;
-          border-radius: 999px;
-          background: linear-gradient(90deg,#F7D774,#D4AF37);
-          transition: .4s;
+          border-radius: 5px;
+          transition: width 0.5s ease;
         }
 
         .progress-text {
-          margin-top: 4px;
-          font-size: 11px;
-          color: #F6E9D5;
+          font-size: 13px;
+          color: #E0E0E0;
+          margin: 0;
         }
 
         .stats-grid {
-          margin-top: 14px;
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 8px;
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+          gap: 16px;
+          border-top: 1px solid rgba(255,255,255,0.1);
+          padding-top: 24px;
         }
 
         .stat-card {
-          background: rgba(255,255,255,.12);
-          backdrop-filter: blur(14px);
-          border: 1px solid rgba(255,255,255,.15);
-          border-radius: 8px;
-          padding: 8px 10px;
+          background: rgba(255,255,255,0.05);
+          padding: 16px;
+          border-radius: 12px;
           text-align: center;
         }
 
         .stat-number {
           display: block;
-          font-size: 16px;
+          font-size: 20px;
           font-weight: 700;
+          margin-bottom: 4px;
         }
 
         .stat-title {
-          display: block;
-          margin-top: 2px;
-          font-size: 10px;
-          opacity: .8;
+          font-size: 12px;
+          color: #D4A373;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
 
         .membership-card {
           background: #fff;
-          border-radius: 22px;
-          padding: 30px;
-          margin: 30px auto;
-          box-shadow: 0 12px 30px rgba(0,0,0,.08);
-          border: 1px solid #EFE6DA;
+          border-radius: 16px;
+          padding: 24px;
+          margin-bottom: 32px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         }
 
         .membership-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 25px;
+          margin-bottom: 20px;
         }
 
         .membership-header h2 {
-          margin: 0;
-          font-size: 28px;
-          color: #3F2B22;
-          font-family: "Playfair Display", serif;
+          font-size: 20px;
+          margin: 0 0 4px 0;
         }
 
         .membership-header p {
-          margin-top: 6px;
-          color: #777;
+          color: #666;
+          margin: 0;
+          font-size: 14px;
         }
 
         .tier-badge {
-          width: 70px;
-          height: 70px;
-          border-radius: 50%;
+          font-size: 28px;
           background: #F8F3ED;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 34px;
+          padding: 8px;
+          border-radius: 50%;
         }
 
         .benefits-list {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 18px;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 12px;
         }
 
         .benefit-item {
-          background: #FDFAF5;
-          border: 1px solid #EFE6DA;
-          border-radius: 16px;
-          padding: 18px;
-          font-size: 16px;
-          color: #4A2C2A;
-          transition: .25s;
-        }
-
-        .benefit-item:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 8px 20px rgba(0,0,0,.08);
+          background: #F9F9F9;
+          padding: 12px 16px;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 500;
         }
 
         .rewards-section {
-          margin: 40px auto;
+          margin-bottom: 32px;
         }
 
         .section-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 20px;
+          margin-bottom: 16px;
         }
 
         .section-header h2 {
-          font-family: "Playfair Display", serif;
-          color: #3F2B22;
+          font-size: 20px;
           margin: 0;
-          font-size: 28px;
         }
 
         .view-all-btn {
           background: none;
           border: none;
-          color: #8B5E3C;
+          color: #8B4513;
           font-weight: 600;
           cursor: pointer;
         }
 
-        .rewards-scroll {
-          display: flex;
-          gap: 20px;
-          overflow-x: auto;
-          padding-bottom: 10px;
-          scrollbar-width: none;
+        .empty-rewards {
+          background: #fff;
+          padding: 32px;
+          text-align: center;
+          border-radius: 12px;
+          color: #666;
         }
 
-        .rewards-scroll::-webkit-scrollbar {
-          display: none;
+        .rewards-scroll {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+          gap: 16px;
         }
 
         .reward-card {
-          min-width: 240px;
           background: #fff;
-          border-radius: 20px;
-          padding: 24px;
-          box-shadow: 0 10px 25px rgba(0,0,0,.08);
-          transition: .3s;
-          flex-shrink: 0;
-          border: 1px solid #EFE6DA;
-        }
-
-        .reward-card:hover {
-          transform: translateY(-5px);
+          padding: 20px;
+          border-radius: 16px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
         }
 
         .reward-icon {
-          width: 70px;
-          height: 70px;
-          border-radius: 18px;
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
           display: flex;
-          justify-content: center;
           align-items: center;
-          font-size: 34px;
-          margin-bottom: 18px;
+          justify-content: center;
+          font-size: 24px;
+          margin-bottom: 16px;
         }
 
         .reward-card h3 {
-          margin-bottom: 10px;
-          color: #3F2B22;
-          margin-top: 0;
+          font-size: 16px;
+          margin: 0 0 8px 0;
         }
 
         .reward-card p {
-          color: #777;
-          margin-bottom: 20px;
-          margin-top: 0;
+          font-size: 14px;
+          color: #666;
+          margin: 0 0 16px 0;
         }
 
         .redeem-btn {
           width: 100%;
+          background: #2C1810;
+          color: #fff;
           border: none;
-          border-radius: 12px;
-          padding: 12px;
-          background: #6F4E37;
-          color: white;
-          cursor: pointer;
+          padding: 10px;
+          border-radius: 8px;
           font-weight: 600;
+          cursor: pointer;
+          transition: background 0.2s;
+          margin-top: auto;
         }
 
         .redeem-btn:hover {
-          background: #5C3E2C;
+          background: #4A2E1B;
         }
 
         .redeem-btn.disabled {
-          background: #D7D7D7;
+          background: #E0E0E0;
+          color: #888;
           cursor: not-allowed;
-          color: #666;
         }
 
         .activity-section {
-          margin: 40px auto;
+          background: #fff;
+          border-radius: 16px;
+          padding: 24px;
+          margin-bottom: 32px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         }
 
         .activity-list {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 12px;
         }
 
         .activity-card {
-          background: #fff;
-          border-radius: 18px;
-          padding: 18px 22px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          box-shadow: 0 8px 22px rgba(0,0,0,.08);
-          transition: .25s;
-          border: 1px solid #EFE6DA;
-        }
-
-        .activity-card:hover {
-          transform: translateY(-2px);
+          padding: 12px;
+          background: #F9F9F9;
+          border-radius: 10px;
         }
 
         .activity-left {
           display: flex;
           align-items: center;
-          gap: 16px;
+          gap: 12px;
         }
 
         .activity-icon {
-          width: 56px;
-          height: 56px;
-          border-radius: 50%;
-          background: #F8F3ED;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 26px;
+          font-size: 20px;
+          background: #fff;
+          padding: 8px;
+          border-radius: 8px;
         }
 
-        .activity-left h4 {
-          margin: 0;
-          color: #3F2B22;
-        }
-
-        .activity-left span {
-          color: #888;
+        .activity-card h4 {
           font-size: 14px;
+          margin: 0 0 2px 0;
+        }
+
+        .activity-card span {
+          font-size: 12px;
+          color: #888;
         }
 
         .activity-points {
-          font-weight: 700;
-          font-size: 18px;
+          font-weight: 600;
+          font-size: 14px;
         }
 
         .activity-points.earned {
-          color: #1E8E3E;
+          color: #2E7D32;
         }
 
         .activity-points.redeemed {
@@ -520,185 +531,168 @@ export default function LoyaltyPage({ setPage }) {
 
         .tier-journey {
           background: #fff;
-          border-radius: 22px;
-          padding: 35px;
-          margin: 40px auto;
-          box-shadow: 0 10px 25px rgba(0,0,0,.08);
-          border: 1px solid #EFE6DA;
-        }
-
-        .tier-journey .section-header {
-          margin-bottom: 35px;
-        }
-
-        .tier-journey .section-header p {
-          color: #777;
-          margin-top: 8px;
+          border-radius: 16px;
+          padding: 24px;
+          margin-bottom: 32px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         }
 
         .tier-line {
           display: flex;
-          align-items: center;
           justify-content: space-between;
+          align-items: center;
+          margin-top: 24px;
+          position: relative;
         }
 
         .tier-step {
           display: flex;
           flex-direction: column;
           align-items: center;
-          text-align: center;
-          flex: 1;
+          z-index: 1;
+          opacity: 0.5;
+          transition: opacity 0.3s;
+        }
+
+        .tier-step.active {
+          opacity: 1;
         }
 
         .tier-circle {
-          width: 72px;
-          height: 72px;
+          width: 48px;
+          height: 48px;
+          background: #F8F3ED;
           border-radius: 50%;
-          background: #F5F5F5;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 34px;
-          border: 3px solid #DDD;
-          transition: .3s;
+          font-size: 20px;
+          margin-bottom: 8px;
+          border: 2px solid #E0E0E0;
         }
 
         .tier-step.active .tier-circle {
-          background: #6F4E37;
-          border-color: #6F4E37;
-          color: #fff;
-          transform: scale(1.08);
+          border-color: #8B4513;
         }
 
         .tier-step h4 {
-          margin: 14px 0 6px;
-          color: #3F2B22;
+          font-size: 14px;
+          margin: 0 0 2px 0;
         }
 
         .tier-step span {
-          color: #777;
-          font-size: 14px;
+          font-size: 12px;
+          color: #666;
         }
 
         .tier-connector {
-          height: 4px;
           flex: 1;
-          background: #DDD;
-          margin: 0 12px;
-          border-radius: 999px;
+          height: 2px;
+          background: #E0E0E0;
+          margin: 0 -10px;
+          transform: translateY(-20px);
         }
 
         .loyalty-info {
-          margin: 40px auto 60px;
+          background: #F8F3ED;
+          border-radius: 16px;
+          padding: 32px;
+          margin-bottom: 32px;
         }
 
         .loyalty-info h2 {
-          font-family: "Playfair Display", serif;
-          color: #3F2B22;
-          font-size: 28px;
+          text-align: center;
+          font-size: 22px;
           margin-bottom: 24px;
         }
 
         .info-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 24px;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 20px;
         }
 
         .info-card {
           background: #fff;
-          border-radius: 20px;
-          padding: 30px;
+          padding: 20px;
+          border-radius: 12px;
           text-align: center;
-          box-shadow: 0 8px 22px rgba(0,0,0,.08);
-          border: 1px solid #EFE6DA;
         }
 
         .info-card span {
-          font-size: 42px;
+          font-size: 28px;
+          display: block;
+          margin-bottom: 12px;
         }
 
         .info-card h3 {
-          margin: 18px 0 10px;
-          color: #3F2B22;
+          font-size: 16px;
+          margin: 0 0 8px 0;
         }
 
         .info-card p {
-          color: #777;
-          line-height: 1.6;
+          font-size: 13px;
+          color: #666;
           margin: 0;
         }
 
-        /* Success Modal Styles */
         .modal-overlay {
           position: fixed;
           top: 0;
           left: 0;
-          width: 100%;
-          height: 100%;
+          right: 0;
+          bottom: 0;
           background: rgba(0,0,0,0.5);
           display: flex;
-          justify-content: center;
           align-items: center;
+          justify-content: center;
           z-index: 1000;
-          backdrop-filter: blur(4px);
+          padding: 16px;
         }
 
         .modal-content {
           background: #fff;
-          padding: 35px;
-          border-radius: 24px;
-          width: 90%;
-          max-width: 400px;
+          padding: 32px;
+          border-radius: 20px;
+          width: 100%;
+          max-width: 360px;
           text-align: center;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-          animation: modalPopup 0.3s ease-out;
-        }
-
-        @keyframes modalPopup {
-          0% { transform: scale(0.9); opacity: 0; }
-          100% { transform: scale(1); opacity: 1; }
+          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
         .modal-icon {
-          font-size: 48px;
-          margin-bottom: 15px;
+          font-size: 40px;
+          margin-bottom: 16px;
         }
 
         .modal-content h3 {
-          font-family: "Playfair Display", serif;
-          color: #3F2B22;
-          font-size: 24px;
-          margin: 0 0 10px 0;
+          font-size: 20px;
+          margin: 0 0 8px 0;
         }
 
         .modal-reward-title {
-          font-size: 18px;
           font-weight: 600;
-          color: #6F4E37;
-          margin-bottom: 8px;
+          color: #2C1810;
+          margin: 0 0 4px 0;
         }
 
         .modal-deduction {
-          color: #C62828;
-          font-size: 14px;
-          margin-bottom: 15px;
-          font-weight: 500;
+          font-size: 13px;
+          color: #666;
+          margin: 0 0 16px 0;
         }
 
         .modal-remaining {
-          background: #FDFAF5;
+          background: #F9F9F9;
           padding: 12px;
-          border-radius: 12px;
-          margin-bottom: 25px;
+          border-radius: 8px;
           font-size: 14px;
-          color: #555;
-          border: 1px solid #EFE6DA;
+          margin-bottom: 24px;
         }
 
         .modal-remaining span {
           font-weight: 700;
-          color: #3F2B22;
+          color: #2C1810;
         }
 
         .modal-actions {
@@ -709,408 +703,370 @@ export default function LoyaltyPage({ setPage }) {
         .modal-btn {
           flex: 1;
           padding: 12px;
-          border-radius: 12px;
+          border-radius: 8px;
           font-weight: 600;
           cursor: pointer;
           border: none;
         }
 
-        .modal-btn.secondary {
-          background: #F8F3ED;
-          color: #6F4E37;
-        }
-
         .modal-btn.primary {
-          background: #6F4E37;
-          color: white;
+          background: #2C1810;
+          color: #fff;
         }
 
-        @media (max-width: 768px) {
-          .loyalty-page-container {
-            padding: 0 24px;
-          }
+        .modal-btn.secondary {
+          background: #F0E6DD;
+          color: #2C1810;
+        }
 
-          .hero-overlay {
-            padding: 12px 14px;
-          }
+        .shimmer {
+          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite;
+        }
 
-          .hero-title {
-            font-size: 18px;
-          }
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
 
-          .hero-main-flex {
-            flex-direction: column;
-            align-items: flex-start;
-          }
+        .skeleton-hero {
+          height: 200px;
+          border-radius: 20px;
+          margin-bottom: 24px;
+        }
 
-          .progress-wrapper {
-            margin-left: 0;
-            margin-top: 8px;
-            width: 100%;
-          }
-
-          .hero-points {
-            font-size: 28px;
-          }
-
-          .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-
-          .coffee-icon {
-            display: none;
-          }
-
-          .membership-card {
-            padding: 20px;
-          }
-
-          .membership-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 15px;
-          }
-
-          .benefits-list {
-            grid-template-columns: 1fr;
-          }
-
-          .activity-card {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 15px;
-          }
-
-          .activity-points {
-            margin-left: 72px;
-          }
-
-          .tier-line {
-            flex-direction: column;
-            gap: 25px;
-          }
-
-          .tier-connector {
-            width: 4px;
-            height: 40px;
-            margin: 0;
-          }
-
-          .info-grid {
-            grid-template-columns: 1fr;
-          }
+        .skeleton-card {
+          height: 120px;
+          border-radius: 16px;
+          margin-bottom: 16px;
         }
       `}</style>
 
-      <div className="loyalty-page-container">
-        <div className="loyalty-hero">
-          <div className="hero-overlay">
+      {loading ? (
+        <div className="loyalty-page-container">
+          <div className="skeleton-hero shimmer"></div>
+          <div className="skeleton-card shimmer"></div>
+          <div className="skeleton-card shimmer"></div>
+        </div>
+      ) : (
+        <div className="loyalty-page-container">
+          <div className="loyalty-hero">
+            <div className="hero-overlay">
 
-            <div className="hero-top">
-              <div>
-                <p className="hero-subtitle">Brewed Loyalty</p>
-                <h1 className="hero-title">
-                  {loyaltyTier === "Bronze" && "🥉"}
-                  {loyaltyTier === "Silver" && "🥈"}
-                  {loyaltyTier === "Gold" && "🥇"}
-                  {loyaltyTier === "Platinum" && "💎"}{" "}
-                  {loyaltyTier} Member
-                </h1>
-              </div>
-
-              <div className="coffee-icon">☕</div>
-            </div>
-
-            <div className="hero-main-flex">
-              <div>
-                <div className="hero-points-group">
-                  <span className="hero-points">{loyaltyPoints.toLocaleString()}</span>
-                  <span className="hero-label">Points</span>
-                </div>
-              </div>
-
-              <div className="progress-wrapper">
-                <div className="progress-track">
-                  <div
-                    className="progress-fill"
-                    style={{
-                      width: `${Math.min(progress, 100)}%`,
-                    }}
-                  />
+              <div className="hero-top">
+                <div>
+                  <p className="hero-subtitle">Brewed Loyalty</p>
+                  <h1 className="hero-title">
+                    {loyaltyTier === "Bronze" && "🥉"}
+                    {loyaltyTier === "Silver" && "🥈"}
+                    {loyaltyTier === "Gold" && "🥇"}
+                    {loyaltyTier === "Platinum" && "💎"}{" "}
+                    {loyaltyTier} Member
+                  </h1>
                 </div>
 
-                <p className="progress-text">
-                  {nextTier
-                    ? `${pointsToNext} points until ${nextTier.name}`
-                    : "Highest Tier Achieved 🎉"}
-                </p>
-              </div>
-            </div>
-
-            <div className="stats-grid">
-
-              <div className="stat-card">
-                <span className="stat-number">
-                  {loyaltyPoints.toLocaleString()}
-                </span>
-                <span className="stat-title">
-                  Current Points
-                </span>
+                <div className="coffee-icon">☕</div>
               </div>
 
-              <div className="stat-card">
-                <span className="stat-number">
-                  {lifetimePoints.toLocaleString()}
-                </span>
-                <span className="stat-title">
-                  Lifetime
-                </span>
-              </div>
+              <div className="hero-main-flex">
+                <div>
+                  <div className="hero-points-group">
+                    <span className="hero-points">{loyaltyPoints.toLocaleString()}</span>
+                    <span className="hero-label">Points</span>
+                  </div>
+                </div>
 
-              <div className="stat-card">
-                <span className="stat-number">
-                  {nextTier ? nextTier.name : "MAX"}
-                </span>
-                <span className="stat-title">
-                  Next Tier
-                </span>
-              </div>
-
-              <div className="stat-card">
-                <span className="stat-number">
-                  {pointsToNext.toLocaleString()}
-                </span>
-                <span className="stat-title">
-                  Remaining
-                </span>
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-
-        <div className="membership-card">
-
-          <div className="membership-header">
-            <div>
-              <h2>Your Membership</h2>
-              <p>{loyaltyTier} Member</p>
-            </div>
-
-            <div className="tier-badge">
-              {loyaltyTier === "Bronze" && "🥉"}
-              {loyaltyTier === "Silver" && "🥈"}
-              {loyaltyTier === "Gold" && "🥇"}
-              {loyaltyTier === "Platinum" && "💎"}
-            </div>
-          </div>
-
-          <div className="benefits-list">
-
-            <div className="benefit-item">
-              ☕ Earn {loyaltyTier === "Bronze"
-                ? "5"
-                : loyaltyTier === "Silver"
-                ? "10"
-                : loyaltyTier === "Gold"
-                ? "15"
-                : "20"} points per ₹100 spent
-            </div>
-
-            <div className="benefit-item">
-              🎂 Birthday Reward
-            </div>
-
-            <div className="benefit-item">
-              🎁 Exclusive Member Offers
-            </div>
-
-            <div className="benefit-item">
-              🚀 Early Access to Seasonal Drinks
-            </div>
-
-            {loyaltyTier === "Gold" || loyaltyTier === "Platinum" ? (
-              <div className="benefit-item">
-                🚚 Free Delivery Days
-              </div>
-            ) : null}
-
-            {loyaltyTier === "Platinum" ? (
-              <div className="benefit-item">
-                💎 Platinum Exclusive Menu
-              </div>
-            ) : null}
-
-          </div>
-
-        </div>
-
-        <div className="rewards-section">
-
-          <div className="section-header">
-            <h2>Available Rewards</h2>
-            <button className="view-all-btn">
-              View All →
-            </button>
-          </div>
-
-          <div className="rewards-scroll">
-
-            {rewards.map((reward) => {
-              const reqPoints = reward.pointsRequired || reward.points || 0;
-              const canRedeem = loyaltyPoints >= reqPoints;
-
-              return (
-
-                <div
-                  key={reward.id}
-                  className="reward-card"
-                >
-
-                  <div
-                    className="reward-icon"
-                    style={{ background: reward.color || "#F8F3ED" }}
-                  >
-                    {reward.icon || "🎁"}
+                <div className="progress-wrapper">
+                  <div className="progress-track">
+                    <div
+                      className="progress-fill"
+                      style={{
+                        width: `${progress}%`,
+                      }}
+                    />
                   </div>
 
-                  <h3>{reward.title}</h3>
+                  <p className="progress-text">
+                    {nextTier
+                      ? `${pointsToNext} points until ${nextTier.name}`
+                      : "Highest Tier Achieved 🎉"}
+                  </p>
+                </div>
+              </div>
 
-                  <p>{reqPoints} Points</p>
+              <div className="stats-grid">
 
-                  <button
-                    className={
-                      canRedeem
-                        ? "redeem-btn"
-                        : "redeem-btn disabled"
-                    }
-                    onClick={() => redeemReward(reward)}
-                    disabled={!canRedeem}
-                  >
-                    {canRedeem
-                      ? "Redeem"
-                      : "Need More Points"}
-                  </button>
-
+                <div className="stat-card">
+                  <span className="stat-number">
+                    {loyaltyPoints.toLocaleString()}
+                  </span>
+                  <span className="stat-title">
+                    Current Points
+                  </span>
                 </div>
 
-              );
-            })}
+                <div className="stat-card">
+                  <span className="stat-number">
+                    {lifetimePoints.toLocaleString()}
+                  </span>
+                  <span className="stat-title">
+                    Lifetime
+                  </span>
+                </div>
+
+                <div className="stat-card">
+                  <span className="stat-number">
+                    {nextTier ? nextTier.name : "MAX"}
+                  </span>
+                  <span className="stat-title">
+                    Next Tier
+                  </span>
+                </div>
+
+                <div className="stat-card">
+                  <span className="stat-number">
+                    {nextTier ? `${pointsToNext} pts left` : "Maxed"}
+                  </span>
+                  <span className="stat-title">
+                    {nextTier ? `${nextTier.name} Goal` : "Status"}
+                  </span>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+
+          <div className="membership-card">
+
+            <div className="membership-header">
+              <div>
+                <h2>Your Membership</h2>
+                <p>{loyaltyTier} Member</p>
+              </div>
+
+              <div className="tier-badge">
+                {loyaltyTier === "Bronze" && "🥉"}
+                {loyaltyTier === "Silver" && "🥈"}
+                {loyaltyTier === "Gold" && "🥇"}
+                {loyaltyTier === "Platinum" && "💎"}
+              </div>
+            </div>
+
+            <div className="benefits-list">
+
+              <div className="benefit-item">
+                ☕ Earn {loyaltyTier === "Bronze"
+                  ? "5"
+                  : loyaltyTier === "Silver"
+                  ? "10"
+                  : loyaltyTier === "Gold"
+                  ? "15"
+                  : "20"} points per ₹100 spent
+              </div>
+
+              <div className="benefit-item">
+                🎂 Birthday Reward
+              </div>
+
+              <div className="benefit-item">
+                🎁 Exclusive Member Offers
+              </div>
+
+              <div className="benefit-item">
+                🚀 Early Access to Seasonal Drinks
+              </div>
+
+              {loyaltyTier === "Gold" || loyaltyTier === "Platinum" ? (
+                <div className="benefit-item">
+                  🚚 Free Delivery Days
+                </div>
+              ) : null}
+
+              {loyaltyTier === "Platinum" ? (
+                <div className="benefit-item">
+                  💎 Platinum Exclusive Menu
+                </div>
+              ) : null}
+
+            </div>
 
           </div>
 
-        </div>
+          <div ref={rewardsRef} className="rewards-section">
 
-        <div className="activity-section">
-          <div className="section-header">
-            <h2>Loyalty Activity</h2>
-          </div>
-          
-          <div className="activity-list">
-            {activities.length === 0 ? (
-              <p style={{ color: "#777" }}>No recent activity found.</p>
+            <div className="section-header">
+              <h2>Available Rewards</h2>
+              <button className="view-all-btn">
+                View All →
+              </button>
+            </div>
+
+            {rewards.length === 0 ? (
+              <div className="empty-rewards">
+                🎁 No rewards available. Check back soon.
+              </div>
             ) : (
-              activities.map((activity) => (
-                <div key={activity.id} className="activity-card">
-                  <div className="activity-left">
-                    <div className="activity-icon">
-                      {activity.icon}
+              <div className="rewards-scroll">
+
+                {rewards.map((reward) => {
+                  const reqPoints = reward.pointsRequired || reward.points || 0;
+                  const canRedeem = loyaltyPoints >= reqPoints;
+                  const isProcessing = redeemingRewardId === reward.id;
+
+                  return (
+
+                    <div
+                      key={reward.id}
+                      className="reward-card"
+                    >
+
+                      <div
+                        className="reward-icon"
+                        style={{ background: reward.color || "#F8F3ED" }}
+                      >
+                        {reward.icon || "🎁"}
+                      </div>
+
+                      <h3>{reward.title}</h3>
+
+                      <p>{reqPoints} Points</p>
+
+                      <button
+                        className={
+                          canRedeem && !redeemingRewardId
+                            ? "redeem-btn"
+                            : "redeem-btn disabled"
+                        }
+                        onClick={() => redeemReward(reward)}
+                        disabled={!canRedeem || redeemingRewardId !== null}
+                        aria-busy={isProcessing}
+                        aria-disabled={!canRedeem || redeemingRewardId !== null}
+                      >
+                        {isProcessing ? "Processing..." : (canRedeem ? "Redeem" : "Need More Points")}
+                      </button>
+
                     </div>
-                    <div>
-                      <h4>{activity.title}</h4>
-                      <span>{activity.date}</span>
-                    </div>
-                  </div>
-                  
-                  <div
-                    className={
-                      activity.points > 0
-                        ? "activity-points earned"
-                        : "activity-points redeemed"
-                    }
-                  >
-                    {activity.points > 0 ? "+" : ""}
-                    {activity.points} pts
-                  </div>
-                </div>
-              ))
+
+                  );
+                })}
+
+              </div>
             )}
-          </div>
-        </div>
-
-        <div className="tier-journey">
-
-          <div className="section-header">
-            <h2>Tier Journey</h2>
-            <p>Unlock more benefits as you earn points.</p>
-          </div>
-
-          <div className="tier-line">
-
-            <div className={`tier-step ${loyaltyPoints >= 0 ? "active" : ""}`}>
-              <div className="tier-circle">🥉</div>
-              <h4>Bronze</h4>
-              <span>0 pts</span>
-            </div>
-
-            <div className="tier-connector" />
-
-            <div className={`tier-step ${loyaltyPoints >= 500 ? "active" : ""}`}>
-              <div className="tier-circle">🥈</div>
-              <h4>Silver</h4>
-              <span>500 pts</span>
-            </div>
-
-            <div className="tier-connector" />
-
-            <div className={`tier-step ${loyaltyPoints >= 1500 ? "active" : ""}`}>
-              <div className="tier-circle">🥇</div>
-              <h4>Gold</h4>
-              <span>1500 pts</span>
-            </div>
-
-            <div className="tier-connector" />
-
-            <div className={`tier-step ${loyaltyPoints >= 3000 ? "active" : ""}`}>
-              <div className="tier-circle">💎</div>
-              <h4>Platinum</h4>
-              <span>3000 pts</span>
-            </div>
 
           </div>
 
-        </div>
+          <div className="activity-section">
+            <div className="section-header">
+              <h2>Loyalty Activity</h2>
+            </div>
+            
+            <div className="activity-list">
+              {activities.length === 0 ? (
+                <p style={{ color: "#777" }}>No recent activity found.</p>
+              ) : (
+                activities.map((activity) => (
+                  <div key={activity.id} className="activity-card">
+                    <div className="activity-left">
+                      <div className="activity-icon">
+                        {activity.icon}
+                      </div>
+                      <div>
+                        <h4>{activity.title}</h4>
+                        <span>{activity.date}</span>
+                      </div>
+                    </div>
+                    
+                    <div
+                      className={
+                        activity.points > 0
+                          ? "activity-points earned"
+                          : "activity-points redeemed"
+                      }
+                    >
+                      {activity.points > 0 ? "+" : ""}
+                      {activity.points} pts
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
 
-        <div className="loyalty-info">
+          <div className="tier-journey">
 
-            <h2>How Brewed Loyalty Works</h2>
+            <div className="section-header">
+              <h2>Tier Journey</h2>
+              <p>Unlock more benefits as you earn points.</p>
+            </div>
 
-            <div className="info-grid">
+            <div className="tier-line">
 
-                <div className="info-card">
-                    <span>☕</span>
-                    <h3>Earn</h3>
-                    <p>Collect loyalty points every time you place an order.</p>
-                </div>
+              <div className={`tier-step ${loyaltyPoints >= 0 ? "active" : ""}`}>
+                <div className="tier-circle">🥉</div>
+                <h4>Bronze</h4>
+                <span>0 pts</span>
+              </div>
 
-                <div className="info-card">
-                    <span>🎁</span>
-                    <h3>Redeem</h3>
-                    <p>Use your points for free drinks, food and exclusive rewards.</p>
-                </div>
+              <div className="tier-connector" />
 
-                <div className="info-card">
-                    <span>🏆</span>
-                    <h3>Upgrade</h3>
-                    <p>Reach higher tiers to unlock even better benefits.</p>
-                </div>
+              <div className={`tier-step ${loyaltyPoints >= 500 ? "active" : ""}`}>
+                <div className="tier-circle">🥈</div>
+                <h4>Silver</h4>
+                <span>500 pts</span>
+              </div>
+
+              <div className="tier-connector" />
+
+              <div className={`tier-step ${loyaltyPoints >= 1500 ? "active" : ""}`}>
+                <div className="tier-circle">🥇</div>
+                <h4>Gold</h4>
+                <span>1500 pts</span>
+              </div>
+
+              <div className="tier-connector" />
+
+              <div className={`tier-step ${loyaltyPoints >= 3000 ? "active" : ""}`}>
+                <div className="tier-circle">💎</div>
+                <h4>Platinum</h4>
+                <span>3000 pts</span>
+              </div>
 
             </div>
 
-        </div>
+          </div>
 
-      </div>
+          <div className="loyalty-info">
+
+              <h2>How Brewed Loyalty Works</h2>
+
+              <div className="info-grid">
+
+                  <div className="info-card">
+                      <span>☕</span>
+                      <h3>Earn</h3>
+                      <p>Collect loyalty points every time you place an order.</p>
+                  </div>
+
+                  <div className="info-card">
+                      <span>🎁</span>
+                      <h3>Redeem</h3>
+                      <p>Use your points for free drinks, food and exclusive rewards.</p>
+                  </div>
+
+                  <div className="info-card">
+                      <span>🏆</span>
+                      <h3>Upgrade</h3>
+                      <p>Reach higher tiers to unlock even better benefits.</p>
+                  </div>
+
+              </div>
+
+          </div>
+
+        </div>
+      )}
 
       {successModal && redeemedRewardData && (
         <div className="modal-overlay">
@@ -1127,7 +1083,7 @@ export default function LoyaltyPage({ setPage }) {
             <div className="modal-actions">
               <button 
                 className="modal-btn secondary"
-                onClick={() => setSuccessModal(false)}
+                onClick={scrollToRewards}
               >
                 View Rewards
               </button>
@@ -1136,6 +1092,26 @@ export default function LoyaltyPage({ setPage }) {
                 onClick={() => setSuccessModal(false)}
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {errorModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-icon">⚠️</div>
+            <h3>Unable to Redeem</h3>
+            <p className="modal-deduction" style={{ color: "#C62828" }}>{errorMessage}</p>
+
+            <div className="modal-actions">
+              <button 
+                className="modal-btn primary"
+                onClick={() => setErrorModal(false)}
+                style={{ width: "100%" }}
+              >
+                Close
               </button>
             </div>
           </div>
