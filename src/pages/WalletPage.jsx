@@ -79,10 +79,10 @@ export default function WalletPage({ setPage }) {
       }
 
       // Load transactions for this user
-      const q = query(
-        collection(db, "walletTransactions"),
-        where("userId", "==", currentUser.uid)
-      );
+      
+
+
+      const q = query(collection(db, "walletTransactions"));
 
       const snapshot = await getDocs(q);
       
