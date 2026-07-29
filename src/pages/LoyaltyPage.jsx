@@ -111,6 +111,12 @@ export default function LoyaltyPage({ setPage }) {
   const loyaltyTier = loyaltyPoints >= 3000 ? "Platinum" : loyaltyPoints >= 1500 ? "Gold" : loyaltyPoints >= 500 ? "Silver" : "Bronze";
 
   const redeemReward = async (reward) => {
+
+    if (!currentUser) {
+  setErrorMessage("Please sign in first.");
+  setErrorModal(true);
+  return;
+    }
     if (redeemingRewardId) return;
 
     const pointsNeeded = reward.pointsRequired || reward.points || 0;
