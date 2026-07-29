@@ -246,39 +246,41 @@ export default function WalletPage({ setPage }) {
   };
 
   const handleClaimReward = async (reward) => {
-    try {
-      const walletRef = doc(db, "wallets", currentUser.uid);
+  try {
+    const walletRef = doc(db, "wallets", currentUser.uid);
 
-      // 1. Update wallet balance and reward balance
-      await updateDoc(walletRef, {
-        balance: increment(reward.amount),
-        rewardBalance: increment(-reward.amount),
-        updatedAt: serverTimestamp(),
-      });
+    // 1. Update wallet balance and decrease reward balance
+    await updateDoc(walletRef, {
+      balance: increment(reward.amount),
+      rewardBalance: increment(-reward.amount),
+      updatedAt: serverTimestamp(),
+    });
 
-      // 2. Mark the specific reward transaction as claimed
-      const rewardTxRef = doc(db, "walletTransactions", reward.id);
-      await updateDoc(rewardTxRef, {
-        claimed: true,
-      });
+    // 2. Mark this specific reward transaction as claimed in Firestore
+    const rewardTxRef = doc(db, "walletTransactions", reward.id);
+    await updateDoc(rewardTxRef, {
+      claimed: true,
+    });
 
-      // 3. Log the redemption transaction
-      await addDoc(collection(db, "walletTransactions"), {
-        userId: currentUser.uid,
-        type: "REWARD_REDEEM",
-        amount: reward.amount,
-        description: `Claimed: ${reward.description || reward.title}`,
-        status: "SUCCESS",
-        createdAt: serverTimestamp(),
-      });
+    // 3. Log the redemption transaction
+    await addDoc(collection(db, "walletTransactions"), {
+      userId: currentUser.uid,
+      type: "REWARD_REDEEM",
+      amount: reward.amount,
+      description: reward.description || "Reward Claimed",
+      status: "SUCCESS",
+      createdAt: serverTimestamp(),
+    });
 
-      alert("Reward claimed successfully!");
-      loadWallet();
-    } catch (error) {
-      console.error(error);
-      alert(error.message);
-    }
-  };
+    alert("Reward claimed successfully!");
+    loadWallet();
+  } catch (error) {
+    console.error(error);
+    alert(error.message);
+  }
+};
+
+
 
 
 
