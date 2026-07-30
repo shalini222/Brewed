@@ -268,62 +268,30 @@ if (nextTier) {
 const progress = Math.min(100, Math.max(0, calculatedProgress));
 
 async function seedLoyaltyRewards() {
-  const snapshot = await getDocs(collection(db, "loyaltyRewards"));
+  try {
+    alert("Starting...");
 
-  if (!snapshot.empty) {
-    alert("Loyalty rewards already exist.");
-    return;
-  }
+    const snapshot = await getDocs(collection(db, "loyaltyRewards"));
 
-  const rewards = [
-    {
+    alert(`Found ${snapshot.size} rewards`);
+
+    if (!snapshot.empty) {
+      alert("Rewards already exist.");
+      return;
+    }
+
+    await addDoc(collection(db, "loyaltyRewards"), {
       title: "Free Coffee",
       pointsRequired: 100,
       icon: "☕",
-      color: "#F5E6C8",
-      type: "freeCoffee",
       active: true,
-    },
-    {
-      title: "Free Delivery",
-      pointsRequired: 200,
-      icon: "🚚",
-      color: "#D9F8E5",
-      type: "freeDelivery",
-      active: true,
-    },
-    {
-      title: "₹100 Off",
-      pointsRequired: 500,
-      icon: "💸",
-      color: "#FFE0E0",
-      type: "discount",
-      discountAmount: 100,
-      active: true,
-    },
-    {
-      title: "Free Dessert",
-      pointsRequired: 350,
-      icon: "🍰",
-      color: "#FFF2CC",
-      type: "freeDessert",
-      active: true,
-    },
-    {
-      title: "Buy 1 Get 1 Coffee",
-      pointsRequired: 800,
-      icon: "🥤",
-      color: "#E6E6FA",
-      type: "bogoCoffee",
-      active: true,
-    }
-  ];
+    });
 
-  for (const reward of rewards) {
-    await addDoc(collection(db, "loyaltyRewards"), reward);
+    alert("Reward added!");
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
   }
-
-  alert("Loyalty rewards created successfully!");
 }
 
 
