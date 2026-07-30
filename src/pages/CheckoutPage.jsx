@@ -232,16 +232,13 @@ useEffect(() => {
       setLoadingAvailableRewards(true);
 
       const snapshot = await getDocs(
-        query(
-          collection(
-            db,
-            "users",
-            auth.currentUser.uid,
-            "redeemedRewards"
-          ),
-          where("status", "==", "unused")
-        )
-      );
+  collection(
+    db,
+    "users",
+    auth.currentUser.uid,
+    "redeemedRewards"
+  )
+);
 
       const rewards = snapshot.docs.map(doc => ({
         id: doc.id,
