@@ -30,6 +30,8 @@ export default function LoyaltyPage({ setPage }) {
   const [successModal, setSuccessModal] = useState(false);
   const [errorModal, setErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [myRewards, setMyRewards] = useState([]);
+  const [loadingRewards, setLoadingRewards] = useState(true);
   const [redeemedRewardData, setRedeemedRewardData] = useState(null);
   const [redeemingRewardId, setRedeemingRewardId] = useState(null);
   
@@ -108,6 +110,11 @@ export default function LoyaltyPage({ setPage }) {
     loadLoyaltyData();
   }, [currentUser, loadLoyaltyData]);
 
+
+  useEffect(() => {
+  loadRedeemedRewards();
+}, [loadRedeemedRewards]);
+
   const tierProgressPoints = lifetimePoints;
 
 const loyaltyTier =
@@ -185,6 +192,37 @@ const loyaltyTier =
     }
   };
 
+
+const loadRedeemedRewards = useCallback(async () => {
+  if (!currentUser) return;
+
+  try {
+    setLoadingRewards(true);
+
+    const snapshot = await getDocs(
+      query(
+        collection(db, "users", currentUser.uid, "redeemedRewards"),
+        orderBy("redeemedAt", "desc")
+      )
+    );
+
+    const rewards = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    setMyRewards(rewards);
+
+  } catch (err) {
+    console.error("Error loading redeemed rewards:", err);
+  } finally {
+    setLoadingRewards(false);
+  }
+}, [currentUser]);
+
+
+
+  
   const scrollToRewards = () => {
     setSuccessModal(false);
     rewardsRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -942,6 +980,34 @@ const progress = Math.min(100, Math.max(0, calculatedProgress));
                 onClick={() => rewardsRef.current?.scrollIntoView({behavior:"smooth"})}>
                 View All →
               </button>
+
+              <div className="my-rewards-section">
+  <div className="section-header">
+    <h2>🎁 My Rewards</h2>
+    <p>Your redeemed rewards.</p>
+  </div>
+
+  {loadingRewards ? (
+    <p>Loading rewards...</p>
+  ) : myRewards.length === 0 ? (
+    <p>No redeemed rewards yet.</p>
+  ) : (
+    myRewards.map((reward) => (
+      <div key={reward.id} className="reward-card">
+        <h3>{reward.title}</h3>
+
+        <p>Status: {reward.status}</p>
+
+        <p>
+          Expires:{" "}
+          {reward.expiresAt?.toDate
+            ? reward.expiresAt.toDate().toLocaleDateString()
+            : "N/A"}
+        </p>
+      </div>
+    ))
+  )}
+</div>
             </div>
 
             {rewards.length === 0 ? (
