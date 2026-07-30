@@ -69,6 +69,10 @@ if (!userSnap.exists()) {
   photoURL: user.photoURL || "",
 
   createdAt: serverTimestamp(),
+
+  loyaltyPoints: 0,
+  lifetimePoints: 0,
+
   signupRewardClaimed: false,
   birthdayRewardYear: null,
   referredBy: null,
@@ -141,6 +145,10 @@ if (!userSnap.exists()) {
   photoURL: user.photoURL || "",
 
   createdAt: serverTimestamp(),
+
+  loyaltyPoints: 0,
+  lifetimePoints: 0,
+
   signupRewardClaimed: false,
   birthdayRewardYear: null,
   referredBy: null,
@@ -190,6 +198,7 @@ if (!userSnap.exists()) {
       setMessage(error.message);
     }
   }
+
 
 
 
