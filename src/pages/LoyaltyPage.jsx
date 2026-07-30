@@ -100,15 +100,18 @@ export default function LoyaltyPage({ setPage }) {
     }
   }, [currentUser]);
 
-  useEffect(() => {
-    if (!currentUser) {
-      setLoading(false);
-      return;
-    }
+useEffect(() => {
+  if (!currentUser) {
+    setLoading(false);
+    return;
+  }
 
-    setLoading(true);
-    loadLoyaltyData();
-  }, [currentUser, loadLoyaltyData]);
+  setLoading(true);
+
+  loadLoyaltyData();
+  loadRedeemedRewards();
+
+}, [currentUser, loadLoyaltyData, loadRedeemedRewards]);
 
 
  
