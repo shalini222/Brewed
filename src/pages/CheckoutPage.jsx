@@ -1,3 +1,10 @@
+import {
+  
+  query,
+  where
+} from "firebase/firestore";
+
+
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useCart } from "../context/CartContext";
 import { auth, db } from "../firebase";
