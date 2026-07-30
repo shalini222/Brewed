@@ -203,6 +203,19 @@ const loyaltyTier =
           rewardId: reward.id,
           createdAt: serverTimestamp()
         });
+
+        const redeemedRewardRef = doc(
+          collection(db, "users", currentUser.uid, "redeemedRewards")
+        );
+
+        transaction.set(redeemedRewardRef, {
+          rewardId: reward.id,
+          title: reward.title,
+          points: pointsNeeded,
+          status: "unused",
+          redeemedAt: serverTimestamp(),
+          expiresAt: null,
+        });
       });
 
       setRedeemedRewardData({
@@ -213,6 +226,7 @@ const loyaltyTier =
       setSuccessModal(true);
 
       await loadLoyaltyData();
+      await loadRedeemedRewards();
 
     } catch (err) {
       console.error("Error redeeming reward:", err);
@@ -252,6 +266,9 @@ if (nextTier) {
 }
 
 const progress = Math.min(100, Math.max(0, calculatedProgress));
+
+
+
 
   return (
     <>
