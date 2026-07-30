@@ -108,7 +108,13 @@ export default function LoyaltyPage({ setPage }) {
     loadLoyaltyData();
   }, [currentUser, loadLoyaltyData]);
 
-  const loyaltyTier = loyaltyPoints >= 3000 ? "Platinum" : loyaltyPoints >= 1500 ? "Gold" : loyaltyPoints >= 500 ? "Silver" : "Bronze";
+  const tierProgressPoints = lifetimePoints;
+
+const loyaltyTier =
+  tierProgressPoints >= 3000 ? "Platinum" :
+  tierProgressPoints >= 1500 ? "Gold" :
+  tierProgressPoints >= 500 ? "Silver" :
+  "Bronze";
 
   const redeemReward = async (reward) => {
 
@@ -185,18 +191,18 @@ export default function LoyaltyPage({ setPage }) {
   };
 
   const currentTier = TIERS.find(tier => tier.name === loyaltyTier);
-  const nextTier = TIERS.find(tier => tier.min > loyaltyPoints);
+  const nextTier = TIERS.find(tier => tier.min > tierProgressPoints);
 
   let calculatedProgress = 100;
   let pointsToNext = 0;
 
   if (nextTier && currentTier) {
     calculatedProgress =
-      ((loyaltyPoints - currentTier.min) /
+      ((tierProgressPoints - currentTier.min) /
         (nextTier.min - currentTier.min)) *
       100;
 
-    pointsToNext = nextTier.min - loyaltyPoints;
+    pointsToNext = nextTier.min - tierProgressPoints;
   }
 
   const progress = Math.min(100, Math.max(0, calculatedProgress));
@@ -724,6 +730,25 @@ export default function LoyaltyPage({ setPage }) {
           background: #F0E6DD;
           color: #2C1810;
         }
+        .back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
 
         .shimmer {
           background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -748,6 +773,13 @@ export default function LoyaltyPage({ setPage }) {
           margin-bottom: 16px;
         }
       `}</style>
+
+      <button
+  className="back-btn"
+  onClick={() => setPage("menu")}
+>
+  ← Back
+</button>
 
       {loading ? (
         <div className="loyalty-page-container">
@@ -904,7 +936,8 @@ export default function LoyaltyPage({ setPage }) {
 
             <div className="section-header">
               <h2>Available Rewards</h2>
-              <button className="view-all-btn">
+              <button className="view-all-btn"
+                onClick={() => rewardsRef.current?.scrollIntoView({behavior:"smooth"})}>
                 View All →
               </button>
             </div>
@@ -1000,49 +1033,50 @@ export default function LoyaltyPage({ setPage }) {
             </div>
           </div>
 
-          <div className="tier-journey">
+         <div className="tier-journey">
 
-            <div className="section-header">
-              <h2>Tier Journey</h2>
-              <p>Unlock more benefits as you earn points.</p>
-            </div>
+  <div className="section-header">
+    <h2>Tier Journey</h2>
+    <p>Unlock more benefits as you earn points.</p>
+  </div>
 
-            <div className="tier-line">
+  <div className="tier-line">
 
-              <div className={`tier-step ${loyaltyPoints >= 0 ? "active" : ""}`}>
-                <div className="tier-circle">🥉</div>
-                <h4>Bronze</h4>
-                <span>0 pts</span>
-              </div>
+    <div className={`tier-step ${tierProgressPoints >= 0 ? "active" : ""}`}>
+      <div className="tier-circle">🥉</div>
+      <h4>Bronze</h4>
+      <span>0 pts</span>
+    </div>
 
-              <div className="tier-connector" />
+    <div className="tier-connector" />
 
-              <div className={`tier-step ${loyaltyPoints >= 500 ? "active" : ""}`}>
-                <div className="tier-circle">🥈</div>
-                <h4>Silver</h4>
-                <span>500 pts</span>
-              </div>
+    <div className={`tier-step ${tierProgressPoints >= 500 ? "active" : ""}`}>
+      <div className="tier-circle">🥈</div>
+      <h4>Silver</h4>
+      <span>500 pts</span>
+    </div>
 
-              <div className="tier-connector" />
+    <div className="tier-connector" />
 
-              <div className={`tier-step ${loyaltyPoints >= 1500 ? "active" : ""}`}>
-                <div className="tier-circle">🥇</div>
-                <h4>Gold</h4>
-                <span>1500 pts</span>
-              </div>
+    <div className={`tier-step ${tierProgressPoints >= 1500 ? "active" : ""}`}>
+      <div className="tier-circle">🥇</div>
+      <h4>Gold</h4>
+      <span>1500 pts</span>
+    </div>
 
-              <div className="tier-connector" />
+    <div className="tier-connector" />
 
-              <div className={`tier-step ${loyaltyPoints >= 3000 ? "active" : ""}`}>
-                <div className="tier-circle">💎</div>
-                <h4>Platinum</h4>
-                <span>3000 pts</span>
-              </div>
+    <div className={`tier-step ${tierProgressPoints >= 3000 ? "active" : ""}`}>
+      <div className="tier-circle">💎</div>
+      <h4>Platinum</h4>
+      <span>3000 pts</span>
+    </div>
 
-            </div>
+  </div>
 
-          </div>
+</div>
 
+          
           <div className="loyalty-info">
 
               <h2>How Brewed Loyalty Works</h2>
