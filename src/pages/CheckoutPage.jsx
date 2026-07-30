@@ -41,7 +41,13 @@ const loadRazorpayScript = () =>
   });
 
 export default function CheckoutPage({ setPage }) {
-  const { cart = [], total = 0, placeOrder, clearCart } = useCart();
+  const {
+  cart,
+  total,
+  placeOrder,
+  clearCart,
+  addToCart,
+} = useCart();
   
   const [status, setStatus] = useState("idle"); 
   const [paymentMethod, setPaymentMethod] = useState("online");
