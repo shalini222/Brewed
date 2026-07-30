@@ -111,9 +111,7 @@ export default function LoyaltyPage({ setPage }) {
   }, [currentUser, loadLoyaltyData]);
 
 
-  useEffect(() => {
-  loadRedeemedRewards();
-}, [loadRedeemedRewards]);
+ 
 
   const tierProgressPoints = lifetimePoints;
 
