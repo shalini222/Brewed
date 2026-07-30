@@ -149,29 +149,6 @@ try {
           createdAt: serverTimestamp(),
         });
 
-         // Create redeemed reward
-const redeemedRewardRef = doc(
-  collection(db, "users", currentUser.uid, "redeemedRewards")
-);
-
-const expiry = new Date();
-expiry.setDate(expiry.getDate() + (reward.validDays || 30));
-
-transaction.set(redeemedRewardRef, {
-  rewardId: reward.id,
-  title: reward.title,
-  type: reward.type || "GENERIC",
-  value: reward.value || null,
-  pointsUsed: pointsNeeded,
-
-  status: "unused",
-
-  redeemedAt: serverTimestamp(),
-  expiresAt: expiry,
-
-  usedAt: null,
-  orderIdUsed: null,
-});
 
 
 
