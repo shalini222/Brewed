@@ -49,6 +49,9 @@ export default function CheckoutPage({ setPage }) {
   const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [deliveryAvailable, setDeliveryAvailable] = useState(null);
   const [deliveryInfo, setDeliveryInfo] = useState(null);
+  const [availableRewards, setAvailableRewards] = useState([]);
+  const [selectedReward, setSelectedReward] = useState(null);
+  const [loadingAvailableRewards, setLoadingAvailableRewards] = useState(true);
 
   // Wallet states
   const [wallet, setWallet] = useState(null);
@@ -210,6 +213,48 @@ export default function CheckoutPage({ setPage }) {
       });
     }
 
+useEffect(() => {
+  async function loadAvailableRewards() {
+    if (!auth.currentUser) {
+      setAvailableRewards([]);
+      setLoadingAvailableRewards(false);
+      return;
+    }
+
+    try {
+      setLoadingAvailableRewards(true);
+
+      const snapshot = await getDocs(
+        query(
+          collection(
+            db,
+            "users",
+            auth.currentUser.uid,
+            "redeemedRewards"
+          ),
+          where("status", "==", "unused")
+        )
+      );
+
+      const rewards = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setAvailableRewards(rewards);
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingAvailableRewards(false);
+    }
+  }
+
+  loadAvailableRewards();
+}, []);
+
+
+    
     const updateAndRender = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       particles.forEach((p) => {
@@ -579,7 +624,7 @@ export default function CheckoutPage({ setPage }) {
             </div>
 
             <div style={styles.card}>
-              <h2 style={styles.sectionTitle}>💳 Select Settlement Method</h2>
+              <h2 style={styles.sectionTitle}>💳 Select Payment Method</h2>
 
               <div
                 style={{
@@ -667,6 +712,53 @@ export default function CheckoutPage({ setPage }) {
                 )}
               </div>
 
+            {!loadingAvailableRewards && availableRewards.length > 0 && (
+  <div className="checkout-card">
+    <h3>🎁 Available Rewards</h3>
+
+    {availableRewards.map((reward) => (
+      <div
+        key={reward.id}
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "12px 0",
+          borderBottom: "1px solid #eee",
+        }}
+      >
+        <div>
+          <strong>{reward.title}</strong>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 13,
+              color: "#777",
+            }}
+          >
+            Status: {reward.status}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setSelectedReward(reward)}
+          disabled={selectedReward?.id === reward.id}
+        >
+          {selectedReward?.id === reward.id
+            ? "Selected"
+            : "Use"}
+        </button>
+      </div>
+    ))}
+  </div>
+)}
+              
+              
+              
+              
+              
+              
               <div 
                 className="clickable-row"
                 style={{ ...styles.paymentSelector, borderColor: paymentMethod === "online" ? THEME.colors.primary : THEME.colors.cardBorder }}
