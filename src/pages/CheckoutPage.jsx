@@ -93,6 +93,22 @@ export default function CheckoutPage({ setPage }) {
 
     let grandTotal = baseTotal;
 
+
+
+
+    let rewardDiscount = 0;
+
+if (selectedReward?.title === "Free Coffee") {
+  const coffee = cart.find(item => item.category === "Coffee");
+
+  if (coffee) {
+    rewardDiscount = coffee.price;
+    grandTotal -= rewardDiscount;
+  }
+}
+
+grandTotal = Math.max(0, grandTotal);
+
     let walletDeduction = 0;
     if (useWallet && wallet?.balance > 0) {
       walletDeduction = Math.min(wallet.balance, grandTotal);
@@ -109,16 +125,17 @@ export default function CheckoutPage({ setPage }) {
     const remainingAmount = grandTotal;
 
     return { 
-      subtotal, 
-      tax, 
-      delivery, 
-      cod, 
-      discount, 
-      baseTotal, 
-      walletDeduction, 
-      grandTotal,
-      rewardDeduction,
-      remainingAmount 
+      subtotal,
+  tax,
+  delivery,
+  cod,
+  discount,
+  baseTotal,
+  walletDeduction,
+  rewardDeduction,
+  rewardDiscount,
+  grandTotal,
+  remainingAmount,
     };
   }, [total, paymentMethod, appliedCoupon, deliveryInfo, useWallet, wallet, useRewards]);
 
@@ -808,6 +825,14 @@ export default function CheckoutPage({ setPage }) {
               <div style={styles.calcRow}><span>Tax / Fees (8%)</span><span>₹{calculations.tax}</span></div>
               <div style={styles.calcRow}><span>Delivery Fee</span><span>₹{calculations.delivery}</span></div>
               
+              
+              {calculations.rewardDiscount > 0 && (
+  <div style={{ ...styles.calcRow, color: THEME.colors.success }}>
+    <span>🎁 Free Coffee</span>
+    <span>-₹{calculations.rewardDiscount}</span>
+  </div>
+)}
+           
               {deliveryLoading ? (
                 <p style={{ color: "#666", marginBottom: "12px" }}>
                   Checking delivery availability...
