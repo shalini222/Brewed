@@ -3,10 +3,12 @@ import { db, auth } from "../firebase"; // 1. Added 'auth' import
 import {
   addDoc,
   collection,
-  serverTimestamp,
   doc,
   updateDoc,
   increment,
+  serverTimestamp,
+  getDoc,
+  runTransaction,
 } from "firebase/firestore";
 
 const CartContext = createContext();
@@ -89,6 +91,71 @@ export function CartProvider({ children }) {
       );
       
       alert("Order saved successfully!");
+
+
+      // -------------------------
+// Loyalty Points
+// -------------------------
+try {
+  const userRef = doc(db, "users", auth.currentUser.uid);
+  const userSnap = await getDoc(userRef);
+
+  if (userSnap.exists()) {
+    const userData = userSnap.data();
+
+    const lifetimePoints = userData.lifetimePoints || 0;
+
+    // Tier is based on lifetime points
+    const tier =
+      lifetimePoints >= 3000
+        ? "Platinum"
+        : lifetimePoints >= 1500
+        ? "Gold"
+        : lifetimePoints >= 500
+        ? "Silver"
+        : "Bronze";
+
+    const multiplier =
+      tier === "Gold" || tier === "Platinum"
+        ? 1.5
+        : 1;
+
+    // ₹100 = 10 points
+    const earnedPoints = Math.floor(
+      (orderDetails.subtotal / 100) * 10 * multiplier
+    );
+
+    if (earnedPoints > 0) {
+      await runTransaction(db, async (transaction) => {
+        const freshUser = await transaction.get(userRef);
+
+        if (!freshUser.exists()) return;
+
+        const data = freshUser.data();
+
+        transaction.update(userRef, {
+          loyaltyPoints: (data.loyaltyPoints || 0) + earnedPoints,
+          lifetimePoints: (data.lifetimePoints || 0) + earnedPoints,
+        });
+
+        const txRef = doc(collection(db, "loyaltyTransactions"));
+
+        transaction.set(txRef, {
+          userId: auth.currentUser.uid,
+          type: "earned",
+          points: earnedPoints,
+          description: `Order #${docRef.id.slice(-6)}`,
+          orderId: docRef.id,
+          createdAt: serverTimestamp(),
+        });
+      });
+    }
+  }
+} catch (err) {
+  alert("Failed to award loyalty points:", err);
+}
+
+
 
       for (const item of orderDetails.items) {
         console.log(item);
