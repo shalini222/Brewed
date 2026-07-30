@@ -100,14 +100,44 @@ export default function LoyaltyPage({ setPage }) {
     }
   }, [currentUser]);
 
-useEffect(() => {
+
+  
+const loadRedeemedRewards = useCallback(async () => {
+  if (!currentUser) return;
+
+  try {
+    setLoadingRewards(true);
+
+    const snapshot = await getDocs(
+      query(
+        collection(db, "users", currentUser.uid, "redeemedRewards"),
+      
+      )
+    );
+
+    const rewards = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    setMyRewards(rewards);
+
+  } catch (err) {
+    console.error("Error loading redeemed rewards:", err);
+  } finally {
+    setLoadingRewards(false);
+  }
+}, [currentUser]);
+  
+  
+  useEffect(() => {
   if (!currentUser) {
     setLoading(false);
     return;
   }
 
   setLoading(true);
-
+loadRedeemedRewards();
   loadLoyaltyData();
  
 
@@ -194,32 +224,7 @@ const loyaltyTier =
   };
 
 
-const loadRedeemedRewards = useCallback(async () => {
-  if (!currentUser) return;
 
-  try {
-    setLoadingRewards(true);
-
-    const snapshot = await getDocs(
-      query(
-        collection(db, "users", currentUser.uid, "redeemedRewards"),
-      
-      )
-    );
-
-    const rewards = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    setMyRewards(rewards);
-
-  } catch (err) {
-    console.error("Error loading redeemed rewards:", err);
-  } finally {
-    setLoadingRewards(false);
-  }
-}, [currentUser]);
 
 
 
