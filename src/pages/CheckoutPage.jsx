@@ -199,6 +199,40 @@ export default function CheckoutPage({ setPage }) {
   }, []);
 
   useEffect(() => {
+    async function loadAvailableRewards() {
+      if (!auth.currentUser) {
+        setAvailableRewards([]);
+        setLoadingAvailableRewards(false);
+        return;
+      }
+
+      try {
+        setLoadingAvailableRewards(true);
+
+        const snapshot = await getDocs(
+          query(
+            collection(db, "users", auth.currentUser.uid, "redeemedRewards"),
+            where("status", "==", "unused")
+          )
+        );
+
+        const rewards = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        setAvailableRewards(rewards);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingAvailableRewards(false);
+      }
+    }
+
+    loadAvailableRewards();
+  }, []);
+
+  useEffect(() => {
     if (status !== "failure" || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -220,45 +254,6 @@ export default function CheckoutPage({ setPage }) {
       });
     }
 
-useEffect(() => {
-  async function loadAvailableRewards() {
-    if (!auth.currentUser) {
-      setAvailableRewards([]);
-      setLoadingAvailableRewards(false);
-      return;
-    }
-
-    try {
-      setLoadingAvailableRewards(true);
-
-      const snapshot = await getDocs(
-  collection(
-    db,
-    "users",
-    auth.currentUser.uid,
-    "redeemedRewards"
-  )
-);
-
-      const rewards = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      setAvailableRewards(rewards);
-
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingAvailableRewards(false);
-    }
-  }
-
-  loadAvailableRewards();
-}, []);
-
-
-    
     const updateAndRender = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       particles.forEach((p) => {
@@ -518,7 +513,6 @@ useEffect(() => {
       </div>
     );
   }
-
 
 
 
