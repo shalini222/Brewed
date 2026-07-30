@@ -109,7 +109,7 @@ useEffect(() => {
   setLoading(true);
 
   loadLoyaltyData();
-  loadRedeemedRewards();
+ 
 
 }, [currentUser, loadLoyaltyData, loadRedeemedRewards]);
 
