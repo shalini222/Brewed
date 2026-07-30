@@ -203,7 +203,7 @@ const loadRedeemedRewards = useCallback(async () => {
     const snapshot = await getDocs(
       query(
         collection(db, "users", currentUser.uid, "redeemedRewards"),
-        orderBy("redeemedAt", "desc")
+      
       )
     );
 
