@@ -153,8 +153,8 @@ const loyaltyTier =
         updatedPoints = currentPoints - pointsNeeded;
 
         transaction.update(userRef, {
-          loyaltyPoints: updatedPoints
-        });
+  loyaltyPoints: updatedPoints,
+});
 
         const newTxRef = doc(collection(db, "loyaltyTransactions"));
         transaction.set(newTxRef, {
@@ -190,22 +190,24 @@ const loyaltyTier =
     rewardsRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const currentTier = TIERS.find(tier => tier.name === loyaltyTier);
-  const nextTier = TIERS.find(tier => tier.min > tierProgressPoints);
+const currentTier =
+  TIERS.find(tier => tier.name === loyaltyTier) || TIERS[0];
 
-  let calculatedProgress = 100;
-  let pointsToNext = 0;
+const nextTier =
+  TIERS.find(tier => tier.min > tierProgressPoints);
 
-  if (nextTier && currentTier) {
-    calculatedProgress =
-      ((tierProgressPoints - currentTier.min) /
-        (nextTier.min - currentTier.min)) *
-      100;
+let calculatedProgress = 100;
+let pointsToNext = 0;
 
-    pointsToNext = nextTier.min - tierProgressPoints;
-  }
+if (nextTier) {
+  calculatedProgress =
+    ((tierProgressPoints - currentTier.min) /
+      (nextTier.min - currentTier.min)) * 100;
 
-  const progress = Math.min(100, Math.max(0, calculatedProgress));
+  pointsToNext = nextTier.min - tierProgressPoints;
+}
+
+const progress = Math.min(100, Math.max(0, calculatedProgress));
 
   return (
     <>
