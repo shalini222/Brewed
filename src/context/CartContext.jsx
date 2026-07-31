@@ -185,16 +185,16 @@ try {
 
 
 
-      for (const item of orderDetails.items) {
-        console.log(item);
-        console.log("Item ID:", item.id);
-        await updateDoc(
-          doc(db, "menu", item.firestoreId),
-          {
-            salesCount: increment(item.qty || item.quantity || 1),
-          }
-        );
-      }
+     for (const item of orderDetails.items) {
+  if (item.isReward) continue;
+
+  await updateDoc(
+    doc(db, "menu", item.firestoreId),
+    {
+      salesCount: increment(item.qty || item.quantity || 1),
+    }
+  );
+}
       clearCart();
 
       return docRef.id;
