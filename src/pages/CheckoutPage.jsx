@@ -67,12 +67,14 @@ export default function CheckoutPage({ setPage }) {
   const [availableRewards, setAvailableRewards] = useState([]);
   const [selectedReward, setSelectedReward] = useState(null);
   const [loadingAvailableRewards, setLoadingAvailableRewards] = useState(true);
+  const [rewardMenuItem, setRewardMenuItem] = useState(null);
 
   // Wallet states
   const [wallet, setWallet] = useState(null);
   const [walletLoading, setWalletLoading] = useState(true);
   const [useWallet, setUseWallet] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
+  
 
   const canvasRef = useRef(null);
 
@@ -727,9 +729,7 @@ grandTotal = Math.max(0, grandTotal);
               </div>
 
 
-              
-
-{!loadingAvailableRewards && availableRewards.length > 0 && (
+             {!loadingAvailableRewards && availableRewards.length > 0 && (
   <div className="checkout-card">
     <h3>🎁 Available Rewards</h3>
 
@@ -745,7 +745,11 @@ grandTotal = Math.max(0, grandTotal);
         }}
       >
         <div>
-          <strong>{reward.title}</strong>
+          <strong>
+            {selectedReward?.id === reward.id && rewardMenuItem
+              ? `Free ${rewardMenuItem.name}`
+              : reward.title}
+          </strong>
           <p
             style={{
               margin: 0,
@@ -780,11 +784,11 @@ grandTotal = Math.max(0, grandTotal);
               !cart.some(item => item.rewardId === reward.id)
             ) {
               const coffeeSnap = await getDoc(
-                doc(db, "menu", "ugJrtQjijNlHAaKDboRu")
+                doc(db, "menu", reward.menuItemId)
               );
 
               if (coffeeSnap.exists()) {
-                addToCart({
+                const menuItem = {
                   ...coffeeSnap.data(),
                   id: coffeeSnap.id,
                   firestoreId: coffeeSnap.id,
@@ -792,7 +796,11 @@ grandTotal = Math.max(0, grandTotal);
                   qty: 1,
                   isReward: true,
                   rewardId: reward.id,
-                });
+                };
+
+                setRewardMenuItem(menuItem);
+
+                addToCart(menuItem);
               }
             }
           }}
@@ -806,6 +814,9 @@ grandTotal = Math.max(0, grandTotal);
     ))}
   </div>
 )}
+ 
+
+
 
        
               
