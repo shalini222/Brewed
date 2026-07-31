@@ -1074,91 +1074,36 @@ async function seedLoyaltyRewards() {
   </div>
 
   {loadingRewards ? (
-    <p>Loading rewards...</p>
-  ) : myRewards.length === 0 ? (
-    <p>No redeemed rewards yet.</p>
-  ) : (
-    myRewards.map((reward) => (
-      <div key={reward.id} className="reward-card">
-        <h3>{reward.title}</h3>
+  <p>Loading rewards...</p>
+) : myRewards.length === 0 ? (
+  <p>No redeemed rewards yet.</p>
+) : (
+  myRewards.map((reward) => (
+    <div key={reward.id} className="reward-card">
+      <h3>
+        {reward.menuItemName
+          ? `Free ${reward.menuItemName}`
+          : reward.title}
+      </h3>
 
-        <p>Status: {reward.status}</p>
+      <p>Status: {reward.status}</p>
 
-        <p>
-          Expires:{" "}
-          {reward.expiresAt?.toDate
-            ? reward.expiresAt.toDate().toLocaleDateString()
-            : "N/A"}
-        </p>
-      </div>
-    ))
-  )}
-</div>
-            </div>
+      <p>
+        Expires:{" "}
+        {reward.expiresAt?.toDate
+          ? reward.expiresAt.toDate().toLocaleDateString()
+          : "N/A"}
+      </p>
 
-            {rewards.length === 0 ? (
-              <div className="empty-rewards">
-                🎁 No rewards available. Check back soon.
-              </div>
-            ) : (
-              <div className="rewards-scroll">
+      {/* Temporary debug - remove after testing */}
+      <pre style={{ fontSize: 11 }}>
+        {JSON.stringify(reward, null, 2)}
+      </pre>
+    </div>
+  ))
+)}
 
-                {rewards.map((reward) => {
-                  const reqPoints = reward.pointsRequired || reward.points || 0;
-                  const canRedeem = loyaltyPoints >= reqPoints;
-                  const isProcessing = redeemingRewardId === reward.id;
-
-                  return (
-
-                    <div
-                      key={reward.id}
-                      className="reward-card"
-                    >
-
-                      <div
-                        className="reward-icon"
-                        style={{ background: reward.color || "#F8F3ED" }}
-                      >
-                        {reward.icon || "🎁"}
-                      </div>
-
-
-<pre>{JSON.stringify(reward, null, 2)}</pre>
-
-
-                      
-
-                        <h3>
-  {reward.menuItemName
-    ? `Free ${reward.menuItemName}`
-    : reward.title}
-</h3>
-
-                      <p>{reqPoints} Points</p>
-
-                      <button
-                        className={
-                          canRedeem && !redeemingRewardId
-                            ? "redeem-btn"
-                            : "redeem-btn disabled"
-                        }
-                        onClick={() => redeemReward(reward)}
-                        disabled={!canRedeem || redeemingRewardId !== null}
-                        aria-busy={isProcessing}
-                        aria-disabled={!canRedeem || redeemingRewardId !== null}
-                      >
-                        {isProcessing ? "Processing..." : (canRedeem ? "Redeem" : "Need More Points")}
-                      </button>
-
-                    </div>
-
-                  );
-                })}
-
-              </div>
-            )}
-
-          </div>
+                
 
           <div className="activity-section">
             <div className="section-header">
