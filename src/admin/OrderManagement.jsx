@@ -10,19 +10,17 @@ import {
   serverTimestamp,
   query,
   orderBy,
+  getDoc,
+  setDoc,
 } from "firebase/firestore";
 
-import { getDoc, setDoc } from "firebase/firestore";
-
 import { db } from "../firebase";
-
 import walletService from "../service/walletService";
 
 import {
   ResponsiveContainer,
   LineChart,
   Line,
-
   YAxis,
   Tooltip,
   CartesianGrid,
@@ -31,7 +29,6 @@ import {
 } from "recharts";
 
 export default function OrderManagement({ setPage, setActivePage }) {
-  
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [orders, setOrders] = useState([]);
@@ -49,11 +46,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
   const [userNotifications, setUserNotifications] = useState([]);
   const lastUserId = useRef(null);
 
-  
-
   useEffect(() => {
-    
-
     // Orders listener
     const unsubscribe = onSnapshot(
       collection(db, "orders"),
@@ -196,191 +189,159 @@ export default function OrderManagement({ setPage, setActivePage }) {
     setTopProducts(ranked);
   }, [orders]);
 
+  async function getRewardSettings() {
+    const settingsRef = doc(db, "rewardSettings", "default");
+    const snapshot = await getDoc(settingsRef);
 
+    if (!snapshot.exists()) {
+      const defaults = {
+        cashbackEnabled: true,
+        cashbackPercent: 5,
+        minimumOrder: 200,
+        maximumCashback: 150,
+        birthdayReward: 200,
+        referralReward: 100,
+        signupReward: 50,
+        rewardExpiryDays: 365,
+      };
 
-async function getRewardSettings() {
-  const settingsRef = doc(db, "rewardSettings", "default");
+      await setDoc(settingsRef, defaults);
+      return defaults;
+    }
 
-  const snapshot = await getDoc(settingsRef);
-
-  if (!snapshot.exists()) {
-    const defaults = {
-      cashbackEnabled: true,
-      cashbackPercent: 5,
-      minimumOrder: 200,
-      maximumCashback: 150,
-      birthdayReward: 200,
-      referralReward: 100,
-      signupReward: 50,
-      rewardExpiryDays: 365,
-    };
-
-    await setDoc(settingsRef, defaults);
-
-    return defaults;
+    return snapshot.data();
   }
 
-  return snapshot.data();
-}
+  async function restoreLoyaltyPoints(order) {
+    const pointsUsed = order.loyaltyPointsUsed || 0;
+    if (pointsUsed <= 0) return;
 
+    const userRef = doc(db, "users", order.userId);
+    const userSnap = await getDoc(userRef);
 
+    if (!userSnap.exists()) return;
 
-async function updateOrderStatus(id, status) {
-  const order = orders.find((o) => o.id === id);
+    const currentPoints = userSnap.data().loyaltyPoints || 0;
 
-  if (!order) return;
+    await updateDoc(userRef, {
+      loyaltyPoints: currentPoints + pointsUsed,
+    });
 
-  const rewardSettings = await getRewardSettings();
+    await addDoc(collection(db, "loyaltyTransactions"), {
+      userId: order.userId,
+      orderId: order.id,
+      points: pointsUsed,
+      type: "refund",
+      description: `Points restored for cancelled order`,
+      createdAt: serverTimestamp(),
+    });
 
-  if (!rewardSettings.cashbackEnabled) {
-    return updateDoc(doc(db, "orders", id), {
+    console.log("Restored", pointsUsed, "points");
+  }
+
+  async function updateOrderStatus(id, status) {
+    const order = orders.find((o) => o.id === id);
+    if (!order) return;
+
+    const rewardSettings = await getRewardSettings();
+
+    if (!rewardSettings.cashbackEnabled) {
+      return updateDoc(doc(db, "orders", id), {
+        status,
+        ...(status === "Cancelled" && order.loyaltyPointsUsed > 0
+          ? {
+              loyaltyRestored: true,
+            }
+          : {}),
+      });
+    }
+
+    const cashbackPercentage = rewardSettings.cashbackPercent;
+    let cashback = Math.floor(
+      (Number(order.total || 0) * cashbackPercentage) / 100
+    );
+
+    // Minimum order check
+    if (Number(order.total || 0) < rewardSettings.minimumOrder) {
+      cashback = 0;
+    }
+
+    // Maximum cashback limit
+    cashback = Math.min(cashback, rewardSettings.maximumCashback);
+
+    if (status === "Cancelled") {
+      const confirmed = window.confirm(
+        "Are you sure you want to cancel this order?"
+      );
+
+      if (!confirmed) return;
+
+      // Refund wallet
+      if (
+        order.usedWallet &&
+        order.walletPaid > 0 &&
+        order.walletStatus !== "REFUNDED"
+      ) {
+        await walletService.refundMoney({
+          userId: order.userId,
+          amount: order.walletPaid,
+          orderId: order.id,
+          description: `Refund for cancelled order #${order.id}`,
+        });
+      }
+
+      // Restore loyalty points
+      if (
+        order.loyaltyPointsUsed > 0 &&
+        order.loyaltyRestored !== true
+      ) {
+        await restoreLoyaltyPoints(order);
+      }
+    }
+
+    // Handle cashback reward if delivered
+    if (
+      status === "Delivered" &&
+      order.rewardStatus === "PENDING"
+    ) {
+      try {
+        await walletService.addReward({
+          userId: order.userId,
+          amount: cashback,
+          orderId: order.id,
+          description: `Cashback for order #${order.id}`,
+        });
+      } catch (err) {
+        console.error(err);
+        alert(err.message);
+      }
+    }
+
+    // Update Firestore document
+    await updateDoc(doc(db, "orders", id), {
       status,
-      ...(status === "Cancelled" && order.loyaltyPointsUsed > 0
+
+      ...(status === "Delivered" &&
+      order.rewardStatus === "PENDING"
         ? {
-            loyaltyRestored: true,
+            rewardStatus: "CREDITED",
+            rewardAmount: cashback,
+            rewardCreditedAt: new Date(),
+            cashbackPercent: rewardSettings.cashbackPercent,
+          }
+        : {}),
+
+      ...(status === "Cancelled" &&
+      order.usedWallet &&
+      order.walletPaid > 0 &&
+      order.walletStatus !== "REFUNDED"
+        ? {
+            walletStatus: "REFUNDED",
+            paymentStatus: "REFUNDED",
           }
         : {}),
     });
   }
-}
-
-
-
-  
-  
-    
-
-async function restoreLoyaltyPoints(order) {
-
-  const pointsUsed = order.loyaltyPointsUsed || 0;
-
-  if (pointsUsed <= 0) return;
-
-
-  const userRef = doc(db, "users", order.userId);
-
-  const userSnap = await getDoc(userRef);
-
-  if (!userSnap.exists()) return;
-
-
-  const currentPoints =
-    userSnap.data().loyaltyPoints || 0;
-
-
-  await updateDoc(userRef, {
-    loyaltyPoints: currentPoints + pointsUsed
-  });
-
-
-  await addDoc(collection(db, "loyaltyTransactions"), {
-    userId: order.userId,
-    orderId: order.id,
-    points: pointsUsed,
-    type: "refund",
-    description: `Points restored for cancelled order`,
-    createdAt: serverTimestamp()
-  });
-
-
-  console.log("Restored", pointsUsed, "points");
-}
-
-    
-  const cashbackPercentage = rewardSettings.cashbackPercent;
-  let cashback = Math.floor(
-    (Number(order.total || 0) * cashbackPercentage) / 100
-  );
-
-  // Minimum order check
-  if (Number(order.total || 0) < rewardSettings.minimumOrder) {
-    cashback = 0;
-  }
-
-  // Maximum cashback limit
-  cashback = Math.min(
-    cashback,
-    rewardSettings.maximumCashback
-  );
-
-    if (status === "Cancelled") {
-    const confirmed = window.confirm(
-      "Are you sure you want to cancel this order?"
-    );
-
-    if (!confirmed) return;
-
-    // Refund wallet
-    if (
-      order.usedWallet &&
-      order.walletPaid > 0 &&
-      order.walletStatus !== "REFUNDED"
-    ) {
-      await walletService.refundMoney({
-        userId: order.userId,
-        amount: order.walletPaid,
-        orderId: order.id,
-        description: `Refund for cancelled order #${order.id}`,
-    });
-    }
-
-    // Restore loyalty points
-    if (
-      order.loyaltyPointsUsed > 0 &&
-      order.loyaltyRestored !== true
-    ) {
-      await restoreLoyaltyPoints(order);
-    }
-  }
-  // Handle cashback reward if delivered
-  if (
-    status === "Delivered" &&
-    order.rewardStatus === "PENDING"
-  ) {
-    try {
-      await walletService.addReward({
-        userId: order.userId,
-        amount: cashback,
-        orderId: order.id,
-        description: `Cashback for order #${order.id}`,
-      });
-    } catch (err) {
-      console.error(err);
-      alert(err.message);
-    }
-  }
-
-  // Update Firestore document
-  await updateDoc(doc(db, "orders", id), {
-    status,
-
-    ...(status === "Delivered" &&
-      order.rewardStatus === "PENDING"
-      ? {
-          rewardStatus: "CREDITED",
-          rewardAmount: cashback,
-          rewardCreditedAt: new Date(),
-          cashbackPercent: rewardSettings.cashbackPercent,
-        }
-      : {}),
-
-    ...(status === "Cancelled" &&
-      order.usedWallet &&
-      order.walletPaid > 0 &&
-      order.walletStatus !== "REFUNDED"
-      ? {
-          walletStatus: "REFUNDED",
-          paymentStatus: "REFUNDED",
-        }
-      : {}),
-  });
-}
-
-
-
-
-  
-  
 
   const totalOrders = orders.length;
 
@@ -388,15 +349,13 @@ async function restoreLoyaltyPoints(order) {
     (o) =>
       o.status === "New" ||
       o.status === "Preparing" ||
-       o.status === "Ready" ||
-     o.status === "Assigned to Rider"
+      o.status === "Ready" ||
+      o.status === "Assigned to Rider"
   ).length;
 
   const totalRevenue = orders
     .filter((o) => o.status === "Delivered")
     .reduce((sum, o) => sum + (o.total || 0), 0);
-
-  
 
   const today = new Date().toDateString();
 
@@ -417,14 +376,15 @@ async function restoreLoyaltyPoints(order) {
   ).length;
 
   const chipStyle = {
-  background: "#F2ECE5",
-  color: "#5C4F47",
-  padding: "4px 10px",
-  borderRadius: 8,
-  fontSize: 12,
-  fontWeight: 500,
-};
+    background: "#F2ECE5",
+    color: "#5C4F47",
+    padding: "4px 10px",
+    borderRadius: 8,
+    fontSize: 12,
+    fontWeight: 500,
+  };
 
+ 
   // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
           
 
