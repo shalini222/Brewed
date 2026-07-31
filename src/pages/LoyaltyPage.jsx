@@ -116,19 +116,41 @@ const loadRedeemedRewards = useCallback(async () => {
       )
     );
 
-    const rewards = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-      };
-    }).filter((reward) => {
-      if (!reward.expiresAt) return true;
-      const expiryDate = reward.expiresAt.toDate ? reward.expiresAt.toDate() : new Date(reward.expiresAt);
-      return expiryDate > new Date();
-    });
+    const rewards = (
+  await Promise.all(
+    snapshot.docs.map(async (docSnap) => {
+      const data = docSnap.data();
 
-    setMyRewards(rewards);
+      let menuItemName = null;
+
+      if (data.menuItemId) {
+        const menuSnap = await getDoc(
+          doc(db, "menu", data.menuItemId)
+        );
+
+        if (menuSnap.exists()) {
+          menuItemName = menuSnap.data().name;
+        }
+      }
+
+      return {
+        id: docSnap.id,
+        ...data,
+        menuItemName,
+      };
+    })
+  )
+).filter((reward) => {
+  if (!reward.expiresAt) return true;
+
+  const expiryDate = reward.expiresAt.toDate
+    ? reward.expiresAt.toDate()
+    : new Date(reward.expiresAt);
+
+  return expiryDate > new Date();
+});
+
+setMyRewards(rewards);
 
   } catch (err) {
     console.error("Error loading redeemed rewards:", err);
@@ -222,7 +244,6 @@ const loyaltyTier =
       
       transaction.set(redeemedRewardRef, {
         rewardId: reward.id,
-        title: reward.title,
         rewardType: reward.rewardType || null,
         menuItemId: reward.menuItemId || null,
         points: pointsNeeded,
@@ -1101,7 +1122,11 @@ async function seedLoyaltyRewards() {
                         {reward.icon || "🎁"}
                       </div>
 
-                      <h3>{reward.title}</h3>
+                      <h3>
+  {reward.menuItemName
+    ? `Free ${reward.menuItemName}`
+    : reward.title || "Reward"}
+</h3>
 
                       <p>{reqPoints} Points</p>
 
