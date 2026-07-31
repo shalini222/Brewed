@@ -374,6 +374,30 @@ async function seedLoyaltyRewards() {
           margin: 0;
         }
 
+
+/* Add spacing between My Rewards cards */
+.my-rewards-section .reward-card {
+  margin-bottom: 16px;
+}
+
+/* Ensure the last card doesn't have an extra margin at the bottom */
+.my-rewards-section .reward-card:last-child {
+  margin-bottom: 0;
+}
+
+/* Increase spacing between activity list cards */
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px; /* Increased from 12px to 16px */
+}
+
+
+
+
+
+
+
         .coffee-icon {
           font-size: 36px;
           background: rgba(255,255,255,0.1);
