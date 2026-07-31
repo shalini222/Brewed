@@ -42,8 +42,8 @@ const loadRazorpayScript = () =>
 
 export default function CheckoutPage({ setPage }) {
   const {
-  cart,
-  total,
+  cart = [],
+  total = 0,
   placeOrder,
   clearCart,
   addToCart,
@@ -763,7 +763,24 @@ grandTotal = Math.max(0, grandTotal);
 
         <button
           type="button"
-          onClick={() => setSelectedReward(reward)}
+          onClick={() => {
+  setSelectedReward(reward);
+
+  if (
+  reward.title === "Free Coffee" &&
+  !cart.some(item => item.rewardId === reward.id)
+) {
+    addToCart({
+      id: "free-coffee-reward",
+      firestoreId: "PASTE_YOUR_COFFEE_DOCUMENT_ID_HERE",
+      name: "Free Coffee",
+      price: 0,
+      qty: 1,
+      isReward: true,
+      rewardId: reward.id,
+    });
+  }
+}}
           disabled={selectedReward?.id === reward.id}
         >
           {selectedReward?.id === reward.id
