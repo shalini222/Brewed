@@ -91,8 +91,29 @@ export function CartProvider({ children }) {
       );
       
       alert("Order saved successfully!");
+// -------------------------
+// to make sure free item is redeemed only once
+// --------
+
+if (orderDetails.selectedReward) {
+  await updateDoc(
+    doc(
+      db,
+      "users",
+      auth.currentUser.uid,
+      "redeemedRewards",
+      orderDetails.selectedReward.id
+    ),
+    {
+      status: "used",
+      usedAt: serverTimestamp(),
+      orderIdUsed: docRef.id,
+    }
+  );
+}
 
 
+    
       // -------------------------
 // Loyalty Points
 // -------------------------
