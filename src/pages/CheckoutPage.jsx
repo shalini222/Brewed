@@ -233,12 +233,29 @@ grandTotal = Math.max(0, grandTotal);
           )
         );
 
-        const rewards = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const rewards = await Promise.all(
+  snapshot.docs.map(async (rewardDoc) => {
+    const reward = {
+      id: rewardDoc.id,
+      ...rewardDoc.data(),
+    };
 
-        setAvailableRewards(rewards);
+    if (reward.menuItemId) {
+      const menuSnap = await getDoc(doc(db, "menu", reward.menuItemId));
+
+      if (menuSnap.exists()) {
+        reward.menuItem = {
+          id: menuSnap.id,
+          ...menuSnap.data(),
+        };
+      }
+    }
+
+    return reward;
+  })
+);
+
+setAvailableRewards(rewards);
       } catch (err) {
         console.error(err);
       } finally {
@@ -746,10 +763,10 @@ grandTotal = Math.max(0, grandTotal);
       >
         <div>
           <strong>
-            {selectedReward?.id === reward.id && rewardMenuItem
-              ? `Free ${rewardMenuItem.name}`
-              : reward.title}
-          </strong>
+  {rewardMenuItem
+    ? `Free ${rewardMenuItem.name}`
+    : reward.title}
+</strong>
           <p
             style={{
               margin: 0,
