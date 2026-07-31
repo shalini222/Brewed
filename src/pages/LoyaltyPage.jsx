@@ -223,8 +223,8 @@ const loyaltyTier =
       transaction.set(redeemedRewardRef, {
         rewardId: reward.id,
         title: reward.title,
-        rewardType: reward.rewardType,
-        menuItemId: reward.menuItemId,
+        rewardType: reward.rewardType || null,
+        menuItemId: reward.menuItemId || null,
         points: pointsNeeded,
         status: "unused",
         redeemedAt: serverTimestamp(),
