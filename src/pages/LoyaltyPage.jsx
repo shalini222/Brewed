@@ -162,93 +162,93 @@ const loyaltyTier =
   tierProgressPoints >= 500 ? "Silver" :
   "Bronze";
 
+
+
   const redeemReward = async (reward) => {
+  if (!currentUser) {
+    setErrorMessage("Please sign in first.");
+    setErrorModal(true);
+    return;
+  }
+  if (redeemingRewardId) return;
 
-    if (!currentUser) {
-  setErrorMessage("Please sign in first.");
-  setErrorModal(true);
-  return;
-    }
-    if (redeemingRewardId) return;
+  const pointsNeeded = reward.pointsRequired || reward.points || 0;
 
-    const pointsNeeded = reward.pointsRequired || reward.points || 0;
+  if (loyaltyPoints < pointsNeeded) {
+    setErrorMessage("Not enough points to redeem this reward.");
+    setErrorModal(true);
+    return;
+  }
 
-    if (loyaltyPoints < pointsNeeded) {
-      setErrorMessage("Not enough points to redeem this reward.");
-      setErrorModal(true);
-      return;
-    }
+  setRedeemingRewardId(reward.id);
 
-    setRedeemingRewardId(reward.id);
+  try {
+    const userRef = doc(db, "users", currentUser.uid);
+    let updatedPoints = loyaltyPoints;
 
-    try {
-      const userRef = doc(db, "users", currentUser.uid);
-      let updatedPoints = loyaltyPoints;
+    await runTransaction(db, async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists()) {
+        throw new Error("User does not exist!");
+      }
 
-      await runTransaction(db, async (transaction) => {
-        const userDoc = await transaction.get(userRef);
-        if (!userDoc.exists()) {
-          throw new Error("User does not exist!");
-        }
+      const currentPoints = userDoc.data().loyaltyPoints || 0;
+      if (currentPoints < pointsNeeded) {
+        throw new Error("Not enough points.");
+      }
 
-        const currentPoints = userDoc.data().loyaltyPoints || 0;
-        if (currentPoints < pointsNeeded) {
-          throw new Error("Not enough points.");
-        }
+      updatedPoints = currentPoints - pointsNeeded;
 
-        updatedPoints = currentPoints - pointsNeeded;
-
-        transaction.update(userRef, {
-  loyaltyPoints: updatedPoints,
-});
-
-        const newTxRef = doc(collection(db, "loyaltyTransactions"));
-        transaction.set(newTxRef, {
-          userId: currentUser.uid,
-          type: "redeem",
-          points: -pointsNeeded,
-          description: reward.title,
-          rewardId: reward.id,
-          createdAt: serverTimestamp()
-        });
-
-        const redeemedRewardRef = doc(
-          collection(db, "users", currentUser.uid, "redeemedRewards")
-        );
-
-        const expiry = new Date(); 
-        expiry.setDate(expiry.getDate() + 365);
-        transaction.set(redeemedRewardRef, {
-  rewardId: reward.id,
-  title: reward.title,
-  rewardType: reward.rewardType,
-  menuItemId: reward.menuItemId,
-  points: pointsNeeded,
-  status: "unused",
-  redeemedAt: serverTimestamp(),
-  expiresAt: expiry,
-});
-      
-
-      setRedeemedRewardData({
-        title: reward.title,
-        points: pointsNeeded,
-        remaining: updatedPoints
+      transaction.update(userRef, {
+        loyaltyPoints: updatedPoints,
       });
-      setSuccessModal(true);
 
-      await loadLoyaltyData();
-      await loadRedeemedRewards();
+      const newTxRef = doc(collection(db, "loyaltyTransactions"));
+      transaction.set(newTxRef, {
+        userId: currentUser.uid,
+        type: "redeem",
+        points: -pointsNeeded,
+        description: reward.title,
+        rewardId: reward.id,
+        createdAt: serverTimestamp(),
+      });
 
-    } catch (err) {
-      console.error("Error redeeming reward:", err);
-      setErrorMessage(err.message || "Failed to redeem reward. Please try again.");
-      setErrorModal(true);
-    } finally {
-      setRedeemingRewardId(null);
-    }
-  };
+      const redeemedRewardRef = doc(
+        collection(db, "users", currentUser.uid, "redeemedRewards")
+      );
 
+      const expiry = new Date();
+      expiry.setDate(expiry.getDate() + 365);
+      
+      transaction.set(redeemedRewardRef, {
+        rewardId: reward.id,
+        title: reward.title,
+        rewardType: reward.rewardType,
+        menuItemId: reward.menuItemId,
+        points: pointsNeeded,
+        status: "unused",
+        redeemedAt: serverTimestamp(),
+        expiresAt: expiry,
+      });
+    }); // Added missing closing parenthesis and brace for runTransaction
+
+    setRedeemedRewardData({
+      title: reward.title,
+      points: pointsNeeded,
+      remaining: updatedPoints,
+    });
+    setSuccessModal(true);
+
+    await loadLoyaltyData();
+    await loadRedeemedRewards();
+  } catch (err) {
+    console.error("Error redeeming reward:", err);
+    setErrorMessage(err.message || "Failed to redeem reward. Please try again.");
+    setErrorModal(true);
+  } finally {
+    setRedeemingRewardId(null);
+  }
+};
 
 
 
