@@ -1,5 +1,6 @@
 import {
-  
+  doc,
+  getdoc,
   query,
   where
 } from "firebase/firestore";
@@ -734,7 +735,9 @@ grandTotal = Math.max(0, grandTotal);
                 )}
               </div>
 
-            {!loadingAvailableRewards && availableRewards.length > 0 && (
+
+              
+ {!loadingAvailableRewards && availableRewards.length > 0 && (
   <div className="checkout-card">
     <h3>🎁 Available Rewards</h3>
 
@@ -764,24 +767,32 @@ grandTotal = Math.max(0, grandTotal);
 
         <button
           type="button"
-          onClick={() => {
-  setSelectedReward(reward);
+          onClick={async () => {
+            setSelectedReward(reward);
 
-  if (
-  reward.title === "Free Coffee" &&
-  !cart.some(item => item.rewardId === reward.id)
-) {
-    addToCart({
-      id: "free-coffee-reward",
-      firestoreId: "ugJrtQjijNlHAaKDboRu",
-      name: "Free Coffee",
-      price: 0,
-      qty: 1,
-      isReward: true,
-      rewardId: reward.id,
-    });
-  }
-}}
+            if (
+              reward.title === "Free Coffee" &&
+              !cart.some((item) => item.rewardId === reward.id)
+            ) {
+              const coffeeSnap = await getDoc(
+                doc(db, "menu", "ugJrtQjijNlHAaKDboRu")
+              );
+
+              if (coffeeSnap.exists()) {
+                addToCart({
+                  ...coffeeSnap.data(),
+                  id: coffeeSnap.id,
+                  firestoreId: coffeeSnap.id,
+
+                  price: 0,
+                  qty: 1,
+
+                  isReward: true,
+                  rewardId: reward.id,
+                });
+              }
+            }
+          }}
           disabled={selectedReward?.id === reward.id}
         >
           {selectedReward?.id === reward.id
@@ -791,8 +802,7 @@ grandTotal = Math.max(0, grandTotal);
       </div>
     ))}
   </div>
-)}
-              
+)}        
               
               
               
