@@ -7,6 +7,7 @@ import {
   updateDoc,
   doc,
   onSnapshot,
+  serverTimestamp,
   query,
   orderBy,
 } from "firebase/firestore";
@@ -224,9 +225,7 @@ async function getRewardSettings() {
 
 
 
-
-  
-  async function updateOrderStatus(id, status) {
+async function updateOrderStatus(id, status) {
   const order = orders.find((o) => o.id === id);
 
   if (!order) return;
@@ -236,9 +235,58 @@ async function getRewardSettings() {
   if (!rewardSettings.cashbackEnabled) {
     return updateDoc(doc(db, "orders", id), {
       status,
+      ...(status === "Cancelled" && order.loyaltyPointsUsed > 0
+        ? {
+            loyaltyRestored: true,
+          }
+        : {}),
     });
   }
+}
 
+
+
+  
+  
+    
+
+async function restoreLoyaltyPoints(order) {
+
+  const pointsUsed = order.loyaltyPointsUsed || 0;
+
+  if (pointsUsed <= 0) return;
+
+
+  const userRef = doc(db, "users", order.userId);
+
+  const userSnap = await getDoc(userRef);
+
+  if (!userSnap.exists()) return;
+
+
+  const currentPoints =
+    userSnap.data().loyaltyPoints || 0;
+
+
+  await updateDoc(userRef, {
+    loyaltyPoints: currentPoints + pointsUsed
+  });
+
+
+  await addDoc(collection(db, "loyaltyTransactions"), {
+    userId: order.userId,
+    orderId: order.id,
+    points: pointsUsed,
+    type: "refund",
+    description: `Points restored for cancelled order`,
+    createdAt: serverTimestamp()
+  });
+
+
+  console.log("Restored", pointsUsed, "points");
+}
+
+    
   const cashbackPercentage = rewardSettings.cashbackPercent;
   let cashback = Math.floor(
     (Number(order.total || 0) * cashbackPercentage) / 100
@@ -255,14 +303,14 @@ async function getRewardSettings() {
     rewardSettings.maximumCashback
   );
 
-  if (status === "Cancelled") {
+    if (status === "Cancelled") {
     const confirmed = window.confirm(
       "Are you sure you want to cancel this order?"
     );
 
     if (!confirmed) return;
 
-    // Refund only if wallet was used
+    // Refund wallet
     if (
       order.usedWallet &&
       order.walletPaid > 0 &&
@@ -273,10 +321,17 @@ async function getRewardSettings() {
         amount: order.walletPaid,
         orderId: order.id,
         description: `Refund for cancelled order #${order.id}`,
-      });
+    });
+    }
+
+    // Restore loyalty points
+    if (
+      order.loyaltyPointsUsed > 0 &&
+      order.loyaltyRestored !== true
+    ) {
+      await restoreLoyaltyPoints(order);
     }
   }
-
   // Handle cashback reward if delivered
   if (
     status === "Delivered" &&
