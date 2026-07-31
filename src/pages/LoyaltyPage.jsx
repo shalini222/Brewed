@@ -1048,60 +1048,66 @@ async function seedLoyaltyRewards() {
                 </div>
               ) : null}
 
-              {loyaltyTier === "Platinum" ? (
-                <div className="benefit-item">
-                  💎 Platinum Exclusive Menu
-                </div>
-              ) : null}
-
-            </div>
+             {loyaltyTier === "Platinum" ? (
+  <div className="benefit-item">
+    💎 Platinum Exclusive Menu
+  </div>
+) : null}
 
           </div>
 
-          <div ref={rewardsRef} className="rewards-section">
+        </div>
 
-            <div className="section-header">
-              <h2>Available Rewards</h2>
-              <button className="view-all-btn"
-                onClick={() => rewardsRef.current?.scrollIntoView({behavior:"smooth"})}>
-                View All →
-              </button>
+        <div ref={rewardsRef} className="rewards-section">
 
-              <div className="my-rewards-section">
-  <div className="section-header">
-    <h2>🎁 My Rewards</h2>
-    <p>Your redeemed rewards.</p>
-  </div>
+          <div className="section-header">
+            <h2>Available Rewards</h2>
+            <button className="view-all-btn"
+              onClick={() => rewardsRef.current?.scrollIntoView({behavior:"smooth"})}>
+              View All →
+            </button>
+          </div>
+        </div>
 
-  {loadingRewards ? (
-  <p>Loading rewards...</p>
-) : myRewards.length === 0 ? (
-  <p>No redeemed rewards yet.</p>
-) : (
-  myRewards.map((reward) => (
-    <div key={reward.id} className="reward-card">
-      <h3>
-        {reward.menuItemName
-          ? `Free ${reward.menuItemName}`
-          : reward.title}
-      </h3>
+        <div className="my-rewards-section">
+          <div className="section-header">
+            <h2>🎁 My Rewards</h2>
+            <p>Your redeemed rewards.</p>
+          </div>
 
-      <p>Status: {reward.status}</p>
+          {loadingRewards ? (
+            <p>Loading rewards...</p>
+          ) : myRewards.length === 0 ? (
+            <p>No redeemed rewards yet.</p>
+          ) : (
+            myRewards.map((reward) => (
+              <div key={reward.id} className="reward-card">
+                <h3>
+                  {reward.menuItemName
+                    ? `Free ${reward.menuItemName}`
+                    : reward.title}
+                </h3>
 
-      <p>
-        Expires:{" "}
-        {reward.expiresAt?.toDate
-          ? reward.expiresAt.toDate().toLocaleDateString()
-          : "N/A"}
-      </p>
+                <p>Status: {reward.status}</p>
 
-      {/* Temporary debug - remove after testing */}
-      <pre style={{ fontSize: 11 }}>
-        {JSON.stringify(reward, null, 2)}
-      </pre>
-    </div>
-  ))
-)}
+                <p>
+                  Expires:{" "}
+                  {reward.expiresAt?.toDate
+                    ? reward.expiresAt.toDate().toLocaleDateString()
+                    : "N/A"}
+                </p>
+
+                {/* Temporary debug - remove after testing */}
+                <pre style={{ fontSize: 11 }}>
+                  {JSON.stringify(reward, null, 2)}
+                </pre>
+              </div>
+            ))
+          )}
+        </div>
+          
+
+
 
                 
 
