@@ -215,56 +215,57 @@ grandTotal = Math.max(0, grandTotal);
     loadAddresses();
   }, []);
 
-  useEffect(() => {
-    async function loadAvailableRewards() {
-      if (!auth.currentUser) {
-        setAvailableRewards([]);
-        setLoadingAvailableRewards(false);
-        return;
-      }
-
-      try {
-        setLoadingAvailableRewards(true);
-
-        const snapshot = await getDocs(
-          query(
-            collection(db, "users", auth.currentUser.uid, "redeemedRewards"),
-            where("status", "==", "unused")
-          )
-        );
-
-        const rewards = await Promise.all(
-  snapshot.docs.map(async (rewardDoc) => {
-    const reward = {
-      id: rewardDoc.id,
-      ...rewardDoc.data(),
-    };
-
-    if (reward.menuItemId) {
-      const menuSnap = await getDoc(doc(db, "menu", reward.menuItemId));
-
-      if (menuSnap.exists()) {
-        reward.menuItem = {
-          id: menuSnap.id,
-          ...menuSnap.data(),
-        };
-      }
+ useEffect(() => {
+  async function loadAvailableRewards() {
+    if (!auth.currentUser) {
+      setAvailableRewards([]);
+      setLoadingAvailableRewards(false);
+      return;
     }
 
-    return reward;
-  })
-);
+    try {
+      setLoadingAvailableRewards(true);
 
-setAvailableRewards(rewards);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoadingAvailableRewards(false);
-      }
+      const snapshot = await getDocs(
+        query(
+          collection(db, "users", auth.currentUser.uid, "redeemedRewards"),
+          where("status", "==", "unused")
+        )
+      );
+
+      const rewards = await Promise.all(
+        snapshot.docs.map(async (rewardDoc) => {
+          const reward = {
+            id: rewardDoc.id,
+            ...rewardDoc.data(),
+          };
+
+          if (reward.menuItemId) {
+            const menuSnap = await getDoc(doc(db, "menu", reward.menuItemId));
+
+            if (menuSnap.exists()) {
+              reward.menuItem = {
+                id: menuSnap.id,
+                ...menuSnap.data(),
+              };
+            }
+          }
+
+          return reward;
+        })
+      );
+
+      setAvailableRewards(rewards);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingAvailableRewards(false);
     }
+  }
 
-    loadAvailableRewards();
-  }, []);
+  loadAvailableRewards();
+}, []);
+  
 
   useEffect(() => {
     if (status !== "failure" || !canvasRef.current) return;
