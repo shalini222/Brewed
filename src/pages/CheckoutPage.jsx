@@ -729,7 +729,7 @@ grandTotal = Math.max(0, grandTotal);
               </div>
 
 
-             {!loadingAvailableRewards && availableRewards.length > 0 && (
+{!loadingAvailableRewards && availableRewards.length > 0 && (
   <div className="checkout-card">
     <h3>🎁 Available Rewards</h3>
 
@@ -814,8 +814,6 @@ grandTotal = Math.max(0, grandTotal);
     ))}
   </div>
 )}
- 
-
 
 
        
