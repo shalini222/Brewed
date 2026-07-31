@@ -497,6 +497,7 @@ grandTotal = Math.max(0, grandTotal);
         cancelReason: null,
         cancelledAt: null,
         cancelledBy: null,
+         selectedReward,
         rewardStatus: rewardPaid > 0 ? "REDEEMED" : "PENDING",
         rewardAmount: rewardPaid,
         rewardCreditedAt: rewardPaid > 0 ? serverTimestamp() : null,
