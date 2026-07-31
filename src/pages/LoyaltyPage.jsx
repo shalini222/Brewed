@@ -116,10 +116,17 @@ const loadRedeemedRewards = useCallback(async () => {
       )
     );
 
-    const rewards = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const rewards = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+      };
+    }).filter((reward) => {
+      if (!reward.expiresAt) return true;
+      const expiryDate = reward.expiresAt.toDate ? reward.expiresAt.toDate() : new Date(reward.expiresAt);
+      return expiryDate > new Date();
+    });
 
     setMyRewards(rewards);
 
@@ -209,13 +216,15 @@ const loyaltyTier =
           collection(db, "users", currentUser.uid, "redeemedRewards")
         );
 
+        const expiry = new Date(); 
+        expiry.setDate(expiry.getDate() + 365);
         transaction.set(redeemedRewardRef, {
           rewardId: reward.id,
           title: reward.title,
           points: pointsNeeded,
           status: "unused",
           redeemedAt: serverTimestamp(),
-          expiresAt: null,
+          expiresAt: expiry,
         });
       });
 
@@ -294,6 +303,7 @@ async function seedLoyaltyRewards() {
     alert(err.message);
   }
 }
+
 
 
   return (
