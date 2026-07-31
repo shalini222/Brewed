@@ -797,29 +797,32 @@ grandTotal = Math.max(0, grandTotal);
             // Select reward
             setSelectedReward(reward);
 
+
+
             if (
-              reward.title === "Free Coffee" &&
-              !cart.some(item => item.rewardId === reward.id)
-            ) {
-              const coffeeSnap = await getDoc(
-                doc(db, "menu", reward.menuItemId)
-              );
+  reward.rewardType === "freeItem" &&
+  reward.menuItemId &&
+  !cart.some(item => item.rewardId === reward.id)
+) {
+  const menuSnap = await getDoc(
+    doc(db, "menu", reward.menuItemId)
+  );
 
-              if (coffeeSnap.exists()) {
-                const menuItem = {
-                  ...coffeeSnap.data(),
-                  id: coffeeSnap.id,
-                  firestoreId: coffeeSnap.id,
-                  price: 0,
-                  qty: 1,
-                  isReward: true,
-                  rewardId: reward.id,
-                };
+  if (menuSnap.exists()) {
+    const menuItem = {
+      ...menuSnap.data(),
+      id: menuSnap.id,
+      firestoreId: menuSnap.id,
+      price: 0,
+      qty: 1,
+      isReward: true,
+      rewardId: reward.id,
+    };
 
-                setRewardMenuItem(menuItem);
+    setRewardMenuItem(menuItem);
 
-                addToCart(menuItem);
-              }
+    addToCart(menuItem);
+  }
             }
           }}
           style={{
