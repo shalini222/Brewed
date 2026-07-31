@@ -146,7 +146,16 @@ grandTotal = Math.max(0, grandTotal);
   grandTotal,
   remainingAmount,
 };
-  }, [total, paymentMethod, appliedCoupon, deliveryInfo, useWallet, wallet, useRewards]);
+  },  [
+  total,
+  paymentMethod,
+  appliedCoupon,
+  deliveryInfo,
+  useWallet,
+  wallet,
+  useRewards,
+  selectedReward
+]);
 
   useEffect(() => {
     if (
