@@ -799,20 +799,19 @@ grandTotal = Math.max(0, grandTotal);
 
 
 
-            if (
-  reward.rewardType === "freeItem" &&
-  reward.menuItemId &&
+    if (
+  reward.title === "Free Coffee" &&
   !cart.some(item => item.rewardId === reward.id)
 ) {
-  const menuSnap = await getDoc(
+  const coffeeSnap = await getDoc(
     doc(db, "menu", reward.menuItemId)
   );
 
-  if (menuSnap.exists()) {
+  if (coffeeSnap.exists()) {
     const menuItem = {
-      ...menuSnap.data(),
-      id: menuSnap.id,
-      firestoreId: menuSnap.id,
+      ...coffeeSnap.data(),
+      id: coffeeSnap.id,
+      firestoreId: coffeeSnap.id,
       price: 0,
       qty: 1,
       isReward: true,
@@ -823,7 +822,7 @@ grandTotal = Math.max(0, grandTotal);
 
     addToCart(menuItem);
   }
-            }
+    }
           }}
           style={{
             cursor: "pointer",
