@@ -898,7 +898,6 @@ if (
     <span>-₹{calculations.rewardDiscount}</span>
   </div>
 )}
-)}
            
               {deliveryLoading ? (
                 <p style={{ color: "#666", marginBottom: "12px" }}>
