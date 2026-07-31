@@ -392,6 +392,21 @@ async function seedLoyaltyRewards() {
   gap: 16px; /* Increased from 12px to 16px */
 }
 
+.my-rewards-section {
+  margin-bottom: 32px;
+}
+
+.my-rewards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
 
 
