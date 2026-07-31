@@ -726,6 +726,9 @@ grandTotal = Math.max(0, grandTotal);
                 )}
               </div>
 
+
+              
+
 {!loadingAvailableRewards && availableRewards.length > 0 && (
   <div className="checkout-card">
     <h3>🎁 Available Rewards</h3>
@@ -754,54 +757,56 @@ grandTotal = Math.max(0, grandTotal);
           </p>
         </div>
 
-       <button
-  type="button"
-  onClick={async () => {
+        <input
+          type="checkbox"
+          checked={selectedReward?.id === reward.id}
+          onChange={async () => {
+            // Unselect reward
+            if (selectedReward?.id === reward.id) {
+              setSelectedReward(null);
 
-    // Unselect reward
-    if (selectedReward?.id === reward.id) {
-      setSelectedReward(null);
+              removeFromCart(
+                cart.find(item => item.rewardId === reward.id)
+              );
 
-      removeFromCart(
-        cart.find(item => item.rewardId === reward.id)
-      );
+              return;
+            }
 
-      return;
-    }
+            // Select reward
+            setSelectedReward(reward);
 
-    // Select reward
-    setSelectedReward(reward);
+            if (
+              reward.title === "Free Coffee" &&
+              !cart.some(item => item.rewardId === reward.id)
+            ) {
+              const coffeeSnap = await getDoc(
+                doc(db, "menu", "ugJrtQjijNlHAaKDboRu")
+              );
 
-    if (
-      reward.title === "Free Coffee" &&
-      !cart.some(item => item.rewardId === reward.id)
-    ) {
-      const coffeeSnap = await getDoc(
-        doc(db, "menu", "ugJrtQjijNlHAaKDboRu")
-      );
-
-      if (coffeeSnap.exists()) {
-        addToCart({
-          ...coffeeSnap.data(),
-          id: coffeeSnap.id,
-          firestoreId: coffeeSnap.id,
-          price: 0,
-          qty: 1,
-          isReward: true,
-          rewardId: reward.id,
-        });
-      }
-    }
-  }}
->
-  {selectedReward?.id === reward.id ? "Remove" : "Use"}
-</button>
+              if (coffeeSnap.exists()) {
+                addToCart({
+                  ...coffeeSnap.data(),
+                  id: coffeeSnap.id,
+                  firestoreId: coffeeSnap.id,
+                  price: 0,
+                  qty: 1,
+                  isReward: true,
+                  rewardId: reward.id,
+                });
+              }
+            }
+          }}
+          style={{
+            cursor: "pointer",
+            width: "18px",
+            height: "18px",
+          }}
+        />
       </div>
     ))}
   </div>
-)}  
-              
- {!
+)}
+
        
               
               
