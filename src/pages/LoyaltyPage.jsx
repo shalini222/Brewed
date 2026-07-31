@@ -1217,6 +1217,9 @@ async function seedLoyaltyRewards() {
           </div>
 
         </div>
+          </div> {/* closes my-rewards-section */}
+
+        </div>
       )}
 
       {successModal && redeemedRewardData && (
