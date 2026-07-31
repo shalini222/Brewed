@@ -87,6 +87,14 @@ export default function CheckoutPage({ setPage }) {
     const subtotal = Number.isFinite(total) ? total : 0;
     const tax = Math.round(subtotal * CONFIG.taxRate);
 
+
+let rewardDiscount = 0;
+
+if (selectedReward?.menuItem) {
+  rewardDiscount = selectedReward.menuItem.price || 0;
+}
+    
+
     let delivery = 0;
     if (subtotal > 0 && deliveryInfo) {
       if (subtotal >= deliveryInfo.freeDeliveryAbove) {
@@ -131,6 +139,7 @@ grandTotal = Math.max(0, grandTotal);
   delivery,
   cod,
   discount,
+  rewardDiscount,
   baseTotal,
   walletDeduction,
   rewardDeduction,
