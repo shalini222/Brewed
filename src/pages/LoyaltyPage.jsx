@@ -873,7 +873,7 @@ async function seedLoyaltyRewards() {
         }
       `}</style>
 
-      <button
+       <button
   className="back-btn"
   onClick={() => setPage("menu")}
 >
