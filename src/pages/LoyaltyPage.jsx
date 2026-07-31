@@ -896,7 +896,7 @@ async function seedLoyaltyRewards() {
         }
       `}</style>
 
-       <button
+     <button
   className="back-btn"
   onClick={() => setPage("menu")}
 >
@@ -1217,7 +1217,7 @@ async function seedLoyaltyRewards() {
           </div>
 
         </div>
-          </div> {/* closes my-rewards-section */}
+          </div>
 
         </div>
       )}
