@@ -522,6 +522,7 @@ grandTotal = Math.max(0, grandTotal);
         paymentGateway: paymentMethod === "online" ? "Razorpay" : null,
         paymentReference: paymentResponse?.razorpay_payment_id || null,
         refundStatus: "NOT_REFUNDED",
+        loyaltyPointsUsed: selectedReward?.points || 0,
         refundAmount: 0,
         refundTransactionId: null,
         cancelReason: null,
