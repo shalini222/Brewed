@@ -1122,11 +1122,9 @@ async function seedLoyaltyRewards() {
                         {reward.icon || "🎁"}
                       </div>
 
-                      <h3>
-  {reward.menuItemName
-    ? `Free ${reward.menuItemName}`
-    : reward.title || "Reward"}
-</h3>
+                  <pre>
+{JSON.stringify(reward, null, 2)}
+</pre>
 
                       <p>{reqPoints} Points</p>
 
