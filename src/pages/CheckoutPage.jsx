@@ -764,8 +764,8 @@ grandTotal = Math.max(0, grandTotal);
       >
         <div>
           <strong>
-  {rewardMenuItem
-    ? `Free ${rewardMenuItem.name}`
+  {reward.menuItem?.name
+    ? `Free ${reward.menuItem.name}`
     : reward.title}
 </strong>
           <p
@@ -798,31 +798,29 @@ grandTotal = Math.max(0, grandTotal);
             setSelectedReward(reward);
 
 
-
-    if (
-  reward.title === "Free Coffee" &&
+if (
+  reward.menuItemId &&
   !cart.some(item => item.rewardId === reward.id)
 ) {
-  const coffeeSnap = await getDoc(
+  const menuSnap = await getDoc(
     doc(db, "menu", reward.menuItemId)
   );
 
-  if (coffeeSnap.exists()) {
+  if (menuSnap.exists()) {
     const menuItem = {
-      ...coffeeSnap.data(),
-      id: coffeeSnap.id,
-      firestoreId: coffeeSnap.id,
+      ...menuSnap.data(),
+      id: menuSnap.id,
+      firestoreId: menuSnap.id,
       price: 0,
       qty: 1,
       isReward: true,
       rewardId: reward.id,
     };
 
-    setRewardMenuItem(menuItem);
-
     addToCart(menuItem);
   }
-    }
+}
+   
           }}
           style={{
             cursor: "pointer",
@@ -891,11 +889,15 @@ grandTotal = Math.max(0, grandTotal);
               <div style={styles.calcRow}><span>Delivery Fee</span><span>₹{calculations.delivery}</span></div>
               
               
-              {calculations.rewardDiscount > 0 && (
+        {calculations.rewardDiscount > 0 && selectedReward && (
   <div style={{ ...styles.calcRow, color: THEME.colors.success }}>
-    <span>🎁 Free Coffee</span>
+    <span>
+      🎁 Free{" "}
+      {selectedReward.menuItem?.name || selectedReward.title}
+    </span>
     <span>-₹{calculations.rewardDiscount}</span>
   </div>
+)}
 )}
            
               {deliveryLoading ? (
