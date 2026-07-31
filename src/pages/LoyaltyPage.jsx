@@ -375,7 +375,7 @@ async function seedLoyaltyRewards() {
         }
 
 
-/* Add spacing between My Rewards cards */
+
 .my-rewards-section .reward-card {
   margin-bottom: 16px;
 }
