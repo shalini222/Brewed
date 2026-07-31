@@ -219,14 +219,16 @@ const loyaltyTier =
         const expiry = new Date(); 
         expiry.setDate(expiry.getDate() + 365);
         transaction.set(redeemedRewardRef, {
-          rewardId: reward.id,
-          title: reward.title,
-          points: pointsNeeded,
-          status: "unused",
-          redeemedAt: serverTimestamp(),
-          expiresAt: expiry,
-        });
-      });
+  rewardId: reward.id,
+  title: reward.title,
+  rewardType: reward.rewardType,
+  menuItemId: reward.menuItemId,
+  points: pointsNeeded,
+  status: "unused",
+  redeemedAt: serverTimestamp(),
+  expiresAt: expiry,
+});
+      
 
       setRedeemedRewardData({
         title: reward.title,
