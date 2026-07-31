@@ -1260,6 +1260,7 @@ async function seedLoyaltyRewards() {
           </div>
         </div>
            )}
+          </div>
     </>
    
   );
