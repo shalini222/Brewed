@@ -772,7 +772,7 @@ grandTotal = Math.max(0, grandTotal);
 ) {
     addToCart({
       id: "free-coffee-reward",
-      firestoreId: "PASTE_YOUR_COFFEE_DOCUMENT_ID_HERE",
+      firestoreId: "ugJrtQjijNlHAaKDboRu",
       name: "Free Coffee",
       price: 0,
       qty: 1,
