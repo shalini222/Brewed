@@ -43,11 +43,12 @@ const loadRazorpayScript = () =>
 
 export default function CheckoutPage({ setPage }) {
   const {
-  cart = [],
-  total = 0,
+  cart,
+  total,
   placeOrder,
   clearCart,
   addToCart,
+  removeFromCart,
 } = useCart();
   
   const [status, setStatus] = useState("idle"); 
@@ -755,40 +756,48 @@ grandTotal = Math.max(0, grandTotal);
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={async () => {
-            setSelectedReward(reward);
+       <button
+  type="button"
+  onClick={async () => {
 
-            if (
-              reward.title === "Free Coffee" &&
-              !cart.some((item) => item.rewardId === reward.id)
-            ) {
-              const coffeeSnap = await getDoc(
-                doc(db, "menu", "ugJrtQjijNlHAaKDboRu")
-              );
+    // Unselect reward
+    if (selectedReward?.id === reward.id) {
+      setSelectedReward(null);
 
-              if (coffeeSnap.exists()) {
-                addToCart({
-                  ...coffeeSnap.data(),
-                  id: coffeeSnap.id,
-                  firestoreId: coffeeSnap.id,
+      removeFromCart(
+        cart.find(item => item.rewardId === reward.id)
+      );
 
-                  price: 0,
-                  qty: 1,
+      return;
+    }
 
-                  isReward: true,
-                  rewardId: reward.id,
-                });
-              }
-            }
-          }}
-          disabled={selectedReward?.id === reward.id}
-        >
-          {selectedReward?.id === reward.id
-            ? "Selected"
-            : "Use"}
-        </button>
+    // Select reward
+    setSelectedReward(reward);
+
+    if (
+      reward.title === "Free Coffee" &&
+      !cart.some(item => item.rewardId === reward.id)
+    ) {
+      const coffeeSnap = await getDoc(
+        doc(db, "menu", "ugJrtQjijNlHAaKDboRu")
+      );
+
+      if (coffeeSnap.exists()) {
+        addToCart({
+          ...coffeeSnap.data(),
+          id: coffeeSnap.id,
+          firestoreId: coffeeSnap.id,
+          price: 0,
+          qty: 1,
+          isReward: true,
+          rewardId: reward.id,
+        });
+      }
+    }
+  }}
+>
+  {selectedReward?.id === reward.id ? "Remove" : "Use"}
+</button>
       </div>
     ))}
   </div>
