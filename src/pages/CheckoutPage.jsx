@@ -1,6 +1,6 @@
 import {
   doc,
-  getdoc,
+  getDoc,
   query,
   where
 } from "firebase/firestore";
@@ -103,16 +103,7 @@ export default function CheckoutPage({ setPage }) {
 
 
 
-    let rewardDiscount = 0;
-
-if (selectedReward?.title === "Free Coffee") {
-  const coffee = cart.find(item => item.category === "Coffee");
-
-  if (coffee) {
-    rewardDiscount = coffee.price;
-    grandTotal -= rewardDiscount;
-  }
-}
+ 
 
 grandTotal = Math.max(0, grandTotal);
 
@@ -131,8 +122,8 @@ grandTotal = Math.max(0, grandTotal);
     grandTotal = Math.max(0, grandTotal);
     const remainingAmount = grandTotal;
 
-    return { 
-      subtotal,
+   return {
+  subtotal,
   tax,
   delivery,
   cod,
@@ -140,10 +131,9 @@ grandTotal = Math.max(0, grandTotal);
   baseTotal,
   walletDeduction,
   rewardDeduction,
-  rewardDiscount,
   grandTotal,
   remainingAmount,
-    };
+};
   }, [total, paymentMethod, appliedCoupon, deliveryInfo, useWallet, wallet, useRewards]);
 
   useEffect(() => {
