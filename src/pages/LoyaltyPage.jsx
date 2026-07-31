@@ -251,7 +251,7 @@ const loyaltyTier =
         redeemedAt: serverTimestamp(),
         expiresAt: expiry,
       });
-    }); // Added missing closing parenthesis and brace for runTransaction
+    });
 
     setRedeemedRewardData({
       title: reward.title,
@@ -853,24 +853,24 @@ async function seedLoyaltyRewards() {
           color: #2C1810;
         }
         .back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(255,255,255,0.12);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.2);
-  padding: 10px 16px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 24px;
-  transition: all 0.2s ease;
-}
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: rgba(255,255,255,0.12);
+          color: #fff;
+          border: 1px solid rgba(255,255,255,0.2);
+          padding: 10px 16px;
+          border-radius: 10px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 600;
+          margin-bottom: 24px;
+          transition: all 0.2s ease;
+        }
 
-.back-btn:hover {
-  background: rgba(255,255,255,0.2);
-}
+        .back-btn:hover {
+          background: rgba(255,255,255,0.2);
+        }
 
         .shimmer {
           background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -896,16 +896,16 @@ async function seedLoyaltyRewards() {
         }
       `}</style>
 
-     <button
-  className="back-btn"
-  onClick={() => setPage("menu")}
->
-  ← Back
-</button>
+      <button
+        className="back-btn"
+        onClick={() => setPage("menu")}
+      >
+        ← Back
+      </button>
 
       <button onClick={seedLoyaltyRewards}>
-  Seed Loyalty Rewards
-</button>
+        Seed Loyalty Rewards
+      </button>
 
       {loading ? (
         <div className="loyalty-page-container">
@@ -1048,64 +1048,86 @@ async function seedLoyaltyRewards() {
                 </div>
               ) : null}
 
-             {loyaltyTier === "Platinum" ? (
-  <div className="benefit-item">
-    💎 Platinum Exclusive Menu
-  </div>
-) : null}
+              {loyaltyTier === "Platinum" ? (
+                <div className="benefit-item">
+                  💎 Platinum Exclusive Menu
+                </div>
+              ) : null}
+
+            </div>
 
           </div>
 
-        </div>
-
-        <div ref={rewardsRef} className="rewards-section">
-
-          <div className="section-header">
-            <h2>Available Rewards</h2>
-            <button className="view-all-btn"
-              onClick={() => rewardsRef.current?.scrollIntoView({behavior:"smooth"})}>
-              View All →
-            </button>
+          <div ref={rewardsRef} className="rewards-section">
+            <div className="section-header">
+              <h2>Available Rewards</h2>
+              <button className="view-all-btn"
+                onClick={() => rewardsRef.current?.scrollIntoView({behavior:"smooth"})}>
+                View All →
+              </button>
+            </div>
+            
+            {/* Render available rewards grid */}
+            <div className="rewards-scroll">
+              {rewards.length === 0 ? (
+                <div className="empty-rewards" style={{ gridColumn: "1 / -1" }}>
+                  <p>No rewards available right now. Check back later!</p>
+                </div>
+              ) : (
+                rewards.map((reward) => (
+                  <div key={reward.id} className="reward-card">
+                    <div className="reward-icon" style={{ background: "#F8F3ED" }}>
+                      {reward.icon || "🎁"}
+                    </div>
+                    <h3>{reward.title}</h3>
+                    <p>{reward.pointsRequired} Points</p>
+                    <button
+                      className={`redeem-btn ${loyaltyPoints < (reward.pointsRequired || 0) ? "disabled" : ""}`}
+                      onClick={() => redeemReward(reward)}
+                      disabled={redeemingRewardId === reward.id || loyaltyPoints < (reward.pointsRequired || 0)}
+                    >
+                      {redeemingRewardId === reward.id ? "Redeeming..." : "Redeem"}
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="my-rewards-section">
-          <div className="section-header">
-            <h2>🎁 My Rewards</h2>
-            <p>Your redeemed rewards.</p>
+          <div className="my-rewards-section">
+            <div className="section-header">
+              <h2>🎁 My Rewards</h2>
+              <p>Your redeemed rewards.</p>
+            </div>
+
+            {loadingRewards ? (
+              <p>Loading rewards...</p>
+            ) : myRewards.length === 0 ? (
+              <p>No redeemed rewards yet.</p>
+            ) : (
+              myRewards.map((reward) => (
+                <div key={reward.id} className="reward-card">
+                  <h3>
+                    {reward.menuItemName
+                      ? `Free ${reward.menuItemName}`
+                      : reward.title}
+                  </h3>
+
+                  <p>
+                    <strong>Status:</strong>{" "}
+                    {reward.status === "unused" ? "Available" : "Used"}
+                  </p>
+
+                  <p>
+                    <strong>Expires:</strong>{" "}
+                    {reward.expiresAt?.toDate
+                      ? reward.expiresAt.toDate().toLocaleDateString()
+                      : "N/A"}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
-
-         {loadingRewards ? (
-  <p>Loading rewards...</p>
-) : myRewards.length === 0 ? (
-  <p>No redeemed rewards yet.</p>
-) : (
-  myRewards.map((reward) => (
-    <div key={reward.id} className="reward-card">
-      <h3>
-        {reward.menuItemName
-          ? `Free ${reward.menuItemName}`
-          : reward.title}
-      </h3>
-
-      <p>
-        <strong>Status:</strong>{" "}
-        {reward.status === "unused" ? "Available" : "Used"}
-      </p>
-
-      <p>
-        <strong>Expires:</strong>{" "}
-        {reward.expiresAt?.toDate
-          ? reward.expiresAt.toDate().toLocaleDateString()
-          : "N/A"}
-      </p>
-    </div>
-  ))
-)}
-
-
-
-                
 
           <div className="activity-section">
             <div className="section-header">
@@ -1157,9 +1179,9 @@ async function seedLoyaltyRewards() {
                 <span>0 pts</span>
               </div>
 
-               <div className="tier-connector" />
+              <div className="tier-connector" />
 
-               <div className={`tier-step ${tierProgressPoints >= 500 ? "active" : ""}`}>
+              <div className={`tier-step ${tierProgressPoints >= 500 ? "active" : ""}`}>
                 <div className="tier-circle">🥈</div>
                 <h4>Silver</h4>
                 <span>500 pts</span>
@@ -1173,7 +1195,6 @@ async function seedLoyaltyRewards() {
                 <span>1500 pts</span>
               </div>
 
-
               <div className="tier-connector" />
 
               <div className={`tier-step ${tierProgressPoints >= 3000 ? "active" : ""}`}>
@@ -1183,7 +1204,6 @@ async function seedLoyaltyRewards() {
               </div>
             </div>
           </div>
-
 
           <div className="loyalty-info">
             <h2>How Brewed Loyalty Works</h2>
@@ -1211,7 +1231,7 @@ async function seedLoyaltyRewards() {
         </div>
       )}
 
-          {successModal && redeemedRewardData && (
+      {successModal && redeemedRewardData && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-icon">🎉</div>
@@ -1230,7 +1250,7 @@ async function seedLoyaltyRewards() {
               >
                 View Rewards
               </button>
-               <button 
+              <button 
                 className="modal-btn primary"
                 onClick={() => setSuccessModal(false)}
               >
@@ -1259,9 +1279,7 @@ async function seedLoyaltyRewards() {
             </div>
           </div>
         </div>
-           )}
-          </div>
+      )}
     </>
-   
   );
 }
