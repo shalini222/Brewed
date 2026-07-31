@@ -1075,37 +1075,33 @@ async function seedLoyaltyRewards() {
             <p>Your redeemed rewards.</p>
           </div>
 
-          {loadingRewards ? (
-            <p>Loading rewards...</p>
-          ) : myRewards.length === 0 ? (
-            <p>No redeemed rewards yet.</p>
-          ) : (
-            myRewards.map((reward) => (
-              <div key={reward.id} className="reward-card">
-                <h3>
-                  {reward.menuItemName
-                    ? `Free ${reward.menuItemName}`
-                    : reward.title}
-                </h3>
+         {loadingRewards ? (
+  <p>Loading rewards...</p>
+) : myRewards.length === 0 ? (
+  <p>No redeemed rewards yet.</p>
+) : (
+  myRewards.map((reward) => (
+    <div key={reward.id} className="reward-card">
+      <h3>
+        {reward.menuItemName
+          ? `Free ${reward.menuItemName}`
+          : reward.title}
+      </h3>
 
-                <p>Status: {reward.status}</p>
+      <p>
+        <strong>Status:</strong>{" "}
+        {reward.status === "unused" ? "Available" : "Used"}
+      </p>
 
-                <p>
-                  Expires:{" "}
-                  {reward.expiresAt?.toDate
-                    ? reward.expiresAt.toDate().toLocaleDateString()
-                    : "N/A"}
-                </p>
-
-                {/* Temporary debug - remove after testing */}
-                <pre style={{ fontSize: 11 }}>
-                  {JSON.stringify(reward, null, 2)}
-                </pre>
-              </div>
-            ))
-          )}
-        </div>
-          
+      <p>
+        <strong>Expires:</strong>{" "}
+        {reward.expiresAt?.toDate
+          ? reward.expiresAt.toDate().toLocaleDateString()
+          : "N/A"}
+      </p>
+    </div>
+  ))
+)}
 
 
 
