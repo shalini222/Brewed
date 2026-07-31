@@ -1144,10 +1144,123 @@ async function seedLoyaltyRewards() {
             </div>
           </div>
 
-         <div className="tier-journey">
+          <div className="tier-journey">
+            <div className="section-header">
+              <h2>Tier Journey</h2>
+              <p>Unlock more benefits as you earn points.</p>
+            </div>
 
-  <div className="section-header">
-    <h2>Tier
+            <div className="tier-line">
+              <div className={`tier-step ${tierProgressPoints >= 0 ? "active" : ""}`}>
+                <div className="tier-circle">🥉</div>
+                <h4>Bronze</h4>
+                <span>0 pts</span>
+              </div>
+
+               <div className="tier-connector" />
+
+               <div className={`tier-step ${tierProgressPoints >= 500 ? "active" : ""}`}>
+                <div className="tier-circle">🥈</div>
+                <h4>Silver</h4>
+                <span>500 pts</span>
+              </div>
+
+              <div className="tier-connector" />
+
+              <div className={`tier-step ${tierProgressPoints >= 1500 ? "active" : ""}`}>
+                <div className="tier-circle">🥇</div>
+                <h4>Gold</h4>
+                <span>1500 pts</span>
+              </div>
+
+
+              <div className="tier-connector" />
+
+              <div className={`tier-step ${tierProgressPoints >= 3000 ? "active" : ""}`}>
+                <div className="tier-circle">💎</div>
+                <h4>Platinum</h4>
+                <span>3000 pts</span>
+              </div>
+            </div>
+          </div>
+
+
+          <div className="loyalty-info">
+            <h2>How Brewed Loyalty Works</h2>
+
+            <div className="info-grid">
+              <div className="info-card">
+                <span>☕</span>
+                <h3>Earn</h3>
+                <p>Collect loyalty points every time you place an order.</p>
+              </div>
+
+              <div className="info-card">
+                <span>🎁</span>
+                <h3>Redeem</h3>
+                <p>Use your points for free drinks, food and exclusive rewards.</p>
+              </div>
+
+              <div className="info-card">
+                <span>🏆</span>
+                <h3>Upgrade</h3>
+                <p>Reach higher tiers to unlock even better benefits.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+          {successModal && redeemedRewardData && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-icon">🎉</div>
+            <h3>Reward Redeemed!</h3>
+            <p className="modal-reward-title">{redeemedRewardData.title}</p>
+            <p className="modal-deduction">{redeemedRewardData.points} points deducted</p>
+            
+            <div className="modal-remaining">
+              Remaining Points: <span>{redeemedRewardData.remaining}</span>
+            </div>
+
+            <div className="modal-actions">
+              <button 
+                className="modal-btn secondary"
+                onClick={scrollToRewards}
+              >
+                View Rewards
+              </button>
+               <button 
+                className="modal-btn primary"
+                onClick={() => setSuccessModal(false)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {errorModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-icon">⚠️</div>
+            <h3>Unable to Redeem</h3>
+            <p className="modal-deduction" style={{ color: "#C62828" }}>{errorMessage}</p>
+
+            <div className="modal-actions">
+              <button 
+                className="modal-btn primary"
+                onClick={() => setErrorModal(false)}
+                style={{ width: "100%" }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+           )}
+    </>
    
   );
 }
