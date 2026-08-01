@@ -7,7 +7,7 @@ import {
   serverTimestamp
 } from "firebase/firestore";
 
-import { db } from "../firebase";
+import { db } from "../firebase.js";
 
 
 export async function checkBirthdayReward(userId){
