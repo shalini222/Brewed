@@ -1024,14 +1024,23 @@ if (
               <div style={styles.calcRow}><span>Delivery Fee</span><span>₹{calculations.delivery}</span></div>
               
               
-  {calculations.rewardDiscount > 0 && selectedReward && (
+
+{selectedReward && (
   <div style={{ ...styles.calcRow, color: THEME.colors.success }}>
     <span>
       🎁 Free {selectedReward.menuItem?.name || selectedReward.title}
     </span>
-    <span>-₹{calculations.rewardDiscount}</span>
+    <span>FREE</span>
   </div>
 )}
+
+
+
+
+
+
+
+              
            
               {deliveryLoading ? (
                 <p style={{ color: "#666", marginBottom: "12px" }}>
