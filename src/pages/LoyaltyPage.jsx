@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   doc,
@@ -388,6 +387,7 @@ export default function LoyaltyPage({ setPage }) {
       </div>
     );
   }
+
 
 
 
