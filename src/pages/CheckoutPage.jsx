@@ -69,6 +69,10 @@ export default function CheckoutPage({ setPage }) {
   const [loadingAvailableRewards, setLoadingAvailableRewards] = useState(true);
   const [rewardMenuItem, setRewardMenuItem] = useState(null);
 
+  // Loyalty states
+  const [loyaltyEnabled, setLoyaltyEnabled] = useState(true);
+  const [loyaltySettings, setLoyaltySettings] = useState(null);
+
   // Wallet states
   const [wallet, setWallet] = useState(null);
   const [walletLoading, setWalletLoading] = useState(true);
@@ -159,6 +163,20 @@ export default function CheckoutPage({ setPage }) {
   useEffect(() => { loadRazorpayScript(); }, []);
 
   useEffect(() => {
+    async function loadLoyaltySettings(){
+      const snap = await getDoc(
+        doc(db, "settings", "loyalty")
+      );
+      if (snap.exists()){
+        const data = snap.data();
+        setLoyaltySettings(data);
+        setLoyaltyEnabled(data.enabled !== false);
+      }
+    }
+    loadLoyaltySettings();
+  }, []);
+
+  useEffect(() => {
     async function loadWallet() {
       if (!auth.currentUser) {
         setWallet(null);
@@ -225,6 +243,12 @@ export default function CheckoutPage({ setPage }) {
 
   useEffect(() => {
     async function loadAvailableRewards() {
+      if (!loyaltyEnabled) {
+        setAvailableRewards([]);
+        setLoadingAvailableRewards(false);
+        return;
+      }
+
       if (!auth.currentUser) {
         setAvailableRewards([]);
         setLoadingAvailableRewards(false);
@@ -285,7 +309,7 @@ export default function CheckoutPage({ setPage }) {
     }
 
     loadAvailableRewards();
-  }, []);
+  }, [loyaltyEnabled]);
   
   useEffect(() => {
     if (status !== "failure" || !canvasRef.current) return;
@@ -547,17 +571,15 @@ export default function CheckoutPage({ setPage }) {
       if (
         loyaltySettingsSnap.exists()
       ) {
-        const loyaltySettings =
+        const fetchedLoyaltySettings =
           loyaltySettingsSnap.data();
 
         if (
-          loyaltySettings.enabled !== false
+          fetchedLoyaltySettings.enabled !== false
         ) {
           const earnedPoints =
-            Math.floor(
-              calculations.subtotal / 100
-            ) *
-            (loyaltySettings.pointsPer100 || 0);
+            Math.floor(calculations.subtotal / 100) *
+            (fetchedLoyaltySettings.pointsPer100 || 0);
 
           if (earnedPoints > 0) {
             await runTransaction(
@@ -617,6 +639,8 @@ export default function CheckoutPage({ setPage }) {
 
                       orderId,
 
+                      amount: calculations.subtotal,
+
                       createdAt:
                         serverTimestamp()
                     }
@@ -659,7 +683,7 @@ export default function CheckoutPage({ setPage }) {
       </div>
     );
   }
-
+}
 
 
 
