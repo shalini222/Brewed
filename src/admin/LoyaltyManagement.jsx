@@ -14,6 +14,7 @@ export default function LoyaltyManagement ({ setPage, setActivePage}) {
   const [rewards, setRewards] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [editingReward, setEditingReward] = useState(null);
 
@@ -47,9 +48,9 @@ export default function LoyaltyManagement ({ setPage, setActivePage}) {
     const snapshot = await getDocs(collection(db, "menuItems"));
 
     setMenuItems(
-      snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
+      snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
       }))
     );
   }
@@ -80,12 +81,37 @@ export default function LoyaltyManagement ({ setPage, setActivePage}) {
   }
 
   async function saveReward() {
-    try {
-      if (!form.title.trim()) {
-        alert("Enter a reward title.");
-        return;
-      }
+    if (!form.title.trim()) {
+      alert("Enter a reward title.");
+      return;
+    }
 
+    if (!form.rewardType) {
+      alert("Select a reward type.");
+      return;
+    }
+
+    if (form.pointsRequired <= 0) {
+      alert("Points required must be greater than 0.");
+      return;
+    }
+
+    if (form.rewardType === "freeItem" && !form.menuItemId) {
+      alert("Select a menu item for the free item reward.");
+      return;
+    }
+
+    if (
+      (form.rewardType === "discount" || form.rewardType === "walletCredit") &&
+      form.discountValue <= 0
+    ) {
+      alert("Value must be greater than 0.");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
       if (editingReward) {
         await updateDoc(
           doc(db, "loyaltyRewards", editingReward.id),
@@ -116,6 +142,8 @@ export default function LoyaltyManagement ({ setPage, setActivePage}) {
     } catch (err) {
       console.error(err);
       alert("Failed to save reward.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -183,10 +211,11 @@ export default function LoyaltyManagement ({ setPage, setActivePage}) {
           type="number"
           placeholder="Points Required"
           value={form.pointsRequired}
+          min="0"
           onChange={(e) =>
             setForm({
               ...form,
-              pointsRequired: Number(e.target.value),
+              pointsRequired: Math.max(0, Number(e.target.value)),
             })
           }
         />
@@ -217,10 +246,7 @@ export default function LoyaltyManagement ({ setPage, setActivePage}) {
               setForm({
                 ...form,
                 menuItemId: item?.id || "",
-                title:
-                  form.rewardType === "freeItem"
-                    ? `Free ${item?.name || ""}`
-                    : form.title,
+                title: `Free ${item?.name || ""}`,
                 image: item?.image || form.image,
               });
             }}
@@ -240,10 +266,11 @@ export default function LoyaltyManagement ({ setPage, setActivePage}) {
             type="number"
             placeholder="Discount Value"
             value={form.discountValue}
+            min="0"
             onChange={(e) =>
               setForm({
                 ...form,
-                discountValue: Number(e.target.value),
+                discountValue: Math.max(0, Number(e.target.value)),
               })
             }
           />
@@ -254,25 +281,28 @@ export default function LoyaltyManagement ({ setPage, setActivePage}) {
             type="number"
             placeholder="Wallet Credit Amount"
             value={form.discountValue}
+            min="0"
             onChange={(e) =>
               setForm({
                 ...form,
-                discountValue: Number(e.target.value),
+                discountValue: Math.max(0, Number(e.target.value)),
               })
             }
           />
         )}
 
-        <input
-          placeholder="Image URL"
-          value={form.image}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              image: e.target.value,
-            })
-          }
-        />
+        {form.rewardType !== "freeItem" && (
+          <input
+            placeholder="Image URL"
+            value={form.image}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                image: e.target.value,
+              })
+            }
+          />
+        )}
 
         <label>
           <input
@@ -289,9 +319,35 @@ export default function LoyaltyManagement ({ setPage, setActivePage}) {
           Active
         </label>
 
-        <button onClick={saveReward}>
-          {editingReward ? "Update Reward" : "Create Reward"}
-        </button>
+        <div style={{ display: "flex", gap: 10, marginTop: 15 }}>
+          <button onClick={saveReward} disabled={saving}>
+            {saving
+              ? "Saving..."
+              : editingReward
+              ? "Update Reward"
+              : "Create Reward"}
+          </button>
+
+          {editingReward && (
+            <button
+              onClick={() => {
+                setEditingReward(null);
+                setForm({
+                  title: "",
+                  description: "",
+                  pointsRequired: 0,
+                  rewardType: "",
+                  menuItemId: "",
+                  discountValue: 0,
+                  image: "",
+                  active: true,
+                });
+              }}
+            >
+              Cancel
+            </button>
+          )}
+        </div>
 
         <div
           style={{
@@ -326,6 +382,11 @@ export default function LoyaltyManagement ({ setPage, setActivePage}) {
 
       {loading ? (
         <p>Loading...</p>
+      ) : rewards.length === 0 ? (
+        <div className="empty-state">
+          <h3>🎁 No rewards yet.</h3>
+          <p>Create your first loyalty reward.</p>
+        </div>
       ) : (
         <div
           style={{
@@ -338,86 +399,72 @@ export default function LoyaltyManagement ({ setPage, setActivePage}) {
           {rewards.map((reward) => (
             <div
               key={reward.id}
-              style={{
-                background: "#fff",
-                borderRadius: 16,
-                padding: 20,
-                boxShadow: "0 4px 12px rgba(0,0,0,.08)",
-              }}
+              className="reward-card"
             >
               {reward.image && (
                 <img
                   src={reward.image}
                   alt={reward.title}
-                  style={{
-                    width: "100%",
-                    height: 180,
-                    objectFit: "cover",
-                    borderRadius: 12,
-                    marginBottom: 15,
-                  }}
                 />
               )}
 
-              <h3>{reward.title}</h3>
+              <div className="reward-card-body">
+                <h3>{reward.title}</h3>
 
-              <p>{reward.description}</p>
+                <p>{reward.description}</p>
 
-              <p>
-                <strong>Points:</strong> {reward.pointsRequired}
-              </p>
+                <p>
+                  <strong>Points:</strong> {reward.pointsRequired}
+                </p>
 
-              <p>
-                <strong>Type:</strong> {reward.rewardType}
-              </p>
+                <p>
+                  <strong>Type:</strong> {reward.rewardType}
+                </p>
 
-              <p>
-                <strong>Status:</strong>{" "}
-                {reward.active ? "🟢 Active" : "🔴 Disabled"}
-              </p>
+                <p>
+                  <strong>Status:</strong>{" "}
+                  <span className={reward.active ? "status-active" : "status-disabled"}>
+                    {reward.active ? "🟢 Active" : "🔴 Disabled"}
+                  </span>
+                </p>
 
-              <p>
-                <strong>Redeemed:</strong>{" "}
-                {reward.redemptionCount || 0} times
-              </p>
+                <p>
+                  <strong>Redeemed:</strong>{" "}
+                  {reward.redemptionCount || 0} times
+                </p>
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  marginTop: 15,
-                }}
-              >
-                <button
-                  onClick={() => {
-                    setEditingReward(reward);
+                <div className="reward-actions">
+                  <button
+                    onClick={() => {
+                      setEditingReward(reward);
 
-                    setForm({
-                      title: reward.title || "",
-                      description: reward.description || "",
-                      pointsRequired: reward.pointsRequired || 0,
-                      rewardType: reward.rewardType || "",
-                      menuItemId: reward.menuItemId || "",
-                      discountValue: reward.discountValue || 0,
-                      image: reward.image || "",
-                      active: reward.active,
-                    });
-                  }}
-                >
-                  Edit
-                </button>
+                      setForm({
+                        title: reward.title || "",
+                        description: reward.description || "",
+                        pointsRequired: reward.pointsRequired || 0,
+                        rewardType: reward.rewardType || "",
+                        menuItemId: reward.menuItemId || "",
+                        discountValue: reward.discountValue || 0,
+                        image: reward.image || "",
+                        active: reward.active,
+                      });
+                    }}
+                  >
+                    Edit
+                  </button>
 
-                <button
-                  onClick={() => toggleReward(reward)}
-                >
-                  {reward.active ? "Disable" : "Enable"}
-                </button>
+                  <button
+                    onClick={() => toggleReward(reward)}
+                  >
+                    {reward.active ? "Disable" : "Enable"}
+                  </button>
 
-                <button
-                  onClick={() => deleteReward(reward.id)}
-                >
-                  Delete
-                </button>
+                  <button
+                    onClick={() => deleteReward(reward.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
           ))}
