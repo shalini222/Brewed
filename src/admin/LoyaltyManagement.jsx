@@ -156,6 +156,31 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
     loadMenuItems();
   }, []);
 
+  const totalRewards = rewards.length;
+
+  const activeRewards = rewards.filter(
+    (reward) => reward.active
+  ).length;
+
+  const disabledRewards = rewards.filter(
+    (reward) => !reward.active
+  ).length;
+
+  const totalRedemptions = rewards.reduce(
+    (total, reward) => total + (reward.redemptionCount || 0),
+    0
+  );
+
+  const averagePoints =
+    rewards.length > 0
+      ? Math.round(
+          rewards.reduce(
+            (sum, reward) => sum + (reward.pointsRequired || 0),
+            0
+          ) / rewards.length
+        )
+      : 0;
+
   const filteredRewards = rewards
     .filter((reward) => {
       const matchesSearch =
@@ -261,6 +286,40 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
           font-size: 2.2rem;
           font-weight: 700;
           margin-bottom: 25px;
+        }
+
+        /* Analytics */
+
+        .loyalty-stats {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 18px;
+          margin: 25px 0;
+        }
+
+        .loyalty-stat-card {
+          background: white;
+          border-radius: 18px;
+          padding: 22px;
+          box-shadow: 0 8px 24px rgba(0,0,0,.08);
+          border-top: 4px solid #C4956A;
+          transition: .25s;
+        }
+
+        .loyalty-stat-card:hover {
+          transform: translateY(-4px);
+        }
+
+        .loyalty-stat-card h4 {
+          color: #8A6B55;
+          margin: 0 0 10px;
+          font-size: .9rem;
+        }
+
+        .loyalty-stat-card h2 {
+          color: #4A3428;
+          margin: 0;
+          font-size: 2rem;
         }
 
         /* Create Button */
@@ -373,16 +432,70 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
           color: #4A3428;
         }
 
-        /* Status */
+        /* Badges & Chips */
 
-        .status-active {
-          color: #3D8B55;
+        .reward-badges {
+          display: flex;
+          gap: 10px;
+          margin: 12px 0;
+          flex-wrap: wrap;
+        }
+
+        .type-badge {
+          padding: 7px 14px;
+          border-radius: 50px;
+          font-size: 13px;
           font-weight: 600;
         }
 
-        .status-disabled {
-          color: #C94A4A;
+        .type-badge.freeItem {
+          background: #F6E6D5;
+          color: #7A4B20;
+        }
+
+        .type-badge.discount {
+          background: #DDF3E5;
+          color: #24734D;
+        }
+
+        .type-badge.walletCredit {
+          background: #E5ECFF;
+          color: #365BB6;
+        }
+
+        .status-pill {
+          padding: 7px 14px;
+          border-radius: 50px;
+          font-size: 13px;
           font-weight: 600;
+          display: inline-block;
+          margin-top: 12px;
+        }
+
+        .status-pill.active {
+          background: #E6F8EC;
+          color: #238B4E;
+        }
+
+        .status-pill.disabled {
+          background: #FBE5E5;
+          color: #C0392B;
+        }
+
+        .reward-chip {
+          margin-top: 12px;
+          display: inline-block;
+          padding: 8px 16px;
+          background: #F7F3EF;
+          border-radius: 50px;
+          font-weight: 600;
+          color: #6A4B3B;
+          margin-right: 8px;
+        }
+
+        .reward-chip.secondary {
+          background: #EFE9FF;
+          color: #5E4AA8;
         }
 
         /* Card Buttons */
@@ -468,6 +581,33 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
         </button>
 
         <h1>🎁 Loyalty Rewards Admin</h1>
+      </div>
+
+      <div className="loyalty-stats">
+        <div className="loyalty-stat-card">
+          <h4>Total Rewards</h4>
+          <h2>{totalRewards}</h2>
+        </div>
+
+        <div className="loyalty-stat-card">
+          <h4>Active</h4>
+          <h2>{activeRewards}</h2>
+        </div>
+
+        <div className="loyalty-stat-card">
+          <h4>Disabled</h4>
+          <h2>{disabledRewards}</h2>
+        </div>
+
+        <div className="loyalty-stat-card">
+          <h4>Total Redemptions</h4>
+          <h2>{totalRedemptions}</h2>
+        </div>
+
+        <div className="loyalty-stat-card">
+          <h4>Avg Points</h4>
+          <h2>{averagePoints}</h2>
+        </div>
       </div>
 
       <button
@@ -774,25 +914,35 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
 
                 <p>{reward.description}</p>
 
-                <p>
-                  <strong>Points:</strong> {reward.pointsRequired}
-                </p>
-
-                <p>
-                  <strong>Type:</strong> {reward.rewardType}
-                </p>
-
-                <p>
-                  <strong>Status:</strong>{" "}
-                  <span className={reward.active ? "status-active" : "status-disabled"}>
-                    {reward.active ? "🟢 Active" : "🔴 Disabled"}
+                <div className="reward-badges">
+                  <span className={`type-badge ${reward.rewardType}`}>
+                    {reward.rewardType === "freeItem" && "☕ Free Item"}
+                    {reward.rewardType === "discount" && "🏷 Discount"}
+                    {reward.rewardType === "walletCredit" && "💰 Wallet Credit"}
                   </span>
-                </p>
+                </div>
 
-                <p>
-                  <strong>Redeemed:</strong>{" "}
-                  {reward.redemptionCount || 0} times
-                </p>
+                <div>
+                  <span
+                    className={
+                      reward.active
+                        ? "status-pill active"
+                        : "status-pill disabled"
+                    }
+                  >
+                    {reward.active ? "Active" : "Disabled"}
+                  </span>
+                </div>
+
+                <div>
+                  <div className="reward-chip">
+                    ⭐ {reward.pointsRequired} Points
+                  </div>
+
+                  <div className="reward-chip secondary">
+                    🎁 {reward.redemptionCount || 0} Redeemed
+                  </div>
+                </div>
 
                 <div className="reward-actions">
                   <button
