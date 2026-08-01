@@ -10,7 +10,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 
-export default function LoyaltyManagement ({ setPage, setActivePage}) {
+export default function LoyaltyManagement({ setPage, setActivePage }) {
   const [rewards, setRewards] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -154,6 +154,218 @@ export default function LoyaltyManagement ({ setPage, setActivePage}) {
 
   return (
     <div className="admin-page">
+      <style>{`
+        /* =========================
+           Loyalty Admin
+        ========================= */
+
+        .admin-page {
+          background: #FDFAF5;
+          min-height: 100vh;
+          padding: 35px;
+        }
+
+        .admin-page h1 {
+          color: #4A3428;
+          font-size: 2.2rem;
+          font-weight: 700;
+          margin-bottom: 25px;
+        }
+
+        /* Create Button */
+
+        .admin-page > button {
+          background: #C4956A;
+          color: white;
+          border: none;
+          border-radius: 14px;
+          padding: 12px 24px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: .25s;
+          box-shadow: 0 8px 20px rgba(196,149,106,.25);
+        }
+
+        .admin-page > button:hover {
+          background: #B07E55;
+          transform: translateY(-2px);
+        }
+
+        /* Form */
+
+        .admin-page input,
+        .admin-page textarea,
+        .admin-page select {
+          width: 100%;
+          margin-top: 12px;
+          margin-bottom: 14px;
+          padding: 13px 15px;
+          border-radius: 12px;
+          border: 1px solid #E4D7CB;
+          background: white;
+          font-size: 15px;
+          transition: .25s;
+          box-sizing: border-box;
+        }
+
+        .admin-page textarea {
+          min-height: 100px;
+          resize: vertical;
+        }
+
+        .admin-page input:focus,
+        .admin-page textarea:focus,
+        .admin-page select:focus {
+          outline: none;
+          border-color: #C4956A;
+          box-shadow: 0 0 0 4px rgba(196,149,106,.15);
+        }
+
+        /* Buttons */
+
+        .admin-page button {
+          transition: .25s;
+        }
+
+        .admin-page button:disabled {
+          opacity: .6;
+          cursor: not-allowed;
+        }
+
+        /* Preview */
+
+        .admin-page h3 {
+          color: #4A3428;
+        }
+
+        .admin-page img {
+          display: block;
+        }
+
+        /* Reward Cards */
+
+        .reward-card {
+          background: white;
+          border-radius: 18px;
+          overflow: hidden;
+          box-shadow: 0 12px 35px rgba(0,0,0,.08);
+          transition: .25s;
+        }
+
+        .reward-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 18px 40px rgba(0,0,0,.12);
+        }
+
+        .reward-card img {
+          width: 100%;
+          height: 190px;
+          object-fit: cover;
+        }
+
+        .reward-card-body {
+          padding: 20px;
+        }
+
+        .reward-card h3 {
+          color: #4A3428;
+          margin-bottom: 10px;
+        }
+
+        .reward-card p {
+          color: #666;
+          line-height: 1.5;
+        }
+
+        .reward-card strong {
+          color: #4A3428;
+        }
+
+        /* Status */
+
+        .status-active {
+          color: #3D8B55;
+          font-weight: 600;
+        }
+
+        .status-disabled {
+          color: #C94A4A;
+          font-weight: 600;
+        }
+
+        /* Card Buttons */
+
+        .reward-actions {
+          display: flex;
+          gap: 10px;
+          margin-top: 18px;
+        }
+
+        .reward-actions button {
+          flex: 1;
+          border: none;
+          border-radius: 10px;
+          padding: 10px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .reward-actions button:first-child {
+          background: #EFE4D9;
+          color: #6B4F3B;
+        }
+
+        .reward-actions button:nth-child(2) {
+          background: #C4956A;
+          color: white;
+        }
+
+        .reward-actions button:last-child {
+          background: #E95A5A;
+          color: white;
+        }
+
+        .reward-actions button:hover {
+          opacity: .9;
+        }
+
+        /* Empty State */
+
+        .empty-state {
+          background: white;
+          border-radius: 18px;
+          padding: 60px;
+          text-align: center;
+          box-shadow: 0 10px 30px rgba(0,0,0,.06);
+        }
+
+        .empty-state h3 {
+          color: #4A3428;
+          margin-bottom: 10px;
+        }
+
+        .empty-state p {
+          color: #777;
+        }
+
+        /* Responsive */
+
+        @media (max-width: 768px) {
+          .admin-page {
+            padding: 20px;
+          }
+
+          .reward-actions {
+            flex-direction: column;
+          }
+
+          .admin-page h1 {
+            font-size: 1.8rem;
+          }
+        }
+      `}</style>
+
       <h1>🎁 Loyalty Rewards Admin</h1>
 
       <button
@@ -304,7 +516,7 @@ export default function LoyaltyManagement ({ setPage, setActivePage}) {
           />
         )}
 
-        <label>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginTop: 10 }}>
           <input
             type="checkbox"
             checked={form.active}
@@ -314,8 +526,8 @@ export default function LoyaltyManagement ({ setPage, setActivePage}) {
                 active: e.target.checked,
               })
             }
+            style={{ width: "auto", margin: 0 }}
           />
-
           Active
         </label>
 
