@@ -3,7 +3,7 @@ import {
   getDoc
 } from "firebase/firestore";
 
-import { db } from "../firebase";
+import { db } from "../firebase.js";
 
 
 export async function getLoyaltySettings(){
