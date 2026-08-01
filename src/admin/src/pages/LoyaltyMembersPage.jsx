@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 
-export default function LoyaltyMembersPage({ setActivePage }) {
+export default function LoyaltyMembersPage({ setPage, setActivePage }) {
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState([]);
 
