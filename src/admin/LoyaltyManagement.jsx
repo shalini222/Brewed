@@ -16,6 +16,10 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("pointsLow");
+
   const [editingReward, setEditingReward] = useState(null);
 
   const [form, setForm] = useState({
@@ -151,6 +155,58 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
     loadRewards();
     loadMenuItems();
   }, []);
+
+  const filteredRewards = rewards
+    .filter((reward) => {
+      const matchesSearch =
+        reward.title
+          ?.toLowerCase()
+          .includes(search.toLowerCase()) ||
+        reward.description
+          ?.toLowerCase()
+          .includes(search.toLowerCase());
+
+      const matchesFilter =
+        filter === "all"
+          ? true
+          : filter === "active"
+          ? reward.active
+          : filter === "disabled"
+          ? !reward.active
+          : reward.rewardType === filter;
+
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "pointsHigh":
+          return b.pointsRequired - a.pointsRequired;
+
+        case "pointsLow":
+          return a.pointsRequired - b.pointsRequired;
+
+        case "redeemed":
+          return (
+            (b.redemptionCount || 0) -
+            (a.redemptionCount || 0)
+          );
+
+        case "newest":
+          return (
+            (b.createdAt?.seconds || 0) -
+            (a.createdAt?.seconds || 0)
+          );
+
+        case "oldest":
+          return (
+            (a.createdAt?.seconds || 0) -
+            (b.createdAt?.seconds || 0)
+          );
+
+        default:
+          return 0;
+      }
+    });
 
   return (
     <div className="admin-page">
@@ -638,12 +694,59 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
         </div>
       </div>
 
+      <div
+        style={{
+          display: "flex",
+          gap: 15,
+          marginBottom: 20,
+          flexWrap: "wrap",
+        }}
+      >
+        <input
+          placeholder="🔍 Search rewards..."
+          value={search}
+          onChange={(e) =>
+            setSearch(e.target.value)
+          }
+          style={{ flex: 1, margin: 0 }}
+        />
+
+        <select
+          value={filter}
+          onChange={(e) =>
+            setFilter(e.target.value)
+          }
+          style={{ width: "auto", margin: 0 }}
+        >
+          <option value="all">All Rewards</option>
+          <option value="freeItem">Free Items</option>
+          <option value="discount">Discounts</option>
+          <option value="walletCredit">Wallet Credit</option>
+          <option value="active">Active</option>
+          <option value="disabled">Disabled</option>
+        </select>
+
+        <select
+          value={sortBy}
+          onChange={(e) =>
+            setSortBy(e.target.value)
+          }
+          style={{ width: "auto", margin: 0 }}
+        >
+          <option value="pointsLow">Lowest Points</option>
+          <option value="pointsHigh">Highest Points</option>
+          <option value="redeemed">Most Redeemed</option>
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+        </select>
+      </div>
+
       {loading ? (
         <p>Loading...</p>
-      ) : rewards.length === 0 ? (
+      ) : filteredRewards.length === 0 ? (
         <div className="empty-state">
-          <h3>🎁 No rewards yet.</h3>
-          <p>Create your first loyalty reward.</p>
+          <h3>🎁 No rewards found.</h3>
+          <p>Try adjusting your search or filters.</p>
         </div>
       ) : (
         <div
@@ -654,7 +757,7 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
             marginTop: 20,
           }}
         >
-          {rewards.map((reward) => (
+          {filteredRewards.map((reward) => (
             <div
               key={reward.id}
               className="reward-card"
