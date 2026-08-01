@@ -15,6 +15,8 @@ import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 // Phase 5.3: Import birthday reward service
 import { checkBirthdayReward } from "../service/birthdayRewardService";
+// Phase 5.5: Import loyalty service for centralized settings
+import { getLoyaltySettings } from "../service/loyaltyService";
 
 export default function LoyaltyPage({ setPage }) {
   const [loading, setLoading] = useState(true);
@@ -49,18 +51,12 @@ export default function LoyaltyPage({ setPage }) {
       // Phase 5.3: Check and award birthday points if applicable
       await checkBirthdayReward(currentUser.uid);
 
-      const settingsSnap = await getDoc(
-        doc(db, "settings", "loyalty")
-      );
+      // Phase 5.5: Fetch loyalty settings via centralized service
+      const settings = await getLoyaltySettings();
 
-      if (settingsSnap.exists()) {
-        const settings = settingsSnap.data();
-
+      if (settings) {
         setLoyaltySettings(settings);
-
-        setLoyaltyEnabled(
-          settings.enabled !== false
-        );
+        setLoyaltyEnabled(settings.enabled !== false);
 
         // Phase 5.2: Load dynamic thresholds from settings
         setTierSettings({
@@ -215,15 +211,10 @@ export default function LoyaltyPage({ setPage }) {
       return;
     }
 
-    // Phase 5.5 Step 1: Check if loyalty program is disabled by admin
-    const settingsSnap = await getDoc(
-      doc(db, "settings", "loyalty")
-    );
+    // Phase 5.5 Step 3: Check if loyalty program is disabled by admin using service
+    const settings = await getLoyaltySettings();
 
-    if (
-      settingsSnap.exists() &&
-      settingsSnap.data().enabled === false
-    ) {
+    if (settings && settings.enabled === false) {
       setErrorMessage(
         "Loyalty program is currently unavailable."
       );
@@ -248,10 +239,7 @@ export default function LoyaltyPage({ setPage }) {
       let updatedPoints = loyaltyPoints;
 
       // Phase 5.4: Fetch admin-configured expiry days dynamically
-      let expiryDays = 365;
-      if (settingsSnap.exists()) {
-        expiryDays = settingsSnap.data().rewardExpiryDays || 365;
-      }
+      let expiryDays = settings?.rewardExpiryDays || 365;
 
       const expiry = new Date();
       expiry.setDate(expiry.getDate() + expiryDays);
