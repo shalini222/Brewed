@@ -60,6 +60,9 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
   }
 
   async function toggleReward(reward) {
+    const actionText = reward.active ? "disable" : "enable";
+    if (!window.confirm(`Are you sure you want to ${actionText} this reward?`)) return;
+
     try {
       await updateDoc(doc(db, "loyaltyRewards", reward.id), {
         active: !reward.active,
@@ -68,7 +71,7 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
       loadRewards();
     } catch (err) {
       console.error(err);
-      alert("Failed to update reward.");
+      alert("Failed to update reward status.");
     }
   }
 
@@ -81,6 +84,27 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
     } catch (err) {
       console.error(err);
       alert("Failed to delete reward.");
+    }
+  }
+
+  async function duplicateReward(reward) {
+    try {
+      const { id, ...data } = reward;
+
+      await addDoc(
+        collection(db, "loyaltyRewards"),
+        {
+          ...data,
+          title: `Copy of ${reward.title}`,
+          redemptionCount: 0,
+          createdAt: serverTimestamp(),
+        }
+      );
+
+      loadRewards();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to duplicate reward.");
     }
   }
 
@@ -180,6 +204,38 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
           ) / rewards.length
         )
       : 0;
+
+  const topRewards = [...rewards]
+    .sort(
+      (a, b) =>
+        (b.redemptionCount || 0) -
+        (a.redemptionCount || 0)
+    )
+    .slice(0, 5);
+
+  const freeRewards = rewards.filter(
+    (r) => r.rewardType === "freeItem"
+  ).length;
+
+  const discounts = rewards.filter(
+    (r) => r.rewardType === "discount"
+  ).length;
+
+  const walletRewards = rewards.filter(
+    (r) => r.rewardType === "walletCredit"
+  ).length;
+
+  const lowRewards = rewards.filter(
+    (r) => r.pointsRequired <= 100
+  );
+
+  const highRewards = rewards.filter(
+    (r) => r.pointsRequired >= 1000
+  );
+
+  const hiddenRewards = rewards.filter(
+    (r) => !r.active
+  );
 
   const filteredRewards = rewards
     .filter((reward) => {
@@ -320,6 +376,86 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
           color: #4A3428;
           margin: 0;
           font-size: 2rem;
+        }
+
+        /* Reward Analytics Section */
+
+        .analytics-grid {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 20px;
+          margin-bottom: 30px;
+        }
+
+        @media (max-width: 900px) {
+          .analytics-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        .analytics-panel {
+          background: white;
+          border-radius: 18px;
+          padding: 24px;
+          box-shadow: 0 8px 24px rgba(0,0,0,.08);
+        }
+
+        .analytics-panel h2 {
+          color: #4A3428;
+          font-size: 1.2rem;
+          margin-bottom: 18px;
+        }
+
+        .top-rewards-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .top-reward-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 14px;
+          background: #FDFAF5;
+          border-radius: 10px;
+          font-size: 14px;
+          color: #4A3428;
+        }
+
+        .breakdown-cards {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+
+        .breakdown-card {
+          background: #FDFAF5;
+          border-radius: 12px;
+          padding: 14px;
+          text-align: center;
+        }
+
+        .breakdown-card h4 {
+          color: #8A6B55;
+          font-size: 0.8rem;
+          margin-bottom: 6px;
+        }
+
+        .breakdown-card h2 {
+          color: #4A3428;
+          font-size: 1.5rem;
+          margin: 0;
+        }
+
+        .insights-section {
+          font-size: 14px;
+          color: #666;
+        }
+
+        .insights-section p {
+          margin: 6px 0;
         }
 
         /* Create Button */
@@ -463,23 +599,18 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
           color: #365BB6;
         }
 
-        .status-pill {
-          padding: 7px 14px;
-          border-radius: 50px;
+        .reward-live {
+          margin-top: 12px;
           font-size: 13px;
           font-weight: 600;
-          display: inline-block;
+          color: #3D8B55;
+        }
+
+        .reward-offline {
           margin-top: 12px;
-        }
-
-        .status-pill.active {
-          background: #E6F8EC;
-          color: #238B4E;
-        }
-
-        .status-pill.disabled {
-          background: #FBE5E5;
-          color: #C0392B;
+          font-size: 13px;
+          font-weight: 600;
+          color: #C94A4A;
         }
 
         .reward-chip {
@@ -498,16 +629,16 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
           color: #5E4AA8;
         }
 
-        /* Card Buttons */
+        /* Card Actions Grid */
 
         .reward-actions {
-          display: flex;
-          gap: 10px;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
           margin-top: 18px;
         }
 
         .reward-actions button {
-          flex: 1;
           border: none;
           border-radius: 10px;
           padding: 10px;
@@ -515,23 +646,28 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
           cursor: pointer;
         }
 
-        .reward-actions button:first-child {
+        .reward-actions button:hover {
+          opacity: .9;
+        }
+
+        .btn-edit {
           background: #EFE4D9;
           color: #6B4F3B;
         }
 
-        .reward-actions button:nth-child(2) {
+        .btn-toggle {
           background: #C4956A;
           color: white;
         }
 
-        .reward-actions button:last-child {
-          background: #E95A5A;
-          color: white;
+        .btn-duplicate {
+          background: #E5ECFF;
+          color: #365BB6;
         }
 
-        .reward-actions button:hover {
-          opacity: .9;
+        .btn-delete {
+          background: #FBE5E5;
+          color: #C0392B;
         }
 
         /* Empty State */
@@ -561,7 +697,7 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
           }
 
           .reward-actions {
-            flex-direction: column;
+            grid-template-columns: 1fr;
           }
 
           .admin-page h1 {
@@ -607,6 +743,57 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
         <div className="loyalty-stat-card">
           <h4>Avg Points</h4>
           <h2>{averagePoints}</h2>
+        </div>
+      </div>
+
+      <div className="analytics-grid">
+        <div className="analytics-panel">
+          <h2>🏆 Most Redeemed Rewards</h2>
+          {topRewards.length === 0 ? (
+            <p style={{ color: "#777", fontSize: "14px" }}>No redemption data available yet.</p>
+          ) : (
+            <div className="top-rewards-list">
+              {topRewards.map((reward, index) => (
+                <div
+                  key={reward.id}
+                  className="top-reward-row"
+                >
+                  <span style={{ fontWeight: 600, color: "#8A6B55" }}>#{index + 1}</span>
+                  <span style={{ flex: 1, margin: "0 15px" }}>{reward.title}</span>
+                  <strong>
+                    {reward.redemptionCount || 0}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="analytics-panel">
+          <h2>📊 Reward Analytics</h2>
+
+          <div className="breakdown-cards">
+            <div className="breakdown-card">
+              <h4>☕ Free Item</h4>
+              <h2>{freeRewards}</h2>
+            </div>
+
+            <div className="breakdown-card">
+              <h4>🏷 Discount</h4>
+              <h2>{discounts}</h2>
+            </div>
+
+            <div className="breakdown-card">
+              <h4>💰 Wallet</h4>
+              <h2>{walletRewards}</h2>
+            </div>
+          </div>
+
+          <div className="insights-section">
+            <p><strong>⚡ Easy to Earn Rewards:</strong> {lowRewards.length} items (≤ 100 pts)</p>
+            <p><strong>👑 Premium Rewards:</strong> {highRewards.length} items (≥ 1000 pts)</p>
+            <p><strong>🙈 Hidden Rewards:</strong> {hiddenRewards.length} disabled items</p>
+          </div>
         </div>
       </div>
 
@@ -885,8 +1072,9 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
         <p>Loading...</p>
       ) : filteredRewards.length === 0 ? (
         <div className="empty-state">
-          <h3>🎁 No rewards found.</h3>
-          <p>Try adjusting your search or filters.</p>
+          <div style={{ fontSize: "2.5rem", marginBottom: "10px" }}>🔍</div>
+          <h3>No rewards match your search.</h3>
+          <p>Try another keyword or filter.</p>
         </div>
       ) : (
         <div
@@ -922,16 +1110,16 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
                   </span>
                 </div>
 
-                <div>
-                  <span
-                    className={
-                      reward.active
-                        ? "status-pill active"
-                        : "status-pill disabled"
-                    }
-                  >
-                    {reward.active ? "Active" : "Disabled"}
-                  </span>
+                <div
+                  className={
+                    reward.active
+                      ? "reward-live"
+                      : "reward-offline"
+                  }
+                >
+                  {reward.active
+                    ? "🟢 Available to Customers"
+                    : "🔴 Hidden from Customers"}
                 </div>
 
                 <div>
@@ -944,8 +1132,28 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
                   </div>
                 </div>
 
+                <p style={{ marginTop: "12px", fontSize: "14px" }}>
+                  <strong>Last Redeemed:</strong>{" "}
+                  {reward.lastRedeemedAt?.toDate
+                    ? reward.lastRedeemedAt
+                        .toDate()
+                        .toLocaleDateString()
+                    : "Never"}
+                </p>
+
+                <small
+                  style={{
+                    color: "#999",
+                    display: "block",
+                    marginTop: "6px",
+                  }}
+                >
+                  ID: {reward.id}
+                </small>
+
                 <div className="reward-actions">
                   <button
+                    className="btn-edit"
                     onClick={() => {
                       setEditingReward(reward);
 
@@ -965,12 +1173,21 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
                   </button>
 
                   <button
+                    className="btn-toggle"
                     onClick={() => toggleReward(reward)}
                   >
                     {reward.active ? "Disable" : "Enable"}
                   </button>
 
                   <button
+                    className="btn-duplicate"
+                    onClick={() => duplicateReward(reward)}
+                  >
+                    Duplicate
+                  </button>
+
+                  <button
+                    className="btn-delete"
                     onClick={() => deleteReward(reward.id)}
                   >
                     Delete
