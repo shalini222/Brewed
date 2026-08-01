@@ -26,6 +26,7 @@ export default function LoyaltyPage({ setPage }) {
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
   const [lifetimePoints, setLifetimePoints] = useState(0);
   const [loyaltyEnabled, setLoyaltyEnabled] = useState(true);
+  const [loyaltySettings, setLoyaltySettings] = useState(null);
   const [rewards, setRewards] = useState([]);
   const [activities, setActivities] = useState([]);
   const [successModal, setSuccessModal] = useState(false);
@@ -47,8 +48,12 @@ export default function LoyaltyPage({ setPage }) {
       );
 
       if (settingsSnap.exists()) {
+        const settings = settingsSnap.data();
+
+        setLoyaltySettings(settings);
+
         setLoyaltyEnabled(
-          settingsSnap.data().enabled !== false
+          settings.enabled !== false
         );
       }
 
@@ -180,9 +185,15 @@ export default function LoyaltyPage({ setPage }) {
   const tierProgressPoints = lifetimePoints;
 
   const loyaltyTier =
-    tierProgressPoints >= 3000 ? "Platinum" :
-    tierProgressPoints >= 1500 ? "Gold" :
-    tierProgressPoints >= 500 ? "Silver" :
+    lifetimePoints >= (loyaltySettings?.platinumThreshold || 3000)
+      ? "Platinum"
+      :
+    lifetimePoints >= (loyaltySettings?.goldThreshold || 1500)
+      ? "Gold"
+      :
+    lifetimePoints >= (loyaltySettings?.silverThreshold || 500)
+      ? "Silver"
+      :
     "Bronze";
 
   const redeemReward = async (reward) => {
@@ -243,7 +254,10 @@ export default function LoyaltyPage({ setPage }) {
         );
 
         const expiry = new Date();
-        expiry.setDate(expiry.getDate() + 365);
+        expiry.setDate(
+          expiry.getDate() +
+          (loyaltySettings?.rewardExpiryDays || 365)
+        );
         
         transaction.set(redeemedRewardRef, {
           rewardId: reward.id,
@@ -355,6 +369,7 @@ export default function LoyaltyPage({ setPage }) {
       </div>
     );
   }
+
 
 
 
