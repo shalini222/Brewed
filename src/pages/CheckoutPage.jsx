@@ -683,7 +683,7 @@ export default function CheckoutPage({ setPage }) {
       </div>
     );
   }
-}
+
 
 
 
