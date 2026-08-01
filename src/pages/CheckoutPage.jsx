@@ -6,7 +6,6 @@ import {
   runTransaction
 } from "firebase/firestore";
 
-
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useCart } from "../context/CartContext";
 import { auth, db } from "../firebase";
@@ -44,13 +43,13 @@ const loadRazorpayScript = () =>
 
 export default function CheckoutPage({ setPage }) {
   const {
-  cart,
-  total,
-  placeOrder,
-  clearCart,
-  addToCart,
-  removeFromCart,
-} = useCart();
+    cart,
+    total,
+    placeOrder,
+    clearCart,
+    addToCart,
+    removeFromCart,
+  } = useCart();
   
   const [status, setStatus] = useState("idle"); 
   const [paymentMethod, setPaymentMethod] = useState("online");
@@ -76,7 +75,6 @@ export default function CheckoutPage({ setPage }) {
   const [useWallet, setUseWallet] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
   
-
   const canvasRef = useRef(null);
 
   const CONFIG = {
@@ -88,14 +86,11 @@ export default function CheckoutPage({ setPage }) {
     const subtotal = Number.isFinite(total) ? total : 0;
     const tax = Math.round(subtotal * CONFIG.taxRate);
 
-
-let rewardDiscount = 0;
-
-if (selectedReward?.menuItem) {
-  rewardDiscount = selectedReward.menuItem.price || 0;
-}
+    let rewardDiscount = 0;
+    if (selectedReward?.menuItem) {
+      rewardDiscount = selectedReward.menuItem.price || 0;
+    }
     
-
     let delivery = 0;
     if (subtotal > 0 && deliveryInfo) {
       if (subtotal >= deliveryInfo.freeDeliveryAbove) {
@@ -111,13 +106,7 @@ if (selectedReward?.menuItem) {
     const baseTotal = Math.max(0, Math.round(subtotal + tax + delivery + cod - discount));
 
     let grandTotal = baseTotal;
-
-
-
-
- 
-
-grandTotal = Math.max(0, grandTotal);
+    grandTotal = Math.max(0, grandTotal);
 
     let walletDeduction = 0;
     if (useWallet && wallet?.balance > 0) {
@@ -134,29 +123,29 @@ grandTotal = Math.max(0, grandTotal);
     grandTotal = Math.max(0, grandTotal);
     const remainingAmount = grandTotal;
 
-   return {
-  subtotal,
-  tax,
-  delivery,
-  cod,
-  discount,
-  rewardDiscount,
-  baseTotal,
-  walletDeduction,
-  rewardDeduction,
-  grandTotal,
-  remainingAmount,
-};
-  },  [
-  total,
-  paymentMethod,
-  appliedCoupon,
-  deliveryInfo,
-  useWallet,
-  wallet,
-  useRewards,
-  selectedReward
-]);
+    return {
+      subtotal,
+      tax,
+      delivery,
+      cod,
+      discount,
+      rewardDiscount,
+      baseTotal,
+      walletDeduction,
+      rewardDeduction,
+      grandTotal,
+      remainingAmount,
+    };
+  }, [
+    total,
+    paymentMethod,
+    appliedCoupon,
+    deliveryInfo,
+    useWallet,
+    wallet,
+    useRewards,
+    selectedReward
+  ]);
 
   useEffect(() => {
     if (
@@ -234,57 +223,69 @@ grandTotal = Math.max(0, grandTotal);
     loadAddresses();
   }, []);
 
- useEffect(() => {
-  async function loadAvailableRewards() {
-    if (!auth.currentUser) {
-      setAvailableRewards([]);
-      setLoadingAvailableRewards(false);
-      return;
-    }
+  useEffect(() => {
+    async function loadAvailableRewards() {
+      if (!auth.currentUser) {
+        setAvailableRewards([]);
+        setLoadingAvailableRewards(false);
+        return;
+      }
 
-    try {
-      setLoadingAvailableRewards(true);
+      try {
+        setLoadingAvailableRewards(true);
 
-      const snapshot = await getDocs(
-        query(
-          collection(db, "users", auth.currentUser.uid, "redeemedRewards"),
-          where("status", "==", "unused")
-        )
-      );
+        const loyaltySettingsSnap = await getDoc(
+          doc(db, "settings", "loyalty")
+        );
 
-      const rewards = await Promise.all(
-        snapshot.docs.map(async (rewardDoc) => {
-          const reward = {
-            id: rewardDoc.id,
-            ...rewardDoc.data(),
-          };
+        if (
+          loyaltySettingsSnap.exists() &&
+          loyaltySettingsSnap.data().enabled === false
+        ) {
+          setAvailableRewards([]);
+          setLoadingAvailableRewards(false);
+          return;
+        }
 
-          if (reward.menuItemId) {
-            const menuSnap = await getDoc(doc(db, "menu", reward.menuItemId));
+        const snapshot = await getDocs(
+          query(
+            collection(db, "users", auth.currentUser.uid, "redeemedRewards"),
+            where("status", "==", "unused")
+          )
+        );
 
-            if (menuSnap.exists()) {
-              reward.menuItem = {
-                id: menuSnap.id,
-                ...menuSnap.data(),
-              };
+        const rewards = await Promise.all(
+          snapshot.docs.map(async (rewardDoc) => {
+            const reward = {
+              id: rewardDoc.id,
+              ...rewardDoc.data(),
+            };
+
+            if (reward.menuItemId) {
+              const menuSnap = await getDoc(doc(db, "menu", reward.menuItemId));
+
+              if (menuSnap.exists()) {
+                reward.menuItem = {
+                  id: menuSnap.id,
+                  ...menuSnap.data(),
+                };
+              }
             }
-          }
 
-          return reward;
-        })
-      );
+            return reward;
+          })
+        );
 
-      setAvailableRewards(rewards);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingAvailableRewards(false);
+        setAvailableRewards(rewards);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingAvailableRewards(false);
+      }
     }
-  }
 
-  loadAvailableRewards();
-}, []);
-  
+    loadAvailableRewards();
+  }, []);
 
   useEffect(() => {
     if (status !== "failure" || !canvasRef.current) return;
@@ -529,7 +530,7 @@ grandTotal = Math.max(0, grandTotal);
         cancelReason: null,
         cancelledAt: null,
         cancelledBy: null,
-         selectedReward,
+        selectedReward,
         rewardStatus: rewardPaid > 0 ? "REDEEMED" : "PENDING",
         rewardAmount: rewardPaid,
         rewardCreditedAt: rewardPaid > 0 ? serverTimestamp() : null,
@@ -538,7 +539,7 @@ grandTotal = Math.max(0, grandTotal);
 
       const orderId = await placeOrder(orderData);
 
-      // ⭐ Add loyalty points after successful order
+      // Add loyalty points after successful order
       const loyaltySettingsSnap = await getDoc(doc(db, "settings", "loyalty"));
       if (loyaltySettingsSnap.exists()) {
         const loyaltySettings = loyaltySettingsSnap.data();
@@ -601,6 +602,9 @@ grandTotal = Math.max(0, grandTotal);
       </div>
     );
   }
+
+
+
 
 
 
