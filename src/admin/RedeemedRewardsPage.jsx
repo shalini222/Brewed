@@ -1,26 +1,84 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs, doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  updateDoc,
+  doc,
+  serverTimestamp,
+  writeBatch,
+} from "firebase/firestore";
 import { db } from "../firebase";
 
 export default function RedeemedRewardsPage({ setPage, setActivePage }) {
   const [loading, setLoading] = useState(true);
   const [redemptions, setRedemptions] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
 
   async function loadRedemptions() {
     setLoading(true);
 
     const snapshot = await getDocs(collection(db, "rewardRedemptions"));
+    const batch = writeBatch(db);
 
-    setRedemptions(
+    const rewards = snapshot.docs.map((d) => {
+      const data = d.data();
+
+      let status = data.status;
+
+      if (
+        status === "unused" &&
+        data.expiresAt &&
+        data.expiresAt.toDate() < new Date()
+      ) {
+        status = "expired";
+
+        // Update admin document
+        batch.update(doc(db, "rewardRedemptions", d.id), {
+          status: "expired",
+        });
+
+        // Update customer's reward document
+        if (data.userId && data.customerRewardId) {
+          batch.update(
+            doc(
+              db,
+              "users",
+              data.userId,
+              "redeemedRewards",
+              data.customerRewardId
+            ),
+            {
+              status: "expired",
+            }
+          );
+        }
+      }
+
+      return {
+        id: d.id,
+        ...data,
+        status,
+      };
+    });
+
+    await batch.commit();
+
+    setRedemptions(rewards);
+    setLoading(false);
+  }
+
+  async function loadMenuItems() {
+    const snapshot = await getDocs(collection(db, "menuItems"));
+
+    setMenuItems(
       snapshot.docs.map((d) => ({
         id: d.id,
         ...d.data(),
       }))
     );
-
-    setLoading(false);
   }
 
   async function markAsUsed(redemption) {
@@ -35,19 +93,21 @@ export default function RedeemedRewardsPage({ setPage, setActivePage }) {
       );
 
       // Update customer record
-      await updateDoc(
-        doc(
-          db,
-          "users",
-          redemption.userId,
-          "redeemedRewards",
-          redemption.customerRewardId
-        ),
-        {
-          status: "used",
-          usedAt: serverTimestamp(),
-        }
-      );
+      if (redemption.userId && redemption.customerRewardId) {
+        await updateDoc(
+          doc(
+            db,
+            "users",
+            redemption.userId,
+            "redeemedRewards",
+            redemption.customerRewardId
+          ),
+          {
+            status: "used",
+            usedAt: serverTimestamp(),
+          }
+        );
+      }
 
       loadRedemptions();
     } catch (err) {
@@ -58,6 +118,7 @@ export default function RedeemedRewardsPage({ setPage, setActivePage }) {
 
   useEffect(() => {
     loadRedemptions();
+    loadMenuItems();
   }, []);
 
   const totalRedemptions = redemptions.length;
@@ -74,24 +135,43 @@ export default function RedeemedRewardsPage({ setPage, setActivePage }) {
     (r) => r.status === "expired"
   ).length;
 
-  const filteredRedemptions = redemptions.filter((redemption) => {
-    const matchesSearch =
-      redemption.customerName
-        ?.toLowerCase()
-        .includes(search.toLowerCase()) ||
-      redemption.rewardTitle
-        ?.toLowerCase()
-        .includes(search.toLowerCase()) ||
-      redemption.customerEmail
-        ?.toLowerCase()
-        .includes(search.toLowerCase());
+  const filteredRedemptions = redemptions
+    .filter((redemption) => {
+      const matchesSearch =
+        redemption.customerName
+          ?.toLowerCase()
+          .includes(search.toLowerCase()) ||
+        redemption.rewardTitle
+          ?.toLowerCase()
+          .includes(search.toLowerCase()) ||
+        redemption.customerEmail
+          ?.toLowerCase()
+          .includes(search.toLowerCase());
 
-    const matchesStatus =
-      statusFilter === "all" ||
-      redemption.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "all" ||
+        redemption.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
-  });
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      const aTime = a.redeemedAt?.toMillis?.() || 0;
+      const bTime = b.redeemedAt?.toMillis?.() || 0;
+
+      switch (sortBy) {
+        case "oldest":
+          return aTime - bTime;
+
+        case "pointsHigh":
+          return (b.points || 0) - (a.points || 0);
+
+        case "pointsLow":
+          return (a.points || 0) - (b.points || 0);
+
+        default: // newest
+          return bTime - aTime;
+      }
+    });
 
   return (
     <div className="admin-page">
@@ -260,6 +340,16 @@ export default function RedeemedRewardsPage({ setPage, setActivePage }) {
           <option value="used">Used</option>
           <option value="expired">Expired</option>
         </select>
+
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="pointsHigh">Highest Points</option>
+          <option value="pointsLow">Lowest Points</option>
+        </select>
       </div>
 
       {loading ? (
@@ -278,51 +368,73 @@ export default function RedeemedRewardsPage({ setPage, setActivePage }) {
             marginTop: 20,
           }}
         >
-          {filteredRedemptions.map((redemption) => (
-            <div key={redemption.id} className="redemption-card">
-              <div>
-                <h3>{redemption.rewardTitle}</h3>
+          {filteredRedemptions.map((redemption) => {
+            const menuItem = menuItems.find(
+              (item) => item.id === redemption.menuItemId
+            );
 
-                <p>
-                  <strong>Customer:</strong> {redemption.customerName}
-                </p>
+            return (
+              <div key={redemption.id} className="redemption-card">
+                <div>
+                  <h3>{redemption.rewardTitle}</h3>
 
-                <p>
-                  <strong>Email:</strong> {redemption.customerEmail}
-                </p>
+                  <p>
+                    <strong>Customer:</strong> {redemption.customerName}
+                  </p>
 
-                <p>
-                  <strong>Points:</strong> {redemption.points}
-                </p>
+                  <p>
+                    <strong>Email:</strong> {redemption.customerEmail}
+                  </p>
 
-                <p>
-                  <strong>Status:</strong>{" "}
-                  <span className={`status-badge ${redemption.status}`}>
-                    {redemption.status}
-                  </span>
-                </p>
+                  <p>
+                    <strong>🎁 Type:</strong> {redemption.rewardType || "-"}
+                  </p>
 
-                <p>
-                  <strong>Redeemed:</strong>{" "}
-                  {redemption.redeemedAt?.toDate?.().toLocaleString() || "-"}
-                </p>
+                  <p>
+                    <strong>☕ Menu Item:</strong> {menuItem?.name || "-"}
+                  </p>
 
-                <p>
-                  <strong>Expires:</strong>{" "}
-                  {redemption.expiresAt?.toDate?.().toLocaleDateString() || "-"}
-                </p>
+                  <p>
+                    <strong>💰 Points:</strong> {redemption.points}
+                  </p>
+
+                  <p>
+                    <strong>Status:</strong>{" "}
+                    <span className={`status-badge ${redemption.status}`}>
+                      {redemption.status}
+                    </span>
+                  </p>
+
+                  <p>
+                    <strong>📅 Redeemed:</strong>{" "}
+                    {redemption.redeemedAt?.toDate?.().toLocaleDateString() || "-"}
+                  </p>
+
+                  <p>
+                    <strong>⏳ Expires:</strong>{" "}
+                    {redemption.expiresAt?.toDate?.().toLocaleDateString() || "-"}
+                  </p>
+                </div>
+
+                {redemption.status === "unused" && (
+                  <button
+                    className="use-btn"
+                    onClick={() => {
+                      const confirmed = window.confirm(
+                        "Mark this reward as used?\n\nThis action cannot be undone."
+                      );
+
+                      if (confirmed) {
+                        markAsUsed(redemption);
+                      }
+                    }}
+                  >
+                    ✅ Mark as Used
+                  </button>
+                )}
               </div>
-
-              {redemption.status === "unused" && (
-                <button
-                  className="use-btn"
-                  onClick={() => markAsUsed(redemption)}
-                >
-                  ✅ Mark as Used
-                </button>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
