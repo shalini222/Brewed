@@ -70,6 +70,18 @@ export default function LoyaltyAnalyticsPage({
       return difference <= 3 * 24 * 60 * 60 * 1000;
     }
 
+    if (dateFilter === "7days") {
+      return difference <= 7 * 24 * 60 * 60 * 1000;
+    }
+
+    if (dateFilter === "15days") {
+      return difference <= 15 * 24 * 60 * 60 * 1000;
+    }
+
+    if (dateFilter === "30days") {
+      return difference <= 30 * 24 * 60 * 60 * 1000;
+    }
+
     return true;
   }
 
@@ -503,6 +515,9 @@ export default function LoyaltyAnalyticsPage({
           <option value="24hrs">Last 24 Hours</option>
           <option value="48hrs">Last 48 Hours</option>
           <option value="3days">Last 3 Days</option>
+          <option value="7days">Last 7 Days</option>
+          <option value="15days">Last 15 Days</option>
+          <option value="30days">Last 30 Days</option>
         </select>
       </div>
 
