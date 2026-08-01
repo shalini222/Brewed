@@ -52,7 +52,7 @@ onClick={() => setActivePage("loyalty")}
 <h1>🎟 Redeemed Rewards</h1>
 
 </div>
-return (
+
 <div className="admin-page">
 
 <div className="loyalty-admin-header">
