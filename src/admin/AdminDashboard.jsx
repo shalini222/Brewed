@@ -590,7 +590,7 @@ return (
         },
     
       {
-          title: "👑",
+          title: "👑 Loyalty",
           page: "loyaltyadmin",
         },
       
