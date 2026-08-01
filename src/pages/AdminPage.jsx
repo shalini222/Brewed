@@ -6,6 +6,7 @@ import CouponManagement from "../admin/CouponManagement";
 import CustomerManagement from "../admin/CustomerManagement";
 import WalletManagement from "../admin/WalletManagement";
 import OrderManagement from "../admin/OrderManagement";
+import LoyaltyManagement from "../admin/LoyaltyManagement";
 
 export default function AdminPage({ setPage }) {
   const [activePage, setActivePage] = useState("dashboard");
@@ -73,6 +74,15 @@ export default function AdminPage({ setPage }) {
 
       {activePage === "walletadmin" && (
         <WalletManagement
+          setPage={setPage}
+          activePage={activePage}
+          setActivePage={setActivePage}
+        />
+      )} 
+
+      
+      {activePage === "loyaltyadmin" && (
+        <LoyaltyManagement
           setPage={setPage}
           activePage={activePage}
           setActivePage={setActivePage}
