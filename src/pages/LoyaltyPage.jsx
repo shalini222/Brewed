@@ -101,231 +101,239 @@ export default function LoyaltyPage({ setPage }) {
     }
   }, [currentUser]);
 
+  const loadRedeemedRewards = useCallback(async () => {
+    if (!currentUser) return;
 
-  
-const loadRedeemedRewards = useCallback(async () => {
-  if (!currentUser) return;
+    try {
+      setLoadingRewards(true);
 
-  try {
-    setLoadingRewards(true);
+      const snapshot = await getDocs(
+        query(
+          collection(db, "users", currentUser.uid, "redeemedRewards")
+        )
+      );
 
-    const snapshot = await getDocs(
-      query(
-        collection(db, "users", currentUser.uid, "redeemedRewards"),
-      
-      )
-    );
+      const rewards = (
+        await Promise.all(
+          snapshot.docs.map(async (docSnap) => {
+            const data = docSnap.data();
 
-    const rewards = (
-  await Promise.all(
-    snapshot.docs.map(async (docSnap) => {
-      const data = docSnap.data();
+            let menuItemName = null;
 
-      let menuItemName = null;
+            if (data.menuItemId) {
+              const menuSnap = await getDoc(
+                doc(db, "menu", data.menuItemId)
+              );
 
-      if (data.menuItemId) {
-        const menuSnap = await getDoc(
-          doc(db, "menu", data.menuItemId)
-        );
+              if (menuSnap.exists()) {
+                menuItemName = menuSnap.data().name;
+              }
+            }
 
-        if (menuSnap.exists()) {
-          menuItemName = menuSnap.data().name;
-        }
-      }
+            return {
+              id: docSnap.id,
+              ...data,
+              menuItemName,
+            };
+          })
+        )
+      ).filter((reward) => {
+        if (!reward.expiresAt) return true;
 
-      return {
-        id: docSnap.id,
-        ...data,
-        menuItemName,
-      };
-    })
-  )
-).filter((reward) => {
-  if (!reward.expiresAt) return true;
+        const expiryDate = reward.expiresAt.toDate
+          ? reward.expiresAt.toDate()
+          : new Date(reward.expiresAt);
 
-  const expiryDate = reward.expiresAt.toDate
-    ? reward.expiresAt.toDate()
-    : new Date(reward.expiresAt);
+        return expiryDate > new Date();
+      });
 
-  return expiryDate > new Date();
-});
+      setMyRewards(rewards);
 
-setMyRewards(rewards);
-
-  } catch (err) {
-    console.error("Error loading redeemed rewards:", err);
-  } finally {
-    setLoadingRewards(false);
-  }
-}, [currentUser]);
-  
+    } catch (err) {
+      console.error("Error loading redeemed rewards:", err);
+    } finally {
+      setLoadingRewards(false);
+    }
+  }, [currentUser]);
   
   useEffect(() => {
-  if (!currentUser) {
-    setLoading(false);
-    return;
-  }
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
 
-  setLoading(true);
-loadRedeemedRewards();
-  loadLoyaltyData();
- 
-
-}, [currentUser, loadLoyaltyData, loadRedeemedRewards]);
-
-
- 
+    setLoading(true);
+    loadRedeemedRewards();
+    loadLoyaltyData();
+  }, [currentUser, loadLoyaltyData, loadRedeemedRewards]);
 
   const tierProgressPoints = lifetimePoints;
 
-const loyaltyTier =
-  tierProgressPoints >= 3000 ? "Platinum" :
-  tierProgressPoints >= 1500 ? "Gold" :
-  tierProgressPoints >= 500 ? "Silver" :
-  "Bronze";
-
-
+  const loyaltyTier =
+    tierProgressPoints >= 3000 ? "Platinum" :
+    tierProgressPoints >= 1500 ? "Gold" :
+    tierProgressPoints >= 500 ? "Silver" :
+    "Bronze";
 
   const redeemReward = async (reward) => {
-  if (!currentUser) {
-    setErrorMessage("Please sign in first.");
-    setErrorModal(true);
-    return;
-  }
-  if (redeemingRewardId) return;
+    if (!currentUser) {
+      setErrorMessage("Please sign in first.");
+      setErrorModal(true);
+      return;
+    }
+    if (redeemingRewardId) return;
 
-  const pointsNeeded = reward.pointsRequired || reward.points || 0;
+    const pointsNeeded = reward.pointsRequired || reward.points || 0;
 
-  if (loyaltyPoints < pointsNeeded) {
-    setErrorMessage("Not enough points to redeem this reward.");
-    setErrorModal(true);
-    return;
-  }
+    if (loyaltyPoints < pointsNeeded) {
+      setErrorMessage("Not enough points to redeem this reward.");
+      setErrorModal(true);
+      return;
+    }
 
-  setRedeemingRewardId(reward.id);
+    setRedeemingRewardId(reward.id);
 
-  try {
-    const userRef = doc(db, "users", currentUser.uid);
-    let updatedPoints = loyaltyPoints;
+    try {
+      const userRef = doc(db, "users", currentUser.uid);
+      let updatedPoints = loyaltyPoints;
 
-    await runTransaction(db, async (transaction) => {
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists()) {
-        throw new Error("User does not exist!");
-      }
+      await runTransaction(db, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists()) {
+          throw new Error("User does not exist!");
+        }
 
-      const currentPoints = userDoc.data().loyaltyPoints || 0;
-      if (currentPoints < pointsNeeded) {
-        throw new Error("Not enough points.");
-      }
+        const currentPoints = userDoc.data().loyaltyPoints || 0;
+        if (currentPoints < pointsNeeded) {
+          throw new Error("Not enough points.");
+        }
 
-      updatedPoints = currentPoints - pointsNeeded;
+        updatedPoints = currentPoints - pointsNeeded;
 
-      transaction.update(userRef, {
-        loyaltyPoints: updatedPoints,
+        transaction.update(userRef, {
+          loyaltyPoints: updatedPoints,
+        });
+
+        const newTxRef = doc(collection(db, "loyaltyTransactions"));
+        transaction.set(newTxRef, {
+          userId: currentUser.uid,
+          type: "redeem",
+          points: -pointsNeeded,
+          description: reward.title,
+          rewardId: reward.id,
+          createdAt: serverTimestamp(),
+        });
+
+        const redeemedRewardRef = doc(
+          collection(db, "users", currentUser.uid, "redeemedRewards")
+        );
+
+        const adminRedemptionRef = doc(
+          collection(db, "rewardRedemptions")
+        );
+
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + 365);
+        
+        // Customer subcollection document
+        transaction.set(redeemedRewardRef, {
+          rewardId: reward.id,
+          rewardTitle: reward.title,
+          rewardType: reward.rewardType || null,
+          menuItemId: reward.menuItemId || null,
+          points: pointsNeeded,
+          status: "unused",
+          redeemedAt: serverTimestamp(),
+          expiresAt: expiry,
+        });
+
+        // Admin collection document
+        transaction.set(adminRedemptionRef, {
+          userId: currentUser.uid,
+          customerName: currentUser.displayName || "Customer",
+          customerEmail: currentUser.email || "",
+          rewardId: reward.id,
+          rewardTitle: reward.title,
+          rewardType: reward.rewardType || "",
+          menuItemId: reward.menuItemId || null,
+          points: pointsNeeded,
+          status: "unused",
+          redeemedAt: serverTimestamp(),
+          expiresAt: expiry,
+          usedAt: null,
+          orderId: null,
+        });
       });
 
-      const newTxRef = doc(collection(db, "loyaltyTransactions"));
-      transaction.set(newTxRef, {
-        userId: currentUser.uid,
-        type: "redeem",
-        points: -pointsNeeded,
-        description: reward.title,
-        rewardId: reward.id,
-        createdAt: serverTimestamp(),
-      });
-
-      const redeemedRewardRef = doc(
-        collection(db, "users", currentUser.uid, "redeemedRewards")
-      );
-
-      const expiry = new Date();
-      expiry.setDate(expiry.getDate() + 365);
-      
-      transaction.set(redeemedRewardRef, {
-        rewardId: reward.id,
-        rewardType: reward.rewardType || null,
-        menuItemId: reward.menuItemId || null,
+      setRedeemedRewardData({
+        title: reward.title,
         points: pointsNeeded,
-        status: "unused",
-        redeemedAt: serverTimestamp(),
-        expiresAt: expiry,
+        remaining: updatedPoints,
       });
-    });
+      setSuccessModal(true);
 
-    setRedeemedRewardData({
-      title: reward.title,
-      points: pointsNeeded,
-      remaining: updatedPoints,
-    });
-    setSuccessModal(true);
+      await loadLoyaltyData();
+      await loadRedeemedRewards();
+    } catch (err) {
+      console.error("Error redeeming reward:", err);
+      setErrorMessage(err.message || "Failed to redeem reward. Please try again.");
+      setErrorModal(true);
+    } finally {
+      setRedeemingRewardId(null);
+    }
+  };
 
-    await loadLoyaltyData();
-    await loadRedeemedRewards();
-  } catch (err) {
-    console.error("Error redeeming reward:", err);
-    setErrorMessage(err.message || "Failed to redeem reward. Please try again.");
-    setErrorModal(true);
-  } finally {
-    setRedeemingRewardId(null);
-  }
-};
-
-
-
-
-
-  
   const scrollToRewards = () => {
     setSuccessModal(false);
     rewardsRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-const currentTier =
-  TIERS.find(tier => tier.name === loyaltyTier) || TIERS[0];
+  const currentTier =
+    TIERS.find(tier => tier.name === loyaltyTier) || TIERS[0];
 
-const nextTier =
-  TIERS.find(tier => tier.min > tierProgressPoints);
+  const nextTier =
+    TIERS.find(tier => tier.min > tierProgressPoints);
 
-let calculatedProgress = 100;
-let pointsToNext = 0;
+  let calculatedProgress = 100;
+  let pointsToNext = 0;
 
-if (nextTier) {
-  calculatedProgress =
-    ((tierProgressPoints - currentTier.min) /
-      (nextTier.min - currentTier.min)) * 100;
+  if (nextTier) {
+    calculatedProgress =
+      ((tierProgressPoints - currentTier.min) /
+        (nextTier.min - currentTier.min)) * 100;
 
-  pointsToNext = nextTier.min - tierProgressPoints;
-}
-
-const progress = Math.min(100, Math.max(0, calculatedProgress));
-
-async function seedLoyaltyRewards() {
-  try {
-    alert("Starting...");
-
-    const snapshot = await getDocs(collection(db, "loyaltyRewards"));
-
-    alert(`Found ${snapshot.size} rewards`);
-
-    if (!snapshot.empty) {
-      alert("Rewards already exist.");
-      return;
-    }
-
-    await addDoc(collection(db, "loyaltyRewards"), {
-      title: "Free Coffee",
-      pointsRequired: 100,
-      icon: "☕",
-      active: true,
-    });
-
-    alert("Reward added!");
-  } catch (err) {
-    console.error(err);
-    alert(err.message);
+    pointsToNext = nextTier.min - tierProgressPoints;
   }
-}
+
+  const progress = Math.min(100, Math.max(0, calculatedProgress));
+
+  async function seedLoyaltyRewards() {
+    try {
+      alert("Starting...");
+
+      const snapshot = await getDocs(collection(db, "loyaltyRewards"));
+
+      alert(`Found ${snapshot.size} rewards`);
+
+      if (!snapshot.empty) {
+        alert("Rewards already exist.");
+        return;
+      }
+
+      await addDoc(collection(db, "loyaltyRewards"), {
+        title: "Free Coffee",
+        pointsRequired: 100,
+        icon: "☕",
+        active: true,
+      });
+
+      alert("Reward added!");
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
+  }
+
 
 
 
