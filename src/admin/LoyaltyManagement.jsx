@@ -12,6 +12,7 @@ import { db } from "../firebase";
 import RedeemedRewardsPage from "./RedeemedRewardsPage";
 import LoyaltyMembersPage from "./LoyaltyMembersPage";
 import LoyaltyAnalyticsPage from "./LoyaltyAnalyticsPage";
+import LoyaltySettingsPage from "./LoyaltySettingsPage";
 
 export default function LoyaltyManagement({ setPage, setActivePage }) {
   const [rewards, setRewards] = useState([]);
@@ -771,10 +772,16 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
   </button>
 
  <button
-  className={activeTab === "analytics" ? "active" : ""}
-  onClick={() => setActiveTab("analytics")}
+  className={activeTab === "loyaltyanalytics" ? "active" : ""}
+  onClick={() => setActiveTab("loyaltyanalytics")}
 >
   📊 Loyalty Analytics
+</button>
+       <button
+  className={activeTab === "loyaltysettings" ? "active" : ""}
+  onClick={() => setActiveTab("loyaltysettings")}
+>
+  ⚙️Loyalty Settings
 </button>
        
 </div>
@@ -1280,13 +1287,19 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
 
 
 
-      {activeTab === "analytics" && (
+      {activeTab === "loyaltyanalytics" && (
   <LoyaltyAnalyticsPage
     setPage={setPage}
     setActivePage={setActivePage}
   />
 )}
       
+      {activeTab === "loyaltysettings" && (
+  <LoyaltySettingsPage
+    setPage={setPage}
+    setActivePage={setActivePage}
+  />
+)}
     </div>
   );
 }
