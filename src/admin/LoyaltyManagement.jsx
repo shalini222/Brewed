@@ -11,6 +11,7 @@ import {
 import { db } from "../firebase";
 import RedeemedRewardsPage from "./RedeemedRewardsPage";
 import LoyaltyMembersPage from "./LoyaltyMembersPage";
+import LoyaltyAnalyticsPage from "./LoyaltyAnalyticsPage";
 
 export default function LoyaltyManagement({ setPage, setActivePage }) {
   const [rewards, setRewards] = useState([]);
@@ -768,6 +769,14 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
   >
     👥 Loyalty Members
   </button>
+
+ <button
+  className={activeTab === "analytics" ? "active" : ""}
+  onClick={() => setActiveTab("analytics")}
+>
+  📊 Loyalty Analytics
+</button>
+       
 </div>
 
       {activeTab === "rewards" && (
@@ -1269,6 +1278,14 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
   />
 )}
 
+
+
+      {activeTab === "analytics" && (
+  <LoyaltyAnalyticsPage
+    setPage={setPage}
+    setActivePage={setActivePage}
+  />
+)}
       
     </div>
   );
