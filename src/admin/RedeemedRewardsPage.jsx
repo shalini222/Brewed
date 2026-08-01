@@ -25,8 +25,24 @@ export default function RedeemedRewardsPage({ setPage, setActivePage }) {
 
   async function markAsUsed(redemption) {
     try {
+      // Update admin record
       await updateDoc(
         doc(db, "rewardRedemptions", redemption.id),
+        {
+          status: "used",
+          usedAt: serverTimestamp(),
+        }
+      );
+
+      // Update customer record
+      await updateDoc(
+        doc(
+          db,
+          "users",
+          redemption.userId,
+          "redeemedRewards",
+          redemption.customerRewardId
+        ),
         {
           status: "used",
           usedAt: serverTimestamp(),
