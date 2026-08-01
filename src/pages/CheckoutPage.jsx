@@ -2,7 +2,8 @@ import {
   doc,
   getDoc,
   query,
-  where
+  where,
+  runTransaction
 } from "firebase/firestore";
 
 
@@ -536,6 +537,38 @@ grandTotal = Math.max(0, grandTotal);
       };
 
       const orderId = await placeOrder(orderData);
+
+      // ⭐ Add loyalty points after successful order
+      const loyaltySettingsSnap = await getDoc(doc(db, "settings", "loyalty"));
+      if (loyaltySettingsSnap.exists()) {
+        const loyaltySettings = loyaltySettingsSnap.data();
+        if (loyaltySettings.enabled) {
+          const earnedPoints = Math.floor(calculations.subtotal / 100) * loyaltySettings.pointsPer100;
+          if (earnedPoints > 0) {
+            await runTransaction(db, async (transaction) => {
+              const userRef = doc(db, "users", auth.currentUser.uid);
+              const userSnap = await transaction.get(userRef);
+              if (userSnap.exists()) {
+                const user = userSnap.data();
+                transaction.update(userRef, {
+                  loyaltyPoints: (user.loyaltyPoints || 0) + earnedPoints,
+                  lifetimePoints: (user.lifetimePoints || 0) + earnedPoints,
+                  totalOrders: (user.totalOrders || 0) + 1
+                });
+                const txRef = doc(collection(db, "loyaltyTransactions"));
+                transaction.set(txRef, {
+                  userId: auth.currentUser.uid,
+                  type: "earned",
+                  points: earnedPoints,
+                  description: "Points earned from order",
+                  orderId,
+                  createdAt: serverTimestamp()
+                });
+              }
+            });
+          }
+        }
+      }
 
       const updatedWallet = await walletService.getWallet(
         auth.currentUser.uid
