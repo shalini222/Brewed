@@ -25,7 +25,7 @@ export default function LoyaltyPage({ setPage }) {
   const [loading, setLoading] = useState(true);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
   const [lifetimePoints, setLifetimePoints] = useState(0);
-  
+  const [loyaltyEnabled, setLoyaltyEnabled] = useState(true);
   const [rewards, setRewards] = useState([]);
   const [activities, setActivities] = useState([]);
   const [successModal, setSuccessModal] = useState(false);
@@ -42,6 +42,16 @@ export default function LoyaltyPage({ setPage }) {
   const loadLoyaltyData = useCallback(async () => {
     if (!currentUser) return;
     try {
+      const settingsSnap = await getDoc(
+        doc(db, "settings", "loyalty")
+      );
+
+      if (settingsSnap.exists()) {
+        setLoyaltyEnabled(
+          settingsSnap.data().enabled !== false
+        );
+      }
+
       const userRef = doc(db, "users", currentUser.uid);
 
       const [userSnap, rewardsSnapshot, txSnapshotResult] = await Promise.all([
@@ -235,7 +245,6 @@ export default function LoyaltyPage({ setPage }) {
         const expiry = new Date();
         expiry.setDate(expiry.getDate() + 365);
         
-        // Customer subcollection document
         transaction.set(redeemedRewardRef, {
           rewardId: reward.id,
           rewardTitle: reward.title,
@@ -247,7 +256,6 @@ export default function LoyaltyPage({ setPage }) {
           expiresAt: expiry,
         });
 
-        // Admin collection document
         transaction.set(adminRedemptionRef, {
           userId: currentUser.uid,
           customerName: currentUser.displayName || "Customer",
@@ -334,6 +342,20 @@ export default function LoyaltyPage({ setPage }) {
       alert(err.message);
     }
   }
+
+  if (!loyaltyEnabled) {
+    return (
+      <div className="empty-state">
+        <h2>
+          ☕ Loyalty Program Paused
+        </h2>
+        <p>
+          The loyalty program is temporarily unavailable.
+        </p>
+      </div>
+    );
+  }
+
 
 
 
