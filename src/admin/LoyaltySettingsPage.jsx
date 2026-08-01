@@ -11,26 +11,26 @@ export default function LoyaltySettingsPage({ setPage,
   setActivePage
 }) {
 
-  const [loading,setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [settings,setSettings] = useState({
-    enabled:true,
+  const [settings, setSettings] = useState({
+    enabled: true,
 
-    pointsPer100:10,
+    pointsPer100: 10,
 
-    bronzeThreshold:0,
-    silverThreshold:500,
-    goldThreshold:1500,
-    platinumThreshold:3000,
+    bronzeThreshold: 0,
+    silverThreshold: 500,
+    goldThreshold: 1500,
+    platinumThreshold: 3000,
 
-    rewardExpiryDays:365,
+    rewardExpiryDays: 365,
 
-    birthdayRewardEnabled:true,
-    birthdayRewardPoints:100,
+    birthdayRewardEnabled: true,
+    birthdayRewardPoints: 100,
   });
 
 
-  async function loadSettings(){
+  async function loadSettings() {
 
     const ref = doc(
       db,
@@ -43,7 +43,7 @@ export default function LoyaltySettingsPage({ setPage,
       await getDoc(ref);
 
 
-    if(snap.exists()){
+    if (snap.exists()) {
 
       setSettings({
         ...settings,
@@ -57,18 +57,18 @@ export default function LoyaltySettingsPage({ setPage,
   }
 
 
-  useEffect(()=>{
+  useEffect(() => {
 
     loadSettings();
 
-  },[]);
+  }, []);
 
 
 
-  async function saveSettings(){
+  async function saveSettings() {
 
     await setDoc(
-      doc(db,"settings","loyalty"),
+      doc(db, "settings", "loyalty"),
       settings
     );
 
@@ -79,189 +79,201 @@ export default function LoyaltySettingsPage({ setPage,
 
 
 
-  if(loading)
+  if (loading)
     return <p>Loading...</p>;
 
 
 
   return (
 
-<div className="admin-page">
+    <div className="admin-page">
 
 
-<div className="loyalty-admin-header">
+      <div className="loyalty-admin-header">
 
-<button
-className="back-btn"
-onClick={()=>setActivePage("loyalty")}
->
-← Back
-</button>
-
-
-<h1>
-⚙️ Loyalty Settings
-</h1>
-
-</div>
+        <button
+          className="back-btn"
+          onClick={() => setActivePage("loyalty")}
+        >
+          ← Back
+        </button>
 
 
+        <div>
+          <h1>
+            ⚙️ Loyalty Settings
+          </h1>
 
-<div className="settings-card">
+          {settings.enabled ? (
+            <span className="loyalty-status active">
+              🟢 Loyalty Active
+            </span>
+          ) : (
+            <span className="loyalty-status paused">
+              🔴 Loyalty Paused
+            </span>
+          )}
+        </div>
 
-
-<label>
-<input
-type="checkbox"
-checked={settings.enabled}
-onChange={(e)=>
-setSettings({
-...settings,
-enabled:e.target.checked
-})
-}
-/>
-
- Enable Loyalty Program
-
-</label>
+      </div>
 
 
 
-<h3>
-⭐ Points System
-</h3>
+      <div className="settings-card">
 
 
-<input
-type="number"
-value={settings.pointsPer100}
-onChange={(e)=>
-setSettings({
-...settings,
-pointsPer100:Number(e.target.value)
-})
-}
-/>
+        <label>
+          <input
+            type="checkbox"
+            checked={settings.enabled}
+            onChange={(e) =>
+              setSettings({
+                ...settings,
+                enabled: e.target.checked
+              })
+            }
+          />
 
-<p>
-Points earned per ₹100 spent
-</p>
+          Enable Loyalty Program
 
-
-
-
-<h3>
-🏆 Tier Thresholds
-</h3>
-
-
-<input
-type="number"
-value={settings.silverThreshold}
-onChange={(e)=>
-setSettings({
-...settings,
-silverThreshold:Number(e.target.value)
-})
-}
-/>
-
-
-<input
-type="number"
-value={settings.goldThreshold}
-onChange={(e)=>
-setSettings({
-...settings,
-goldThreshold:Number(e.target.value)
-})
-}
-/>
-
-
-<input
-type="number"
-value={settings.platinumThreshold}
-onChange={(e)=>
-setSettings({
-...settings,
-platinumThreshold:Number(e.target.value)
-})
-}
-/>
+        </label>
 
 
 
-<h3>
-⏳ Reward Expiry
-</h3>
+        <h3>
+          ⭐ Points System
+        </h3>
 
 
-<input
-type="number"
-value={settings.rewardExpiryDays}
-onChange={(e)=>
-setSettings({
-...settings,
-rewardExpiryDays:Number(e.target.value)
-})
-}
-/>
+        <input
+          type="number"
+          value={settings.pointsPer100}
+          onChange={(e) =>
+            setSettings({
+              ...settings,
+              pointsPer100: Number(e.target.value)
+            })
+          }
+        />
 
-
-<h3>
-🎂 Birthday Reward
-</h3>
-
-
-<label>
-
-<input
-type="checkbox"
-checked={
-settings.birthdayRewardEnabled
-}
-
-onChange={(e)=>
-setSettings({
-...settings,
-birthdayRewardEnabled:e.target.checked
-})
-}
-/>
-
-Enable Birthday Reward
-
-</label>
-
-
-<input
-type="number"
-value={
-settings.birthdayRewardPoints
-}
-
-onChange={(e)=>
-setSettings({
-...settings,
-birthdayRewardPoints:Number(e.target.value)
-})
-}
-/>
+        <p>
+          Points earned per ₹100 spent
+        </p>
 
 
 
-<button
-onClick={saveSettings}
->
-Save Settings
-</button>
+
+        <h3>
+          🏆 Tier Thresholds
+        </h3>
 
 
-</div>
+        <input
+          type="number"
+          value={settings.silverThreshold}
+          onChange={(e) =>
+            setSettings({
+              ...settings,
+              silverThreshold: Number(e.target.value)
+            })
+          }
+        />
 
-</div>
+
+        <input
+          type="number"
+          value={settings.goldThreshold}
+          onChange={(e) =>
+            setSettings({
+              ...settings,
+              goldThreshold: Number(e.target.value)
+            })
+          }
+        />
+
+
+        <input
+          type="number"
+          value={settings.platinumThreshold}
+          onChange={(e) =>
+            setSettings({
+              ...settings,
+              platinumThreshold: Number(e.target.value)
+            })
+          }
+        />
+
+
+
+        <h3>
+          ⏳ Reward Expiry
+        </h3>
+
+
+        <input
+          type="number"
+          value={settings.rewardExpiryDays}
+          onChange={(e) =>
+            setSettings({
+              ...settings,
+              rewardExpiryDays: Number(e.target.value)
+            })
+          }
+        />
+
+
+        <h3>
+          🎂 Birthday Reward
+        </h3>
+
+
+        <label>
+
+          <input
+            type="checkbox"
+            checked={
+              settings.birthdayRewardEnabled
+            }
+
+            onChange={(e) =>
+              setSettings({
+                ...settings,
+                birthdayRewardEnabled: e.target.checked
+              })
+            }
+          />
+
+          Enable Birthday Reward
+
+        </label>
+
+
+        <input
+          type="number"
+          value={
+            settings.birthdayRewardPoints
+          }
+
+          onChange={(e) =>
+            setSettings({
+              ...settings,
+              birthdayRewardPoints: Number(e.target.value)
+            })
+          }
+        />
+
+
+
+        <button
+          onClick={saveSettings}
+        >
+          Save Settings
+        </button>
+
+
+      </div>
+
+    </div>
 
   );
 }
