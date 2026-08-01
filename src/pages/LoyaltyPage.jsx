@@ -256,6 +256,7 @@ export default function LoyaltyPage({ setPage }) {
           rewardTitle: reward.title,
           rewardType: reward.rewardType || "",
           menuItemId: reward.menuItemId || null,
+          customerRewardId: redeemedRewardRef.id,
           points: pointsNeeded,
           status: "unused",
           redeemedAt: serverTimestamp(),
