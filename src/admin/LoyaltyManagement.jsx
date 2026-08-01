@@ -165,6 +165,41 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
           padding: 35px;
         }
 
+        .loyalty-admin-header {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin-bottom: 25px;
+        }
+
+        .loyalty-admin-header h1 {
+          margin-bottom: 0;
+        }
+
+        .back-btn {
+          background: white;
+          color: #6B4F3B;
+          border: 1px solid #E6D7C9;
+          border-radius: 12px;
+          padding: 10px 18px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.25s ease;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .back-btn:hover {
+          background: #C4956A;
+          color: white;
+          border-color: #C4956A;
+          transform: translateY(-2px);
+        }
+
+        .back-btn:active {
+          transform: translateY(0);
+        }
+
         .admin-page h1 {
           color: #4A3428;
           font-size: 2.2rem;
@@ -366,7 +401,18 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
         }
       `}</style>
 
-      <h1>🎁 Loyalty Rewards Admin</h1>
+      <div className="loyalty-admin-header">
+        <button
+          className="back-btn"
+          onClick={() => {
+            setActivePage("dashboard");
+          }}
+        >
+          ← Back
+        </button>
+
+        <h1>🎁 Loyalty Rewards Admin</h1>
+      </div>
 
       <button
         onClick={() => {
