@@ -9,6 +9,13 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import RedeemedRewardsPage from "./RedeemedRewardsPage";
+
+
+
+
+
+
 
 export default function LoyaltyManagement({ setPage, setActivePage }) {
   const [rewards, setRewards] = useState([]);
@@ -21,6 +28,7 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
   const [sortBy, setSortBy] = useState("pointsLow");
 
   const [editingReward, setEditingReward] = useState(null);
+  const [activeTab, setActiveTab] = useState("rewards");
 
   const [form, setForm] = useState({
     title: "",
@@ -689,6 +697,28 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
           color: #777;
         }
 
+
+      .loyalty-tabs {
+  display: flex;
+  gap: 12px;
+  margin: 20px 0 30px;
+}
+
+.loyalty-tabs button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 12px;
+  background: #f3ede7;
+  color: #6B4F3B;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.25s;
+}
+
+.loyalty-tabs button.active {
+  background: #C4956A;
+  color: white;
+}
         /* Responsive */
 
         @media (max-width: 768px) {
@@ -716,9 +746,28 @@ export default function LoyaltyManagement({ setPage, setActivePage }) {
           ← Back
         </button>
 
-        <h1>🎁 Loyalty Rewards Admin</h1>
+        <h1>Loyalty Rewards Admin</h1>
       </div>
 
+        <div className="loyalty-tabs">
+  <button
+    className={activeTab === "rewards" ? "active" : ""}
+    onClick={() => setActiveTab("rewards")}
+  >
+    🎁 Rewards
+  </button>
+
+  <button
+    className={activeTab === "redeemed" ? "active" : ""}
+    onClick={() => setActiveTab("redeemed")}
+  >
+    🎟 Redeemed Rewards
+  </button>
+</div>
+
+
+
+      
       <div className="loyalty-stats">
         <div className="loyalty-stat-card">
           <h4>Total Rewards</h4>
