@@ -7,7 +7,7 @@ import {
 import { db } from "../firebase";
 
 
-export default function LoyaltySettingsPage({
+export default function LoyaltySettingsPage({ setPage,
   setActivePage
 }) {
 
