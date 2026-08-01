@@ -388,7 +388,7 @@ export default function LoyaltyPage({ setPage }) {
       </div>
     );
   }
-}
+
 
 
 
