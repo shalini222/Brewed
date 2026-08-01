@@ -588,6 +588,9 @@ return (
           title: "👛 Wallet",
           page: "walletadmin",
         },
+          title: "👑",
+          page: "loyaltyadmin",
+        },
         {
           title: "⚙ Settings",
           page: "settingsadmin",
