@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   doc,
@@ -214,6 +215,23 @@ export default function LoyaltyPage({ setPage }) {
       setErrorModal(true);
       return;
     }
+
+    // Phase 5.5 Step 1: Check if loyalty program is disabled by admin
+    const settingsSnap = await getDoc(
+      doc(db, "settings", "loyalty")
+    );
+
+    if (
+      settingsSnap.exists() &&
+      settingsSnap.data().enabled === false
+    ) {
+      setErrorMessage(
+        "Loyalty program is currently unavailable."
+      );
+      setErrorModal(true);
+      return;
+    }
+
     if (redeemingRewardId) return;
 
     const pointsNeeded = reward.pointsRequired || reward.points || 0;
@@ -231,13 +249,9 @@ export default function LoyaltyPage({ setPage }) {
       let updatedPoints = loyaltyPoints;
 
       // Phase 5.4: Fetch admin-configured expiry days dynamically
-      const loyaltySettingsSnap = await getDoc(
-        doc(db, "settings", "loyalty")
-      );
-
       let expiryDays = 365;
-      if (loyaltySettingsSnap.exists()) {
-        expiryDays = loyaltySettingsSnap.data().rewardExpiryDays || 365;
+      if (settingsSnap.exists()) {
+        expiryDays = settingsSnap.data().rewardExpiryDays || 365;
       }
 
       const expiry = new Date();
