@@ -27,6 +27,25 @@ export default function RedeemedRewardsPage({ setPage, setActivePage }) {
 
   return (
     <div className="admin-page">
+      <style>{`
+        .redemption-card {
+          background: #fff;
+          border-radius: 18px;
+          padding: 22px;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+          transition: 0.25s;
+        }
+
+        .redemption-card:hover {
+          transform: translateY(-4px);
+        }
+
+        .redemption-card h3 {
+          margin-bottom: 16px;
+          color: #4A3428;
+        }
+      `}</style>
+
       <div className="loyalty-admin-header">
         <button className="back-btn" onClick={() => setActivePage("loyalty")}>
           ← Back
@@ -42,7 +61,46 @@ export default function RedeemedRewardsPage({ setPage, setActivePage }) {
           <p>Customer redemptions will appear here.</p>
         </div>
       ) : (
-        <p>{redemptions.length} redeemed rewards</p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+            gap: 20,
+            marginTop: 20,
+          }}
+        >
+          {redemptions.map((redemption) => (
+            <div key={redemption.id} className="redemption-card">
+              <h3>{redemption.rewardTitle}</h3>
+
+              <p>
+                <strong>Customer:</strong> {redemption.customerName}
+              </p>
+
+              <p>
+                <strong>Email:</strong> {redemption.customerEmail}
+              </p>
+
+              <p>
+                <strong>Points:</strong> {redemption.points}
+              </p>
+
+              <p>
+                <strong>Status:</strong> {redemption.status}
+              </p>
+
+              <p>
+                <strong>Redeemed:</strong>{" "}
+                {redemption.redeemedAt?.toDate?.().toLocaleString() || "-"}
+              </p>
+
+              <p>
+                <strong>Expires:</strong>{" "}
+                {redemption.expiresAt?.toDate?.().toLocaleDateString() || "-"}
+              </p>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
