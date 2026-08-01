@@ -363,6 +363,124 @@ export default function LoyaltyAnalyticsPage({
 
   return (
     <div className="admin-page">
+      <style>{`
+        /* =============================== LOYALTY ANALYTICS ================================ */
+        .analytics-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 20px;
+          margin-bottom: 35px;
+        }
+        .analytics-card {
+          background: #fff;
+          padding: 22px;
+          border-radius: 18px;
+          border: 1px solid #eee;
+          box-shadow: 0 8px 25px rgba(0,0,0,.05);
+          transition: .25s ease;
+        }
+        .analytics-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 30px rgba(0,0,0,.1);
+        }
+        .analytics-card h4 {
+          margin: 0 0 12px;
+          color: #777;
+          font-size: 14px;
+          font-weight: 600;
+        }
+        .analytics-card h2 {
+          margin: 0;
+          color: #3B1A08;
+          font-size: 30px;
+          font-family: "Playfair Display", serif;
+        }
+        .analytics-card.featured {
+          background: linear-gradient(135deg, #3B1A08, #6B3A1E);
+          color: white;
+        }
+        .analytics-card.featured h3,
+        .analytics-card.featured h2,
+        .analytics-card.featured p {
+          color: white;
+        }
+        /* Sections */
+        .analytics-section {
+          background: #fff;
+          padding: 28px;
+          border-radius: 20px;
+          margin-bottom: 30px;
+          border: 1px solid #eee;
+          box-shadow: 0 8px 25px rgba(0,0,0,.05);
+        }
+        .analytics-section h2 {
+          margin-top: 0;
+          color: #3B1A08;
+          font-family: "Playfair Display", serif;
+          margin-bottom: 20px;
+        }
+        /* Charts */
+        .analytics-chart {
+          width: 100%;
+          height: 320px;
+        }
+        /* Leaderboards */
+        .leaderboard-card {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: #FAF6F0;
+          padding: 16px 20px;
+          border-radius: 14px;
+          margin-bottom: 12px;
+          border: 1px solid #eee;
+          transition: .2s ease;
+        }
+        .leaderboard-card:hover {
+          transform: translateX(5px);
+        }
+        .leaderboard-card strong {
+          color: #3B1A08;
+          font-size: 16px;
+        }
+        .leaderboard-card div {
+          color: #777;
+          font-size: 13px;
+        }
+        /* Filter */
+        .loyalty-filter {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          margin-bottom: 25px;
+        }
+        .loyalty-filter label {
+          font-weight: 600;
+          color: #3B1A08;
+        }
+        .loyalty-filter select {
+          padding: 10px 15px;
+          border-radius: 12px;
+          border: 1px solid #ddd;
+          background: white;
+          cursor: pointer;
+        }
+        /* Mobile */
+        @media(max-width: 700px){
+          .analytics-section {
+            padding: 18px;
+          }
+          .analytics-card h2 {
+            font-size: 24px;
+          }
+          .leaderboard-card {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+          }
+        }
+      `}</style>
+
       <div className="loyalty-admin-header">
         <button
           className="back-btn"
@@ -374,27 +492,12 @@ export default function LoyaltyAnalyticsPage({
         <h1>📊 Loyalty Analytics</h1>
       </div>
 
-      <div style={{ marginBottom: 25 }}>
-        <label
-          style={{
-            marginRight: 10,
-            fontWeight: 600,
-            color: "#3B1A08",
-          }}
-        >
-          Activity Range:
-        </label>
+      <div className="loyalty-filter">
+        <label>Activity Range:</label>
 
         <select
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
-          style={{
-            padding: "10px 14px",
-            borderRadius: 10,
-            border: "1px solid #ddd",
-            background: "#fff",
-            cursor: "pointer",
-          }}
         >
           <option value="all">All Time</option>
           <option value="24hrs">Last 24 Hours</option>
