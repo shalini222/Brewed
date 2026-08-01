@@ -997,9 +997,7 @@ export default function LoyaltyPage({ setPage }) {
         ← Back
       </button>
 
-      <button onClick={seedLoyaltyRewards}>
-        Seed Loyalty Rewards
-      </button>
+    
 
       {loading ? (
         <div className="loyalty-page-container">
