@@ -13,6 +13,8 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
+// Phase 5.3: Import birthday reward service
+import { checkBirthdayReward } from "../service/birthdayRewardService";
 
 export default function LoyaltyPage({ setPage }) {
   const [loading, setLoading] = useState(true);
@@ -44,6 +46,9 @@ export default function LoyaltyPage({ setPage }) {
   const loadLoyaltyData = useCallback(async () => {
     if (!currentUser) return;
     try {
+      // Phase 5.3: Check and award birthday points if applicable
+      await checkBirthdayReward(currentUser.uid);
+
       const settingsSnap = await getDoc(
         doc(db, "settings", "loyalty")
       );
@@ -349,33 +354,6 @@ export default function LoyaltyPage({ setPage }) {
 
   const progress = Math.min(100, Math.max(0, calculatedProgress));
 
-  async function seedLoyaltyRewards() {
-    try {
-      alert("Starting...");
-
-      const snapshot = await getDocs(collection(db, "loyaltyRewards"));
-
-      alert(`Found ${snapshot.size} rewards`);
-
-      if (!snapshot.empty) {
-        alert("Rewards already exist.");
-        return;
-      }
-
-      await addDoc(collection(db, "loyaltyRewards"), {
-        title: "Free Coffee",
-        pointsRequired: 100,
-        icon: "☕",
-        active: true,
-      });
-
-      alert("Reward added!");
-    } catch (err) {
-      console.error(err);
-      alert(err.message);
-    }
-  }
-
   if (!loyaltyEnabled) {
     return (
       <div className="empty-state">
@@ -388,6 +366,7 @@ export default function LoyaltyPage({ setPage }) {
       </div>
     );
   }
+
 
 
 
