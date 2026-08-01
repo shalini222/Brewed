@@ -15,7 +15,7 @@ import { db } from "../firebase";
 export default function LoyaltyMembersPage({ setPage, setActivePage }) {
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState([]);
-  const [search, setSearch] = useState("");
+  const [memberSearch, setMemberSearch] = useState("");
   const [tierFilter, setTierFilter] = useState("All");
   const [selectedMember, setSelectedMember] = useState(null);
   const [pointsChange, setPointsChange] = useState("");
@@ -23,6 +23,8 @@ export default function LoyaltyMembersPage({ setPage, setActivePage }) {
   const [adjusting, setAdjusting] = useState(false);
   const [memberTransactions, setMemberTransactions] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState("All");
 
   const labels = {
     earned: "Earned",
@@ -115,6 +117,8 @@ export default function LoyaltyMembersPage({ setPage, setActivePage }) {
         collection(db, "loyaltyTransactions"),
         {
           userId: selectedMember.id,
+          userName: selectedMember.name || "Customer",
+          userEmail: selectedMember.email || "",
           type: type === "add"
             ? "manual_add"
             : "manual_remove",
@@ -153,6 +157,24 @@ export default function LoyaltyMembersPage({ setPage, setActivePage }) {
   useEffect(() => {
     loadMembers();
   }, []);
+
+  const filteredTransactions = transactions.filter((tx) => {
+    const matchesSearch =
+      (tx.description || "")
+        .toLowerCase()
+        .includes(search.toLowerCase()) ||
+      (tx.userName || "")
+        .toLowerCase()
+        .includes(search.toLowerCase()) ||
+      (tx.userEmail || "")
+        .toLowerCase()
+        .includes(search.toLowerCase());
+
+    const matchesType =
+      filterType === "All" || tx.type === filterType;
+
+    return matchesSearch && matchesType;
+  });
 
   return (
     <div className="admin-page">
@@ -203,6 +225,24 @@ export default function LoyaltyMembersPage({ setPage, setActivePage }) {
           border: 1px solid #ddd;
         }
         .loyalty-filters select {
+          padding: 12px 16px;
+          border-radius: 10px;
+          border: 1px solid #ddd;
+        }
+        .history-toolbar {
+          display: flex;
+          gap: 15px;
+          margin: 20px 0;
+          flex-wrap: wrap;
+        }
+        .history-toolbar input {
+          flex: 1;
+          min-width: 260px;
+          padding: 12px 16px;
+          border-radius: 10px;
+          border: 1px solid #ddd;
+        }
+        .history-toolbar select {
           padding: 12px 16px;
           border-radius: 10px;
           border: 1px solid #ddd;
@@ -360,6 +400,22 @@ export default function LoyaltyMembersPage({ setPage, setActivePage }) {
         .points.negative {
           color: #C62828;
         }
+        .empty-state {
+          text-align: center;
+          padding: 40px;
+          background: #fff;
+          border-radius: 12px;
+          border: 1px solid #eee;
+          margin-top: 20px;
+        }
+        .empty-state h3 {
+          color: #3B1A08;
+          margin-bottom: 8px;
+        }
+        .empty-state p {
+          color: #777;
+          margin: 0;
+        }
       `}</style>
 
       <div className="loyalty-admin-header">
@@ -432,8 +488,8 @@ export default function LoyaltyMembersPage({ setPage, setActivePage }) {
         <input
           type="text"
           placeholder="🔍 Search members..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={memberSearch}
+          onChange={(e) => setMemberSearch(e.target.value)}
         />
 
         <select
@@ -462,10 +518,10 @@ export default function LoyaltyMembersPage({ setPage, setActivePage }) {
                 const matchesSearch =
                   (member.name || "")
                     .toLowerCase()
-                    .includes(search.toLowerCase()) ||
+                    .includes(memberSearch.toLowerCase()) ||
                   (member.email || "")
                     .toLowerCase()
-                    .includes(search.toLowerCase());
+                    .includes(memberSearch.toLowerCase());
 
                 const tier =
                   member.lifetimePoints >= 3000
@@ -518,36 +574,63 @@ export default function LoyaltyMembersPage({ setPage, setActivePage }) {
             📜 Loyalty Activity
           </h2>
 
-          <div className="loyalty-history">
-            {transactions.map((tx) => (
-              <div key={tx.id} className="history-card">
-                <div className="history-top">
-                  <span className={`badge ${tx.type}`}>
-                    {labels[tx.type] || tx.type}
-                  </span>
+          <div className="history-toolbar">
+            <input
+              type="text"
+              placeholder="Search customer or reward..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
 
-                  <span className="history-date">
-                    {tx.createdAt?.toDate?.().toLocaleString()}
-                  </span>
-                </div>
-
-                <h4>{tx.description || "Loyalty Event"}</h4>
-
-                <div className="history-bottom">
-                  <span
-                    className={
-                      tx.points >= 0
-                        ? "points positive"
-                        : "points negative"
-                    }
-                  >
-                    {tx.points > 0 ? "+" : ""}
-                    {tx.points} pts
-                  </span>
-                </div>
-              </div>
-            ))}
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+            >
+              <option value="All">All</option>
+              <option value="earned">Earned</option>
+              <option value="redeem">Redeemed</option>
+              <option value="manual_add">Manual Add</option>
+              <option value="manual_remove">Manual Remove</option>
+            </select>
           </div>
+
+          {filteredTransactions.length === 0 ? (
+            <div className="empty-state">
+              <h3>No transactions found</h3>
+              <p>Try changing your search or filter.</p>
+            </div>
+          ) : (
+            <div className="loyalty-history">
+              {filteredTransactions.map((tx) => (
+                <div key={tx.id} className="history-card">
+                  <div className="history-top">
+                    <span className={`badge ${tx.type}`}>
+                      {labels[tx.type] || tx.type}
+                    </span>
+
+                    <span className="history-date">
+                      {tx.createdAt?.toDate?.().toLocaleString()}
+                    </span>
+                  </div>
+
+                  <h4>{tx.description || "Loyalty Event"}</h4>
+
+                  <div className="history-bottom">
+                    <span
+                      className={
+                        tx.points >= 0
+                          ? "points positive"
+                          : "points negative"
+                      }
+                    >
+                      {tx.points > 0 ? "+" : ""}
+                      {tx.points} pts
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
 
@@ -670,4 +753,3 @@ export default function LoyaltyMembersPage({ setPage, setActivePage }) {
     </div>
   );
 }
-
