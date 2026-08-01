@@ -141,39 +141,40 @@ export default function LoyaltyPage({ setPage }) {
         )
       );
 
-      const rewards = (
-        await Promise.all(
-          snapshot.docs.map(async (docSnap) => {
-            const data = docSnap.data();
+      const rewards = await Promise.all(
+        snapshot.docs.map(async (docSnap) => {
+          const data = docSnap.data();
 
-            let menuItemName = null;
+          let menuItemName = null;
 
-            if (data.menuItemId) {
-              const menuSnap = await getDoc(
-                doc(db, "menu", data.menuItemId)
-              );
+          if (data.menuItemId) {
+            const menuSnap = await getDoc(
+              doc(db, "menu", data.menuItemId)
+            );
 
-              if (menuSnap.exists()) {
-                menuItemName = menuSnap.data().name;
-              }
+            if (menuSnap.exists()) {
+              menuItemName = menuSnap.data().name;
             }
+          }
 
-            return {
-              id: docSnap.id,
-              ...data,
-              menuItemName,
-            };
-          })
-        )
-      ).filter((reward) => {
-        if (!reward.expiresAt) return true;
+          let expiryDate = null;
+          if (data.expiresAt) {
+            expiryDate = data.expiresAt.toDate
+              ? data.expiresAt.toDate()
+              : new Date(data.expiresAt);
+          }
 
-        const expiryDate = reward.expiresAt.toDate
-          ? reward.expiresAt.toDate()
-          : new Date(reward.expiresAt);
+          const isExpired = expiryDate ? expiryDate < new Date() : false;
 
-        return expiryDate > new Date();
-      });
+          return {
+            id: docSnap.id,
+            ...data,
+            menuItemName,
+            status: isExpired && data.status === "unused" ? "expired" : data.status,
+            isExpired,
+          };
+        })
+      );
 
       setMyRewards(rewards);
 
@@ -229,6 +230,19 @@ export default function LoyaltyPage({ setPage }) {
       const userRef = doc(db, "users", currentUser.uid);
       let updatedPoints = loyaltyPoints;
 
+      // Phase 5.4: Fetch admin-configured expiry days dynamically
+      const loyaltySettingsSnap = await getDoc(
+        doc(db, "settings", "loyalty")
+      );
+
+      let expiryDays = 365;
+      if (loyaltySettingsSnap.exists()) {
+        expiryDays = loyaltySettingsSnap.data().rewardExpiryDays || 365;
+      }
+
+      const expiry = new Date();
+      expiry.setDate(expiry.getDate() + expiryDays);
+
       await runTransaction(db, async (transaction) => {
         const userDoc = await transaction.get(userRef);
         if (!userDoc.exists()) {
@@ -262,12 +276,6 @@ export default function LoyaltyPage({ setPage }) {
 
         const adminRedemptionRef = doc(
           collection(db, "rewardRedemptions")
-        );
-
-        const expiry = new Date();
-        expiry.setDate(
-          expiry.getDate() +
-          (loyaltySettings?.rewardExpiryDays || 365)
         );
         
         transaction.set(redeemedRewardRef, {
@@ -366,6 +374,7 @@ export default function LoyaltyPage({ setPage }) {
       </div>
     );
   }
+
 
 
 
