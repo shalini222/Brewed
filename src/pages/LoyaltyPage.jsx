@@ -14,19 +14,20 @@ import {
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 
-const TIERS = [
-  { name: "Bronze", min: 0, max: 499 },
-  { name: "Silver", min: 500, max: 1499 },
-  { name: "Gold", min: 1500, max: 2999 },
-  { name: "Platinum", min: 3000, max: Infinity },
-];
-
 export default function LoyaltyPage({ setPage }) {
   const [loading, setLoading] = useState(true);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
   const [lifetimePoints, setLifetimePoints] = useState(0);
   const [loyaltyEnabled, setLoyaltyEnabled] = useState(true);
   const [loyaltySettings, setLoyaltySettings] = useState(null);
+  
+  // Phase 5.2: Added tierSettings state
+  const [tierSettings, setTierSettings] = useState({
+    silverThreshold: 500,
+    goldThreshold: 1500,
+    platinumThreshold: 3000,
+  });
+
   const [rewards, setRewards] = useState([]);
   const [activities, setActivities] = useState([]);
   const [successModal, setSuccessModal] = useState(false);
@@ -55,6 +56,13 @@ export default function LoyaltyPage({ setPage }) {
         setLoyaltyEnabled(
           settings.enabled !== false
         );
+
+        // Phase 5.2: Load dynamic thresholds from settings
+        setTierSettings({
+          silverThreshold: settings.silverThreshold || 500,
+          goldThreshold: settings.goldThreshold || 1500,
+          platinumThreshold: settings.platinumThreshold || 3000,
+        });
       }
 
       const userRef = doc(db, "users", currentUser.uid);
@@ -184,17 +192,15 @@ export default function LoyaltyPage({ setPage }) {
 
   const tierProgressPoints = lifetimePoints;
 
+  // Phase 5.2: Dynamic tier calculation using tierSettings
   const loyaltyTier =
-    lifetimePoints >= (loyaltySettings?.platinumThreshold || 3000)
+    tierProgressPoints >= tierSettings.platinumThreshold
       ? "Platinum"
-      :
-    lifetimePoints >= (loyaltySettings?.goldThreshold || 1500)
+      : tierProgressPoints >= tierSettings.goldThreshold
       ? "Gold"
-      :
-    lifetimePoints >= (loyaltySettings?.silverThreshold || 500)
+      : tierProgressPoints >= tierSettings.silverThreshold
       ? "Silver"
-      :
-    "Bronze";
+      : "Bronze";
 
   const redeemReward = async (reward) => {
     if (!currentUser) {
@@ -311,11 +317,24 @@ export default function LoyaltyPage({ setPage }) {
     rewardsRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Phase 5.2: Dynamic TIERS array and progress calculation
+  const dynamicTiers = [
+    { name: "Bronze", min: 0 },
+    { name: "Silver", min: tierSettings.silverThreshold },
+    { name: "Gold", min: tierSettings.goldThreshold },
+    { name: "Platinum", min: tierSettings.platinumThreshold }
+  ];
+
   const currentTier =
-    TIERS.find(tier => tier.name === loyaltyTier) || TIERS[0];
+    dynamicTiers.find((tier, index) => {
+      const next = dynamicTiers[index + 1];
+      return (
+        tierProgressPoints >= tier.min && (!next || tierProgressPoints < next.min)
+      );
+    }) || dynamicTiers[0];
 
   const nextTier =
-    TIERS.find(tier => tier.min > tierProgressPoints);
+    dynamicTiers.find(tier => tier.min > tierProgressPoints);
 
   let calculatedProgress = 100;
   let pointsToNext = 0;
@@ -369,7 +388,7 @@ export default function LoyaltyPage({ setPage }) {
       </div>
     );
   }
-
+}
 
 
 
