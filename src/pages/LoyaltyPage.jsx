@@ -407,7 +407,7 @@ export default function LoyaltyPage({ setPage }) {
           color: #fff;
           padding: 20px 24px;
           border-radius: 16px;
-          margin-bottom: 24px;
+          margin-bottom: 32px;
           box-shadow: 0 4px 15px rgba(0,0,0,0.08);
           display: flex;
           flex-direction: column;
@@ -1023,15 +1023,6 @@ export default function LoyaltyPage({ setPage }) {
         </div>
       ) : (
         <div className="loyalty-page-container">
-          {/* Seasonal Campaign Banner */}
-          {loyaltySettings?.seasonalCampaignActive && (
-            <div className="seasonal-banner">
-              <h3>🎉 {loyaltySettings.seasonalCampaignName}</h3>
-              <p>{loyaltySettings.seasonalCampaignDescription}</p>
-              <strong>{loyaltySettings.seasonalMultiplier}× Points on every order!</strong>
-            </div>
-          )}
-
           <div className="loyalty-hero">
             <div className="hero-overlay">
 
@@ -1118,6 +1109,15 @@ export default function LoyaltyPage({ setPage }) {
 
             </div>
           </div>
+
+          {/* Seasonal Campaign Banner placed right after the hero section */}
+          {loyaltySettings?.seasonalCampaignActive && (
+            <div className="seasonal-banner">
+              <h3>🎉 {loyaltySettings.seasonalCampaignName}</h3>
+              <p>{loyaltySettings.seasonalCampaignDescription}</p>
+              <strong>{loyaltySettings.seasonalMultiplier}× Points on every order!</strong>
+            </div>
+          )}
 
           <div className="membership-card">
 
