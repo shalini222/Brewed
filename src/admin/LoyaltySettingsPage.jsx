@@ -24,6 +24,12 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
     birthdayRewardPoints: 100,
     birthdayRewardMenuItemId: "",
     birthdayRewardExpiryDays: 30,
+    seasonalCampaignEnabled: false,
+    seasonalCampaignName: "",
+    seasonalCampaignDescription: "",
+    seasonalMultiplier: 2,
+    seasonalStartDate: "",
+    seasonalEndDate: "",
   });
 
   async function loadSettings() {
@@ -150,8 +156,11 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
           font-family: "Playfair Display", serif;
         }
 
-        /* Inputs & Selects */
+        /* Inputs, Selects & Textareas */
         .settings-card input[type="number"],
+        .settings-card input[type="text"],
+        .settings-card input[type="date"],
+        .settings-card textarea,
         .settings-card select {
           width: 100%;
           padding: 12px 14px;
@@ -162,12 +171,26 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
           background: #FAF6F0;
           color: #1A0B05;
           box-sizing: border-box;
+          font-family: inherit;
         }
 
         .settings-card input[type="number"]:focus,
+        .settings-card input[type="text"]:focus,
+        .settings-card input[type="date"]:focus,
+        .settings-card textarea:focus,
         .settings-card select:focus {
           outline: none;
           border-color: #C4956A;
+        }
+
+        /* Setting Labels */
+        .setting-label {
+          font-size: 13px;
+          font-weight: normal;
+          color: #70645C;
+          margin-bottom: 4px;
+          margin-top: 10px;
+          display: block;
         }
 
         /* Checkbox rows */
@@ -279,7 +302,7 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
         <p>Points earned per ₹100 spent</p>
 
         <h3>🏆 Tier Thresholds</h3>
-        <label style={{ fontSize: '13px', fontWeight: 'normal', color: '#70645C', marginBottom: '4px', display: 'block' }}>Silver Tier Threshold</label>
+        <label className="setting-label">Silver Tier Threshold</label>
         <input
           type="number"
           value={settings.silverThreshold}
@@ -291,7 +314,7 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
           }
         />
 
-        <label style={{ fontSize: '13px', fontWeight: 'normal', color: '#70645C', marginBottom: '4px', marginTop: '10px', display: 'block' }}>Gold Tier Threshold</label>
+        <label className="setting-label">Gold Tier Threshold</label>
         <input
           type="number"
           value={settings.goldThreshold}
@@ -303,7 +326,7 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
           }
         />
 
-        <label style={{ fontSize: '13px', fontWeight: 'normal', color: '#70645C', marginBottom: '4px', marginTop: '10px', display: 'block' }}>Platinum Tier Threshold</label>
+        <label className="setting-label">Platinum Tier Threshold</label>
         <input
           type="number"
           value={settings.platinumThreshold}
@@ -355,7 +378,7 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
         />
         <p>Bonus points credited on customer birthday</p>
 
-        <label style={{ fontSize: '13px', fontWeight: 'normal', color: '#70645C', marginBottom: '4px', marginTop: '15px', display: 'block' }}>Birthday Gift Item</label>
+        <label className="setting-label">Birthday Gift Item</label>
         <select
           value={settings.birthdayRewardMenuItemId}
           onChange={(e) =>
@@ -373,7 +396,7 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
           ))}
         </select>
 
-        <label style={{ fontSize: '13px', fontWeight: 'normal', color: '#70645C', marginBottom: '4px', marginTop: '15px', display: 'block' }}>Birthday Gift Expiry (Days)</label>
+        <label className="setting-label">Birthday Gift Expiry (Days)</label>
         <input
           type="number"
           value={settings.birthdayRewardExpiryDays}
@@ -385,6 +408,100 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
           }
         />
 
+        <h3>🎉 Seasonal Campaign</h3>
+
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={settings.seasonalCampaignEnabled}
+            onChange={(e) =>
+              setSettings({
+                ...settings,
+                seasonalCampaignEnabled: e.target.checked,
+              })
+            }
+          />
+          Enable Seasonal Campaign
+        </label>
+
+        <label className="setting-label">
+          Campaign Name
+        </label>
+
+        <input
+          type="text"
+          placeholder="Double Points Week"
+          value={settings.seasonalCampaignName}
+          onChange={(e) =>
+            setSettings({
+              ...settings,
+              seasonalCampaignName: e.target.value,
+            })
+          }
+        />
+
+        <label className="setting-label">
+          Description
+        </label>
+
+        <textarea
+          rows={3}
+          placeholder="Earn double loyalty points on every purchase."
+          value={settings.seasonalCampaignDescription}
+          onChange={(e) =>
+            setSettings({
+              ...settings,
+              seasonalCampaignDescription: e.target.value,
+            })
+          }
+        />
+
+        <label className="setting-label">
+          Points Multiplier
+        </label>
+
+        <input
+          type="number"
+          min="1"
+          value={settings.seasonalMultiplier}
+          onChange={(e) =>
+            setSettings({
+              ...settings,
+              seasonalMultiplier: Number(e.target.value),
+            })
+          }
+        />
+
+        <label className="setting-label">
+          Campaign Start Date
+        </label>
+
+        <input
+          type="date"
+          value={settings.seasonalStartDate}
+          onChange={(e) =>
+            setSettings({
+              ...settings,
+              seasonalStartDate: e.target.value,
+            })
+          }
+        />
+
+        <label className="setting-label">
+          Campaign End Date
+        </label>
+
+        <input
+          type="date"
+          value={settings.seasonalEndDate}
+          onChange={(e) =>
+            setSettings({
+              ...settings,
+              seasonalEndDate: e.target.value,
+            })
+          }
+        />
+
         <button onClick={saveSettings}>
           Save Settings
         </button>
@@ -392,4 +509,3 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
     </div>
   );
 }
-
