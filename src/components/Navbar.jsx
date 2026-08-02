@@ -269,12 +269,15 @@ export default function HeadlessNavbar({ currentPage, setPage }) {
                   <span>👛</span> Wallet
                 </button>
 
-                <button
-onClick={()=>setPage("address")}
->
+        
+ <button onClick={() => { setShowMenu(false); setPage("address"); }}>
 <span>🏠</span>My Addresses
 </button>
-                
+              
+               <button onClick={() => { setShowMenu(false); setPage("support"); }}>
+>
+<span>📞</span>Support 
+</button>  
 
                 <button onClick={() => { setShowMenu(false); setPage("settings"); }}>
                   <span>⚙️</span> Settings
