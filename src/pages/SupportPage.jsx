@@ -97,6 +97,121 @@ export default function SupportPage({ setPage }) {
         paddingBottom:"40px"
       }}
     >
+      <style>{`
+        /* ==========================
+           BREWED SUPPORT PAGE
+        ========================== */
+
+        .support-heading {
+          font-family: "Playfair Display", serif;
+          font-size: 24px;
+          font-weight: 700;
+          margin-bottom: 18px;
+          color: #2C221E;
+        }
+
+        /* GRID */
+        .support-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 18px;
+        }
+
+        /* CARDS */
+        .support-card {
+          background: #FFFFFF;
+          border: 1px solid #E8DED2;
+          border-radius: 22px;
+          padding: 22px;
+          transition: all .25s ease;
+        }
+
+        .support-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 30px rgba(44,34,30,0.08);
+        }
+
+        .support-card h3 {
+          margin-top: 14px;
+          font-size: 17px;
+          font-weight: 700;
+          color:#2C221E;
+        }
+
+        .support-card p {
+          margin-top:8px;
+          color:#6B5E55;
+          font-size:14px;
+          line-height:1.5;
+        }
+
+        /* FAQ */
+        .faq-card {
+          background:white;
+          border:1px solid #E8DED2;
+          border-radius:18px;
+          margin-bottom:12px;
+          overflow:hidden;
+        }
+
+        .faq-card button {
+          width:100%;
+          padding:18px;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          background:white;
+          border:none;
+          cursor:pointer;
+          font-weight:600;
+          color:#2C221E;
+        }
+
+        .faq-card button:hover {
+          background:#FAF6F0;
+        }
+
+        .faq-card p {
+          padding:0 18px 18px;
+          color:#6B5E55;
+          font-size:14px;
+          line-height:1.6;
+          animation:faqOpen .25s ease;
+        }
+
+        @keyframes faqOpen {
+          from{
+            opacity:0;
+            transform:translateY(-5px);
+          }
+          to{
+            opacity:1;
+            transform:translateY(0);
+          }
+        }
+
+        /* INPUT */
+        input::placeholder {
+          color:#9A8C82;
+        }
+
+        /* MOBILE */
+        @media(max-width:900px){
+          .support-grid{
+            grid-template-columns:repeat(2,1fr);
+          }
+        }
+
+        @media(max-width:600px){
+          .support-grid{
+            grid-template-columns:1fr;
+          }
+
+          h1{
+            font-size:26px !important;
+          }
+        }
+      `}</style>
 
       {/* HEADER */}
       <header
