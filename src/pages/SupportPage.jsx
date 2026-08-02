@@ -17,7 +17,7 @@ import {
   Sparkles
 } from 'lucide-react';
 
-export default function SupportPage() {
+export default function SupportPage({setPage}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [openFaq, setOpenFaq] = useState(null);
 
