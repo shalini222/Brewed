@@ -6,6 +6,9 @@ import {
   getDocs,
   getDoc,
   addDoc,
+  query,
+  where,
+  orderBy,
   serverTimestamp
 } from "firebase/firestore";
 import {
@@ -22,7 +25,11 @@ import {
   Gift,
   CreditCard,
   Send,
-  CheckCircle2
+  CheckCircle2,
+  RefreshCw,
+  Filter,
+  ArrowRight,
+  HelpCircle
 } from "lucide-react";
 
 export default function SupportPage({ setPage }) {
@@ -44,6 +51,12 @@ export default function SupportPage({ setPage }) {
 
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // Phase 2.2 States
+  const [tickets, setTickets] = useState([]);
+  const [ticketsLoading, setTicketsLoading] = useState(true);
+  const [ticketSearch, setTicketSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
 
   const categories = [
     {
@@ -78,6 +91,15 @@ export default function SupportPage({ setPage }) {
     "Other"
   ];
 
+  const statuses = [
+    "All",
+    "Open",
+    "In Progress",
+    "Waiting for Customer",
+    "Resolved",
+    "Closed"
+  ];
+
   const policies = [
     {
       title:"Refund Policy",
@@ -92,6 +114,36 @@ export default function SupportPage({ setPage }) {
       text:"Points and rewards follow Brewed loyalty rules and expiry settings."
     }
   ];
+
+  const fetchTickets = async () => {
+    try {
+      setTicketsLoading(true);
+      const user = auth.currentUser;
+      if (!user) {
+        setTickets([]);
+        setTicketsLoading(false);
+        return;
+      }
+
+      const q = query(
+        collection(db, "supportTickets"),
+        where("uid", "==", user.uid),
+        orderBy("createdAt", "desc")
+      );
+
+      const querySnapshot = await getDocs(q);
+      const fetchedTickets = querySnapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }));
+
+      setTickets(fetchedTickets);
+    } catch (err) {
+      console.log("Error fetching tickets:", err);
+    } finally {
+      setTicketsLoading(false);
+    }
+  };
 
   useEffect(()=>{
     const loadSupportData = async()=>{
@@ -123,6 +175,8 @@ export default function SupportPage({ setPage }) {
             settingsSnap.data()
           );
         }
+
+        await fetchTickets();
       }
       catch(error){
         console.log(
@@ -153,12 +207,15 @@ export default function SupportPage({ setPage }) {
       setSubmitting(true);
       const user = auth.currentUser;
 
+      const ticketNumber = `BRW-${Math.floor(100000 + Math.random() * 900000)}`;
+
       await addDoc(
         collection(db,"supportTickets"),
         {
           uid: user ? user.uid : "anonymous",
           customerName: user?.displayName || "Guest",
           email: user?.email || "",
+          ticketNumber,
           ...ticket,
           status: "Open",
           priority: "Normal",
@@ -175,6 +232,9 @@ export default function SupportPage({ setPage }) {
         message: "",
         attachment: null
       });
+
+      // Refresh tickets list
+      await fetchTickets();
 
       setTimeout(() => {
         setSuccess(false);
@@ -195,6 +255,45 @@ export default function SupportPage({ setPage }) {
     faq.question.toLowerCase().includes(search.toLowerCase()) ||
     faq.answer.toLowerCase().includes(search.toLowerCase())
   );
+
+  const filteredTickets = tickets.filter((t) => {
+    const matchesSearch = 
+      (t.ticketNumber && t.ticketNumber.toLowerCase().includes(ticketSearch.toLowerCase())) ||
+      (t.subject && t.subject.toLowerCase().includes(ticketSearch.toLowerCase())) ||
+      (t.orderId && t.orderId.toLowerCase().includes(ticketSearch.toLowerCase()));
+
+    const matchesStatus = statusFilter === "All" || t.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const getStatusBadgeStyle = (status) => {
+    switch (status) {
+      case "Open":
+        return { background: "#E8F5E9", color: "#2E7D32", border: "1px solid #C8E6C9" };
+      case "In Progress":
+        return { background: "#FFF8E1", color: "#F57F17", border: "1px solid #FFE082" };
+      case "Waiting for Customer":
+        return { background: "#E3F2FD", color: "#1565C0", border: "1px solid #BBDEFB" };
+      case "Resolved":
+        return { background: "#E0F2F1", color: "#00695C", border: "1px solid #B2DFDB" };
+      case "Closed":
+        return { background: "#ECEFF1", color: "#37474F", border: "1px solid #CFD8DC" };
+      default:
+        return { background: "#F5F5F5", color: "#616161", border: "1px solid #E0E0E0" };
+    }
+  };
+
+  const getStatusEmoji = (status) => {
+    switch (status) {
+      case "Open": return "🟢";
+      case "In Progress": return "🟡";
+      case "Waiting for Customer": return "🔵";
+      case "Resolved": return "✅";
+      case "Closed": return "⚫";
+      default: return "⚪";
+    }
+  };
 
   if(loading){
     return(
@@ -246,6 +345,12 @@ export default function SupportPage({ setPage }) {
           gap: 18px;
         }
 
+        .tickets-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 18px;
+        }
+
         /* CARDS */
         .support-card {
           background: #FFFFFF;
@@ -280,6 +385,102 @@ export default function SupportPage({ setPage }) {
           color: inherit;
           text-decoration: none;
           display: block;
+        }
+
+        /* TICKET CARD */
+        .ticket-card {
+          background: #FFFFFF;
+          border: 1px solid #E8DED2;
+          border-radius: 20px;
+          padding: 22px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          transition: all .25s ease;
+        }
+
+        .ticket-card:hover {
+          box-shadow: 0 8px 25px rgba(44,34,30,0.06);
+          border-color: #C4956A;
+        }
+
+        .ticket-header-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 12px;
+        }
+
+        .ticket-number {
+          font-weight: 700;
+          font-size: 16px;
+          color: #2C221E;
+        }
+
+        .ticket-category-tag {
+          font-size: 12px;
+          color: #6B5E55;
+          background: #FAF6F0;
+          padding: 4px 10px;
+          border-radius: 8px;
+          display: inline-block;
+          margin-bottom: 8px;
+        }
+
+        .ticket-status-badge {
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .ticket-meta-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+          margin: 15px 0;
+          font-size: 13px;
+          color: #6B5E55;
+          background: #FDFAF5;
+          padding: 12px;
+          border-radius: 12px;
+        }
+
+        .ticket-meta-item span {
+          display: block;
+          font-size: 11px;
+          color: #9A8C82;
+          margin-bottom: 2px;
+        }
+
+        .ticket-action-row {
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
+          margin-top: 10px;
+          padding-top: 12px;
+          border-top: 1px solid #F4EFE6;
+        }
+
+        .view-details-btn {
+          background: transparent;
+          border: none;
+          color: #C4956A;
+          font-weight: 600;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          cursor: pointer;
+          padding: 0;
+          transition: gap .2s;
+        }
+
+        .view-details-btn:hover {
+          gap: 10px;
         }
 
         /* TICKET FORM */
@@ -471,6 +672,9 @@ export default function SupportPage({ setPage }) {
           .support-grid{
             grid-template-columns:repeat(2,1fr);
           }
+          .tickets-grid{
+            grid-template-columns:1fr;
+          }
         }
 
         @media(max-width:600px){
@@ -599,6 +803,158 @@ export default function SupportPage({ setPage }) {
             ❓
             <h3>No answers found</h3>
             <p>Try another search or contact Brewed support.</p>
+          </div>
+        )}
+      </section>
+
+      {/* MY TICKETS SECTION (PHASE 2.2) */}
+      <section style={{padding:"20px"}}>
+        <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px"}}>
+          <h2 className="support-heading" style={{margin: 0}}>
+            My Tickets
+          </h2>
+          <button 
+            onClick={fetchTickets}
+            style={{
+              background: "white",
+              border: "1px solid #E8DED2",
+              borderRadius: "12px",
+              padding: "8px 12px",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              cursor: "pointer",
+              color: "#6B5E55",
+              fontSize: "13px",
+              fontWeight: 600
+            }}
+          >
+            <RefreshCw size={14} className={ticketsLoading ? "spin" : ""} />
+            Refresh
+          </button>
+        </div>
+
+        {/* Search & Filter controls */}
+        <div style={{display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap"}}>
+          <div
+            style={{
+              background:"#fff",
+              border:"1px solid #E8DED2",
+              borderRadius:"14px",
+              display:"flex",
+              alignItems:"center",
+              padding:"10px 14px",
+              flex: 1,
+              minWidth: "200px"
+            }}
+          >
+            <Search size={16} color="#C4956A"/>
+            <input
+              placeholder="Search tickets by ID, subject, order..."
+              value={ticketSearch}
+              onChange={(e)=>setTicketSearch(e.target.value)}
+              style={{
+                border:"none",
+                outline:"none",
+                flex:1,
+                marginLeft:"10px",
+                background:"transparent",
+                fontSize: "14px"
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              background:"#fff",
+              border:"1px solid #E8DED2",
+              borderRadius:"14px",
+              display:"flex",
+              alignItems:"center",
+              padding:"10px 14px",
+              minWidth: "160px"
+            }}
+          >
+            <Filter size={16} color="#C4956A" style={{marginRight: "8px"}}/>
+            <select
+              value={statusFilter}
+              onChange={(e)=>setStatusFilter(e.target.value)}
+              style={{
+                border:"none",
+                outline:"none",
+                background:"transparent",
+                fontFamily: "inherit",
+                fontSize: "14px",
+                color: "#2C221E",
+                width: "100%",
+                cursor: "pointer"
+              }}
+            >
+              {statuses.map((status, idx) => (
+                <option key={idx} value={status}>{status}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Tickets Grid or Empty State */}
+        {ticketsLoading ? (
+          <div className="empty-state" style={{padding: "25px"}}>
+            <p>Loading your tickets...</p>
+          </div>
+        ) : filteredTickets.length > 0 ? (
+          <div className="tickets-grid">
+            {filteredTickets.map((t) => {
+              const createdDate = t.createdAt?.toDate 
+                ? t.createdAt.toDate().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                : "Just now";
+              const updatedDate = t.updatedAt?.toDate 
+                ? t.updatedAt.toDate().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                : "Just now";
+
+              return (
+                <div className="ticket-card" key={t.id}>
+                  <div>
+                    <div className="ticket-header-row">
+                      <span className="ticket-number">Ticket #{t.ticketNumber || "BRW-000000"}</span>
+                      <span className="ticket-status-badge" style={getStatusBadgeStyle(t.status)}>
+                        {getStatusEmoji(t.status)} {t.status}
+                      </span>
+                    </div>
+
+                    <span className="ticket-category-tag">{t.category}</span>
+                    <h3 style={{fontSize: "16px", fontWeight: 700, margin: "6px 0 8px 0", color: "#2C221E"}}>{t.subject}</h3>
+                    
+                    <div className="ticket-meta-grid">
+                      <div className="ticket-meta-item">
+                        <span>Created</span>
+                        {createdDate}
+                      </div>
+                      <div className="ticket-meta-item">
+                        <span>Order ID</span>
+                        {t.orderId || "None"}
+                      </div>
+                      <div className="ticket-meta-item" style={{gridColumn: "span 2", marginTop: "2px"}}>
+                        <span>Last Updated</span>
+                        {updatedDate}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="ticket-action-row">
+                    <button className="view-details-btn">
+                      View Details <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <span style={{fontSize: "30px"}}>📭</span>
+            <h3>No support tickets yet</h3>
+            <p>Need help? Create your first support request below.</p>
           </div>
         )}
       </section>
