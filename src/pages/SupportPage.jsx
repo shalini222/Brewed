@@ -35,7 +35,7 @@ export default function SupportPage({setPage}) {
       id: '1024',
       category: 'Missing Item',
       status: 'In Progress',
-      statusColor: 'bg-amber-100 text-amber-800 border-amber-300',
+      statusClass: 'status-progress',
       lastUpdate: 'We are checking with the kitchen',
       date: 'Today, 2:45 PM'
     }
@@ -74,7 +74,7 @@ export default function SupportPage({setPage}) {
         id: newTicketId,
         category: ticketForm.category,
         status: 'In Progress',
-        statusColor: 'bg-amber-100 text-amber-800 border-amber-300',
+        statusClass: 'status-progress',
         lastUpdate: 'Ticket received. Our support team is on it!',
         date: 'Just now'
       };
@@ -89,10 +89,256 @@ export default function SupportPage({setPage}) {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFDF9] text-[#2C221E] font-sans pb-24 selection:bg-[#C87941] selection:text-white">
+    <div className="support-page">
+      <style>{`
+        /* ================================
+           BREWED SUPPORT PAGE
+           ================================ */
+
+        .support-page {
+          min-height: 100vh;
+          background: #FDFAF5;
+          color: #2C221E;
+          font-family: "Inter", sans-serif;
+          padding-bottom: 80px;
+        }
+
+        /* HERO */
+        .support-hero {
+          background: linear-gradient(
+            180deg,
+            #2C221E,
+            #3D2F2A
+          );
+          color: #FAF6F0;
+          padding: 70px 20px;
+          text-align: center;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .support-hero h1 {
+          font-size: 3rem;
+          font-weight: 700;
+        }
+
+        .support-hero p {
+          color: #C4B9B0;
+          max-width: 550px;
+          margin: 15px auto;
+        }
+
+        /* SEARCH */
+        .support-search {
+          max-width: 600px;
+          margin: 25px auto 0;
+          position: relative;
+        }
+
+        .support-search input {
+          width: 100%;
+          padding: 16px 20px 16px 50px;
+          border-radius: 18px;
+          background: #211A17;
+          border: 1px solid #4A3B34;
+          color: white;
+          outline: none;
+        }
+
+        .support-search input:focus {
+          border-color: #C4956A;
+        }
+
+        /* MAIN CONTAINER */
+        .support-container {
+          max-width: 1200px;
+          margin: -35px auto 0;
+          padding: 0 20px;
+          position: relative;
+          z-index: 20;
+        }
+
+        /* CARDS */
+        .support-card {
+          background: white;
+          border-radius: 22px;
+          padding: 25px;
+          border: 1px solid #EFECE6;
+          transition: .3s ease;
+        }
+
+        .support-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 12px 30px rgba(0,0,0,.08);
+        }
+
+        .support-icon {
+          width: 50px;
+          height: 50px;
+          border-radius: 14px;
+          background: #FDF6F0;
+          color: #C87941;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 1rem;
+        }
+
+        /* FAQ */
+        .faq-item {
+          background: white;
+          border-radius: 18px;
+          border: 1px solid #EFECE6;
+          overflow: hidden;
+          margin-bottom: 12px;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        .faq-question {
+          width: 100%;
+          padding: 18px 22px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: white;
+          border: none;
+          cursor: pointer;
+          font-weight: 600;
+          color: #2C221E;
+          text-align: left;
+        }
+
+        .faq-question:hover {
+          background: rgba(250, 246, 240, 0.5);
+        }
+
+        .faq-answer {
+          padding: 0 22px 20px;
+          color: #6B5E55;
+          font-size: .9rem;
+          border-top: 1px solid #F5F2EC;
+          background: rgba(250, 246, 240, 0.4);
+          padding-top: 10px;
+        }
+
+        /* TICKET FORM */
+        .ticket-box {
+          background: white;
+          border-radius: 28px;
+          padding: 35px;
+          border: 1px solid #EFECE6;
+        }
+
+        .ticket-input,
+        .ticket-textarea,
+        .ticket-select {
+          width: 100%;
+          padding: 14px 16px;
+          background: #FAF6F0;
+          border: 1px solid #EFECE6;
+          border-radius: 14px;
+          outline: none;
+          color: #2C221E;
+          font-size: 0.875rem;
+        }
+
+        .ticket-input:focus,
+        .ticket-textarea:focus,
+        .ticket-select:focus {
+          border-color: #C87941;
+          box-shadow: 0 0 0 2px rgba(200, 121, 65, 0.2);
+        }
+
+        /* BUTTON */
+        .support-btn {
+          width: 100%;
+          padding: 16px;
+          background: #C87941;
+          color: white;
+          border: none;
+          border-radius: 18px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: .3s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+
+        .support-btn:hover {
+          background: #B36833;
+        }
+
+        .support-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        /* CONTACT */
+        .contact-section {
+          background: #2C221E;
+          color: #FAF6F0;
+          border-radius: 28px;
+          padding: 35px;
+        }
+
+        .contact-item {
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .contact-item svg {
+          color: #C87941;
+        }
+
+        /* STATUS BADGES */
+        .status-open {
+          background: #FEF3C7;
+          color: #92400E;
+        }
+
+        .status-progress {
+          background: #DBEAFE;
+          color: #1D4ED8;
+        }
+
+        .status-resolved {
+          background: #DCFCE7;
+          color: #166534;
+        }
+
+        .status-badge {
+          padding: 6px 12px;
+          border-radius: 999px;
+          font-size: .75rem;
+          font-weight: 600;
+          display: inline-block;
+          border: 1px solid transparent;
+        }
+
+        /* MOBILE */
+        @media(max-width: 768px) {
+          .support-hero h1 {
+            font-size: 2.2rem;
+          }
+
+          .ticket-box,
+          .contact-section {
+            padding: 22px;
+          }
+
+          .support-container {
+            padding: 0 15px;
+          }
+        }
+      `}</style>
       
       {/* 📞 HERO SECTION */}
-      <section className="bg-gradient-to-b from-[#2C221E] to-[#3D2F2A] text-[#FAF6F0] py-16 px-4 text-center relative overflow-hidden">
+      <section className="support-hero">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#C87941_1px,transparent_1px)] [background-size:16px_16px]"></div>
         <div className="max-w-3xl mx-auto relative z-10 space-y-4">
           <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 bg-[#C87941]/20 text-[#E29862] rounded-full text-xs font-semibold tracking-wider uppercase border border-[#C87941]/30">
@@ -100,17 +346,17 @@ export default function SupportPage({setPage}) {
             <span>Brewed Support Desk</span>
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
+          <h1 className="tracking-tight">
             How can we help? <span className="inline-block animate-bounce">☕</span>
           </h1>
           
-          <p className="text-[#C4B9B0] text-sm md:text-base max-w-lg mx-auto">
+          <p className="text-sm md:text-base max-w-lg mx-auto">
             Search our instant knowledge base or drop us a ticket below. We've got your caffeine cravings covered.
           </p>
 
           {/* Search FAQ Bar */}
-          <div className="relative max-w-xl mx-auto pt-2">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-[#9E9085] mt-2">
+          <div className="support-search">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-[#9E9085]">
               <Search className="w-5 h-5 text-[#C87941]" />
             </span>
             <input
@@ -118,20 +364,19 @@ export default function SupportPage({setPage}) {
               placeholder="Search for answers (e.g. refund, missing item, delivery)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-[#211A17] border border-[#4A3B34] rounded-2xl shadow-lg focus:outline-none focus:ring-2 focus:ring-[#C87941] text-[#FAF6F0] placeholder-[#8A7B70] text-sm md:text-base backdrop-blur-sm transition-all"
             />
           </div>
         </div>
       </section>
 
-      <main className="max-w-6xl mx-auto px-4 -mt-6 space-y-12 relative z-20">
+      <main className="support-container space-y-12">
 
         {/* ☕ 2. QUICK ACTIONS (4 CARDS) */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           
           {/* Card 1: Order Issues */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#EFECE6] hover:shadow-md transition-shadow group">
-            <div className="w-12 h-12 bg-[#FDF6F0] text-[#C87941] rounded-xl flex items-center justify-center mb-4 group-hover:bg-[#C87941] group-hover:text-white transition-colors">
+          <div className="support-card group">
+            <div className="support-icon group-hover:bg-[#C87941] group-hover:text-white transition-colors">
               <Coffee className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-lg mb-3 text-[#2C221E]">Order Issues</h3>
@@ -144,8 +389,8 @@ export default function SupportPage({setPage}) {
           </div>
 
           {/* Card 2: Payments */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#EFECE6] hover:shadow-md transition-shadow group">
-            <div className="w-12 h-12 bg-emerald-50 text-emerald-700 rounded-xl flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+          <div className="support-card group">
+            <div className="support-icon bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
               <CreditCard className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-lg mb-3 text-[#2C221E]">Payments</h3>
@@ -158,8 +403,8 @@ export default function SupportPage({setPage}) {
           </div>
 
           {/* Card 3: Reservations */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#EFECE6] hover:shadow-md transition-shadow group">
-            <div className="w-12 h-12 bg-orange-50 text-orange-700 rounded-xl flex items-center justify-center mb-4 group-hover:bg-orange-600 group-hover:text-white transition-colors">
+          <div className="support-card group">
+            <div className="support-icon bg-orange-50 text-orange-700 group-hover:bg-orange-600 group-hover:text-white transition-colors">
               <Calendar className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-lg mb-3 text-[#2C221E]">Reservations</h3>
@@ -172,8 +417,8 @@ export default function SupportPage({setPage}) {
           </div>
 
           {/* Card 4: Delivery */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#EFECE6] hover:shadow-md transition-shadow group">
-            <div className="w-12 h-12 bg-blue-50 text-blue-700 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+          <div className="support-card group">
+            <div className="support-icon bg-blue-50 text-blue-700 group-hover:bg-blue-600 group-hover:text-white transition-colors">
               <Truck className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-lg mb-3 text-[#2C221E]">Delivery</h3>
@@ -203,13 +448,10 @@ export default function SupportPage({setPage}) {
                   faq.a.toLowerCase().includes(searchQuery.toLowerCase())
                 )
                 .map((faq, idx) => (
-                  <div 
-                    key={idx} 
-                    className="bg-white border border-[#EFECE6] rounded-2xl overflow-hidden shadow-sm transition-all"
-                  >
+                  <div key={idx} className="faq-item">
                     <button
                       onClick={() => toggleFaq(idx)}
-                      className="w-full px-6 py-4 text-left font-medium text-[#2C221E] flex justify-between items-center hover:bg-[#FAF6F0]/50"
+                      className="faq-question"
                     >
                       <span>{faq.q}</span>
                       {openFaq === idx ? (
@@ -219,7 +461,7 @@ export default function SupportPage({setPage}) {
                       )}
                     </button>
                     {openFaq === idx && (
-                      <div className="px-6 pb-4 pt-1 text-sm text-[#6B5E55] border-t border-[#F5F2EC] bg-[#FAF6F0]/40">
+                      <div className="faq-answer">
                         {faq.a}
                       </div>
                     )}
@@ -244,7 +486,7 @@ export default function SupportPage({setPage}) {
                       <span className="text-xs font-semibold text-[#8A7B70]">Ticket #{ticket.id}</span>
                       <h4 className="font-bold text-[#2C221E]">{ticket.category}</h4>
                     </div>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${ticket.statusColor}`}>
+                    <span className={`status-badge ${ticket.statusClass}`}>
                       🟡 {ticket.status}
                     </span>
                   </div>
@@ -265,7 +507,7 @@ export default function SupportPage({setPage}) {
         </div>
 
         {/* 📝 4. SUBMIT A SUPPORT TICKET */}
-        <section className="bg-white border border-[#EFECE6] rounded-3xl p-8 shadow-sm max-w-3xl mx-auto">
+        <section className="ticket-box max-w-3xl mx-auto shadow-sm">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-[#2C221E]">Submit a Support Ticket</h2>
             <p className="text-sm text-[#8A7B70] mt-1">Can't find what you're looking for? Send us a message and our team will jump on it.</p>
@@ -286,7 +528,7 @@ export default function SupportPage({setPage}) {
                 <select
                   value={ticketForm.category}
                   onChange={(e) => setTicketForm({...ticketForm, category: e.target.value})}
-                  className="w-full px-4 py-3 bg-[#FAF6F0] border border-[#EFECE6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C87941] text-[#2C221E] text-sm"
+                  className="ticket-select"
                 >
                   <option value="Order Issues">Order Issues</option>
                   <option value="Payments">Payments & Refunds</option>
@@ -304,7 +546,7 @@ export default function SupportPage({setPage}) {
                   placeholder="e.g. #BRW-9842"
                   value={ticketForm.orderId}
                   onChange={(e) => setTicketForm({...ticketForm, orderId: e.target.value})}
-                  className="w-full px-4 py-3 bg-[#FAF6F0] border border-[#EFECE6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C87941] text-[#2C221E] text-sm placeholder-[#9E9085]"
+                  className="ticket-input placeholder-[#9E9085]"
                 />
               </div>
             </div>
@@ -318,7 +560,7 @@ export default function SupportPage({setPage}) {
                 placeholder="Describe your issue in detail..."
                 value={ticketForm.message}
                 onChange={(e) => setTicketForm({...ticketForm, message: e.target.value})}
-                className="w-full px-4 py-3 bg-[#FAF6F0] border border-[#EFECE6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C87941] text-[#2C221E] text-sm placeholder-[#9E9085] resize-none"
+                className="ticket-textarea placeholder-[#9E9085] resize-none"
               ></textarea>
             </div>
 
@@ -348,7 +590,7 @@ export default function SupportPage({setPage}) {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-4 bg-[#C87941] hover:bg-[#B36833] text-white font-bold rounded-2xl shadow-md transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="support-btn"
             >
               {isSubmitting ? (
                 <span>Submitting ticket...</span>
@@ -363,28 +605,28 @@ export default function SupportPage({setPage}) {
         </section>
 
         {/* 📍 6. CONTACT INFORMATION */}
-        <section className="bg-[#2C221E] text-[#FAF6F0] rounded-3xl p-8 max-w-3xl mx-auto shadow-md">
+        <section className="contact-section max-w-3xl mx-auto shadow-md">
           <h3 className="text-xl font-bold mb-6 text-center">Other Ways to Reach Us</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            <div className="flex flex-col items-center space-y-2">
-              <div className="w-10 h-10 bg-[#3D2F2A] text-[#C87941] rounded-full flex items-center justify-center">
+            <div className="contact-item">
+              <div className="w-10 h-10 bg-[#3D2F2A] rounded-full flex items-center justify-center">
                 <Mail className="w-5 h-5" />
               </div>
               <h4 className="font-semibold text-sm">Email Support</h4>
               <p className="text-xs text-[#C4B9B0]">support@brewedapp.com</p>
             </div>
 
-            <div className="flex flex-col items-center space-y-2">
-              <div className="w-10 h-10 bg-[#3D2F2A] text-[#C87941] rounded-full flex items-center justify-center">
+            <div className="contact-item">
+              <div className="w-10 h-10 bg-[#3D2F2A] rounded-full flex items-center justify-center">
                 <Phone className="w-5 h-5" />
               </div>
               <h4 className="font-semibold text-sm">Phone Hotline</h4>
               <p className="text-xs text-[#C4B9B0]">+1 (800) 555-BREW</p>
             </div>
 
-            <div className="flex flex-col items-center space-y-2">
-              <div className="w-10 h-10 bg-[#3D2F2A] text-[#C87941] rounded-full flex items-center justify-center">
+            <div className="contact-item">
+              <div className="w-10 h-10 bg-[#3D2F2A] rounded-full flex items-center justify-center">
                 <Clock className="w-5 h-5" />
               </div>
               <h4 className="font-semibold text-sm">Opening Hours</h4>
