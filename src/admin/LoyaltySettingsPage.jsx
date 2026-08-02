@@ -39,7 +39,7 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
   }
 
   async function loadMenuItems() {
-    const snapshot = await getDocs(collection(db, "menuItems"));
+    const snapshot = await getDocs(collection(db, "menu"));
     setMenuItems(
       snapshot.docs.map((doc) => ({
         id: doc.id,
