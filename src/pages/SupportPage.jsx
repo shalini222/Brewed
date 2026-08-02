@@ -26,7 +26,7 @@ export default function AdminTicketConversation({ selectedTicket }) {
     });
   };
 
-  // Phase 2.4 - Step 6.3: Mark messages as read for Admin when ticket opens
+  // Mark messages as read for Admin when ticket opens
   useEffect(() => {
     if (!selectedTicket?.id) return;
 
@@ -77,7 +77,7 @@ export default function AdminTicketConversation({ selectedTicket }) {
     scrollToBottom();
   }, [messages]);
 
-  // Phase 2.4 - Step 6.2: Send support reply with increment and lastReplyBy support
+  // Send support reply with increment and lastReplyBy support
   const sendReply = async () => {
     if (!reply.trim() || sending || !selectedTicket?.id) return;
 
