@@ -593,7 +593,10 @@ return (
           title: "👑 Loyalty",
           page: "loyaltyadmin",
         },
-      
+        {
+          title: "📞 Support",
+          page: "supportadmin",
+        },
       {
           title: "⚙ Settings",
           page: "settingsadmin",
