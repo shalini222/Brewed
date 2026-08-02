@@ -78,6 +78,15 @@ export async function checkBirthdayReward(userId){
     return;
 
 
+  // Step 2 — Fetch the selected menu item
+  const menuItemId = settings.birthdayRewardMenuItemId;
+  if (!menuItemId) return;
+  const menuSnap = await getDoc(
+    doc(db, "menuItems", menuItemId)
+  );
+  if (!menuSnap.exists()) return;
+  const menuItem = menuSnap.data();
+
 
   const points =
     settings.birthdayRewardPoints || 100;
@@ -95,9 +104,9 @@ export async function checkBirthdayReward(userId){
   const redeemedRewardRef = await addDoc(
     collection(db, "users", userId, "redeemedRewards"),
     {
-      rewardTitle: "Birthday Gift",
+      rewardTitle: `Birthday Gift - ${menuItem.name}`,
       rewardType: "birthday",
-      menuItemId: settings.birthdayRewardMenuItemId || null,
+      menuItemId,
       status: "unused",
       points: 0,
       redeemedAt: serverTimestamp(),
@@ -117,9 +126,9 @@ export async function checkBirthdayReward(userId){
       customerName: user.name || "Customer",
       customerEmail: user.email || "",
       customerRewardId: redeemedRewardRef.id,
-      rewardTitle: "Birthday Gift",
+      rewardTitle: `Birthday Gift - ${menuItem.name}`,
       rewardType: "birthday",
-      menuItemId: settings.birthdayRewardMenuItemId || null,
+      menuItemId,
       status: "unused",
       redeemedAt: serverTimestamp(),
       expiresAt: expiryDate,
@@ -169,4 +178,5 @@ export async function checkBirthdayReward(userId){
   );
 
 }
+
 
