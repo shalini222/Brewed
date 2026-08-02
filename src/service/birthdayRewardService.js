@@ -84,6 +84,53 @@ export async function checkBirthdayReward(userId){
 
 
 
+  // Calculate expiry date based on settings (default to 30 days if not set)
+  const expiryDays = settings.birthdayRewardExpiryDays || 30;
+  const expiryDate = new Date();
+  expiryDate.setDate(today.getDate() + expiryDays);
+
+
+
+  // 1. Create the reward in the customer's redeemedRewards subcollection
+  const redeemedRewardRef = await addDoc(
+    collection(db, "users", userId, "redeemedRewards"),
+    {
+      rewardTitle: "Birthday Gift",
+      rewardType: "birthday",
+      menuItemId: settings.birthdayRewardMenuItemId || null,
+      status: "unused",
+      points: 0,
+      redeemedAt: serverTimestamp(),
+      expiresAt: expiryDate,
+      birthdayGift: true,
+      year: new Date().getFullYear(),
+    }
+  );
+
+
+
+  // 2. Create the matching admin record in rewardRedemptions
+  await addDoc(
+    collection(db, "rewardRedemptions"),
+    {
+      userId,
+      customerName: user.name || "Customer",
+      customerEmail: user.email || "",
+      customerRewardId: redeemedRewardRef.id,
+      rewardTitle: "Birthday Gift",
+      rewardType: "birthday",
+      menuItemId: settings.birthdayRewardMenuItemId || null,
+      status: "unused",
+      redeemedAt: serverTimestamp(),
+      expiresAt: expiryDate,
+      birthdayGift: true,
+      year: new Date().getFullYear(),
+    }
+  );
+
+
+
+  // 3. Update user loyalty points and timestamp
   await updateDoc(userRef,{
 
     loyaltyPoints:
@@ -101,6 +148,7 @@ export async function checkBirthdayReward(userId){
 
 
 
+  // 4. Log the transaction
   await addDoc(
     collection(db,"loyaltyTransactions"),
     {
@@ -121,3 +169,4 @@ export async function checkBirthdayReward(userId){
   );
 
 }
+
