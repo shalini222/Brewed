@@ -384,6 +384,180 @@ export default function SupportAdminPage({ setPage, setActivePage }) {
           </div>
         </div>
       </div>
+
+      <div style={{ marginTop: "32px" }}>
+        <h2
+          style={{
+            fontSize: "24px",
+            fontWeight: 700,
+            color: "#2C221E",
+            marginBottom: "8px",
+            fontFamily: "Playfair Display, serif"
+          }}
+        >
+          Support Tickets
+        </h2>
+
+        <p
+          style={{
+            color: "#6B5E55",
+            fontSize: "14px",
+            marginBottom: "20px"
+          }}
+        >
+          {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} found
+        </p>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {tickets.map((ticket) => (
+          <div
+            key={ticket.id}
+            style={{
+              background: "#FFFFFF",
+              border: "1px solid #E8DED2",
+              borderRadius: "18px",
+              padding: "20px",
+              boxShadow: "0 2px 10px rgba(44,34,30,0.03)",
+              cursor: "pointer",
+              transition: "all .2s ease"
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center"
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#9A8C82",
+                    fontWeight: 600
+                  }}
+                >
+                  Ticket #{ticket.ticketNumber || ticket.id.slice(0, 8)}
+                </div>
+
+                <h3
+                  style={{
+                    margin: "6px 0 0",
+                    color: "#2C221E",
+                    fontSize: "18px",
+                    fontWeight: 700
+                  }}
+                >
+                  {ticket.subject}
+                </h3>
+
+                <div
+                  style={{
+                    marginTop: "10px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    padding: "4px 10px",
+                    borderRadius: "999px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    background:
+                      ticket.priority === "High"
+                        ? "#FDECEC"
+                        : ticket.priority === "Medium"
+                        ? "#FFF8E1"
+                        : "#F5F5F5",
+                    color:
+                      ticket.priority === "High"
+                        ? "#C62828"
+                        : ticket.priority === "Medium"
+                        ? "#F57F17"
+                        : "#616161"
+                  }}
+                >
+                  {ticket.priority || "Normal"} Priority
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px"
+                }}
+              >
+                <span
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "999px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    background:
+                      ticket.status === "Open"
+                        ? "#E8F5E9"
+                        : ticket.status === "In Progress"
+                        ? "#FFF8E1"
+                        : ticket.status === "Waiting for Customer"
+                        ? "#E3F2FD"
+                        : ticket.status === "Resolved"
+                        ? "#E0F2F1"
+                        : "#ECEFF1",
+                    color:
+                      ticket.status === "Open"
+                        ? "#2E7D32"
+                        : ticket.status === "In Progress"
+                        ? "#F57F17"
+                        : ticket.status === "Waiting for Customer"
+                        ? "#1565C0"
+                        : ticket.status === "Resolved"
+                        ? "#00695C"
+                        : "#37474F"
+                  }}
+                >
+                  {ticket.status}
+                </span>
+
+                <div
+                  style={{
+                    fontSize: "13px",
+                    color: "#9A8C82"
+                  }}
+                >
+                  {ticket.createdAt?.toDate?.().toLocaleDateString() || "N/A"}
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: "14px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px"
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#2C221E"
+                }}
+              >
+                👤 {ticket.customerName || "Unknown Customer"}
+              </span>
+
+              <span
+                style={{
+                  fontSize: "13px",
+                  color: "#6B5E55"
+                }}
+              >
+                {ticket.customerEmail || "No email"}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
