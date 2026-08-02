@@ -135,6 +135,11 @@ export default function RedeemedRewardsPage({ setPage, setActivePage }) {
     (r) => r.status === "expired"
   ).length;
 
+  // Step 1: Added birthday rewards stat count
+  const birthdayRewards = redemptions.filter(
+    (r) => r.rewardType === "birthday"
+  ).length;
+
   const filteredRedemptions = redemptions
     .filter((redemption) => {
       const matchesSearch =
@@ -148,9 +153,13 @@ export default function RedeemedRewardsPage({ setPage, setActivePage }) {
           ?.toLowerCase()
           .includes(search.toLowerCase());
 
+      // Step 1: Updated filter logic for birthday rewards
       const matchesStatus =
-        statusFilter === "all" ||
-        redemption.status === statusFilter;
+        statusFilter === "all"
+          ? true
+          : statusFilter === "birthday"
+          ? redemption.rewardType === "birthday"
+          : redemption.status === statusFilter;
 
       return matchesSearch && matchesStatus;
     })
@@ -172,6 +181,7 @@ export default function RedeemedRewardsPage({ setPage, setActivePage }) {
           return bTime - aTime;
       }
     });
+
 
   return (
     <div className="admin-page">
@@ -265,7 +275,18 @@ export default function RedeemedRewardsPage({ setPage, setActivePage }) {
           background: #FFF5D6;
           color: #A86B00;
         }
-
+         .birthday-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-left:8px;
+  padding:4px 10px;
+  border-radius:999px;
+  background:#FFF4D6;
+  color:#B7791F;
+  font-size:12px;
+  font-weight:600;
+}
         .status-badge.used {
           background: #DFF7E8;
           color: #0B7A3B;
@@ -293,150 +314,158 @@ export default function RedeemedRewardsPage({ setPage, setActivePage }) {
           transform: translateY(-2px);
         }
       `}</style>
+<div className="loyalty-admin-header">
+  <button className="back-btn" onClick={() => setActivePage("loyalty")}>
+    ← Back
+  </button>
+  <h1>🎟 Redeemed Rewards</h1>
+</div>
 
-      <div className="loyalty-admin-header">
-        <button className="back-btn" onClick={() => setActivePage("loyalty")}>
-          ← Back
-        </button>
-        <h1>🎟 Redeemed Rewards</h1>
-      </div>
+<div className="redemption-stats">
+  <div className="redemption-stat-card">
+    <h4>Total Redeemed</h4>
+    <h2>{totalRedemptions}</h2>
+  </div>
 
-      <div className="redemption-stats">
-        <div className="redemption-stat-card">
-          <h4>Total Redeemed</h4>
-          <h2>{totalRedemptions}</h2>
+  <div className="redemption-stat-card">
+    <h4>Unused</h4>
+    <h2>{unusedRewards}</h2>
+  </div>
+
+  <div className="redemption-stat-card">
+    <h4>Used</h4>
+    <h2>{usedRewards}</h2>
+  </div>
+
+  <div className="redemption-stat-card">
+    <h4>Expired</h4>
+    <h2>{expiredRewards}</h2>
+  </div>
+</div>
+
+<div className="redemption-toolbar">
+  <input
+    type="text"
+    placeholder="Search customer, email or reward..."
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+  />
+
+  <select
+    value={statusFilter}
+    onChange={(e) => setStatusFilter(e.target.value)}
+  >
+    <option value="all">All Status</option>
+    <option value="unused">Unused</option>
+    <option value="used">Used</option>
+    <option value="expired">Expired</option>
+  </select>
+
+  <select
+    value={sortBy}
+    onChange={(e) => setSortBy(e.target.value)}
+  >
+    <option value="newest">Newest First</option>
+    <option value="oldest">Oldest First</option>
+    <option value="pointsHigh">Highest Points</option>
+    <option value="pointsLow">Lowest Points</option>
+  </select>
+</div>
+
+{loading ? (
+  <p>Loading...</p>
+) : filteredRedemptions.length === 0 ? (
+  <div className="empty-state">
+    <h3>No matching rewards found.</h3>
+    <p>Try changing your search or filter.</p>
+  </div>
+) : (
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+      gap: 20,
+      marginTop: 20,
+    }}
+  >
+    {filteredRedemptions.map((redemption) => {
+      const menuItem = menuItems.find(
+        (item) => item.id === redemption.menuItemId
+      );
+
+      return (
+        <div key={redemption.id} className="redemption-card">
+          <div>
+            <h3>{redemption.rewardTitle}</h3>
+
+            {/* 🎂 Birthday Gift Badge */}
+            {redemption.rewardType === "birthday" && (
+              <span className="birthday-badge">
+                🎂 Birthday Gift
+              </span>
+            )}
+
+            <p>
+              <strong>Customer:</strong> {redemption.customerName}
+            </p>
+
+            <p>
+              <strong>Email:</strong> {redemption.customerEmail}
+            </p>
+
+            <p>
+              <strong>🎁 Type:</strong> {redemption.rewardType || "-"}
+            </p>
+
+            <p>
+              <strong>☕ Menu Item:</strong> {menuItem?.name || "-"}
+            </p>
+
+            <p>
+              <strong>💰 Points:</strong> {redemption.points}
+            </p>
+
+            <p>
+              <strong>Status:</strong>{" "}
+              <span className={`status-badge ${redemption.status}`}>
+                {redemption.status}
+              </span>
+            </p>
+
+            <p>
+              <strong>📅 Redeemed:</strong>{" "}
+              {redemption.redeemedAt?.toDate?.().toLocaleDateString() || "-"}
+            </p>
+
+            <p>
+              <strong>⏳ Expires:</strong>{" "}
+              {redemption.expiresAt?.toDate?.().toLocaleDateString() || "-"}
+            </p>
+          </div>
+
+          {redemption.status === "unused" && (
+            <button
+              className="use-btn"
+              onClick={() => {
+                const confirmed = window.confirm(
+                  "Mark this reward as used?\n\nThis action cannot be undone."
+                );
+
+                if (confirmed) {
+                  markAsUsed(redemption);
+                }
+              }}
+            >
+              ✅ Mark as Used
+            </button>
+          )}
         </div>
+      );
+    })}
+  </div>
+)}
 
-        <div className="redemption-stat-card">
-          <h4>Unused</h4>
-          <h2>{unusedRewards}</h2>
-        </div>
-
-        <div className="redemption-stat-card">
-          <h4>Used</h4>
-          <h2>{usedRewards}</h2>
-        </div>
-
-        <div className="redemption-stat-card">
-          <h4>Expired</h4>
-          <h2>{expiredRewards}</h2>
-        </div>
-      </div>
-
-      <div className="redemption-toolbar">
-        <input
-          type="text"
-          placeholder="Search customer, email or reward..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="all">All Status</option>
-          <option value="unused">Unused</option>
-          <option value="used">Used</option>
-          <option value="expired">Expired</option>
-        </select>
-
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-        >
-          <option value="newest">Newest First</option>
-          <option value="oldest">Oldest First</option>
-          <option value="pointsHigh">Highest Points</option>
-          <option value="pointsLow">Lowest Points</option>
-        </select>
-      </div>
-
-      {loading ? (
-        <p>Loading...</p>
-      ) : filteredRedemptions.length === 0 ? (
-        <div className="empty-state">
-          <h3>No matching rewards found.</h3>
-          <p>Try changing your search or filter.</p>
-        </div>
-      ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
-            gap: 20,
-            marginTop: 20,
-          }}
-        >
-          {filteredRedemptions.map((redemption) => {
-            const menuItem = menuItems.find(
-              (item) => item.id === redemption.menuItemId
-            );
-
-            return (
-              <div key={redemption.id} className="redemption-card">
-                <div>
-                  <h3>{redemption.rewardTitle}</h3>
-
-                  <p>
-                    <strong>Customer:</strong> {redemption.customerName}
-                  </p>
-
-                  <p>
-                    <strong>Email:</strong> {redemption.customerEmail}
-                  </p>
-
-                  <p>
-                    <strong>🎁 Type:</strong> {redemption.rewardType || "-"}
-                  </p>
-
-                  <p>
-                    <strong>☕ Menu Item:</strong> {menuItem?.name || "-"}
-                  </p>
-
-                  <p>
-                    <strong>💰 Points:</strong> {redemption.points}
-                  </p>
-
-                  <p>
-                    <strong>Status:</strong>{" "}
-                    <span className={`status-badge ${redemption.status}`}>
-                      {redemption.status}
-                    </span>
-                  </p>
-
-                  <p>
-                    <strong>📅 Redeemed:</strong>{" "}
-                    {redemption.redeemedAt?.toDate?.().toLocaleDateString() || "-"}
-                  </p>
-
-                  <p>
-                    <strong>⏳ Expires:</strong>{" "}
-                    {redemption.expiresAt?.toDate?.().toLocaleDateString() || "-"}
-                  </p>
-                </div>
-
-                {redemption.status === "unused" && (
-                  <button
-                    className="use-btn"
-                    onClick={() => {
-                      const confirmed = window.confirm(
-                        "Mark this reward as used?\n\nThis action cannot be undone."
-                      );
-
-                      if (confirmed) {
-                        markAsUsed(redemption);
-                      }
-                    }}
-                  >
-                    ✅ Mark as Used
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+   
     </div>
   );
 }
