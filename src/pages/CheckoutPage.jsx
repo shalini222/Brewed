@@ -577,9 +577,14 @@ export default function CheckoutPage({ setPage }) {
         if (
           fetchedLoyaltySettings.enabled !== false
         ) {
-          const earnedPoints =
-            Math.floor(calculations.subtotal / 100) *
-            (fetchedLoyaltySettings.pointsPer100 || 0);
+          let earnedPoints = Math.floor(calculations.subtotal / 100) * (fetchedLoyaltySettings.pointsPer100 || 0);
+          const today = new Date();
+          const campaignActive = fetchedLoyaltySettings.seasonalCampaignEnabled && fetchedLoyaltySettings.seasonalStartDate && fetchedLoyaltySettings.seasonalEndDate && today >= new Date(fetchedLoyaltySettings.seasonalStartDate) && today <= new Date(fetchedLoyaltySettings.seasonalEndDate);
+          if (campaignActive) {
+            earnedPoints = Math.round(
+              earnedPoints * (fetchedLoyaltySettings.seasonalMultiplier || 2)
+            );
+          }
 
           if (earnedPoints > 0) {
             await runTransaction(
@@ -634,8 +639,9 @@ export default function CheckoutPage({ setPage }) {
 
                       points: earnedPoints,
 
-                      description:
-                        "Points earned from order",
+                      description: campaignActive ? `🎉 ${fetchedLoyaltySettings.seasonalCampaignName} Bonus` : "Points earned from order",
+
+                      seasonalCampaign: campaignActive ? fetchedLoyaltySettings.seasonalCampaignName : null,
 
                       orderId,
 
@@ -683,6 +689,7 @@ export default function CheckoutPage({ setPage }) {
       </div>
     );
   }
+
 
 
 
