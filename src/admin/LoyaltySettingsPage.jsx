@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import {
   doc,
   getDoc,
-  setDoc
+  setDoc,
+  collection,
+  getDocs
 } from "firebase/firestore";
 import { db } from "../firebase";
 
 export default function LoyaltySettingsPage({ setPage, setActivePage }) {
   const [loading, setLoading] = useState(true);
+  const [menuItems, setMenuItems] = useState([]);
 
   const [settings, setSettings] = useState({
     enabled: true,
@@ -19,6 +22,8 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
     rewardExpiryDays: 365,
     birthdayRewardEnabled: true,
     birthdayRewardPoints: 100,
+    birthdayRewardMenuItemId: "",
+    birthdayRewardExpiryDays: 30,
   });
 
   async function loadSettings() {
@@ -26,17 +31,29 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
     const snap = await getDoc(ref);
 
     if (snap.exists()) {
-      setSettings({
-        ...settings,
+      setSettings((prev) => ({
+        ...prev,
         ...snap.data()
-      });
+      }));
     }
+  }
 
-    setLoading(false);
+  async function loadMenuItems() {
+    const snapshot = await getDocs(collection(db, "menuItems"));
+    setMenuItems(
+      snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+    );
   }
 
   useEffect(() => {
-    loadSettings();
+    async function init() {
+      await Promise.all([loadSettings(), loadMenuItems()]);
+      setLoading(false);
+    }
+    init();
   }, []);
 
   async function saveSettings() {
@@ -133,8 +150,9 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
           font-family: "Playfair Display", serif;
         }
 
-        /* Inputs */
-        .settings-card input[type="number"] {
+        /* Inputs & Selects */
+        .settings-card input[type="number"],
+        .settings-card select {
           width: 100%;
           padding: 12px 14px;
           margin: 8px 0;
@@ -146,13 +164,14 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
           box-sizing: border-box;
         }
 
-        .settings-card input[type="number"]:focus {
+        .settings-card input[type="number"]:focus,
+        .settings-card select:focus {
           outline: none;
           border-color: #C4956A;
         }
 
         /* Checkbox rows */
-        .settings-card label {
+        .settings-card label.checkbox-label {
           display: flex;
           align-items: center;
           gap: 10px;
@@ -232,7 +251,7 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
       </div>
 
       <div className="settings-card">
-        <label>
+        <label className="checkbox-label">
           <input
             type="checkbox"
             checked={settings.enabled}
@@ -260,7 +279,7 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
         <p>Points earned per ₹100 spent</p>
 
         <h3>🏆 Tier Thresholds</h3>
-        <label style={{ fontSize: '13px', fontWeight: 'normal', color: '#70645C', marginBottom: '4px' }}>Silver Tier Threshold</label>
+        <label style={{ fontSize: '13px', fontWeight: 'normal', color: '#70645C', marginBottom: '4px', display: 'block' }}>Silver Tier Threshold</label>
         <input
           type="number"
           value={settings.silverThreshold}
@@ -272,7 +291,7 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
           }
         />
 
-        <label style={{ fontSize: '13px', fontWeight: 'normal', color: '#70645C', marginBottom: '4px', marginTop: '10px' }}>Gold Tier Threshold</label>
+        <label style={{ fontSize: '13px', fontWeight: 'normal', color: '#70645C', marginBottom: '4px', marginTop: '10px', display: 'block' }}>Gold Tier Threshold</label>
         <input
           type="number"
           value={settings.goldThreshold}
@@ -284,7 +303,7 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
           }
         />
 
-        <label style={{ fontSize: '13px', fontWeight: 'normal', color: '#70645C', marginBottom: '4px', marginTop: '10px' }}>Platinum Tier Threshold</label>
+        <label style={{ fontSize: '13px', fontWeight: 'normal', color: '#70645C', marginBottom: '4px', marginTop: '10px', display: 'block' }}>Platinum Tier Threshold</label>
         <input
           type="number"
           value={settings.platinumThreshold}
@@ -310,7 +329,7 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
         <p>Days before unredeemed rewards expire</p>
 
         <h3>🎂 Birthday Reward</h3>
-        <label>
+        <label className="checkbox-label">
           <input
             type="checkbox"
             checked={settings.birthdayRewardEnabled}
@@ -336,6 +355,36 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
         />
         <p>Bonus points credited on customer birthday</p>
 
+        <label style={{ fontSize: '13px', fontWeight: 'normal', color: '#70645C', marginBottom: '4px', marginTop: '15px', display: 'block' }}>Birthday Gift Item</label>
+        <select
+          value={settings.birthdayRewardMenuItemId}
+          onChange={(e) =>
+            setSettings({
+              ...settings,
+              birthdayRewardMenuItemId: e.target.value,
+            })
+          }
+        >
+          <option value="">Select Menu Item</option>
+          {menuItems.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+
+        <label style={{ fontSize: '13px', fontWeight: 'normal', color: '#70645C', marginBottom: '4px', marginTop: '15px', display: 'block' }}>Birthday Gift Expiry (Days)</label>
+        <input
+          type="number"
+          value={settings.birthdayRewardExpiryDays}
+          onChange={(e) =>
+            setSettings({
+              ...settings,
+              birthdayRewardExpiryDays: Number(e.target.value),
+            })
+          }
+        />
+
         <button onClick={saveSettings}>
           Save Settings
         </button>
@@ -343,3 +392,4 @@ export default function LoyaltySettingsPage({ setPage, setActivePage }) {
     </div>
   );
 }
+
