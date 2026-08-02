@@ -275,7 +275,7 @@ export default function HeadlessNavbar({ currentPage, setPage }) {
 </button>
               
                <button onClick={() => { setShowMenu(false); setPage("support"); }}>
->
+
 <span>📞</span>Support 
 </button>  
 
