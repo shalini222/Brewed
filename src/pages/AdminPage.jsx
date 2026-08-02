@@ -7,6 +7,8 @@ import CustomerManagement from "../admin/CustomerManagement";
 import WalletManagement from "../admin/WalletManagement";
 import OrderManagement from "../admin/OrderManagement";
 import LoyaltyManagement from "../admin/LoyaltyManagement";
+import SupportManagement from "../admin/SupportManagement";
+
 
 export default function AdminPage({ setPage }) {
   const [activePage, setActivePage] = useState("dashboard");
@@ -83,6 +85,16 @@ export default function AdminPage({ setPage }) {
       
       {activePage === "loyaltyadmin" && (
         <LoyaltyManagement
+          setPage={setPage}
+          activePage={activePage}
+          setActivePage={setActivePage}
+        />
+      )} 
+
+
+
+        {activePage === "supportadmin" && (
+        <SupportManagement
           setPage={setPage}
           activePage={activePage}
           setActivePage={setActivePage}
