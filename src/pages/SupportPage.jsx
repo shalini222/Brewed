@@ -28,6 +28,7 @@ export default function SupportPage({ setPage }) {
   const [faqs, setFaqs] = useState([]);
   const [supportSettings, setSupportSettings] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
 
   const categories = [
@@ -125,6 +126,10 @@ export default function SupportPage({ setPage }) {
           error
         );
 
+        setError(
+          "Unable to load support information."
+        );
+
       }
       finally{
 
@@ -149,21 +154,28 @@ export default function SupportPage({ setPage }) {
   if(loading){
 
     return(
-      <div
-        style={{
-          minHeight:"100vh",
-          display:"flex",
-          justifyContent:"center",
-          alignItems:"center",
-          background:"#FDFAF5"
-        }}
-      >
+      <div className="support-loader">
 
-        Loading support...
+        <div className="coffee-loader">
+          ☕
+        </div>
+
+        <p>
+          Brewing support...
+        </p>
 
       </div>
     )
 
+  }
+
+
+  if(error){
+    return(
+      <div className="support-loader">
+        <p>{error}</p>
+      </div>
+    )
   }
 
 
@@ -203,10 +215,12 @@ export default function SupportPage({ setPage }) {
           border-radius: 22px;
           padding: 22px;
           transition: all .25s ease;
+          cursor: pointer;
         }
 
         .support-card:hover {
           transform: translateY(-4px);
+          border-color: #C4956A;
           box-shadow: 0 12px 30px rgba(44,34,30,0.08);
         }
 
@@ -224,6 +238,12 @@ export default function SupportPage({ setPage }) {
           line-height:1.5;
         }
 
+        .support-card a {
+          color: inherit;
+          text-decoration: none;
+          display: block;
+        }
+
         /* FAQ */
         .faq-card {
           background:white;
@@ -231,6 +251,11 @@ export default function SupportPage({ setPage }) {
           border-radius:18px;
           margin-bottom:12px;
           overflow:hidden;
+          transition: .25s ease;
+        }
+
+        .faq-card:hover {
+          box-shadow: 0 8px 25px rgba(44,34,30,.08);
         }
 
         .faq-card button {
@@ -269,6 +294,51 @@ export default function SupportPage({ setPage }) {
           }
         }
 
+        /* LOADER */
+        .support-loader {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          background: #FDFAF5;
+          color: #6B5E55;
+        }
+
+        .coffee-loader {
+          font-size: 45px;
+          animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+          background: white;
+          border: 1px solid #E8DED2;
+          border-radius: 20px;
+          padding: 35px;
+          text-align: center;
+          color: #6B5E55;
+        }
+
+        .empty-state h3 {
+          color: #2C221E;
+          margin-top: 10px;
+        }
+
+        /* HEADER */
+        .support-header {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 20px;
+        }
+
         /* INPUT */
         input::placeholder {
           color:#9A8C82;
@@ -286,6 +356,10 @@ export default function SupportPage({ setPage }) {
             grid-template-columns:1fr;
           }
 
+          .support-heading{
+            font-size:21px;
+          }
+
           h1{
             font-size:26px !important;
           }
@@ -293,14 +367,7 @@ export default function SupportPage({ setPage }) {
       `}</style>
 
       {/* HEADER */}
-      <header
-        style={{
-          padding:"20px",
-          display:"flex",
-          alignItems:"center",
-          gap:"15px"
-        }}
-      >
+      <header className="support-header">
 
         <button onClick={()=>setPage("menu")}>
           <ArrowLeft />
@@ -402,42 +469,50 @@ export default function SupportPage({ setPage }) {
         </h2>
 
 
-        {filteredFaqs.map((faq,index)=>(
+        {filteredFaqs.length > 0 ? (
+          filteredFaqs.map((faq,index)=>(
 
-          <div
-            className="faq-card"
-            key={faq.id || index}
-          >
-
-            <button
-              onClick={()=>
-                setOpenFaq(
-                  openFaq===index ? null:index
-                )
-              }
+            <div
+              className="faq-card"
+              key={faq.id || index}
             >
 
-              <span>{faq.question}</span>
+              <button
+                onClick={()=>
+                  setOpenFaq(
+                    openFaq===index ? null:index
+                  )
+                }
+              >
+
+                <span>{faq.question}</span>
+
+                {
+                  openFaq===index
+                  ? <ChevronUp/>
+                  : <ChevronDown/>
+                }
+
+              </button>
+
 
               {
-                openFaq===index
-                ? <ChevronUp/>
-                : <ChevronDown/>
+                openFaq===index &&
+                <p>
+                  {faq.answer}
+                </p>
               }
 
-            </button>
+            </div>
 
-
-            {
-              openFaq===index &&
-              <p>
-                {faq.answer}
-              </p>
-            }
-
+          ))
+        ) : (
+          <div className="empty-state">
+            ❓
+            <h3>No answers found</h3>
+            <p>Try another search or contact Brewed support.</p>
           </div>
-
-        ))}
+        )}
 
 
       </section>
@@ -455,29 +530,35 @@ export default function SupportPage({ setPage }) {
         <div className="support-grid">
 
           <div className="support-card">
-            <Phone color="#C4956A"/>
-            <h3>Call Us</h3>
-            <p>
-              {supportSettings?.phone || "Loading..."}
-            </p>
+            <a href={`tel:${supportSettings?.phone}`}>
+              <Phone color="#C4956A"/>
+              <h3>Call Us</h3>
+              <p>
+                {supportSettings?.phone || "Loading..."}
+              </p>
+            </a>
           </div>
 
 
           <div className="support-card">
-            <Mail color="#C4956A"/>
-            <h3>Email</h3>
-            <p>
-              {supportSettings?.email || "Loading..."}
-            </p>
+            <a href={`mailto:${supportSettings?.email}`}>
+              <Mail color="#C4956A"/>
+              <h3>Email</h3>
+              <p>
+                {supportSettings?.email || "Loading..."}
+              </p>
+            </a>
           </div>
 
 
           <div className="support-card">
-            <MessageCircle color="#C4956A"/>
-            <h3>WhatsApp</h3>
-            <p>
-              {supportSettings?.whatsapp || "Loading..."}
-            </p>
+            <a href={`https://wa.me/${supportSettings?.whatsapp}`} target="_blank" rel="noopener noreferrer">
+              <MessageCircle color="#C4956A"/>
+              <h3>WhatsApp</h3>
+              <p>
+                {supportSettings?.whatsapp ? "Chat with us" : "Loading..."}
+              </p>
+            </a>
           </div>
 
         </div>
