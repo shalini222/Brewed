@@ -29,7 +29,7 @@ import SettingsAdminPage from "./pages/SettingsAdminPage";
 import AddressPage from "./pages/AddressPage";
 import WalletPage from "./pages/WalletPage";
 import DeliveryAdminPage from "./admin/DeliveryAdminPage";
-
+import SupportPage from "./pages/SupportPage";
 
 
 
@@ -69,7 +69,7 @@ export default function App() {
     "change-password",
     "deleteAccount",
     "admin",
-    
+    "support",
     "reservation",
     "settingsAdmin",
     "address",
@@ -233,6 +233,13 @@ export default function App() {
           {page==="address" && (
 <AddressPage setPage={setPage}/>
 )}
+
+           
+          {page==="support" && (
+<SupportPage setPage={setPage}/>
+)}
+
+          
 {page==="wallet" && (
 <WalletPage setPage={setPage}/>
 )}
