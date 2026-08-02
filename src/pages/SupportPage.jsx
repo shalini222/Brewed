@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
 import {
   doc,
+  getDoc,
   collection,
   query,
   orderBy,
@@ -11,19 +12,26 @@ import {
   updateDoc,
   increment
 } from "firebase/firestore";
-import { Send } from "lucide-react";
+import { Send, CheckCheck, Eye, Lock, Paperclip, FileText, Image as ImageIcon } from "lucide-react";
 
 export default function AdminTicketConversation({ selectedTicket }) {
   const [messages, setMessages] = useState([]);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
 
+  const containerRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth"
-    });
+  // Smart auto-scroll: scroll if user is already near the bottom
+  const scrollToBottom = (behavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  };
+
+  const handleScroll = () => {
+    if (!containerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    // We can store this or handle condition in messages effect
   };
 
   // Mark messages as read for Admin when ticket opens
@@ -72,18 +80,66 @@ export default function AdminTicketConversation({ selectedTicket }) {
     return () => unsubscribe();
   }, [selectedTicket?.id]);
 
-  // Scroll whenever messages change
+  // Smart auto-scroll whenever messages change
   useEffect(() => {
-    scrollToBottom();
+    if (!containerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
+
+    // If it's the initial load or user was already near bottom, scroll down
+    if (isNearBottom || messages.length <= 5) {
+      scrollToBottom();
+    }
   }, [messages]);
 
-  // Send support reply with increment and lastReplyBy support
+  // Format timestamps nicely (Today, Yesterday, or Date)
+  const formatMessageTime = (timestamp) => {
+    if (!timestamp?.toDate) return "Sending...";
+
+    const date = timestamp.toDate();
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+
+    const timeString = date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true
+    });
+
+    if (isToday) {
+      return `Today • ${timeString}`;
+    } else if (isYesterday) {
+      return `Yesterday • ${timeString}`;
+    } else {
+      const dateString = date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric"
+      });
+      return `${dateString} • ${timeString}`;
+    }
+  };
+
+  // Send support reply with validation & metadata updates
   const sendReply = async () => {
     if (!reply.trim() || sending || !selectedTicket?.id) return;
 
     try {
       setSending(true);
 
+      // ✅ 1. Verify ticket still exists before sending
+      const ticketRef = doc(db, "supportTickets", selectedTicket.id);
+      const ticketSnap = await getDoc(ticketRef);
+
+      if (!ticketSnap.exists()) {
+        alert("This ticket no longer exists.");
+        return;
+      }
+
+      // Add message to subcollection
       await addDoc(
         collection(db, "supportTickets", selectedTicket.id, "messages"),
         {
@@ -94,10 +150,13 @@ export default function AdminTicketConversation({ selectedTicket }) {
         }
       );
 
-      await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
+      // ✅ 10. Track reply metadata & unread counters on the parent ticket
+      await updateDoc(ticketRef, {
         updatedAt: serverTimestamp(),
         customerUnread: increment(1),
-        lastReplyBy: "support"
+        lastReplyBy: "support",
+        lastMessage: reply,
+        lastMessageAt: serverTimestamp()
       });
 
       setReply("");
@@ -108,16 +167,12 @@ export default function AdminTicketConversation({ selectedTicket }) {
     }
   };
 
-  // Message Timestamps Helper
-  const formatMessageTime = (timestamp) => {
-    if (!timestamp?.toDate) return "Sending...";
-
-    return timestamp.toDate().toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit"
-    });
+  // ✅ 2. Allow sending with Enter (excluding Shift+Enter)
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendReply();
+    }
   };
 
   if (!selectedTicket) {
@@ -138,6 +193,8 @@ export default function AdminTicketConversation({ selectedTicket }) {
       </div>
     );
   }
+
+  const isClosed = selectedTicket.status === "Closed";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -175,7 +232,20 @@ export default function AdminTicketConversation({ selectedTicket }) {
           font-weight: 600;
           display: flex;
           align-items: center;
-          gap: 4px;
+          gap: 6px;
+        }
+
+        .avatar-badge {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #E8DED2;
+          color: #2C221E;
+          font-size: 10px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
         }
 
         .admin-customer-message {
@@ -264,10 +334,66 @@ export default function AdminTicketConversation({ selectedTicket }) {
           font-style: italic;
           font-size: 14px;
         }
+
+        .closed-notice {
+          background: #FAF6F0;
+          border: 1px solid #E8DED2;
+          border-radius: 12px;
+          padding: 14px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: #6E5E53;
+          font-size: 14px;
+          font-weight: 500;
+        }
+
+        .read-status-indicator {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 11px;
+          color: #9A8C82;
+          margin-top: 4px;
+          align-self: flex-end;
+        }
       `}</style>
 
+      {/* Header Info / Read Status Bar */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontSize: "12px",
+          color: "#9A8C82",
+          background: "#FAF6F0",
+          padding: "8px 12px",
+          borderRadius: "10px"
+        }}
+      >
+        <span>Ticket ID: {selectedTicket.id.slice(0, 8)}...</span>
+        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          {selectedTicket.customerUnread > 0 ? (
+            <>
+              <span style={{ color: "#D97706", fontWeight: "600" }}>
+                Unread by customer ({selectedTicket.customerUnread})
+              </span>
+            </>
+          ) : (
+            <>
+              <Eye size={13} /> Seen by customer
+            </>
+          )}
+        </span>
+      </div>
+
       {messages.length > 0 ? (
-        <div className="admin-conversation">
+        <div
+          className="admin-conversation"
+          ref={containerRef}
+          onScroll={handleScroll}
+        >
           {messages.map((msg) => {
             const isCustomer = msg.sender === "customer";
             return (
@@ -278,7 +404,24 @@ export default function AdminTicketConversation({ selectedTicket }) {
                 }`}
               >
                 <span className="admin-message-sender-label">
-                  {isCustomer ? msg.senderName || "Customer" : "☕ Support Team"}
+                  {isCustomer ? (
+                    <>
+                      <span className="avatar-badge">
+                        {msg.senderName ? msg.senderName[0].toUpperCase() : "C"}
+                      </span>
+                      {msg.senderName || "Customer"}
+                    </>
+                  ) : (
+                    <>
+                      <span
+                        className="avatar-badge"
+                        style={{ background: "#C4956A", color: "white" }}
+                      >
+                        ☕
+                      </span>
+                      Support Team
+                    </>
+                  )}
                 </span>
 
                 <div
@@ -290,32 +433,83 @@ export default function AdminTicketConversation({ selectedTicket }) {
                 >
                   <p style={{ margin: 0 }}>{msg.message}</p>
 
-                  {isCustomer ? (
-                    <div
-                      style={{
-                        marginTop: "8px",
-                        fontSize: "11px",
-                        color: "#9A8C82"
-                      }}
-                    >
-                      {formatMessageTime(msg.createdAt)}
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        marginTop: "8px",
-                        fontSize: "11px",
-                        opacity: 0.8,
-                        textAlign: "right"
-                      }}
-                    >
-                      {formatMessageTime(msg.createdAt)}
+                  {/* Render attachments if available */}
+                  {msg.attachmentUrl && (
+                    <div style={{ marginTop: "10px" }}>
+                      {msg.attachmentType?.startsWith("image/") ? (
+                        <a
+                          href={msg.attachmentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <img
+                            src={msg.attachmentUrl}
+                            alt="attachment"
+                            style={{
+                              maxWidth: "100%",
+                              maxHeight: "160px",
+                              borderRadius: "8px",
+                              border: "1px solid rgba(0,0,0,0.1)"
+                            }}
+                          />
+                        </a>
+                      ) : (
+                        <a
+                          href={msg.attachmentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            color: isCustomer ? "#2C221E" : "white",
+                            textDecoration: "underline",
+                            fontSize: "13px"
+                          }}
+                        >
+                          <FileText size={16} /> View Attachment
+                        </a>
+                      )}
                     </div>
                   )}
+
+                  <div
+                    style={{
+                      marginTop: "8px",
+                      fontSize: "11px",
+                      opacity: isCustomer ? 1 : 0.8,
+                      color: isCustomer ? "#9A8C82" : "inherit",
+                      textAlign: isCustomer ? "left" : "right"
+                    }}
+                  >
+                    {formatMessageTime(msg.createdAt)}
+                  </div>
                 </div>
               </div>
             );
           })}
+
+          {/* ✅ 4. Sending / Typing Indicator */}
+          {sending && (
+            <div
+              className="admin-message-wrapper admin-support-wrapper"
+              style={{ opacity: 0.7 }}
+            >
+              <span className="admin-message-sender-label">
+                <span
+                  className="avatar-badge"
+                  style={{ background: "#C4956A", color: "white" }}
+                >
+                  ☕
+                </span>
+                Support Team
+              </span>
+              <div className="admin-support-message">
+                <p style={{ margin: 0, fontStyle: "italic" }}>Typing...</p>
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
       ) : (
@@ -325,28 +519,49 @@ export default function AdminTicketConversation({ selectedTicket }) {
         </div>
       )}
 
-      {/* ADMIN REPLY BOX */}
-      <div className="admin-reply-box">
-        <textarea
-          value={reply}
-          onChange={(e) => setReply(e.target.value)}
-          placeholder={
-            selectedTicket.status === "Closed"
-              ? "This ticket is closed."
-              : "Type a support reply..."
-          }
-          disabled={sending || selectedTicket.status === "Closed"}
-        />
+      {/* ✅ 6. Handle closed tickets better */}
+      {isClosed ? (
+        <div className="closed-notice">
+          <Lock size={18} />
+          <div>
+            <strong>This ticket is closed.</strong>
+            <div style={{ fontSize: "12px", color: "#9A8C82" }}>
+              New replies cannot be sent unless the ticket is reopened.
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ADMIN REPLY BOX */
+        <div className="admin-reply-box">
+          <textarea
+            value={reply}
+            onChange={(e) => setReply(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a support reply... (Press Enter to send)"
+            disabled={sending}
+          />
 
-        <button
-          onClick={sendReply}
-          className="admin-reply-btn"
-          disabled={sending || selectedTicket.status === "Closed"}
-        >
-          <Send size={16} />
-          {sending ? "Sending..." : "Send Reply"}
-        </button>
-      </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}
+          >
+            <span style={{ fontSize: "11px", color: "#9A8C82" }}>
+              Press Enter to send, Shift + Enter for new line
+            </span>
+            <button
+              onClick={sendReply}
+              className="admin-reply-btn"
+              disabled={sending}
+            >
+              <Send size={16} />
+              {sending ? "Sending..." : "Send Reply"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
