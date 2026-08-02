@@ -1,4 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { db } from "../firebase";
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc
+} from "firebase/firestore";
 import {
   ArrowLeft,
   Search,
@@ -18,6 +25,9 @@ export default function SupportPage({ setPage }) {
 
   const [search, setSearch] = useState("");
   const [openFaq, setOpenFaq] = useState(null);
+  const [faqs, setFaqs] = useState([]);
+  const [supportSettings, setSupportSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
 
 
   const categories = [
@@ -44,28 +54,6 @@ export default function SupportPage({ setPage }) {
   ];
 
 
-  const faqs = [
-    {
-      question: "How long does delivery take?",
-      answer:
-        "Delivery usually takes 30-45 minutes depending on location and order volume.",
-      category:"Delivery"
-    },
-    {
-      question: "Can I cancel my order?",
-      answer:
-        "Orders can be cancelled before preparation begins.",
-      category:"Orders"
-    },
-    {
-      question: "How do loyalty points work?",
-      answer:
-        "You earn points on eligible purchases and can redeem them for rewards.",
-      category:"Rewards"
-    }
-  ];
-
-
   const policies = [
     {
       title:"Refund Policy",
@@ -82,10 +70,101 @@ export default function SupportPage({ setPage }) {
   ];
 
 
+  useEffect(()=>{
+
+    const loadSupportData = async()=>{
+
+      try{
+
+        // FAQs
+
+        const faqSnap = await getDocs(
+          collection(db,"faqs")
+        );
+
+
+        const faqData = faqSnap.docs
+        .map(doc=>({
+          id:doc.id,
+          ...doc.data()
+        }))
+        .filter(faq=>faq.active);
+
+
+        setFaqs(faqData);
+
+
+
+        // Settings
+
+        const settingsRef = doc(
+          db,
+          "supportSettings",
+          "main"
+        );
+
+
+        const settingsSnap =
+          await getDoc(settingsRef);
+
+
+        if(settingsSnap.exists()){
+
+          setSupportSettings(
+            settingsSnap.data()
+          );
+
+        }
+
+
+      }
+      catch(error){
+
+        console.log(
+          "Support loading error:",
+          error
+        );
+
+      }
+      finally{
+
+        setLoading(false);
+
+      }
+
+    };
+
+
+    loadSupportData();
+
+  },[]);
+
+
   const filteredFaqs = faqs.filter((faq)=>
     faq.question.toLowerCase().includes(search.toLowerCase()) ||
     faq.answer.toLowerCase().includes(search.toLowerCase())
   );
+
+
+  if(loading){
+
+    return(
+      <div
+        style={{
+          minHeight:"100vh",
+          display:"flex",
+          justifyContent:"center",
+          alignItems:"center",
+          background:"#FDFAF5"
+        }}
+      >
+
+        Loading support...
+
+      </div>
+    )
+
+  }
 
 
   return (
@@ -327,7 +406,7 @@ export default function SupportPage({ setPage }) {
 
           <div
             className="faq-card"
-            key={index}
+            key={faq.id || index}
           >
 
             <button
@@ -378,21 +457,27 @@ export default function SupportPage({ setPage }) {
           <div className="support-card">
             <Phone color="#C4956A"/>
             <h3>Call Us</h3>
-            <p>+91 XXXXX XXXXX</p>
+            <p>
+              {supportSettings?.phone || "Loading..."}
+            </p>
           </div>
 
 
           <div className="support-card">
             <Mail color="#C4956A"/>
             <h3>Email</h3>
-            <p>support@brewed.com</p>
+            <p>
+              {supportSettings?.email || "Loading..."}
+            </p>
           </div>
 
 
           <div className="support-card">
             <MessageCircle color="#C4956A"/>
             <h3>WhatsApp</h3>
-            <p>Chat with us</p>
+            <p>
+              {supportSettings?.whatsapp || "Loading..."}
+            </p>
           </div>
 
         </div>
@@ -411,8 +496,9 @@ export default function SupportPage({ setPage }) {
           <h3>Business Hours</h3>
 
           <p>
-            Monday - Sunday<br/>
-            9 AM - 10 PM
+            Monday:
+            <br/>
+            {supportSettings?.hours?.monday || "9 AM - 10 PM"}
           </p>
 
         </div>
