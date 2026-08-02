@@ -55,6 +55,21 @@ export default function LoyaltyPage({ setPage }) {
       const settings = await getLoyaltySettings();
 
       if (settings) {
+        // Calculate whether seasonal campaign is active
+        const today = new Date();
+        let seasonalCampaignActive = false;
+        if (
+          settings.seasonalCampaignEnabled &&
+          settings.seasonalStartDate &&
+          settings.seasonalEndDate
+        ) {
+          const start = new Date(settings.seasonalStartDate);
+          const end = new Date(settings.seasonalEndDate);
+          end.setHours(23, 59, 59, 999);
+          seasonalCampaignActive = today >= start && today <= end;
+        }
+        settings.seasonalCampaignActive = seasonalCampaignActive;
+
         setLoyaltySettings(settings);
         setLoyaltyEnabled(settings.enabled !== false);
 
@@ -376,14 +391,6 @@ export default function LoyaltyPage({ setPage }) {
     );
   }
 
-
-
-
-
-
-
-
-
    return (
     <>
       <style>{`
@@ -393,6 +400,38 @@ export default function LoyaltyPage({ setPage }) {
           padding: 24px;
           font-family: inherit;
           color: #333;
+        }
+
+        .seasonal-banner {
+          background: linear-gradient(135deg, #8B4513 0%, #D4A373 100%);
+          color: #fff;
+          padding: 20px 24px;
+          border-radius: 16px;
+          margin-bottom: 24px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .seasonal-banner h3 {
+          margin: 0;
+          font-size: 20px;
+        }
+
+        .seasonal-banner p {
+          margin: 0;
+          font-size: 14px;
+          opacity: 0.95;
+        }
+
+        .seasonal-banner strong {
+          font-size: 15px;
+          margin-top: 4px;
+          background: rgba(0, 0, 0, 0.15);
+          padding: 6px 12px;
+          border-radius: 8px;
+          width: fit-content;
         }
 
         .loyalty-hero {
@@ -429,44 +468,29 @@ export default function LoyaltyPage({ setPage }) {
           margin: 0;
         }
 
+        .my-rewards-section .reward-card {
+          margin-bottom: 16px;
+        }
 
+        .my-rewards-section .reward-card:last-child {
+          margin-bottom: 0;
+        }
 
-.my-rewards-section .reward-card {
-  margin-bottom: 16px;
-}
+        .activity-list {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
 
-/* Ensure the last card doesn't have an extra margin at the bottom */
-.my-rewards-section .reward-card:last-child {
-  margin-bottom: 0;
-}
+        .my-rewards-section {
+          margin-bottom: 32px;
+        }
 
-/* Increase spacing between activity list cards */
-.activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px; /* Increased from 12px to 16px */
-}
-
-.my-rewards-section {
-  margin-bottom: 32px;
-}
-
-.my-rewards-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-
-
-
-
+        .my-rewards-list {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
 
         .coffee-icon {
           font-size: 36px;
@@ -704,12 +728,6 @@ export default function LoyaltyPage({ setPage }) {
           padding: 24px;
           margin-bottom: 32px;
           box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-        }
-
-        .activity-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
         }
 
         .activity-card {
@@ -997,8 +1015,6 @@ export default function LoyaltyPage({ setPage }) {
         ← Back
       </button>
 
-    
-
       {loading ? (
         <div className="loyalty-page-container">
           <div className="skeleton-hero shimmer"></div>
@@ -1007,6 +1023,15 @@ export default function LoyaltyPage({ setPage }) {
         </div>
       ) : (
         <div className="loyalty-page-container">
+          {/* Seasonal Campaign Banner */}
+          {loyaltySettings?.seasonalCampaignActive && (
+            <div className="seasonal-banner">
+              <h3>🎉 {loyaltySettings.seasonalCampaignName}</h3>
+              <p>{loyaltySettings.seasonalCampaignDescription}</p>
+              <strong>{loyaltySettings.seasonalMultiplier}× Points on every order!</strong>
+            </div>
+          )}
+
           <div className="loyalty-hero">
             <div className="hero-overlay">
 
