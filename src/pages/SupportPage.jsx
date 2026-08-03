@@ -26,7 +26,7 @@ import {
   Phone,
   Mail,
   MessageCircle,
-  Instagram,
+  Camera,
   Clock,
   ShieldCheck,
   Truck,
@@ -724,7 +724,7 @@ export default function SupportPage({ setPage }) {
 
               {/* Instagram */}
               <div className="support-card" style={{ marginBottom: 0 }}>
-                <Instagram size={28} color="#C4956A" />
+                <Camera size={28} color="#C4956A" />
 
                 <h3
                   style={{
