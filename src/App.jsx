@@ -239,8 +239,6 @@ export default function App() {
           {page === "support" && (
   <SupportPage 
     setPage={setPage} 
-    selectedTicket={selectedTicket} 
-    setSelectedTicket={setSelectedTicket} 
   />
 )}
 
