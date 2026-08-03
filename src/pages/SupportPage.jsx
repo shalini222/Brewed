@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
+import { useAuth } from "../context/AuthContext";
 import {
   doc,
   getDoc,
@@ -10,21 +11,31 @@ import {
   addDoc,
   serverTimestamp,
   updateDoc,
-  increment
+  increment,
+  where,
+  getDocs
 } from "firebase/firestore";
-import { Send, CheckCheck, Eye, Lock, FileText, UserCheck, MessageSquarePlus } from "lucide-react";
+import { Send, CheckCheck, Eye, Lock, FileText, UserCheck, MessageSquarePlus, ArrowLeft, Ticket } from "lucide-react";
 
-export default function SupportPage({ setPage  }) {
+export default function SupportPage() {
+  const { currentUser } = useAuth();
+  
   const [messages, setMessages] = useState([]);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [activePage, setActivePage] = useState("menu");
 
+  const [newSubject, setNewSubject] = useState("");
+  const [newMessage, setNewMessage] = useState("");
+  const [submittingTicket, setSubmittingTicket] = useState(false);
+
+  const [myTickets, setMyTickets] = useState([]);
+  const [loadingTickets, setLoadingTickets] = useState(false);
+
   const containerRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // Smart auto-scroll: scroll if user is already near the bottom
   const scrollToBottom = (behavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
@@ -33,7 +44,35 @@ export default function SupportPage({ setPage  }) {
     if (!containerRef.current) return;
   };
 
-  // Mark messages as read for Customer when ticket opens
+  useEffect(() => {
+    if (activePage !== "tickets") return;
+
+    const fetchTickets = async () => {
+      setLoadingTickets(true);
+      try {
+        const userId = currentUser?.uid || "anonymous_user";
+        const q = query(
+          collection(db, "supportTickets"),
+          where("customerId", "==", userId),
+          orderBy("updatedAt", "desc")
+        );
+        const snapshot = await getDocs(q);
+        setMyTickets(
+          snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+        );
+      } catch (err) {
+        console.log("Error fetching user tickets:", err);
+      } finally {
+        setLoadingTickets(false);
+      }
+    };
+
+    fetchTickets();
+  }, [activePage, currentUser]);
+
   useEffect(() => {
     if (!selectedTicket?.id) return;
 
@@ -52,9 +91,8 @@ export default function SupportPage({ setPage  }) {
     markAsRead();
   }, [selectedTicket?.id, selectedTicket?.customerUnread]);
 
-  // Realtime messages listener for Customer
   useEffect(() => {
-    if (!selectedTicket?.id) return;
+    if (!selectedTicket?.id || activePage !== "conversation") return;
 
     const q = query(
       collection(db, "supportTickets", selectedTicket.id, "messages"),
@@ -77,20 +115,18 @@ export default function SupportPage({ setPage  }) {
     );
 
     return () => unsubscribe();
-  }, [selectedTicket?.id]);
+  }, [selectedTicket?.id, activePage]);
 
-  // Smart auto-scroll whenever messages change
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || activePage !== "conversation") return;
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
 
     if (isNearBottom || messages.length <= 5) {
       scrollToBottom();
     }
-  }, [messages]);
+  }, [messages, activePage]);
 
-  // Format timestamps nicely (Today, Yesterday, or Date)
   const formatMessageTime = (timestamp) => {
     if (!timestamp?.toDate) return "Sending...";
 
@@ -121,7 +157,6 @@ export default function SupportPage({ setPage  }) {
     }
   };
 
-  // Send customer reply with validation & metadata updates
   const sendReply = async () => {
     if (!reply.trim() || sending || !selectedTicket?.id) return;
 
@@ -136,18 +171,16 @@ export default function SupportPage({ setPage  }) {
         return;
       }
 
-      // Add message as customer to subcollection
       await addDoc(
         collection(db, "supportTickets", selectedTicket.id, "messages"),
         {
           sender: "customer",
-          senderName: selectedTicket.customerName || "Customer",
+          senderName: selectedTicket.customerName || currentUser?.displayName || "Customer",
           message: reply,
           createdAt: serverTimestamp()
         }
       );
 
-      // Track reply metadata & increment support unread counter for admin
       await updateDoc(ticketRef, {
         updatedAt: serverTimestamp(),
         supportUnread: increment(1),
@@ -164,7 +197,50 @@ export default function SupportPage({ setPage  }) {
     }
   };
 
-  // Allow sending with Enter (excluding Shift+Enter)
+  const handleCreateTicket = async (e) => {
+    e.preventDefault();
+    if (!newSubject.trim() || !newMessage.trim() || submittingTicket) return;
+
+    try {
+      setSubmittingTicket(true);
+      const userId = currentUser?.uid || "anonymous_user";
+      const customerName = currentUser?.displayName || "Valued Customer";
+
+      const ticketData = {
+        subject: newSubject,
+        customerId: userId,
+        customerName: customerName,
+        status: "Open",
+        assignedTo: "Unassigned",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        supportUnread: 0,
+        customerUnread: 0,
+        lastReplyBy: "customer",
+        lastMessage: newMessage,
+        lastMessageAt: serverTimestamp()
+      };
+
+      const docRef = await addDoc(collection(db, "supportTickets"), ticketData);
+
+      await addDoc(collection(db, "supportTickets", docRef.id, "messages"), {
+        sender: "customer",
+        senderName: customerName,
+        message: newMessage,
+        createdAt: serverTimestamp()
+      });
+
+      setNewSubject("");
+      setNewMessage("");
+      setSelectedTicket({ id: docRef.id, ...ticketData });
+      setActivePage("conversation");
+    } catch (err) {
+      console.log("Error creating ticket:", err);
+    } finally {
+      setSubmittingTicket(false);
+    }
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -172,52 +248,301 @@ export default function SupportPage({ setPage  }) {
     }
   };
 
-  // If no ticket is selected, display an inviting empty state instead of breaking or showing blank text
-  if (!selectedTicket) {
+  if (activePage === "menu") {
     return (
-      <div
-        style={{
-          background: "#FFFFFF",
-          border: "1px solid #E8DED2",
-          borderRadius: "18px",
-          padding: "40px 20px",
-          textAlign: "center",
-          color: "#6B5E55",
-          boxShadow: "0 2px 10px rgba(44,34,30,0.02)"
-        }}
-      >
-        <div style={{ fontSize: "40px", marginBottom: "12px" }}>🎫</div>
-        <h3 style={{ margin: "0 0 8px", color: "#2C221E", fontSize: "18px" }}>No Support Ticket Selected</h3>
-        <p style={{ margin: "0 0 20px", fontSize: "14px", color: "#9A8C82", maxWidth: "400px", marginLeft: "auto", marginRight: "auto" }}>
-          You don't have an active ticket open right now. Choose an existing ticket from your history or create a new one to chat with our support team.
-        </p>
-        {setActivePage && (
-          <button
-            onClick={() => setActivePage("new-ticket")} // Adjust string depending on your app's router
-            style={{
-              background: "#C4956A",
-              color: "white",
-              border: "none",
-              borderRadius: "12px",
-              padding: "10px 20px",
-              fontWeight: "600",
-              fontSize: "14px",
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              transition: "background .2s"
-            }}
-          >
-            <MessageSquarePlus size={16} /> Create New Ticket
-          </button>
-        )}
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div
+          style={{
+            background: "#FFFFFF",
+            border: "1px solid #E8DED2",
+            borderRadius: "18px",
+            padding: "30px 20px",
+            textAlign: "center",
+            color: "#6B5E55",
+            boxShadow: "0 2px 10px rgba(44,34,30,0.02)"
+          }}
+        >
+          <div style={{ fontSize: "40px", marginBottom: "12px" }}>🎧</div>
+          <h3 style={{ margin: "0 0 8px", color: "#2C221E", fontSize: "20px" }}>How can we help you today?</h3>
+          <p style={{ margin: "0 0 24px", fontSize: "14px", color: "#9A8C82", maxWidth: "420px", marginLeft: "auto", marginRight: "auto" }}>
+            Reach out to our support team with questions, feedback, or issues. We're always here to assist you.
+          </p>
+
+          <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
+            <button
+              onClick={() => setActivePage("new-ticket")}
+              style={{
+                background: "#C4956A",
+                color: "white",
+                border: "none",
+                borderRadius: "12px",
+                padding: "12px 20px",
+                fontWeight: "600",
+                fontSize: "14px",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                transition: "background .2s"
+              }}
+            >
+              <MessageSquarePlus size={18} /> Create New Ticket
+            </button>
+
+            <button
+              onClick={() => setActivePage("tickets")}
+              style={{
+                background: "#FAF6F0",
+                color: "#2C221E",
+                border: "1px solid #E8DED2",
+                borderRadius: "12px",
+                padding: "12px 20px",
+                fontWeight: "600",
+                fontSize: "14px",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                transition: "background .2s"
+              }}
+            >
+              <Ticket size={18} /> My Support Tickets
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const isClosed = selectedTicket.status === "Closed";
-  const staffName = selectedTicket.assignedTo || "Support Team";
+  if (activePage === "new-ticket") {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <button
+          onClick={() => setActivePage("menu")}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#C4956A",
+            fontWeight: "600",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: 0,
+            fontSize: "14px",
+            width: "fit-content"
+          }}
+        >
+          <ArrowLeft size={16} /> Back to Support Menu
+        </button>
+
+        <div
+          style={{
+            background: "#FFFFFF",
+            border: "1px solid #E8DED2",
+            borderRadius: "18px",
+            padding: "24px",
+            boxShadow: "0 2px 10px rgba(44,34,30,0.02)"
+          }}
+        >
+          <h3 style={{ margin: "0 0 6px", color: "#2C221E", fontSize: "18px" }}>Create New Support Ticket</h3>
+          <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9A8C82" }}>
+            Fill out the details below and our support staff will get back to you shortly.
+          </p>
+
+          <form onSubmit={handleCreateTicket} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#2C221E", marginBottom: "6px" }}>
+                Subject / Issue Title
+              </label>
+              <input
+                type="text"
+                value={newSubject}
+                onChange={(e) => setNewSubject(e.target.value)}
+                placeholder="e.g., Issue with recent order shipment"
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #E8DED2",
+                  borderRadius: "12px",
+                  background: "#FDFAF5",
+                  outline: "none",
+                  fontSize: "14px",
+                  color: "#2C221E"
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#2C221E", marginBottom: "6px" }}>
+                Describe Your Issue
+              </label>
+              <textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Provide as much detail as possible..."
+                rows={5}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #E8DED2",
+                  borderRadius: "12px",
+                  background: "#FDFAF5",
+                  outline: "none",
+                  fontSize: "14px",
+                  color: "#2C221E",
+                  resize: "vertical"
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={submittingTicket}
+              style={{
+                background: "#C4956A",
+                color: "white",
+                border: "none",
+                borderRadius: "12px",
+                padding: "12px 20px",
+                fontWeight: "600",
+                fontSize: "14px",
+                cursor: "pointer",
+                alignSelf: "flex-end",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px"
+              }}
+            >
+              <Send size={16} /> {submittingTicket ? "Submitting..." : "Submit Ticket"}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (activePage === "tickets") {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <button
+          onClick={() => setActivePage("menu")}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#C4956A",
+            fontWeight: "600",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: 0,
+            fontSize: "14px",
+            width: "fit-content"
+          }}
+        >
+          <ArrowLeft size={16} /> Back to Support Menu
+        </button>
+
+        <div
+          style={{
+            background: "#FFFFFF",
+            border: "1px solid #E8DED2",
+            borderRadius: "18px",
+            padding: "24px",
+            boxShadow: "0 2px 10px rgba(44,34,30,0.02)"
+          }}
+        >
+          <h3 style={{ margin: "0 0 16px", color: "#2C221E", fontSize: "18px" }}>My Support Tickets</h3>
+
+          {loadingTickets ? (
+            <p style={{ color: "#9A8C82", fontSize: "14px", textAlign: "center", padding: "20px 0" }}>Loading tickets...</p>
+          ) : myTickets.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "30px 0", color: "#9A8C82", fontSize: "14px" }}>
+              <p>You haven't submitted any support tickets yet.</p>
+              <button
+                onClick={() => setActivePage("new-ticket")}
+                style={{
+                  background: "#C4956A",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "10px",
+                  padding: "8px 16px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  marginTop: "8px"
+                }}
+              >
+                Create First Ticket
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {myTickets.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  onClick={() => {
+                    setSelectedTicket(ticket);
+                    setActivePage("conversation");
+                  }}
+                  style={{
+                    padding: "14px 16px",
+                    border: "1px solid #E8DED2",
+                    borderRadius: "12px",
+                    background: "#FDFAF5",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    transition: "border-color 0.2s"
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: "600", fontSize: "14px", color: "#2C221E", marginBottom: "4px" }}>
+                      {ticket.subject}
+                    </div>
+                    <div style={{ fontSize: "12px", color: "#9A8C82" }}>
+                      {ticket.lastMessage || "No messages yet"}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        padding: "4px 8px",
+                        borderRadius: "6px",
+                        background: ticket.status === "Closed" ? "#E8DED2" : "#E6F4EA",
+                        color: ticket.status === "Closed" ? "#6B5E55" : "#137333"
+                      }}
+                    >
+                      {ticket.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (activePage === "conversation" && !selectedTicket) {
+    return (
+      <div style={{ textAlign: "center", padding: "40px", color: "#6B5E55" }}>
+        <p>No ticket selected.</p>
+        <button onClick={() => setActivePage("menu")} style={{ background: "#C4956A", color: "white", border: "none", padding: "8px 16px", borderRadius: "8px", cursor: "pointer" }}>
+          Return to Menu
+        </button>
+      </div>
+    );
+  }
+
+  const isClosed = selectedTicket?.status === "Closed";
+  const staffName = selectedTicket?.assignedTo || "Support Team";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -371,7 +696,25 @@ export default function SupportPage({ setPage  }) {
         }
       `}</style>
 
-      {/* Header Info / Read Status Bar & Staff Assignment */}
+      <button
+        onClick={() => setActivePage("tickets")}
+        style={{
+          background: "none",
+          border: "none",
+          color: "#C4956A",
+          fontWeight: "600",
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "6px",
+          padding: 0,
+          fontSize: "14px",
+          width: "fit-content"
+        }}
+      >
+        <ArrowLeft size={16} /> Back to My Tickets
+      </button>
+
       <div
         style={{
           display: "flex",
@@ -449,7 +792,6 @@ export default function SupportPage({ setPage  }) {
                 >
                   <p style={{ margin: 0 }}>{msg.message}</p>
 
-                  {/* Render attachments if available */}
                   {msg.attachmentUrl && (
                     <div style={{ marginTop: "10px" }}>
                       {msg.attachmentType?.startsWith("image/") ? (
@@ -505,7 +847,6 @@ export default function SupportPage({ setPage  }) {
             );
           })}
 
-          {/* Sending / Typing Indicator */}
           {sending && (
             <div
               className="customer-message-wrapper customer-user-wrapper"
@@ -530,7 +871,6 @@ export default function SupportPage({ setPage  }) {
         </div>
       )}
 
-      {/* Handle closed tickets */}
       {isClosed ? (
         <div className="closed-notice">
           <Lock size={18} />
@@ -542,7 +882,6 @@ export default function SupportPage({ setPage  }) {
           </div>
         </div>
       ) : (
-        /* CUSTOMER REPLY BOX */
         <div className="customer-reply-box">
           <textarea
             value={reply}
