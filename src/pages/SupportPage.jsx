@@ -14,7 +14,7 @@ import {
 } from "firebase/firestore";
 import { Send, CheckCheck, Eye, Lock, FileText, UserCheck } from "lucide-react";
 
-export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
+export default function SupportPage({ setPage, setActivePage, selectedTicket }) {
   const [messages, setMessages] = useState([]);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
@@ -31,26 +31,26 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
     if (!containerRef.current) return;
   };
 
-  // Mark messages as read for Admin when ticket opens
+  // Mark messages as read for Customer when ticket opens
   useEffect(() => {
     if (!selectedTicket?.id) return;
 
     const markAsRead = async () => {
       try {
-        if (selectedTicket.supportUnread > 0) {
+        if (selectedTicket.customerUnread > 0) {
           await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
-            supportUnread: 0
+            customerUnread: 0
           });
         }
       } catch (err) {
-        console.log("Error marking ticket as read for admin:", err);
+        console.log("Error marking ticket as read for customer:", err);
       }
     };
 
     markAsRead();
-  }, [selectedTicket?.id, selectedTicket?.supportUnread]);
+  }, [selectedTicket?.id, selectedTicket?.customerUnread]);
 
-  // Realtime messages listener for Admin
+  // Realtime messages listener for Customer
   useEffect(() => {
     if (!selectedTicket?.id) return;
 
@@ -70,7 +70,7 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
         );
       },
       (err) => {
-        console.log("Error listening to admin messages:", err);
+        console.log("Error listening to customer messages:", err);
       }
     );
 
@@ -119,7 +119,7 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
     }
   };
 
-  // Send support reply with validation & metadata updates
+  // Send customer reply with validation & metadata updates
   const sendReply = async () => {
     if (!reply.trim() || sending || !selectedTicket?.id) return;
 
@@ -134,29 +134,29 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
         return;
       }
 
-      // Add message to subcollection
+      // Add message as customer to subcollection
       await addDoc(
         collection(db, "supportTickets", selectedTicket.id, "messages"),
         {
-          sender: "support",
-          senderName: selectedTicket.assignedTo ? `Support (${selectedTicket.assignedTo})` : "Support Team",
+          sender: "customer",
+          senderName: selectedTicket.customerName || "Customer",
           message: reply,
           createdAt: serverTimestamp()
         }
       );
 
-      // Track reply metadata & unread counters on the parent ticket
+      // Track reply metadata & increment support unread counter for admin
       await updateDoc(ticketRef, {
         updatedAt: serverTimestamp(),
-        customerUnread: increment(1),
-        lastReplyBy: "support",
+        supportUnread: increment(1),
+        lastReplyBy: "customer",
         lastMessage: reply,
         lastMessageAt: serverTimestamp()
       });
 
       setReply("");
     } catch (err) {
-      console.log("Error sending admin reply:", err);
+      console.log("Error sending customer reply:", err);
     } finally {
       setSending(false);
     }
@@ -195,7 +195,7 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <style>{`
-        .admin-conversation {
+        .customer-conversation {
           display: flex;
           flex-direction: column;
           gap: 16px;
@@ -204,23 +204,23 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
           padding-right: 4px;
         }
 
-        .admin-message-wrapper {
+        .customer-message-wrapper {
           display: flex;
           flex-direction: column;
           max-width: 75%;
         }
 
-        .admin-customer-wrapper {
+        .customer-support-wrapper {
           align-self: flex-start;
           align-items: flex-start;
         }
 
-        .admin-support-wrapper {
+        .customer-user-wrapper {
           align-self: flex-end;
           align-items: flex-end;
         }
 
-        .admin-message-sender-label {
+        .customer-message-sender-label {
           font-size: 12px;
           color: #9A8C82;
           margin-bottom: 4px;
@@ -243,7 +243,7 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
           font-weight: 700;
         }
 
-        .admin-customer-message {
+        .customer-support-message {
           background: white;
           border: 1px solid #E8DED2;
           color: #2C221E;
@@ -254,7 +254,7 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
           box-shadow: 0 2px 10px rgba(44,34,30,0.02);
         }
 
-        .admin-support-message {
+        .customer-user-message {
           background: #C4956A;
           color: white;
           padding: 14px 18px;
@@ -264,14 +264,14 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
           box-shadow: 0 2px 10px rgba(196,149,106,0.15);
         }
 
-        .admin-reply-box {
+        .customer-reply-box {
           display: flex;
           flex-direction: column;
           gap: 12px;
           margin-top: 10px;
         }
 
-        .admin-reply-box textarea {
+        .customer-reply-box textarea {
           width: 100%;
           padding: 14px;
           border: 1px solid #E8DED2;
@@ -286,12 +286,12 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
           transition: border-color .2s;
         }
 
-        .admin-reply-box textarea:focus {
+        .customer-reply-box textarea:focus {
           border-color: #C4956A;
           background: #FFFFFF;
         }
 
-        .admin-reply-btn {
+        .customer-reply-btn {
           background: #C4956A;
           color: white;
           border: none;
@@ -308,18 +308,18 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
           transition: background .2s, transform .2s;
         }
 
-        .admin-reply-btn:hover {
+        .customer-reply-btn:hover {
           background: #b38259;
           transform: translateY(-1px);
         }
 
-        .admin-reply-btn:disabled {
+        .customer-reply-btn:disabled {
           opacity: 0.6;
           cursor: not-allowed;
           transform: none;
         }
 
-        .admin-empty-chat {
+        .customer-empty-chat {
           background: #FAF6F0;
           border: 1px dashed #E8DED2;
           border-radius: 14px;
@@ -342,16 +342,6 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
           font-size: 14px;
           font-weight: 500;
         }
-
-        .read-status-indicator {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 11px;
-          color: #9A8C82;
-          margin-top: 4px;
-          align-self: flex-end;
-        }
       `}</style>
 
       {/* Header Info / Read Status Bar & Staff Assignment */}
@@ -372,18 +362,18 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <span>Ticket ID: {selectedTicket.id.slice(0, 8)}...</span>
           <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "#6E5E53", fontWeight: "500" }}>
-            <UserCheck size={13} /> Handled by: {staffName}
+            <UserCheck size={13} /> Support Staff: {staffName}
           </span>
         </div>
 
         <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          {selectedTicket.customerUnread > 0 ? (
+          {selectedTicket.supportUnread > 0 ? (
             <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "#9A8C82" }}>
               Sent <CheckCheck size={14} />
             </span>
           ) : (
             <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "#10B981", fontWeight: "500" }}>
-              <Eye size={13} /> Seen by customer
+              <Eye size={13} /> Seen by support
             </span>
           )}
         </span>
@@ -391,7 +381,7 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
 
       {messages.length > 0 ? (
         <div
-          className="admin-conversation"
+          className="customer-conversation"
           ref={containerRef}
           onScroll={handleScroll}
         >
@@ -400,17 +390,15 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
             return (
               <div
                 key={msg.id}
-                className={`admin-message-wrapper ${
-                  isCustomer ? "admin-customer-wrapper" : "admin-support-wrapper"
+                className={`customer-message-wrapper ${
+                  isCustomer ? "customer-user-wrapper" : "customer-support-wrapper"
                 }`}
               >
-                <span className="admin-message-sender-label">
+                <span className="customer-message-sender-label">
                   {isCustomer ? (
                     <>
-                      <span className="avatar-badge">
-                        {msg.senderName ? msg.senderName[0].toUpperCase() : "C"}
-                      </span>
-                      {msg.senderName || "Customer"}
+                      <span className="avatar-badge">You</span>
+                      {msg.senderName || "You"}
                     </>
                   ) : (
                     <>
@@ -428,8 +416,8 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
                 <div
                   className={
                     isCustomer
-                      ? "admin-customer-message"
-                      : "admin-support-message"
+                      ? "customer-user-message"
+                      : "customer-support-message"
                   }
                 >
                   <p style={{ margin: 0 }}>{msg.message}</p>
@@ -463,7 +451,7 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
                             display: "flex",
                             alignItems: "center",
                             gap: "8px",
-                            color: isCustomer ? "#2C221E" : "white",
+                            color: isCustomer ? "white" : "#2C221E",
                             textDecoration: "underline",
                             fontSize: "13px"
                           }}
@@ -478,9 +466,9 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
                     style={{
                       marginTop: "8px",
                       fontSize: "11px",
-                      opacity: isCustomer ? 1 : 0.8,
-                      color: isCustomer ? "#9A8C82" : "inherit",
-                      textAlign: isCustomer ? "left" : "right"
+                      opacity: 0.8,
+                      color: isCustomer ? "inherit" : "#9A8C82",
+                      textAlign: isCustomer ? "right" : "left"
                     }}
                   >
                     {formatMessageTime(msg.createdAt)}
@@ -493,20 +481,15 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
           {/* Sending / Typing Indicator */}
           {sending && (
             <div
-              className="admin-message-wrapper admin-support-wrapper"
+              className="customer-message-wrapper customer-user-wrapper"
               style={{ opacity: 0.7 }}
             >
-              <span className="admin-message-sender-label">
-                <span
-                  className="avatar-badge"
-                  style={{ background: "#C4956A", color: "white" }}
-                >
-                  ☕
-                </span>
-                {staffName}
+              <span className="customer-message-sender-label">
+                <span className="avatar-badge">You</span>
+                You
               </span>
-              <div className="admin-support-message">
-                <p style={{ margin: 0, fontStyle: "italic" }}>Typing...</p>
+              <div className="customer-user-message">
+                <p style={{ margin: 0, fontStyle: "italic" }}>Sending...</p>
               </div>
             </div>
           )}
@@ -514,7 +497,7 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
           <div ref={messagesEndRef} />
         </div>
       ) : (
-        <div className="admin-empty-chat">
+        <div className="customer-empty-chat">
           No conversation messages yet.
           <div ref={messagesEndRef} />
         </div>
@@ -527,18 +510,18 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
           <div>
             <strong>This ticket is closed.</strong>
             <div style={{ fontSize: "12px", color: "#9A8C82" }}>
-              New replies cannot be sent unless the ticket is reopened.
+              New replies cannot be sent unless reopened.
             </div>
           </div>
         </div>
       ) : (
-        /* ADMIN REPLY BOX */
-        <div className="admin-reply-box">
+        /* CUSTOMER REPLY BOX */
+        <div className="customer-reply-box">
           <textarea
             value={reply}
             onChange={(e) => setReply(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a support reply... (Press Enter to send)"
+            placeholder="Type your message to support... (Press Enter to send)"
             disabled={sending}
           />
 
@@ -554,11 +537,11 @@ export default function SupportPage({ setPage, setActivePage,selectedTicket }) {
             </span>
             <button
               onClick={sendReply}
-              className="admin-reply-btn"
+              className="customer-reply-btn"
               disabled={sending}
             >
               <Send size={16} />
-              {sending ? "Sending..." : "Send Reply"}
+              {sending ? "Sending..." : "Send Message"}
             </button>
           </div>
         </div>
