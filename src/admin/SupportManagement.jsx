@@ -11,6 +11,12 @@ export default function SupportAdminPage({ setPage, setActivePage }) {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("Newest");
+
+  const [selectedTicket, setSelectedTicket] = useState(null);
+
   useEffect(() => {
     const q = query(
       collection(db, "supportTickets"),
@@ -63,6 +69,54 @@ export default function SupportAdminPage({ setPage, setActivePage }) {
   const highPriorityTickets = tickets.filter(
     (ticket) => ticket.priority === "High"
   ).length;
+
+  const filteredTickets = tickets.filter((ticket) => {
+    const search = searchTerm.toLowerCase().trim();
+
+    const matchesSearch =
+      (ticket.ticketNumber || "").toLowerCase().includes(search) ||
+      (ticket.subject || "").toLowerCase().includes(search) ||
+      (ticket.customerName || "").toLowerCase().includes(search) ||
+      (ticket.customerEmail || "").toLowerCase().includes(search);
+
+    const matchesStatus =
+      statusFilter === "All" || ticket.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const sortedTickets = [...filteredTickets].sort((a, b) => {
+    switch (sortBy) {
+      case "Oldest":
+        return (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
+
+      case "Priority": {
+        const priorityOrder = {
+          High: 3,
+          Medium: 2,
+          Low: 1
+        };
+
+        return (
+          (priorityOrder[b.priority] || 0) -
+          (priorityOrder[a.priority] || 0)
+        );
+      }
+
+      case "Recently Updated":
+        return (
+          (b.updatedAt?.seconds || 0) -
+          (a.updatedAt?.seconds || 0)
+        );
+
+      case "Newest":
+      default:
+        return (
+          (b.createdAt?.seconds || 0) -
+          (a.createdAt?.seconds || 0)
+        );
+    }
+  });
 
   if (loading) {
     return (
@@ -405,14 +459,82 @@ export default function SupportAdminPage({ setPage, setActivePage }) {
             marginBottom: "20px"
           }}
         >
-          {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} found
+          {filteredTickets.length} ticket{filteredTickets.length !== 1 ? "s" : ""} found
         </p>
       </div>
 
+      <select
+        value={statusFilter}
+        onChange={(e) => setStatusFilter(e.target.value)}
+        style={{
+          padding: "12px 14px",
+          border: "1px solid #E8DED2",
+          borderRadius: "12px",
+          background: "#FFFFFF",
+          color: "#2C221E",
+          fontSize: "14px",
+          outline: "none",
+          marginBottom: "16px"
+        }}
+      >
+        <option value="All">All Statuses</option>
+        <option value="Open">Open</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Waiting for Customer">Waiting for Customer</option>
+        <option value="Resolved">Resolved</option>
+        <option value="Closed">Closed</option>
+      </select>
+
+      <select
+        value={sortBy}
+        onChange={(e) => setSortBy(e.target.value)}
+        style={{
+          padding: "12px 14px",
+          border: "1px solid #E8DED2",
+          borderRadius: "12px",
+          background: "#FFFFFF",
+          color: "#2C221E",
+          fontSize: "14px",
+          outline: "none",
+          marginBottom: "16px",
+          marginLeft: "12px"
+        }}
+      >
+        <option value="Newest">Newest</option>
+        <option value="Oldest">Oldest</option>
+        <option value="Priority">Priority</option>
+        <option value="Recently Updated">Recently Updated</option>
+      </select>
+
+      <div
+        style={{
+          marginBottom: "20px"
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Search by ticket number, customer, email or subject..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "14px 16px",
+            border: "1px solid #E8DED2",
+            borderRadius: "14px",
+            background: "#FFFFFF",
+            color: "#2C221E",
+            fontSize: "14px",
+            outline: "none",
+            boxSizing: "border-box"
+          }}
+        />
+      </div>
+
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        {tickets.map((ticket) => (
+        {sortedTickets.map((ticket) => (
           <div
             key={ticket.id}
+            onClick={() => setSelectedTicket(ticket)}
             style={{
               background: "#FFFFFF",
               border: "1px solid #E8DED2",
@@ -555,9 +677,148 @@ export default function SupportAdminPage({ setPage, setActivePage }) {
                 {ticket.customerEmail || "No email"}
               </span>
             </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: "16px",
+                paddingTop: "16px",
+                borderTop: "1px solid #F4EFE6"
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#9A8C82",
+                    textTransform: "uppercase",
+                    fontWeight: 600
+                  }}
+                >
+                  Category
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "#2C221E",
+                    fontWeight: 600,
+                    marginTop: "2px"
+                  }}
+                >
+                  {ticket.category || "General"}
+                </div>
+              </div>
+
+              <div style={{ textAlign: "right" }}>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#9A8C82",
+                    textTransform: "uppercase",
+                    fontWeight: 600
+                  }}
+                >
+                  Order
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "#2C221E",
+                    fontWeight: 600,
+                    marginTop: "2px"
+                  }}
+                >
+                  {ticket.orderId || "Not Linked"}
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: "16px",
+                paddingTop: "16px",
+                borderTop: "1px solid #F4EFE6"
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#9A8C82"
+                }}
+              >
+                Last updated:{" "}
+                {ticket.updatedAt?.toDate?.().toLocaleString() || "N/A"}
+              </div>
+
+              {ticket.supportUnread > 0 && (
+                <div
+                  style={{
+                    background: "#D32F2F",
+                    color: "white",
+                    padding: "4px 10px",
+                    borderRadius: "999px",
+                    fontSize: "12px",
+                    fontWeight: 600
+                  }}
+                >
+                  {ticket.supportUnread} New
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>
+
+      {selectedTicket && (
+        <div
+          style={{
+            marginTop: "24px",
+            background: "#FFFFFF",
+            border: "1px solid #E8DED2",
+            borderRadius: "18px",
+            padding: "24px",
+            boxShadow: "0 2px 10px rgba(44,34,30,0.03)"
+          }}
+        >
+          <h2
+            style={{
+              margin: "0 0 16px",
+              color: "#2C221E",
+              fontFamily: "Playfair Display, serif"
+            }}
+          >
+            Ticket Details
+          </h2>
+
+          <p><strong>Ticket:</strong> {selectedTicket.ticketNumber}</p>
+          <p><strong>Subject:</strong> {selectedTicket.subject}</p>
+          <p><strong>Customer:</strong> {selectedTicket.customerName}</p>
+          <p><strong>Email:</strong> {selectedTicket.customerEmail}</p>
+          <p><strong>Status:</strong> {selectedTicket.status}</p>
+          <p><strong>Priority:</strong> {selectedTicket.priority}</p>
+          <p><strong>Category:</strong> {selectedTicket.category}</p>
+          <p><strong>Order:</strong> {selectedTicket.orderId || "Not Linked"}</p>
+          <p><strong>Description:</strong></p>
+
+          <div
+            style={{
+              background: "#FAF6F0",
+              padding: "16px",
+              borderRadius: "12px",
+              marginTop: "8px"
+            }}
+          >
+            {selectedTicket.description}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
