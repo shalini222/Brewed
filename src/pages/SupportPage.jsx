@@ -282,6 +282,14 @@ export default function SupportPage({ setPage }) {
 
   const isClosed = selectedTicket?.status === "Closed";
 
+  const recentTickets = [...tickets]
+    .sort((a, b) => {
+      const aTime = a.updatedAt?.seconds || 0;
+      const bTime = b.updatedAt?.seconds || 0;
+      return bTime - aTime;
+    })
+    .slice(0, 3);
+
   return (
     <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto", fontFamily: "inherit" }}>
       <style>{`
@@ -374,20 +382,22 @@ export default function SupportPage({ setPage }) {
 
           {/* RECENT TICKETS SECTION */}
           <section style={{ marginTop: "0px" }}>
-            <h2 className="support-heading">Recent Tickets</h2>
+            <h2 className="support-heading">
+              🕒 Recent Tickets
+            </h2>
 
             {loadingTickets ? (
               <div className="support-card" style={{ padding: "20px", textAlign: "center", color: "#9A8C82" }}>
                 Loading recent tickets...
               </div>
-            ) : tickets.length === 0 ? (
+            ) : recentTickets.length === 0 ? (
               <div className="support-card" style={{ padding: "20px" }}>
-                <p style={{ color: "#9A8C82", margin: 0 }}>
+                <p style={{ margin: 0, color: "#9A8C82" }}>
                   No recent tickets.
                 </p>
               </div>
             ) : (
-              tickets.slice(0, 3).map((ticket) => (
+              recentTickets.map((ticket) => (
                 <div
                   key={ticket.id}
                   className="ticket-item"
@@ -408,9 +418,9 @@ export default function SupportPage({ setPage }) {
 
                     <div
                       style={{
-                        fontSize: "12px",
+                        fontSize: 12,
                         color: "#9A8C82",
-                        marginTop: "4px"
+                        marginTop: 4
                       }}
                     >
                       {ticket.lastMessage || "No messages yet"}
@@ -430,16 +440,6 @@ export default function SupportPage({ setPage }) {
               ))
             )}
           </section>
-
-          {/* FAQS & HELP SECTION PLACEHOLDER */}
-          <div className="support-card" style={{ display: "flex", flexDirection: "column", gap: "16px", background: "#FAF6F0" }}>
-            <div style={{ maxWidth: "550px" }}>
-              <h3 style={{ color: "#2C221E", marginBottom: "8px", fontSize: "16px" }}>Need immediate assistance?</h3>
-              <p style={{ color: "#9A8C82", fontSize: "13px", lineHeight: "1.5", margin: 0 }}>
-                Have questions about your order, account, or our menu? Open a support ticket above or review our FAQs for quick answers.
-              </p>
-            </div>
-          </div>
         </div>
       )}
 
