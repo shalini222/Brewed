@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
+import { useAuth } from "../context/AuthContext";
 import {
   doc,
   getDoc,
   collection,
   query,
+  where,
   orderBy,
   onSnapshot,
   addDoc,
@@ -12,17 +14,36 @@ import {
   updateDoc,
   increment
 } from "firebase/firestore";
-import { Send, CheckCheck, Eye, Lock, Paperclip, FileText, Image as ImageIcon } from "lucide-react";
+import { Send, Eye, Lock, FileText, PlusCircle, ArrowLeft, LifeBuoy } from "lucide-react";
 
-export default function SupportPage({ setPage}) {
+export default function SupportPage({ setPage }) {
+  const { currentUser } = useAuth();
+  
+  // Navigation states ("home", "list", "create", "conversation")
+  const [activePage, setActivePage] = useState("home");
+  
+  // Ticket states
+  const [tickets, setTickets] = useState([]);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [loadingTickets, setLoadingTickets] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+
+  // Form states for creating a ticket
+  const [subject, setSubject] = useState("");
+  const [category, setCategory] = useState("General");
+  const [initialMessage, setInitialMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  // Chat conversation states
   const [messages, setMessages] = useState([]);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
+  const [isNearBottom, setIsNearBottom] = useState(true);
 
   const containerRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // Smart auto-scroll: scroll if user is already near the bottom
+  // Auto-scroll logic
   const scrollToBottom = (behavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
@@ -30,32 +51,68 @@ export default function SupportPage({ setPage}) {
   const handleScroll = () => {
     if (!containerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-    // We can store this or handle condition in messages effect
+    const nearBottom = scrollHeight - scrollTop - clientHeight < 150;
+    setIsNearBottom(nearBottom);
   };
 
-  // Mark messages as read for Admin when ticket opens
+  // Fetch customer's tickets in real-time
+  useEffect(() => {
+    if (!currentUser?.uid) {
+      setLoadingTickets(false);
+      return;
+    }
+
+    setLoadingTickets(true);
+    const q = query(
+      collection(db, "supportTickets"),
+      where("customerId", "==", currentUser.uid),
+      orderBy("updatedAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const fetchedTickets = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data()
+        }));
+        setTickets(fetchedTickets);
+        setLoadingTickets(false);
+      },
+      (err) => {
+        console.log("Error fetching customer tickets (Index may be required):", err);
+        setLoadingTickets(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [currentUser?.uid]);
+
+  // Mark messages as read for Customer when viewing a ticket
   useEffect(() => {
     if (!selectedTicket?.id) return;
 
     const markAsRead = async () => {
       try {
-        if (selectedTicket.supportUnread > 0) {
+        if (selectedTicket.customerUnread > 0) {
           await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
-            supportUnread: 0
+            customerUnread: 0
           });
         }
       } catch (err) {
-        console.log("Error marking ticket as read for admin:", err);
+        console.log("Error marking ticket as read for customer:", err);
       }
     };
 
     markAsRead();
-  }, [selectedTicket?.id, selectedTicket?.supportUnread]);
+  }, [selectedTicket?.id, selectedTicket?.customerUnread]);
 
-  // Realtime messages listener for Admin
+  // Real-time messages listener for the active ticket
   useEffect(() => {
     if (!selectedTicket?.id) return;
+
+    setLoadingMessages(true);
+    setMessages([]); // Clear previous messages to avoid flashing old data
 
     const q = query(
       collection(db, "supportTickets", selectedTicket.id, "messages"),
@@ -66,36 +123,125 @@ export default function SupportPage({ setPage}) {
       q,
       (snapshot) => {
         setMessages(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data()
+          snapshot.docs.map((docSnap) => ({
+            id: docSnap.id,
+            ...docSnap.data()
           }))
         );
+        setLoadingMessages(false);
       },
       (err) => {
-        console.log("Error listening to admin messages:", err);
+        console.log("Error listening to ticket messages:", err);
+        setLoadingMessages(false);
       }
     );
 
     return () => unsubscribe();
   }, [selectedTicket?.id]);
 
-  // Smart auto-scroll whenever messages change
+  // Auto-scroll when messages update
   useEffect(() => {
-    if (!containerRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
-
-    // If it's the initial load or user was already near bottom, scroll down
     if (isNearBottom || messages.length <= 5) {
       scrollToBottom();
     }
-  }, [messages]);
+  }, [messages, isNearBottom]);
 
-  // Format timestamps nicely (Today, Yesterday, or Date)
+  // Create a new support ticket
+  const handleCreateTicket = async (e) => {
+    e.preventDefault();
+    if (!subject.trim() || !initialMessage.trim() || submitting || !currentUser?.uid) return;
+
+    try {
+      setSubmitting(true);
+
+      const ticketRef = await addDoc(collection(db, "supportTickets"), {
+        customerId: currentUser.uid,
+        customerName: currentUser.displayName || currentUser.email || "Customer",
+        customerEmail: currentUser.email || "",
+        subject: subject.trim(),
+        category: category,
+        status: "Open",
+        priority: "Normal",
+        customerUnread: 0,
+        supportUnread: 1,
+        lastReplyBy: "customer",
+        lastMessage: initialMessage.trim(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        lastMessageAt: serverTimestamp()
+      });
+
+      // Add initial message to subcollection
+      await addDoc(collection(db, "supportTickets", ticketRef.id, "messages"), {
+        sender: "customer",
+        senderName: currentUser.displayName || currentUser.email || "Customer",
+        message: initialMessage.trim(),
+        createdAt: serverTimestamp()
+      });
+
+      // Reload ticket fresh from Firestore to guarantee consistency
+      const snap = await getDoc(ticketRef);
+      setSelectedTicket({ id: ticketRef.id, ...snap.data() });
+      
+      // Reset form fields
+      setSubject("");
+      setCategory("General");
+      setInitialMessage("");
+      setActivePage("conversation");
+    } catch (err) {
+      console.log("Error creating support ticket:", err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Send a message reply
+  const sendReply = async () => {
+    if (!reply.trim() || sending || !selectedTicket?.id || !currentUser?.uid) return;
+
+    try {
+      setSending(true);
+      const ticketRef = doc(db, "supportTickets", selectedTicket.id);
+      const ticketSnap = await getDoc(ticketRef);
+
+      if (!ticketSnap.exists()) {
+        alert("This ticket no longer exists.");
+        setActivePage("list");
+        return;
+      }
+
+      await addDoc(collection(db, "supportTickets", selectedTicket.id, "messages"), {
+        sender: "customer",
+        senderName: currentUser.displayName || currentUser.email || "Customer",
+        message: reply.trim(),
+        createdAt: serverTimestamp()
+      });
+
+      await updateDoc(ticketRef, {
+        updatedAt: serverTimestamp(),
+        supportUnread: increment(1),
+        lastReplyBy: "customer",
+        lastMessage: reply.trim(),
+        lastMessageAt: serverTimestamp()
+      });
+
+      setReply("");
+    } catch (err) {
+      console.log("Error sending reply:", err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendReply();
+    }
+  };
+
   const formatMessageTime = (timestamp) => {
     if (!timestamp?.toDate) return "Sending...";
-
     const date = timestamp.toDate();
     const now = new Date();
     const isToday = date.toDateString() === now.toDateString();
@@ -110,458 +256,277 @@ export default function SupportPage({ setPage}) {
       hour12: true
     });
 
-    if (isToday) {
-      return `Today • ${timeString}`;
-    } else if (isYesterday) {
-      return `Yesterday • ${timeString}`;
-    } else {
-      const dateString = date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric"
-      });
-      return `${dateString} • ${timeString}`;
-    }
+    if (isToday) return `Today • ${timeString}`;
+    if (isYesterday) return `Yesterday • ${timeString}`;
+    return `${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} • ${timeString}`;
   };
 
-  // Send support reply with validation & metadata updates
-  const sendReply = async () => {
-    if (!reply.trim() || sending || !selectedTicket?.id) return;
-
-    try {
-      setSending(true);
-
-      // ✅ 1. Verify ticket still exists before sending
-      const ticketRef = doc(db, "supportTickets", selectedTicket.id);
-      const ticketSnap = await getDoc(ticketRef);
-
-      if (!ticketSnap.exists()) {
-        alert("This ticket no longer exists.");
-        return;
-      }
-
-      // Add message to subcollection
-      await addDoc(
-        collection(db, "supportTickets", selectedTicket.id, "messages"),
-        {
-          sender: "support",
-          senderName: "Support Team",
-          message: reply,
-          createdAt: serverTimestamp()
-        }
-      );
-
-      // ✅ 10. Track reply metadata & unread counters on the parent ticket
-      await updateDoc(ticketRef, {
-        updatedAt: serverTimestamp(),
-        customerUnread: increment(1),
-        lastReplyBy: "support",
-        lastMessage: reply,
-        lastMessageAt: serverTimestamp()
-      });
-
-      setReply("");
-    } catch (err) {
-      console.log("Error sending admin reply:", err);
-    } finally {
-      setSending(false);
-    }
-  };
-
-  // ✅ 2. Allow sending with Enter (excluding Shift+Enter)
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendReply();
-    }
-  };
-
-  if (!selectedTicket) {
-    return (
-      <div
-        style={{
-          background: "#FAF6F0",
-          border: "1px dashed #E8DED2",
-          borderRadius: "14px",
-          padding: "30px",
-          textAlign: "center",
-          color: "#9A8C82",
-          fontStyle: "italic",
-          fontSize: "14px"
-        }}
-      >
-        Select a ticket to view the conversation.
-      </div>
-    );
-  }
-
-  const isClosed = selectedTicket.status === "Closed";
+  const isClosed = selectedTicket?.status === "Closed";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+    <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto", fontFamily: "inherit" }}>
       <style>{`
-        .admin-conversation {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          max-height: 400px;
-          overflow-y: auto;
-          padding-right: 4px;
-        }
-
-        .admin-message-wrapper {
-          display: flex;
-          flex-direction: column;
-          max-width: 75%;
-        }
-
-        /* In admin view, customer is left-aligned and support is right-aligned */
-        .admin-customer-wrapper {
-          align-self: flex-start;
-          align-items: flex-start;
-        }
-
-        .admin-support-wrapper {
-          align-self: flex-end;
-          align-items: flex-end;
-        }
-
-        .admin-message-sender-label {
-          font-size: 12px;
-          color: #9A8C82;
-          margin-bottom: 4px;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-
-        .avatar-badge {
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: #E8DED2;
-          color: #2C221E;
-          font-size: 10px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-        }
-
-        .admin-customer-message {
-          background: white;
-          border: 1px solid #E8DED2;
-          color: #2C221E;
-          padding: 14px 18px;
-          border-radius: 18px 18px 18px 4px;
-          font-size: 14px;
-          line-height: 1.5;
-          box-shadow: 0 2px 10px rgba(44,34,30,0.02);
-        }
-
-        .admin-support-message {
-          background: #C4956A;
-          color: white;
-          padding: 14px 18px;
-          border-radius: 18px 18px 4px 18px;
-          font-size: 14px;
-          line-height: 1.5;
-          box-shadow: 0 2px 10px rgba(196,149,106,0.15);
-        }
-
-        .admin-reply-box {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-top: 10px;
-        }
-
-        .admin-reply-box textarea {
-          width: 100%;
-          padding: 14px;
-          border: 1px solid #E8DED2;
-          border-radius: 14px;
-          background: #FDFAF5;
-          outline: none;
-          font-family: inherit;
-          color: #2C221E;
-          font-size: 14px;
-          resize: vertical;
-          min-height: 80px;
-          transition: border-color .2s;
-        }
-
-        .admin-reply-box textarea:focus {
-          border-color: #C4956A;
-          background: #FFFFFF;
-        }
-
-        .admin-reply-btn {
-          background: #C4956A;
-          color: white;
-          border: none;
-          border-radius: 14px;
-          padding: 10px 18px;
-          font-weight: 600;
-          font-size: 14px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          align-self: flex-end;
-          transition: background .2s, transform .2s;
-        }
-
-        .admin-reply-btn:hover {
-          background: #b38259;
-          transform: translateY(-1px);
-        }
-
-        .admin-reply-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        .admin-empty-chat {
-          background: #FAF6F0;
-          border: 1px dashed #E8DED2;
-          border-radius: 14px;
-          padding: 20px;
-          text-align: center;
-          color: #9A8C82;
-          font-style: italic;
-          font-size: 14px;
-        }
-
-        .closed-notice {
-          background: #FAF6F0;
-          border: 1px solid #E8DED2;
-          border-radius: 12px;
-          padding: 14px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          color: #6E5E53;
-          font-size: 14px;
-          font-weight: 500;
-        }
-
-        .read-status-indicator {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 11px;
-          color: #9A8C82;
-          margin-top: 4px;
-          align-self: flex-end;
-        }
+        .support-container { display: flex; flex-direction: column; gap: 16px; }
+        .support-card { background: white; border: 1px solid #E8DED2; border-radius: 14px; padding: 24px; box-shadow: 0 2px 10px rgba(44,34,30,0.02); }
+        .support-btn { background: #C4956A; color: white; border: none; border-radius: 12px; padding: 10px 18px; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background .2s; }
+        .support-btn:hover { background: #b38259; }
+        .support-btn-secondary { background: #FAF6F0; color: #2C221E; border: 1px solid #E8DED2; }
+        .support-btn-secondary:hover { background: #E8DED2; }
+        .ticket-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #E8DED2; border-radius: 12px; background: #FDFAF5; cursor: pointer; transition: all .2s; }
+        .ticket-item:hover { border-color: #C4956A; background: #FFFFFF; }
+        .badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+        .badge-open { background: #FEF3C7; color: #D97706; }
+        .badge-closed { background: #F3F4F6; color: #4B5563; }
+        .conversation-box { display: flex; flex-direction: column; gap: 16px; max-height: 400px; overflow-y: auto; padding-right: 4px; }
+        .message-wrapper { display: flex; flex-direction: column; max-width: 75%; }
+        .customer-message-wrapper { align-self: flex-end; align-items: flex-end; }
+        .support-message-wrapper { align-self: flex-start; align-items: flex-start; }
+        .message-sender-label { font-size: 12px; color: #9A8C82; margin-bottom: 4px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .avatar-badge { width: 20px; height: 20px; border-radius: 50%; background: #E8DED2; color: #2C221E; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+        .customer-msg { background: #C4956A; color: white; padding: 14px 18px; border-radius: 18px 18px 4px 18px; font-size: 14px; line-height: 1.5; }
+        .support-msg { background: white; border: 1px solid #E8DED2; color: #2C221E; padding: 14px 18px; border-radius: 18px 18px 18px 4px; font-size: 14px; line-height: 1.5; }
       `}</style>
 
-      {/* Header Info / Read Status Bar */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          fontSize: "12px",
-          color: "#9A8C82",
-          background: "#FAF6F0",
-          padding: "8px 12px",
-          borderRadius: "10px"
-        }}
-      >
-        <span>Ticket ID: {selectedTicket.id.slice(0, 8)}...</span>
-        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          {selectedTicket.customerUnread > 0 ? (
-            <>
-              <span style={{ color: "#D97706", fontWeight: "600" }}>
-                Unread by customer ({selectedTicket.customerUnread})
-              </span>
-            </>
-          ) : (
-            <>
-              <Eye size={13} /> Seen by customer
-            </>
+      {/* Navigation Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {activePage !== "home" && (
+            <button
+              onClick={() => setActivePage("home")}
+              className="support-btn support-btn-secondary"
+              style={{ padding: "8px 12px" }}
+            >
+              <ArrowLeft size={16} /> Back
+            </button>
           )}
-        </span>
+          <h2 style={{ margin: 0, color: "#2C221E", fontSize: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <LifeBuoy size={22} color="#C4956A" /> Customer Support
+          </h2>
+        </div>
+        {activePage === "home" && (
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button onClick={() => setActivePage("list")} className="support-btn support-btn-secondary">
+              My Tickets ({tickets.length})
+            </button>
+            <button onClick={() => setActivePage("create")} className="support-btn">
+              <PlusCircle size={16} /> New Ticket
+            </button>
+          </div>
+        )}
       </div>
 
-      {messages.length > 0 ? (
-        <div
-          className="admin-conversation"
-          ref={containerRef}
-          onScroll={handleScroll}
-        >
-          {messages.map((msg) => {
-            const isCustomer = msg.sender === "customer";
-            return (
-              <div
-                key={msg.id}
-                className={`admin-message-wrapper ${
-                  isCustomer ? "admin-customer-wrapper" : "admin-support-wrapper"
-                }`}
-              >
-                <span className="admin-message-sender-label">
-                  {isCustomer ? (
-                    <>
-                      <span className="avatar-badge">
-                        {msg.senderName ? msg.senderName[0].toUpperCase() : "C"}
-                      </span>
-                      {msg.senderName || "Customer"}
-                    </>
-                  ) : (
-                    <>
-                      <span
-                        className="avatar-badge"
-                        style={{ background: "#C4956A", color: "white" }}
-                      >
-                        ☕
-                      </span>
-                      Support Team
-                    </>
-                  )}
-                </span>
-
-                <div
-                  className={
-                    isCustomer
-                      ? "admin-customer-message"
-                      : "admin-support-message"
-                  }
-                >
-                  <p style={{ margin: 0 }}>{msg.message}</p>
-
-                  {/* Render attachments if available */}
-                  {msg.attachmentUrl && (
-                    <div style={{ marginTop: "10px" }}>
-                      {msg.attachmentType?.startsWith("image/") ? (
-                        <a
-                          href={msg.attachmentUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <img
-                            src={msg.attachmentUrl}
-                            alt="attachment"
-                            style={{
-                              maxWidth: "100%",
-                              maxHeight: "160px",
-                              borderRadius: "8px",
-                              border: "1px solid rgba(0,0,0,0.1)"
-                            }}
-                          />
-                        </a>
-                      ) : (
-                        <a
-                          href={msg.attachmentUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            color: isCustomer ? "#2C221E" : "white",
-                            textDecoration: "underline",
-                            fontSize: "13px"
-                          }}
-                        >
-                          <FileText size={16} /> View Attachment
-                        </a>
-                      )}
-                    </div>
-                  )}
-
-                  <div
-                    style={{
-                      marginTop: "8px",
-                      fontSize: "11px",
-                      opacity: isCustomer ? 1 : 0.8,
-                      color: isCustomer ? "#9A8C82" : "inherit",
-                      textAlign: isCustomer ? "left" : "right"
-                    }}
-                  >
-                    {formatMessageTime(msg.createdAt)}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* ✅ 4. Sending / Typing Indicator */}
-          {sending && (
-            <div
-              className="admin-message-wrapper admin-support-wrapper"
-              style={{ opacity: 0.7 }}
-            >
-              <span className="admin-message-sender-label">
-                <span
-                  className="avatar-badge"
-                  style={{ background: "#C4956A", color: "white" }}
-                >
-                  ☕
-                </span>
-                Support Team
-              </span>
-              <div className="admin-support-message">
-                <p style={{ margin: 0, fontStyle: "italic" }}>Typing...</p>
-              </div>
+      {/* HOME PAGE VIEW */}
+      {activePage === "home" && (
+        <div className="support-card" style={{ display: "flex", flexDirection: "column", gap: "20px", textAlign: "center", padding: "40px 20px" }}>
+          <div style={{ maxWidth: "450px", margin: "0 auto" }}>
+            <h3 style={{ color: "#2C221E", marginBottom: "10px" }}>How can we help you today?</h3>
+            <p style={{ color: "#9A8C82", fontSize: "14px", lineHeight: "1.5", marginBottom: "24px" }}>
+              Have questions about your order, account, or our menu? Open a support ticket and our team will get back to you promptly.
+            </p>
+            <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
+              <button onClick={() => setActivePage("create")} className="support-btn">
+                <PlusCircle size={18} /> Create Support Ticket
+              </button>
+              <button onClick={() => setActivePage("list")} className="support-btn support-btn-secondary">
+                View My Tickets
+              </button>
             </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-      ) : (
-        <div className="admin-empty-chat">
-          No conversation messages yet.
-          <div ref={messagesEndRef} />
+          </div>
         </div>
       )}
 
-      {/* ✅ 6. Handle closed tickets better */}
-      {isClosed ? (
-        <div className="closed-notice">
-          <Lock size={18} />
-          <div>
-            <strong>This ticket is closed.</strong>
-            <div style={{ fontSize: "12px", color: "#9A8C82" }}>
-              New replies cannot be sent unless the ticket is reopened.
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* ADMIN REPLY BOX */
-        <div className="admin-reply-box">
-          <textarea
-            value={reply}
-            onChange={(e) => setReply(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a support reply... (Press Enter to send)"
-            disabled={sending}
-          />
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}
-          >
-            <span style={{ fontSize: "11px", color: "#9A8C82" }}>
-              Press Enter to send, Shift + Enter for new line
-            </span>
-            <button
-              onClick={sendReply}
-              className="admin-reply-btn"
-              disabled={sending}
-            >
-              <Send size={16} />
-              {sending ? "Sending..." : "Send Reply"}
+      {/* TICKET LIST VIEW */}
+      {activePage === "list" && (
+        <div className="support-card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h3 style={{ margin: 0, color: "#2C221E", fontSize: "16px" }}>Your Support Requests</h3>
+            <button onClick={() => setActivePage("create")} className="support-btn" style={{ padding: "6px 12px", fontSize: "13px" }}>
+              <PlusCircle size={14} /> New Ticket
             </button>
           </div>
+
+          {loadingTickets ? (
+            <div style={{ textAlign: "center", padding: "30px", color: "#9A8C82" }}>Loading your tickets...</div>
+          ) : tickets.length === 0 ? (
+            <div style={{ background: "#FAF6F0", border: "1px dashed #E8DED2", borderRadius: "12px", padding: "30px", textAlign: "center", color: "#9A8C82" }}>
+              You haven't created any support tickets yet.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {tickets.map((t) => (
+                <div
+                  key={t.id}
+                  className="ticket-item"
+                  onClick={() => {
+                    setSelectedTicket(t);
+                    setActivePage("conversation");
+                  }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontWeight: "600", color: "#2C221E", fontSize: "14px" }}>{t.subject}</span>
+                      <span style={{ fontSize: "11px", color: "#9A8C82" }}>Ticket #CS{t.id.slice(-6).toUpperCase()}</span>
+                    </div>
+                    <span style={{ fontSize: "12px", color: "#6E5E53" }}>{t.lastMessage || "No messages yet"}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    {t.customerUnread > 0 && (
+                      <span style={{ background: "#D97706", color: "white", fontSize: "10px", padding: "2px 6px", borderRadius: "10px", fontWeight: "700" }}>
+                        {t.customerUnread} Unread
+                      </span>
+                    )}
+                    <span className={`badge ${t.status === "Closed" ? "badge-closed" : "badge-open"}`}>
+                      {t.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* CREATE TICKET VIEW */}
+      {activePage === "create" && (
+        <div className="support-card">
+          <h3 style={{ margin: "0 0 16px 0", color: "#2C221E", fontSize: "16px" }}>Create New Support Ticket</h3>
+          <form onSubmit={handleCreateTicket} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontSize: "13px", fontWeight: "600", color: "#6E5E53" }}>Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                style={{ padding: "12px", border: "1px solid #E8DED2", borderRadius: "10px", background: "#FDFAF5", color: "#2C221E", outline: "none" }}
+              >
+                <option value="General">General Inquiry</option>
+                <option value="Order">Order Issue</option>
+                <option value="Account">Account & Login</option>
+                <option value="Billing">Billing & Payment</option>
+              </select>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontSize: "13px", fontWeight: "600", color: "#6E5E53" }}>Subject</label>
+              <input
+                type="text"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Brief summary of your issue"
+                required
+                style={{ padding: "12px", border: "1px solid #E8DED2", borderRadius: "10px", background: "#FDFAF5", color: "#2C221E", outline: "none" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontSize: "13px", fontWeight: "600", color: "#6E5E53" }}>Message</label>
+              <textarea
+                value={initialMessage}
+                onChange={(e) => setInitialMessage(e.target.value)}
+                placeholder="Describe your issue in detail..."
+                required
+                rows={5}
+                style={{ padding: "12px", border: "1px solid #E8DED2", borderRadius: "10px", background: "#FDFAF5", color: "#2C221E", outline: "none", resize: "vertical" }}
+              />
+            </div>
+
+            <button type="submit" className="support-btn" disabled={submitting} style={{ alignSelf: "flex-end" }}>
+              {submitting ? "Submitting..." : "Submit Ticket"}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* CONVERSATION VIEW */}
+      {activePage === "conversation" && selectedTicket && (
+        <div className="support-card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {/* Header Info */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", color: "#9A8C82", background: "#FAF6F0", padding: "10px 14px", borderRadius: "10px", border: "1px solid #E8DED2" }}>
+            <div>
+              <strong style={{ color: "#2C221E" }}>{selectedTicket.subject}</strong>
+              <div style={{ fontSize: "11px", marginTop: "2px" }}>Ticket #CS{selectedTicket.id.slice(-6).toUpperCase()} • Category: {selectedTicket.category}</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <span className={`badge ${isClosed ? "badge-closed" : "badge-open"}`}>{selectedTicket.status}</span>
+              <div style={{ fontSize: "11px", marginTop: "4px" }}>Priority: {selectedTicket.priority || "Normal"}</div>
+            </div>
+          </div>
+
+          {/* Message List */}
+          {loadingMessages ? (
+            <div style={{ textAlign: "center", padding: "40px", color: "#9A8C82" }}>Loading conversation...</div>
+          ) : messages.length === 0 ? (
+            <div style={{ background: "#FAF6F0", border: "1px dashed #E8DED2", borderRadius: "12px", padding: "30px", textAlign: "center", color: "#9A8C82" }}>
+              👋 Your conversation with our support team will appear here once messages are sent.
+              <div ref={messagesEndRef} />
+            </div>
+          ) : (
+            <div className="conversation-box" ref={containerRef} onScroll={handleScroll}>
+              {messages.map((msg) => {
+                const isCustomer = msg.sender === "customer";
+                return (
+                  <div key={msg.id} className={`message-wrapper ${isCustomer ? "customer-message-wrapper" : "support-message-wrapper"}`}>
+                    <span className="message-sender-label">
+                      {isCustomer ? (
+                        <>
+                          You
+                          <span className="avatar-badge" style={{ background: "#C4956A", color: "white" }}>Me</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="avatar-badge">☕</span>
+                          Support Team
+                        </>
+                      )}
+                    </span>
+                    <div className={isCustomer ? "customer-msg" : "support-msg"}>
+                      <p style={{ margin: 0 }}>{msg.message}</p>
+                      <div style={{ marginTop: "6px", fontSize: "11px", opacity: 0.8, textAlign: isCustomer ? "right" : "left" }}>
+                        {formatMessageTime(msg.createdAt)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+
+          {/* Reply Box or Closed Notice */}
+          {isClosed ? (
+            <div style={{ background: "#FAF6F0", border: "1px solid #E8DED2", borderRadius: "12px", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#6E5E53", fontSize: "14px" }}>
+                <Lock size={18} />
+                <div>
+                  <strong>This ticket is closed.</strong>
+                  <div style={{ fontSize: "12px", color: "#9A8C82" }}>New replies cannot be sent unless a new ticket is opened.</div>
+                </div>
+              </div>
+              <button onClick={() => setActivePage("create")} className="support-btn" style={{ fontSize: "13px", padding: "8px 14px" }}>
+                Create New Ticket
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "10px" }}>
+              <textarea
+                value={reply}
+                onChange={(e) => setReply(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your message... (Press Enter to send)"
+                disabled={sending}
+                rows={3}
+                style={{ width: "100%", padding: "12px", border: "1px solid #E8DED2", borderRadius: "12px", background: "#FDFAF5", outline: "none", color: "#2C221E", fontSize: "14px", resize: "vertical" }}
+              />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "11px", color: "#9A8C82" }}>Press Enter to send, Shift + Enter for new line</span>
+                <button onClick={sendReply} className="support-btn" disabled={sending}>
+                  <Send size={16} /> {sending ? "Sending..." : "Send Reply"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
+
