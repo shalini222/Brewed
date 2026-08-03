@@ -65,29 +65,8 @@ export default function SupportPage({ setPage }) {
   const containerRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // FAQ Data
-  const faqs = [
-    {
-      question: "How long does delivery take?",
-      answer:
-        "Delivery usually takes 30–45 minutes depending on your location and order volume."
-    },
-    {
-      question: "Can I cancel my order?",
-      answer:
-        "Orders can be cancelled before preparation begins."
-    },
-    {
-      question: "How do loyalty points work?",
-      answer:
-        "You earn points on eligible purchases and can redeem them for rewards."
-    },
-    {
-      question: "Where is my refund?",
-      answer:
-        "Refunds are processed after verification and usually appear within 5–7 business days."
-    }
-  ];
+  // FAQ 
+  const [faqs, setFaqs] = useState([]);
 
   // Filter FAQs
   const filteredFaqs = faqs.filter((faq) =>
@@ -213,6 +192,28 @@ export default function SupportPage({ setPage }) {
 
     return () => unsubscribe();
   }, [selectedTicket?.id]);
+
+useEffect(() => {
+  const q = query(
+    collection(db, "supportFAQs"),
+    where("active", "==", true),
+    
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    setFaqs(
+      snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+    );
+  });
+
+  return () => unsubscribe();
+}, []);
+
+
+  
 
   // Auto-scroll when messages update
   useEffect(() => {
