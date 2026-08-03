@@ -373,6 +373,10 @@ export default function SupportPage({ setPage }) {
         .help-card h3 { margin: 12px 0 6px; color: #2C221E; }
         .help-card p { margin: 0; color: #9A8C82; font-size: 13px; line-height: 1.5; }
         .support-heading { font-size: 18px; color: #2C221E; margin-bottom: 12px; font-weight: 700; }
+        .faq-card { background: white; border: 1px solid #E8DED2; border-radius: 14px; margin-bottom: 12px; overflow: hidden; }
+        .faq-btn { width: 100%; background: white; border: none; padding: 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 14px; font-weight: 600; color: #2C221E; }
+        .faq-btn:hover { background: #FAF6F0; }
+        .faq-answer { padding: 0 18px 18px; color: #6E5E53; line-height: 1.6; font-size: 14px; }
       `}</style>
 
       {/* Navigation Header */}
@@ -578,6 +582,56 @@ export default function SupportPage({ setPage }) {
                   >
                     {ticket.status}
                   </span>
+                </div>
+              ))
+            )}
+          </section>
+
+          {/* FREQUENTLY ASKED QUESTIONS SECTION */}
+          <section style={{ marginTop: "24px" }}>
+            <h2 className="support-heading">
+              ❓ Frequently Asked Questions
+            </h2>
+
+            {filteredFaqs.length === 0 ? (
+              <div className="support-card">
+                <p
+                  style={{
+                    margin: 0,
+                    color: "#9A8C82"
+                  }}
+                >
+                  No FAQs found.
+                </p>
+              </div>
+            ) : (
+              filteredFaqs.map((faq, index) => (
+                <div
+                  key={index}
+                  className="faq-card"
+                >
+                  <button
+                    className="faq-btn"
+                    onClick={() =>
+                      setOpenFaq(
+                        openFaq === index ? null : index
+                      )
+                    }
+                  >
+                    <span>{faq.question}</span>
+
+                    {openFaq === index ? (
+                      <ChevronUp size={18} />
+                    ) : (
+                      <ChevronDown size={18} />
+                    )}
+                  </button>
+
+                  {openFaq === index && (
+                    <div className="faq-answer">
+                      {faq.answer}
+                    </div>
+                  )}
                 </div>
               ))
             )}
