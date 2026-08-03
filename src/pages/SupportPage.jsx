@@ -11,8 +11,8 @@ import {
   serverTimestamp,
   updateDoc,
   increment
-} from "firebase/firestore";
-import { Send, CheckCheck, Eye, Lock, FileText, UserCheck } from "lucide-react";
+} from "firestore";
+import { Send, CheckCheck, Eye, Lock, FileText, UserCheck, MessageSquarePlus } from "lucide-react";
 
 export default function SupportPage({ setPage, setActivePage, selectedTicket }) {
   const [messages, setMessages] = useState([]);
@@ -170,21 +170,46 @@ export default function SupportPage({ setPage, setActivePage, selectedTicket }) 
     }
   };
 
+  // If no ticket is selected, display an inviting empty state instead of breaking or showing blank text
   if (!selectedTicket) {
     return (
       <div
         style={{
-          background: "#FAF6F0",
-          border: "1px dashed #E8DED2",
-          borderRadius: "14px",
-          padding: "30px",
+          background: "#FFFFFF",
+          border: "1px solid #E8DED2",
+          borderRadius: "18px",
+          padding: "40px 20px",
           textAlign: "center",
-          color: "#9A8C82",
-          fontStyle: "italic",
-          fontSize: "14px"
+          color: "#6B5E55",
+          boxShadow: "0 2px 10px rgba(44,34,30,0.02)"
         }}
       >
-        Select a ticket to view the conversation.
+        <div style={{ fontSize: "40px", marginBottom: "12px" }}>🎫</div>
+        <h3 style={{ margin: "0 0 8px", color: "#2C221E", fontSize: "18px" }}>No Support Ticket Selected</h3>
+        <p style={{ margin: "0 0 20px", fontSize: "14px", color: "#9A8C82", maxWidth: "400px", marginLeft: "auto", marginRight: "auto" }}>
+          You don't have an active ticket open right now. Choose an existing ticket from your history or create a new one to chat with our support team.
+        </p>
+        {setActivePage && (
+          <button
+            onClick={() => setActivePage("new-ticket")} // Adjust string depending on your app's router
+            style={{
+              background: "#C4956A",
+              color: "white",
+              border: "none",
+              borderRadius: "12px",
+              padding: "10px 20px",
+              fontWeight: "600",
+              fontSize: "14px",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              transition: "background .2s"
+            }}
+          >
+            <MessageSquarePlus size={16} /> Create New Ticket
+          </button>
+        )}
       </div>
     );
   }
