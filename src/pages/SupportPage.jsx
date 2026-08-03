@@ -94,6 +94,30 @@ export default function SupportPage({ setPage }) {
     faq.answer.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Help Categories Data
+  const helpCategories = [
+    {
+      title: "Orders",
+      icon: Truck,
+      description: "Track orders, cancellations and delivery issues."
+    },
+    {
+      title: "Payments",
+      icon: CreditCard,
+      description: "Refunds, payments and coupon problems."
+    },
+    {
+      title: "Rewards",
+      icon: Gift,
+      description: "Loyalty points, rewards and redemption."
+    },
+    {
+      title: "Account",
+      icon: ShieldCheck,
+      description: "Profile, login and account settings."
+    }
+  ];
+
   // Auto-scroll logic
   const scrollToBottom = (behavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
@@ -343,7 +367,11 @@ export default function SupportPage({ setPage }) {
         .avatar-badge { width: 20px; height: 20px; border-radius: 50%; background: #E8DED2; color: #2C221E; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
         .customer-msg { background: #C4956A; color: white; padding: 14px 18px; border-radius: 18px 18px 4px 18px; font-size: 14px; line-height: 1.5; }
         .support-msg { background: white; border: 1px solid #E8DED2; color: #2C221E; padding: 14px 18px; border-radius: 18px 18px 18px 4px; font-size: 14px; line-height: 1.5; }
-        .support-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 12px; }
+        .support-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        .help-card { background: white; border: 1px solid #E8DED2; border-radius: 16px; padding: 18px; cursor: pointer; transition: .2s; }
+        .help-card:hover { transform: translateY(-2px); border-color: #C4956A; }
+        .help-card h3 { margin: 12px 0 6px; color: #2C221E; }
+        .help-card p { margin: 0; color: #9A8C82; font-size: 13px; line-height: 1.5; }
         .support-heading { font-size: 18px; color: #2C221E; margin-bottom: 12px; font-weight: 700; }
       `}</style>
 
@@ -435,6 +463,31 @@ export default function SupportPage({ setPage }) {
                 )}
               </div>
             )}
+          </section>
+
+          {/* BROWSE HELP SECTION */}
+          <section>
+            <h2 className="support-heading">
+              📦 Browse Help
+            </h2>
+            <div className="support-grid">
+              {helpCategories.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={item.title}
+                    className="help-card"
+                  >
+                    <Icon
+                      size={28}
+                      color="#C4956A"
+                    />
+                    <h3>{item.title}</h3>
+                    <p>{item.description}</p>
+                  </div>
+                );
+              })}
+            </div>
           </section>
 
           {/* SUPPORT TICKETS SECTION */}
