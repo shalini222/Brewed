@@ -291,7 +291,7 @@ export default function SupportPage({ setPage }) {
         .support-btn:hover { background: #b38259; }
         .support-btn-secondary { background: #FAF6F0; color: #2C221E; border: 1px solid #E8DED2; }
         .support-btn-secondary:hover { background: #E8DED2; }
-        .ticket-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #E8DED2; border-radius: 12px; background: #FDFAF5; cursor: pointer; transition: all .2s; }
+        .ticket-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #E8DED2; border-radius: 12px; background: #FDFAF5; cursor: pointer; transition: all .2s; margin-bottom: 10px; }
         .ticket-item:hover { border-color: #C4956A; background: #FFFFFF; }
         .badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
         .badge-open { background: #FEF3C7; color: #D97706; }
@@ -348,7 +348,7 @@ export default function SupportPage({ setPage }) {
             <div className="support-grid">
               <div
                 className="support-card"
-                style={{ cursor: "pointer" }}
+                style={{ cursor: "pointer", padding: "20px" }}
                 onClick={() => setActivePage("create")}
               >
                 <PlusCircle size={28} color="#C4956A" />
@@ -360,7 +360,7 @@ export default function SupportPage({ setPage }) {
 
               <div
                 className="support-card"
-                style={{ cursor: "pointer" }}
+                style={{ cursor: "pointer", padding: "20px" }}
                 onClick={() => setActivePage("list")}
               >
                 <LifeBuoy size={28} color="#C4956A" />
@@ -372,7 +372,66 @@ export default function SupportPage({ setPage }) {
             </div>
           </section>
 
-          {/* GENERAL HELP BANNER */}
+          {/* RECENT TICKETS SECTION */}
+          <section style={{ marginTop: "0px" }}>
+            <h2 className="support-heading">Recent Tickets</h2>
+
+            {loadingTickets ? (
+              <div className="support-card" style={{ padding: "20px", textAlign: "center", color: "#9A8C82" }}>
+                Loading recent tickets...
+              </div>
+            ) : tickets.length === 0 ? (
+              <div className="support-card" style={{ padding: "20px" }}>
+                <p style={{ color: "#9A8C82", margin: 0 }}>
+                  No recent tickets.
+                </p>
+              </div>
+            ) : (
+              tickets.slice(0, 3).map((ticket) => (
+                <div
+                  key={ticket.id}
+                  className="ticket-item"
+                  onClick={() => {
+                    setSelectedTicket(ticket);
+                    setActivePage("conversation");
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        color: "#2C221E"
+                      }}
+                    >
+                      ☕ {ticket.subject}
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#9A8C82",
+                        marginTop: "4px"
+                      }}
+                    >
+                      {ticket.lastMessage || "No messages yet"}
+                    </div>
+                  </div>
+
+                  <span
+                    className={`badge ${
+                      ticket.status === "Closed"
+                        ? "badge-closed"
+                        : "badge-open"
+                    }`}
+                  >
+                    {ticket.status}
+                  </span>
+                </div>
+              ))
+            )}
+          </section>
+
+          {/* FAQS & HELP SECTION PLACEHOLDER */}
           <div className="support-card" style={{ display: "flex", flexDirection: "column", gap: "16px", background: "#FAF6F0" }}>
             <div style={{ maxWidth: "550px" }}>
               <h3 style={{ color: "#2C221E", marginBottom: "8px", fontSize: "16px" }}>Need immediate assistance?</h3>
@@ -406,6 +465,7 @@ export default function SupportPage({ setPage }) {
                 <div
                   key={t.id}
                   className="ticket-item"
+                  style={{ marginBottom: 0 }}
                   onClick={() => {
                     setSelectedTicket(t);
                     setActivePage("conversation");
