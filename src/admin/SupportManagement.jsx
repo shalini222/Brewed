@@ -20,7 +20,7 @@ const supportStaff = [
   "Senior Support"
 ];
 
-export default function SupportAdminPage({ setPage, setActivePage }) {
+export default function SupportManagement({ setPage, setActivePage }) {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
 
