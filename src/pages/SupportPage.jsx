@@ -14,13 +14,33 @@ import {
   updateDoc,
   increment
 } from "firebase/firestore";
-import { Send, Eye, Lock, FileText, PlusCircle, ArrowLeft, LifeBuoy } from "lucide-react";
+import { 
+  Send, 
+  Lock, 
+  PlusCircle, 
+  ArrowLeft, 
+  LifeBuoy,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  Phone,
+  Mail,
+  MessageCircle,
+  Clock,
+  ShieldCheck,
+  Truck,
+  Gift,
+  CreditCard
+} from "lucide-react";
 
 export default function SupportPage({ setPage }) {
   const { currentUser } = useAuth();
   
   // Navigation states ("home", "list", "create", "conversation")
   const [activePage, setActivePage] = useState("home");
+  
+  // FAQ state
+  const [openFaq, setOpenFaq] = useState(null);
   
   // Ticket states
   const [tickets, setTickets] = useState([]);
@@ -65,8 +85,7 @@ export default function SupportPage({ setPage }) {
     setLoadingTickets(true);
     const q = query(
       collection(db, "supportTickets"),
-      where("customerId", "==", currentUser.uid),
-    
+      where("customerId", "==", currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(
@@ -285,6 +304,8 @@ export default function SupportPage({ setPage }) {
         .avatar-badge { width: 20px; height: 20px; border-radius: 50%; background: #E8DED2; color: #2C221E; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
         .customer-msg { background: #C4956A; color: white; padding: 14px 18px; border-radius: 18px 18px 4px 18px; font-size: 14px; line-height: 1.5; }
         .support-msg { background: white; border: 1px solid #E8DED2; color: #2C221E; padding: 14px 18px; border-radius: 18px 18px 18px 4px; font-size: 14px; line-height: 1.5; }
+        .support-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 12px; }
+        .support-heading { font-size: 18px; color: #2C221E; margin-bottom: 12px; font-weight: 700; }
       `}</style>
 
       {/* Navigation Header */}
@@ -317,19 +338,47 @@ export default function SupportPage({ setPage }) {
 
       {/* HOME PAGE VIEW */}
       {activePage === "home" && (
-        <div className="support-card" style={{ display: "flex", flexDirection: "column", gap: "20px", textAlign: "center", padding: "40px 20px" }}>
-          <div style={{ maxWidth: "450px", margin: "0 auto" }}>
-            <h3 style={{ color: "#2C221E", marginBottom: "10px" }}>How can we help you today?</h3>
-            <p style={{ color: "#9A8C82", fontSize: "14px", lineHeight: "1.5", marginBottom: "24px" }}>
-              Have questions about your order, account, or our menu? Open a support ticket and our team will get back to you promptly.
-            </p>
-            <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
-              <button onClick={() => setActivePage("create")} className="support-btn">
-                <PlusCircle size={18} /> Create Support Ticket
-              </button>
-              <button onClick={() => setActivePage("list")} className="support-btn support-btn-secondary">
-                View My Tickets
-              </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          
+          {/* SUPPORT TICKETS SECTION */}
+          <section style={{ padding: "0px" }}>
+            <h2 className="support-heading">
+              Support Tickets
+            </h2>
+            <div className="support-grid">
+              <div
+                className="support-card"
+                style={{ cursor: "pointer" }}
+                onClick={() => setActivePage("create")}
+              >
+                <PlusCircle size={28} color="#C4956A" />
+                <h3 style={{ margin: "12px 0 6px 0", color: "#2C221E", fontSize: "16px" }}>Create New Ticket</h3>
+                <p style={{ margin: 0, color: "#9A8C82", fontSize: "13px", lineHeight: "1.4" }}>
+                  Report an issue or ask our support team for help.
+                </p>
+              </div>
+
+              <div
+                className="support-card"
+                style={{ cursor: "pointer" }}
+                onClick={() => setActivePage("list")}
+              >
+                <LifeBuoy size={28} color="#C4956A" />
+                <h3 style={{ margin: "12px 0 6px 0", color: "#2C221E", fontSize: "16px" }}>My Tickets</h3>
+                <p style={{ margin: 0, color: "#9A8C82", fontSize: "13px", lineHeight: "1.4" }}>
+                  View your support conversations and ticket status. ({tickets.length})
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* GENERAL HELP BANNER */}
+          <div className="support-card" style={{ display: "flex", flexDirection: "column", gap: "16px", background: "#FAF6F0" }}>
+            <div style={{ maxWidth: "550px" }}>
+              <h3 style={{ color: "#2C221E", marginBottom: "8px", fontSize: "16px" }}>Need immediate assistance?</h3>
+              <p style={{ color: "#9A8C82", fontSize: "13px", lineHeight: "1.5", margin: 0 }}>
+                Have questions about your order, account, or our menu? Open a support ticket above or review our FAQs for quick answers.
+              </p>
             </div>
           </div>
         </div>
@@ -529,4 +578,3 @@ export default function SupportPage({ setPage }) {
     </div>
   );
 }
-
