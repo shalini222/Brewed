@@ -68,11 +68,14 @@ export default function SupportPage({ setPage }) {
   // FAQ 
   const [faqs, setFaqs] = useState([]);
 
-  // Filter FAQs
-  const filteredFaqs = faqs.filter((faq) =>
-    faq.question.toLowerCase().includes(search.toLowerCase()) ||
-    faq.answer.toLowerCase().includes(search.toLowerCase())
-  );
+  // Filter FAQs by question, answer, or category
+  const filteredFaqs = faqs.filter((faq) => {
+    return (
+      (faq.question && faq.question.toLowerCase().includes(search.toLowerCase())) ||
+      (faq.answer && faq.answer.toLowerCase().includes(search.toLowerCase())) ||
+      (faq.category && faq.category.toLowerCase().includes(search.toLowerCase()))
+    );
+  });
 
   // Help Categories Data
   const helpCategories = [
@@ -193,27 +196,23 @@ export default function SupportPage({ setPage }) {
     return () => unsubscribe();
   }, [selectedTicket?.id]);
 
-useEffect(() => {
-  const q = query(
-    collection(db, "supportFAQs"),
-    where("active", "==", true),
-    
-  );
-
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    setFaqs(
-      snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      }))
+  useEffect(() => {
+    const q = query(
+      collection(db, "supportFAQs"),
+      where("active", "==", true)
     );
-  });
 
-  return () => unsubscribe();
-}, []);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setFaqs(
+        snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+      );
+    });
 
-
-  
+    return () => unsubscribe();
+  }, []);
 
   // Auto-scroll when messages update
   useEffect(() => {
@@ -435,7 +434,7 @@ useEffect(() => {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search FAQs..."
+                placeholder="Search FAQs by question, answer, or category..."
                 style={{
                   flex: 1,
                   border: "none",
@@ -458,6 +457,9 @@ useEffect(() => {
                 ) : (
                   filteredFaqs.map((faq, idx) => (
                     <div key={idx} className="support-card" style={{ padding: "16px" }}>
+                      <div style={{ display: "inline-block", background: "#FAF6F0", color: "#C4956A", padding: "2px 8px", borderRadius: "999px", fontSize: "11px", fontWeight: "600", marginBottom: "8px" }}>
+                        {faq.category || "General"}
+                      </div>
                       <div style={{ fontWeight: 600, color: "#2C221E", fontSize: "14px", marginBottom: "6px" }}>
                         {faq.question}
                       </div>
@@ -612,6 +614,20 @@ useEffect(() => {
                   key={index}
                   className="faq-card"
                 >
+                  <div
+                    style={{
+                      display: "inline-block",
+                      background: "#FAF6F0",
+                      color: "#C4956A",
+                      padding: "4px 10px",
+                      borderRadius: "999px",
+                      fontSize: "11px",
+                      fontWeight: "600",
+                      margin: "12px 18px 0"
+                    }}
+                  >
+                    {faq.category || "General"}
+                  </div>
                   <button
                     className="faq-btn"
                     onClick={() =>
