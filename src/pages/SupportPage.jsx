@@ -66,7 +66,7 @@ export default function SupportPage({ setPage }) {
     const q = query(
       collection(db, "supportTickets"),
       where("customerId", "==", currentUser.uid),
-      orderBy("updatedAt", "desc")
+    
     );
 
     const unsubscribe = onSnapshot(
