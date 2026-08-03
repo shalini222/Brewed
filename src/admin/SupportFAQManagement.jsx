@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { db } from "../firebase";
+import { db, auth } from "../firebase";
 
 import {
   collection,
@@ -32,6 +32,14 @@ export default function SupportFAQManagement() {
 
   const [selectedFAQs, setSelectedFAQs] = useState([]);
   const [bulkCategory, setBulkCategory] = useState("General");
+  const [toastMessage, setToastMessage] = useState("");
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage("");
+    }, 3000);
+  };
 
   useEffect(() => {
     const q = query(
@@ -72,12 +80,18 @@ export default function SupportFAQManagement() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [question, answer, editingId]);
 
+  const getCurrentAdminName = () => {
+    return auth.currentUser?.displayName || auth.currentUser?.email || "Olivia";
+  };
+
   const saveFAQ = async () => {
     if (!question.trim() || !answer.trim()) return;
 
-    const trimmedQuestion = question.trim().toLowerCase();
+    const normalizeText = (txt) => txt.trim().replace(/\s+/g, " ").toLowerCase();
+    const normalizedQuestion = normalizeText(question);
+    
     const duplicateExists = faqs.find(
-      f => f.question.trim().toLowerCase() === trimmedQuestion && f.id !== editingId
+      f => normalizeText(f.question) === normalizedQuestion && f.id !== editingId
     );
 
     if (duplicateExists) {
@@ -86,14 +100,16 @@ export default function SupportFAQManagement() {
     }
 
     try {
+      const adminName = getCurrentAdminName();
       if (editingId) {
         await updateDoc(doc(db, "supportFAQs", editingId), {
           question,
           answer,
           category,
           updatedAt: serverTimestamp(),
-          updatedBy: "Olivia"
+          updatedBy: adminName
         });
+        showToast("FAQ updated successfully.");
       } else {
         await addDoc(collection(db, "supportFAQs"), {
           question,
@@ -108,8 +124,9 @@ export default function SupportFAQManagement() {
           sortOrder: faqs.length + 1,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
-          updatedBy: "Olivia"
+          updatedBy: adminName
         });
+        showToast("FAQ added successfully.");
       }
 
       setQuestion("");
@@ -133,8 +150,9 @@ export default function SupportFAQManagement() {
       await updateDoc(doc(db, "supportFAQs", faq.id), {
         active: !faq.active,
         updatedAt: serverTimestamp(),
-        updatedBy: "Olivia"
+        updatedBy: getCurrentAdminName()
       });
+      showToast(`FAQ status updated to ${!faq.active ? "Active" : "Disabled"}.`);
     } catch (err) {
       console.log(err);
     }
@@ -145,8 +163,9 @@ export default function SupportFAQManagement() {
       await updateDoc(doc(db, "supportFAQs", faq.id), {
         pinned: !faq.pinned,
         updatedAt: serverTimestamp(),
-        updatedBy: "Olivia"
+        updatedBy: getCurrentAdminName()
       });
+      showToast(`FAQ pin status updated.`);
     } catch (err) {
       console.log(err);
     }
@@ -167,8 +186,9 @@ export default function SupportFAQManagement() {
         sortOrder: faqs.length + 1,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        updatedBy: "Olivia"
+        updatedBy: getCurrentAdminName()
       });
+      showToast("FAQ duplicated successfully.");
     } catch (err) {
       console.log(err);
     }
@@ -181,15 +201,16 @@ export default function SupportFAQManagement() {
         await updateDoc(doc(db, "supportFAQs", currentFeatured.id), {
           featured: false,
           updatedAt: serverTimestamp(),
-          updatedBy: "Olivia"
+          updatedBy: getCurrentAdminName()
         });
       }
 
       await updateDoc(doc(db, "supportFAQs", faq.id), {
         featured: !faq.featured,
         updatedAt: serverTimestamp(),
-        updatedBy: "Olivia"
+        updatedBy: getCurrentAdminName()
       });
+      showToast("Featured FAQ updated.");
     } catch (err) {
       console.log(err);
     }
@@ -202,6 +223,7 @@ export default function SupportFAQManagement() {
     try {
       await deleteDoc(doc(db, "supportFAQs", id));
       setSelectedFAQs(selectedFAQs.filter(itemId => itemId !== id));
+      showToast("FAQ deleted.");
     } catch (err) {
       console.log(err);
     }
@@ -215,16 +237,17 @@ export default function SupportFAQManagement() {
     const previous = sortedFaqs[index - 1];
 
     try {
+      const adminName = getCurrentAdminName();
       await updateDoc(doc(db, "supportFAQs", current.id), {
         sortOrder: previous.sortOrder,
         updatedAt: serverTimestamp(),
-        updatedBy: "Olivia"
+        updatedBy: adminName
       });
 
       await updateDoc(doc(db, "supportFAQs", previous.id), {
         sortOrder: current.sortOrder,
         updatedAt: serverTimestamp(),
-        updatedBy: "Olivia"
+        updatedBy: adminName
       });
     } catch (err) {
       console.log(err);
@@ -239,16 +262,17 @@ export default function SupportFAQManagement() {
     const next = sortedFaqs[index + 1];
 
     try {
+      const adminName = getCurrentAdminName();
       await updateDoc(doc(db, "supportFAQs", current.id), {
         sortOrder: next.sortOrder,
         updatedAt: serverTimestamp(),
-        updatedBy: "Olivia"
+        updatedBy: adminName
       });
 
       await updateDoc(doc(db, "supportFAQs", next.id), {
         sortOrder: current.sortOrder,
         updatedAt: serverTimestamp(),
-        updatedBy: "Olivia"
+        updatedBy: adminName
       });
     } catch (err) {
       console.log(err);
@@ -273,13 +297,17 @@ export default function SupportFAQManagement() {
 
   const bulkEnable = async () => {
     try {
+      const adminName = getCurrentAdminName();
       for (const id of selectedFAQs) {
         await updateDoc(doc(db, "supportFAQs", id), {
           active: true,
           updatedAt: serverTimestamp(),
-          updatedBy: "Olivia"
+          updatedBy: adminName
         });
       }
+      const count = selectedFAQs.length;
+      setSelectedFAQs([]);
+      showToast(`${count} FAQs enabled.`);
     } catch (err) {
       console.log(err);
     }
@@ -287,13 +315,17 @@ export default function SupportFAQManagement() {
 
   const bulkDisable = async () => {
     try {
+      const adminName = getCurrentAdminName();
       for (const id of selectedFAQs) {
         await updateDoc(doc(db, "supportFAQs", id), {
           active: false,
           updatedAt: serverTimestamp(),
-          updatedBy: "Olivia"
+          updatedBy: adminName
         });
       }
+      const count = selectedFAQs.length;
+      setSelectedFAQs([]);
+      showToast(`${count} FAQs disabled.`);
     } catch (err) {
       console.log(err);
     }
@@ -304,10 +336,12 @@ export default function SupportFAQManagement() {
     if (!confirmed) return;
 
     try {
+      const count = selectedFAQs.length;
       for (const id of selectedFAQs) {
         await deleteDoc(doc(db, "supportFAQs", id));
       }
       setSelectedFAQs([]);
+      showToast(`${count} FAQs deleted.`);
     } catch (err) {
       console.log(err);
     }
@@ -315,13 +349,17 @@ export default function SupportFAQManagement() {
 
   const bulkCategoryChange = async () => {
     try {
+      const adminName = getCurrentAdminName();
       for (const id of selectedFAQs) {
         await updateDoc(doc(db, "supportFAQs", id), {
           category: bulkCategory,
           updatedAt: serverTimestamp(),
-          updatedBy: "Olivia"
+          updatedBy: adminName
         });
       }
+      const count = selectedFAQs.length;
+      setSelectedFAQs([]);
+      showToast(`${count} FAQs moved to ${bulkCategory}.`);
     } catch (err) {
       console.log(err);
     }
@@ -329,26 +367,44 @@ export default function SupportFAQManagement() {
 
   const bulkPin = async (pinnedState) => {
     try {
+      const adminName = getCurrentAdminName();
       for (const id of selectedFAQs) {
         await updateDoc(doc(db, "supportFAQs", id), {
           pinned: pinnedState,
           updatedAt: serverTimestamp(),
-          updatedBy: "Olivia"
+          updatedBy: adminName
         });
       }
+      const count = selectedFAQs.length;
+      setSelectedFAQs([]);
+      showToast(`${count} FAQs ${pinnedState ? "pinned" : "unpinned"}.`);
     } catch (err) {
       console.log(err);
     }
   };
 
   const exportFAQs = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(faqs, null, 2));
+    const cleanFaqs = faqs.map(({ question, answer, category, active, pinned, featured, views, helpful, notHelpful, sortOrder }) => ({
+      question,
+      answer,
+      category,
+      active,
+      pinned,
+      featured,
+      views,
+      helpful,
+      notHelpful,
+      sortOrder
+    }));
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cleanFaqs, null, 2));
     const downloadAnchor = document.createElement("a");
     downloadAnchor.setAttribute("href", dataStr);
     downloadAnchor.setAttribute("download", "support-faqs.json");
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+    showToast("FAQs exported successfully.");
   };
 
   const importFAQs = (e) => {
@@ -359,9 +415,12 @@ export default function SupportFAQManagement() {
         try {
           const imported = JSON.parse(event.target.result);
           if (Array.isArray(imported)) {
+            const adminName = getCurrentAdminName();
+            let index = 0;
             for (const item of imported) {
+              const normalizeText = (txt) => (txt || "").trim().replace(/\s+/g, " ").toLowerCase();
               const exists = faqs.some(
-                f => f.question.trim().toLowerCase() === (item.question || "").trim().toLowerCase()
+                f => normalizeText(f.question) === normalizeText(item.question)
               );
               if (!exists) {
                 await addDoc(collection(db, "supportFAQs"), {
@@ -374,14 +433,15 @@ export default function SupportFAQManagement() {
                   views: item.views || 0,
                   helpful: item.helpful || 0,
                   notHelpful: item.notHelpful || 0,
-                  sortOrder: faqs.length + 1,
+                  sortOrder: faqs.length + index + 1,
                   createdAt: serverTimestamp(),
                   updatedAt: serverTimestamp(),
-                  updatedBy: "Olivia"
+                  updatedBy: adminName
                 });
+                index++;
               }
             }
-            alert("FAQs imported successfully!");
+            showToast("FAQs imported successfully!");
           }
         } catch (err) {
           console.log(err);
@@ -403,6 +463,7 @@ export default function SupportFAQManagement() {
   const helpfulPercentage = totalVotes > 0 ? Math.round((totalHelpful / totalVotes) * 100) : 0;
   const totalCategories = [...new Set(faqs.map(faq => faq.category))].length;
 
+  const currentFeaturedFAQ = faqs.find(faq => faq.featured);
   const mostViewed = [...faqs].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
   const leastHelpful = [...faqs].sort((a, b) => (b.notHelpful || 0) - (a.notHelpful || 0)).slice(0, 5);
 
@@ -441,7 +502,27 @@ export default function SupportFAQManagement() {
   });
 
   return (
-    <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
+    <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto", position: "relative" }}>
+      {toastMessage && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "20px",
+            right: "20px",
+            background: "#2C221E",
+            color: "#fff",
+            padding: "12px 20px",
+            borderRadius: "10px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            zIndex: 1000,
+            fontWeight: 600,
+            fontSize: "14px"
+          }}
+        >
+          {toastMessage}
+        </div>
+      )}
+
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "20px" }}>
         <h1 style={{ color: "#2C221E", fontFamily: "Playfair Display, serif", margin: 0 }}>
           Admin FAQ Management
@@ -828,7 +909,7 @@ export default function SupportFAQManagement() {
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(faq.id);
-                      alert("Copied FAQ ID: " + faq.id);
+                      showToast("Copied FAQ ID to clipboard!");
                     } catch (e) {
                       console.log(e);
                     }
@@ -1079,49 +1160,77 @@ export default function SupportFAQManagement() {
           FAQ Analytics
         </h2>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px" }}>
-          <div>
-            <h3 style={{ fontSize: "15px", color: "#2C221E", borderBottom: "1px solid #E8DED2", paddingBottom: "8px" }}>
-              🏆 Most Viewed FAQs
-            </h3>
-            <ol style={{ paddingLeft: "20px", color: "#6B5E55", margin: 0 }}>
-              {mostViewed.map(faq => (
-                <li key={faq.id} style={{ marginBottom: "8px" }}>
-                  <span style={{ fontWeight: 600, color: "#2C221E" }}>{faq.question}</span>
-                  <div style={{ fontSize: "12px", color: "#9A8C82" }}>👁 {faq.views || 0} views</div>
-                </li>
-              ))}
-            </ol>
-          </div>
+        {totalFaqs === 0 ? (
+          <p style={{ color: "#9A8C82", fontStyle: "italic", margin: 0 }}>No analytics yet.</p>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px" }}>
+            <div>
+              <h3 style={{ fontSize: "15px", color: "#2C221E", borderBottom: "1px solid #E8DED2", paddingBottom: "8px" }}>
+                ⭐ Current Featured FAQ
+              </h3>
+              {currentFeaturedFAQ ? (
+                <div style={{ background: "#FAF6F0", padding: "12px", borderRadius: "10px", marginTop: "8px" }}>
+                  <div style={{ fontWeight: 600, color: "#2C221E", fontSize: "14px" }}>{currentFeaturedFAQ.question}</div>
+                  <div style={{ fontSize: "12px", color: "#9A8C82", marginTop: "4px" }}>Category: {currentFeaturedFAQ.category}</div>
+                </div>
+              ) : (
+                <p style={{ color: "#9A8C82", fontSize: "13px", fontStyle: "italic" }}>No FAQ is currently featured.</p>
+              )}
 
-          <div>
-            <h3 style={{ fontSize: "15px", color: "#2C221E", borderBottom: "1px solid #E8DED2", paddingBottom: "8px" }}>
-              ⚠️ Needs Improvement (Most Not Helpful)
-            </h3>
-            <ul style={{ listStyle: "none", padding: 0, color: "#6B5E55", margin: 0 }}>
-              {leastHelpful.map(faq => (
-                <li key={faq.id} style={{ marginBottom: "12px" }}>
-                  <span style={{ fontWeight: 600, color: "#2C221E" }}>{faq.question}</span>
-                  <div style={{ fontSize: "12px", color: "#C62828" }}>👎 {faq.notHelpful || 0} not helpful</div>
-                </li>
-              ))}
-            </ul>
-          </div>
+              <h3 style={{ fontSize: "15px", color: "#2C221E", borderBottom: "1px solid #E8DED2", paddingBottom: "8px", marginTop: "20px" }}>
+                🏆 Most Viewed FAQs
+              </h3>
+              {mostViewed.length === 0 ? (
+                <p style={{ color: "#9A8C82", fontSize: "13px", fontStyle: "italic" }}>No analytics yet.</p>
+              ) : (
+                <ol style={{ paddingLeft: "20px", color: "#6B5E55", margin: 0 }}>
+                  {mostViewed.map(faq => (
+                    <li key={faq.id} style={{ marginBottom: "8px" }}>
+                      <span style={{ fontWeight: 600, color: "#2C221E" }}>{faq.question}</span>
+                      <div style={{ fontSize: "12px", color: "#9A8C82" }}>👁 {faq.views || 0} views</div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
 
-          <div>
-            <h3 style={{ fontSize: "15px", color: "#2C221E", borderBottom: "1px solid #E8DED2", paddingBottom: "8px" }}>
-              📂 Category Breakdown
-            </h3>
-            <ul style={{ listStyle: "none", padding: 0, color: "#6B5E55", margin: 0 }}>
-              {Object.entries(categoryStats).map(([cat, count]) => (
-                <li key={cat} style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <span style={{ fontWeight: 600, color: "#2C221E" }}>{cat}</span>
-                  <span>{count} FAQs</span>
-                </li>
-              ))}
-            </ul>
+            <div>
+              <h3 style={{ fontSize: "15px", color: "#2C221E", borderBottom: "1px solid #E8DED2", paddingBottom: "8px" }}>
+                ⚠️ Needs Improvement (Most Not Helpful)
+              </h3>
+              {leastHelpful.length === 0 ? (
+                <p style={{ color: "#9A8C82", fontSize: "13px", fontStyle: "italic" }}>No analytics yet.</p>
+              ) : (
+                <ul style={{ listStyle: "none", padding: 0, color: "#6B5E55", margin: 0 }}>
+                  {leastHelpful.map(faq => (
+                    <li key={faq.id} style={{ marginBottom: "12px" }}>
+                      <span style={{ fontWeight: 600, color: "#2C221E" }}>{faq.question}</span>
+                      <div style={{ fontSize: "12px", color: "#C62828" }}>👎 {faq.notHelpful || 0} not helpful</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div>
+              <h3 style={{ fontSize: "15px", color: "#2C221E", borderBottom: "1px solid #E8DED2", paddingBottom: "8px" }}>
+                📂 Category Breakdown
+              </h3>
+              {Object.keys(categoryStats).length === 0 ? (
+                <p style={{ color: "#9A8C82", fontSize: "13px", fontStyle: "italic" }}>No categories yet.</p>
+              ) : (
+                <ul style={{ listStyle: "none", padding: 0, color: "#6B5E55", margin: 0 }}>
+                  {Object.entries(categoryStats).map(([cat, count]) => (
+                    <li key={cat} style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                      <span style={{ fontWeight: 600, color: "#2C221E" }}>{cat}</span>
+                      <span>{count} FAQs</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
