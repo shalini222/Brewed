@@ -12,7 +12,7 @@ import {
   updateDoc,
   increment
 } from "firebase/firestore";
-import { Send, CheckCheck, Eye, Lock, Paperclip, FileText, Image as ImageIcon } from "lucide-react";
+import { Send, CheckCheck, Eye, Lock, FileText, UserCheck } from "lucide-react";
 
 export default function AdminTicketConversation({ selectedTicket }) {
   const [messages, setMessages] = useState([]);
@@ -29,9 +29,6 @@ export default function AdminTicketConversation({ selectedTicket }) {
 
   const handleScroll = () => {
     if (!containerRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-    // We can store this or handle condition in messages effect
   };
 
   // Mark messages as read for Admin when ticket opens
@@ -86,7 +83,6 @@ export default function AdminTicketConversation({ selectedTicket }) {
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
 
-    // If it's the initial load or user was already near bottom, scroll down
     if (isNearBottom || messages.length <= 5) {
       scrollToBottom();
     }
@@ -130,7 +126,6 @@ export default function AdminTicketConversation({ selectedTicket }) {
     try {
       setSending(true);
 
-      // ✅ 1. Verify ticket still exists before sending
       const ticketRef = doc(db, "supportTickets", selectedTicket.id);
       const ticketSnap = await getDoc(ticketRef);
 
@@ -144,13 +139,13 @@ export default function AdminTicketConversation({ selectedTicket }) {
         collection(db, "supportTickets", selectedTicket.id, "messages"),
         {
           sender: "support",
-          senderName: "Support Team",
+          senderName: selectedTicket.assignedTo ? `Support (${selectedTicket.assignedTo})` : "Support Team",
           message: reply,
           createdAt: serverTimestamp()
         }
       );
 
-      // ✅ 10. Track reply metadata & unread counters on the parent ticket
+      // Track reply metadata & unread counters on the parent ticket
       await updateDoc(ticketRef, {
         updatedAt: serverTimestamp(),
         customerUnread: increment(1),
@@ -167,7 +162,7 @@ export default function AdminTicketConversation({ selectedTicket }) {
     }
   };
 
-  // ✅ 2. Allow sending with Enter (excluding Shift+Enter)
+  // Allow sending with Enter (excluding Shift+Enter)
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -195,6 +190,7 @@ export default function AdminTicketConversation({ selectedTicket }) {
   }
 
   const isClosed = selectedTicket.status === "Closed";
+  const staffName = selectedTicket.assignedTo || "Support Team";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -214,7 +210,6 @@ export default function AdminTicketConversation({ selectedTicket }) {
           max-width: 75%;
         }
 
-        /* In admin view, customer is left-aligned and support is right-aligned */
         .admin-customer-wrapper {
           align-self: flex-start;
           align-items: flex-start;
@@ -359,7 +354,7 @@ export default function AdminTicketConversation({ selectedTicket }) {
         }
       `}</style>
 
-      {/* Header Info / Read Status Bar */}
+      {/* Header Info / Read Status Bar & Staff Assignment */}
       <div
         style={{
           display: "flex",
@@ -369,21 +364,27 @@ export default function AdminTicketConversation({ selectedTicket }) {
           color: "#9A8C82",
           background: "#FAF6F0",
           padding: "8px 12px",
-          borderRadius: "10px"
+          borderRadius: "10px",
+          flexWrap: "wrap",
+          gap: "8px"
         }}
       >
-        <span>Ticket ID: {selectedTicket.id.slice(0, 8)}...</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <span>Ticket ID: {selectedTicket.id.slice(0, 8)}...</span>
+          <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "#6E5E53", fontWeight: "500" }}>
+            <UserCheck size={13} /> Handled by: {staffName}
+          </span>
+        </div>
+
         <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           {selectedTicket.customerUnread > 0 ? (
-            <>
-              <span style={{ color: "#D97706", fontWeight: "600" }}>
-                Unread by customer ({selectedTicket.customerUnread})
-              </span>
-            </>
+            <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "#9A8C82" }}>
+              Sent <CheckCheck size={14} />
+            </span>
           ) : (
-            <>
+            <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "#10B981", fontWeight: "500" }}>
               <Eye size={13} /> Seen by customer
-            </>
+            </span>
           )}
         </span>
       </div>
@@ -419,7 +420,7 @@ export default function AdminTicketConversation({ selectedTicket }) {
                       >
                         ☕
                       </span>
-                      Support Team
+                      {msg.senderName || staffName}
                     </>
                   )}
                 </span>
@@ -489,7 +490,7 @@ export default function AdminTicketConversation({ selectedTicket }) {
             );
           })}
 
-          {/* ✅ 4. Sending / Typing Indicator */}
+          {/* Sending / Typing Indicator */}
           {sending && (
             <div
               className="admin-message-wrapper admin-support-wrapper"
@@ -502,7 +503,7 @@ export default function AdminTicketConversation({ selectedTicket }) {
                 >
                   ☕
                 </span>
-                Support Team
+                {staffName}
               </span>
               <div className="admin-support-message">
                 <p style={{ margin: 0, fontStyle: "italic" }}>Typing...</p>
@@ -519,7 +520,7 @@ export default function AdminTicketConversation({ selectedTicket }) {
         </div>
       )}
 
-      {/* ✅ 6. Handle closed tickets better */}
+      {/* Handle closed tickets */}
       {isClosed ? (
         <div className="closed-notice">
           <Lock size={18} />
