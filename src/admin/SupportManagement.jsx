@@ -337,6 +337,17 @@ export default function SupportManagement({ setPage, setActivePage }) {
     );
   }
 
+const tabStyle = (active) => ({
+  padding: "12px 20px",
+  borderRadius: "12px",
+  border: active ? "none" : "1px solid #E8DED2",
+  background: active ? "#C4956A" : "#FFFFFF",
+  color: active ? "#FFFFFF" : "#2C221E",
+  cursor: "pointer",
+  fontWeight: 600
+});
+
+  
   return (
     <div
       style={{
