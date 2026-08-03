@@ -349,7 +349,7 @@ export default function SupportPage({ setPage }) {
     <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto", fontFamily: "inherit" }}>
       <style>{`
         .support-container { display: flex; flex-direction: column; gap: 16px; }
-        .support-card { background: white; border: 1px solid #E8DED2; border-radius: 14px; padding: 24px; box-shadow: 0 2px 10px rgba(44,34,30,0.02); }
+        .support-card { background: white; border: 1px solid #E8DED2; border-radius: 14px; padding: 24px; box-shadow: 0 2px 10px rgba(44,34,30,0.02); margin-bottom: 12px; }
         .support-btn { background: #C4956A; color: white; border: none; border-radius: 12px; padding: 10px 18px; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background .2s; }
         .support-btn:hover { background: #b38259; }
         .support-btn-secondary { background: #FAF6F0; color: #2C221E; border: 1px solid #E8DED2; }
@@ -636,6 +636,79 @@ export default function SupportPage({ setPage }) {
               ))
             )}
           </section>
+
+          {/* CONTACT SUPPORT SECTION */}
+          <section style={{ marginTop: "24px" }}>
+            <h2 className="support-heading">
+              📞 Contact Support
+            </h2>
+
+            <div className="support-grid">
+              <div className="support-card" style={{ marginBottom: 0 }}>
+                <Phone size={28} color="#C4956A" />
+                <h3>Call Us</h3>
+                <p>+91 XXXXX XXXXX</p>
+              </div>
+
+              <div className="support-card" style={{ marginBottom: 0 }}>
+                <Mail size={28} color="#C4956A" />
+                <h3>Email</h3>
+                <p>support@brewed.com</p>
+              </div>
+
+              <div className="support-card" style={{ marginBottom: 0 }}>
+                <MessageCircle size={28} color="#C4956A" />
+                <h3>WhatsApp</h3>
+                <p>Chat with us instantly.</p>
+              </div>
+            </div>
+          </section>
+
+          {/* BUSINESS HOURS SECTION */}
+          <section style={{ marginTop: "24px" }}>
+            <h2 className="support-heading">
+              🕒 Business Hours
+            </h2>
+
+            <div className="support-card">
+              <Clock size={28} color="#C4956A" />
+              <h3>Support Hours</h3>
+              <p>
+                Monday – Sunday
+                <br />
+                9:00 AM – 10:00 PM
+              </p>
+            </div>
+          </section>
+
+          {/* SUPPORT POLICIES SECTION */}
+          <section style={{ marginTop: "24px" }}>
+            <h2 className="support-heading">
+              📜 Support Policies
+            </h2>
+
+            <div className="support-card">
+              <h3>Refund Policy</h3>
+              <p>
+                Refunds are processed after verification and may take 5–7 business days.
+              </p>
+            </div>
+
+            <div className="support-card">
+              <h3>Delivery Policy</h3>
+              <p>
+                Delivery availability depends on your location and our operating hours.
+              </p>
+            </div>
+
+            <div className="support-card">
+              <h3>Loyalty Policy</h3>
+              <p>
+                Rewards and loyalty points are subject to Brewed's loyalty program terms.
+              </p>
+            </div>
+          </section>
+
         </div>
       )}
 
