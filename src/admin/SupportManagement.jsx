@@ -12,6 +12,12 @@ import {
   increment
 } from "firebase/firestore";
 
+
+import SupportFAQManagement from "./SupportFAQManagement";
+import SupportPolicyManagement from "./SupportPolicyManagement";
+
+
+
 const supportStaff = [
   "Unassigned",
   "Olivia",
@@ -32,6 +38,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
   const [messages, setMessages] = useState([]);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
+  const [activeTab, setActiveTab] = useState("tickets");
 
   const [internalNotes, setInternalNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
@@ -345,7 +352,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
           marginBottom: "8px"
         }}
       >
-        Support Dashboard
+        Support Management 
       </h1>
 
       <p
@@ -357,6 +364,46 @@ export default function SupportManagement({ setPage, setActivePage }) {
         Manage customer support tickets.
       </p>
 
+<div
+  style={{
+    display: "flex",
+    gap: "12px",
+    marginBottom: "24px"
+  }}
+>
+  
+
+  <button
+    onClick={() => setActiveTab("faq")}
+    style={{
+      padding: "10px 18px",
+      borderRadius: "12px",
+      border: "none",
+      cursor: "pointer",
+      background: activeTab === "faq" ? "#C4956A" : "#fff",
+      color: activeTab === "faq" ? "#fff" : "#2C221E"
+    }}
+  >
+    ❓ FAQs
+  </button>
+
+  <button
+    onClick={() => setActiveTab("policies")}
+    style={{
+      padding: "10px 18px",
+      borderRadius: "12px",
+      border: "none",
+      cursor: "pointer",
+      background: activeTab === "policies" ? "#C4956A" : "#fff",
+      color: activeTab === "policies" ? "#fff" : "#2C221E"
+    }}
+  >
+    📜 Policies
+  </button>
+</div>
+
+
+      
       <div
         style={{
           display: "grid",
@@ -1324,6 +1371,12 @@ export default function SupportManagement({ setPage, setActivePage }) {
           </div>
         </div>
       )}
+
+      
+
+{activeTab === "supportfaq" && <SupportFAQManagement />}
+
+{activeTab === "supportpolicies" && <SupportPolicyManagement />}
     </div>
   );
 }
