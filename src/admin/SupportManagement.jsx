@@ -391,8 +391,8 @@ const tabStyle = (active) => ({
       borderRadius: "12px",
       border: "none",
       cursor: "pointer",
-      background: activeTab === "faq" ? "#C4956A" : "#fff",
-      color: activeTab === "faq" ? "#fff" : "#2C221E"
+      background: activeTab === "supportfaq" ? "#C4956A" : "#fff",
+      color: activeTab === "supportfaq" ? "#fff" : "#2C221E"
     }}
   >
     ❓ FAQs
@@ -405,8 +405,8 @@ const tabStyle = (active) => ({
       borderRadius: "12px",
       border: "none",
       cursor: "pointer",
-      background: activeTab === "policies" ? "#C4956A" : "#fff",
-      color: activeTab === "policies" ? "#fff" : "#2C221E"
+      background: activeTab === "supportpolicies" ? "#C4956A" : "#fff",
+      color: activeTab === "supportpolicies" ? "#fff" : "#2C221E"
     }}
   >
     📜 Policies
