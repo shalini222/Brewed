@@ -41,6 +41,7 @@ export default function SupportPage({ setPage }) {
   
   // FAQ state
   const [openFaq, setOpenFaq] = useState(null);
+  const [search, setSearch] = useState("");
   
   // Ticket states
   const [tickets, setTickets] = useState([]);
@@ -62,6 +63,36 @@ export default function SupportPage({ setPage }) {
 
   const containerRef = useRef(null);
   const messagesEndRef = useRef(null);
+
+  // FAQ Data
+  const faqs = [
+    {
+      question: "How long does delivery take?",
+      answer:
+        "Delivery usually takes 30–45 minutes depending on your location and order volume."
+    },
+    {
+      question: "Can I cancel my order?",
+      answer:
+        "Orders can be cancelled before preparation begins."
+    },
+    {
+      question: "How do loyalty points work?",
+      answer:
+        "You earn points on eligible purchases and can redeem them for rewards."
+    },
+    {
+      question: "Where is my refund?",
+      answer:
+        "Refunds are processed after verification and usually appear within 5–7 business days."
+    }
+  ];
+
+  // Filter FAQs
+  const filteredFaqs = faqs.filter((faq) =>
+    faq.question.toLowerCase().includes(search.toLowerCase()) ||
+    faq.answer.toLowerCase().includes(search.toLowerCase())
+  );
 
   // Auto-scroll logic
   const scrollToBottom = (behavior = "smooth") => {
@@ -348,6 +379,64 @@ export default function SupportPage({ setPage }) {
       {activePage === "home" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           
+          {/* SEARCH FAQS SECTION */}
+          <section>
+            <h2 className="support-heading">
+              🔍 Search FAQs
+            </h2>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                background: "white",
+                border: "1px solid #E8DED2",
+                borderRadius: "14px",
+                padding: "12px 16px"
+              }}
+            >
+              <Search
+                size={18}
+                color="#C4956A"
+              />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search FAQs..."
+                style={{
+                  flex: 1,
+                  border: "none",
+                  outline: "none",
+                  background: "transparent",
+                  marginLeft: "10px",
+                  fontSize: "14px",
+                  color: "#2C221E"
+                }}
+              />
+            </div>
+
+            {/* Display FAQ search results live if searching */}
+            {search.trim() !== "" && (
+              <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                {filteredFaqs.length === 0 ? (
+                  <div className="support-card" style={{ padding: "16px", color: "#9A8C82", fontSize: "14px" }}>
+                    No matching FAQs found.
+                  </div>
+                ) : (
+                  filteredFaqs.map((faq, idx) => (
+                    <div key={idx} className="support-card" style={{ padding: "16px" }}>
+                      <div style={{ fontWeight: 600, color: "#2C221E", fontSize: "14px", marginBottom: "6px" }}>
+                        {faq.question}
+                      </div>
+                      <div style={{ color: "#6E5E53", fontSize: "13px", lineHeight: "1.4" }}>
+                        {faq.answer}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </section>
+
           {/* SUPPORT TICKETS SECTION */}
           <section style={{ padding: "0px" }}>
             <h2 className="support-heading">
