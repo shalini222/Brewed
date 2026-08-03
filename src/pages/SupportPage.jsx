@@ -20,7 +20,7 @@ export default function SupportPage({ setPage }) {
   const { currentUser } = useAuth();
   
   // Navigation states ("home", "list", "create", "conversation")
-  const [activePage, setActivePage] = useState("menu");
+  const [activePage, setActivePage] = useState("home");
   
   // Ticket states
   const [tickets, setTickets] = useState([]);
