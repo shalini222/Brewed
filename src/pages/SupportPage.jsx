@@ -752,47 +752,112 @@ export default function SupportPage({ setPage }) {
           </section>
 
           {/* BUSINESS HOURS SECTION */}
-          <section style={{ marginTop: "24px" }}>
-            <h2 className="support-heading">
-              🕒 Business Hours
-            </h2>
+          <section style={{ marginTop: "28px" }}>
+            <h2 className="support-heading">Business Hours</h2>
 
-            <div className="support-card">
-              <Clock size={28} color="#C4956A" />
-              <h3>Support Hours</h3>
-              <p>
-                Monday – Sunday
-                <br />
-                9:00 AM – 10:00 PM
-              </p>
+            <div className="support-card" style={{ marginBottom: 0 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "14px",
+                  marginBottom: "14px"
+                }}
+              >
+                <Clock size={28} color="#C4956A" />
+
+                <div>
+                  <h3
+                    style={{
+                      margin: 0,
+                      color: "#2C221E"
+                    }}
+                  >
+                    Customer Support Hours
+                  </h3>
+
+                  <p
+                    style={{
+                      marginTop: "4px",
+                      color: "#9A8C82",
+                      fontSize: "13px"
+                    }}
+                  >
+                    We're here to help every day.
+                  </p>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                  color: "#2C221E"
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    borderBottom: "1px solid #F2ECE5",
+                    paddingBottom: "10px"
+                  }}
+                >
+                  <span>Monday – Friday</span>
+                  <strong>9:00 AM – 10:00 PM</strong>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    borderBottom: "1px solid #F2ECE5",
+                    paddingBottom: "10px"
+                  }}
+                >
+                  <span>Saturday</span>
+                  <strong>9:00 AM – 11:00 PM</strong>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between"
+                  }}
+                >
+                  <span>Sunday</span>
+                  <strong>9:00 AM – 10:00 PM</strong>
+                </div>
+              </div>
             </div>
           </section>
 
           {/* SUPPORT POLICIES SECTION */}
-          <section style={{ marginTop: "24px" }}>
-            <h2 className="support-heading">
-              📜 Support Policies
-            </h2>
+          <section style={{ marginTop: "28px" }}>
+            <h2 className="support-heading">Support Policies</h2>
 
-            <div className="support-card">
-              <h3>Refund Policy</h3>
-              <p>
-                Refunds are processed after verification and may take 5–7 business days.
-              </p>
-            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div className="support-card" style={{ marginBottom: 0 }}>
+                <h3 style={{ marginTop: 0, marginBottom: "6px", color: "#2C221E", fontSize: "16px" }}>Refund Policy</h3>
+                <p style={{ margin: 0, color: "#6E5E53", fontSize: "14px", lineHeight: "1.5" }}>
+                  Refunds are processed after verification and usually appear within 5–7 business days.
+                </p>
+              </div>
 
-            <div className="support-card">
-              <h3>Delivery Policy</h3>
-              <p>
-                Delivery availability depends on your location and our operating hours.
-              </p>
-            </div>
+              <div className="support-card" style={{ marginBottom: 0 }}>
+                <h3 style={{ marginTop: 0, marginBottom: "6px", color: "#2C221E", fontSize: "16px" }}>Delivery Policy</h3>
+                <p style={{ margin: 0, color: "#6E5E53", fontSize: "14px", lineHeight: "1.5" }}>
+                  Orders can be cancelled before preparation begins. Delivery times may vary based on traffic and weather.
+                </p>
+              </div>
 
-            <div className="support-card">
-              <h3>Loyalty Policy</h3>
-              <p>
-                Rewards and loyalty points are subject to Brewed's loyalty program terms.
-              </p>
+              <div className="support-card" style={{ marginBottom: 0 }}>
+                <h3 style={{ marginTop: 0, marginBottom: "6px", color: "#2C221E", fontSize: "16px" }}>Privacy & Terms</h3>
+                <p style={{ margin: 0, color: "#6E5E53", fontSize: "14px", lineHeight: "1.5" }}>
+                  We respect your data privacy and protect your information according to our secure platform guidelines.
+                </p>
+              </div>
             </div>
           </section>
 
