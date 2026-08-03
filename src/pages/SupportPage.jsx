@@ -14,7 +14,7 @@ import {
 } from "firebase/firestore";
 import { Send, CheckCheck, Eye, Lock, FileText, UserCheck } from "lucide-react";
 
-export default function AdminTicketConversation({ selectedTicket }) {
+export default function SupportPage({ selectedTicket }) {
   const [messages, setMessages] = useState([]);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
