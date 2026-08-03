@@ -385,7 +385,7 @@ const tabStyle = (active) => ({
   
 
   <button
-    onClick={() => setActiveTab("faq")}
+    onClick={() => setActiveTab("supportfaq")}
     style={{
       padding: "10px 18px",
       borderRadius: "12px",
@@ -399,7 +399,7 @@ const tabStyle = (active) => ({
   </button>
 
   <button
-    onClick={() => setActiveTab("policies")}
+    onClick={() => setActiveTab("supportpolicies")}
     style={{
       padding: "10px 18px",
       borderRadius: "12px",
