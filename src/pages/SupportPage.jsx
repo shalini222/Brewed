@@ -26,6 +26,7 @@ import {
   Phone,
   Mail,
   MessageCircle,
+  Instagram,
   Clock,
   ShieldCheck,
   Truck,
@@ -638,29 +639,115 @@ export default function SupportPage({ setPage }) {
           </section>
 
           {/* CONTACT SUPPORT SECTION */}
-          <section style={{ marginTop: "24px" }}>
-            <h2 className="support-heading">
-              📞 Contact Support
-            </h2>
+          <section style={{ marginTop: "28px" }}>
+            <h2 className="support-heading">Contact Support</h2>
 
             <div className="support-grid">
+
+              {/* Call */}
               <div className="support-card" style={{ marginBottom: 0 }}>
                 <Phone size={28} color="#C4956A" />
-                <h3>Call Us</h3>
+
+                <h3
+                  style={{
+                    marginTop: "12px",
+                    marginBottom: "6px"
+                  }}
+                >
+                  Call Us
+                </h3>
+
                 <p>+91 XXXXX XXXXX</p>
+
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#9A8C82",
+                    marginTop: "8px"
+                  }}
+                >
+                  Available during business hours.
+                </p>
               </div>
 
+              {/* Email */}
               <div className="support-card" style={{ marginBottom: 0 }}>
                 <Mail size={28} color="#C4956A" />
-                <h3>Email</h3>
+
+                <h3
+                  style={{
+                    marginTop: "12px",
+                    marginBottom: "6px"
+                  }}
+                >
+                  Email
+                </h3>
+
                 <p>support@brewed.com</p>
+
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#9A8C82",
+                    marginTop: "8px"
+                  }}
+                >
+                  Usually replies within 24 hours.
+                </p>
               </div>
 
+              {/* WhatsApp */}
               <div className="support-card" style={{ marginBottom: 0 }}>
                 <MessageCircle size={28} color="#C4956A" />
-                <h3>WhatsApp</h3>
-                <p>Chat with us instantly.</p>
+
+                <h3
+                  style={{
+                    marginTop: "12px",
+                    marginBottom: "6px"
+                  }}
+                >
+                  WhatsApp
+                </h3>
+
+                <p>Chat with our support team</p>
+
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#9A8C82",
+                    marginTop: "8px"
+                  }}
+                >
+                  Fastest way to get help.
+                </p>
               </div>
+
+              {/* Instagram */}
+              <div className="support-card" style={{ marginBottom: 0 }}>
+                <Instagram size={28} color="#C4956A" />
+
+                <h3
+                  style={{
+                    marginTop: "12px",
+                    marginBottom: "6px"
+                  }}
+                >
+                  Instagram
+                </h3>
+
+                <p>@brewedcoffee</p>
+
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#9A8C82",
+                    marginTop: "8px"
+                  }}
+                >
+                  Send us a DM anytime.
+                </p>
+              </div>
+
             </div>
           </section>
 
