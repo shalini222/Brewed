@@ -14,7 +14,7 @@ import {
 } from "firebase/firestore";
 import { Send, CheckCheck, Eye, Lock, FileText, UserCheck, MessageSquarePlus } from "lucide-react";
 
-export default function SupportPage({ setPage, setActivePage, selectedTicket }) {
+export default function SupportPage({ setPage, setActivePage, selectedTicket: propSelectedTicket, setSelectedTicket }) {
   const [messages, setMessages] = useState([]);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
