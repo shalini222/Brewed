@@ -10,8 +10,7 @@ import {
   onSnapshot,
   query,
   orderBy,
-  serverTimestamp,
-  increment
+  serverTimestamp
 } from "firebase/firestore";
 
 export default function SupportFAQManagement() {
@@ -37,16 +36,23 @@ export default function SupportFAQManagement() {
       orderBy("sortOrder", "asc")
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setFaqs(
-        snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-      );
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        setFaqs(
+          snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+        );
 
-      setLoading(false);
-    });
+        setLoading(false);
+      },
+      (error) => {
+        console.error(error);
+        setLoading(false);
+      }
+    );
 
     return unsubscribe;
   }, []);
@@ -140,14 +146,16 @@ export default function SupportFAQManagement() {
 
   const makeFeatured = async (faq) => {
     try {
-      for (const item of faqs) {
-        await updateDoc(doc(db, "supportFAQs", item.id), {
-          featured: false
+      const currentFeatured = faqs.find(item => item.featured);
+      if (currentFeatured && currentFeatured.id !== faq.id) {
+        await updateDoc(doc(db, "supportFAQs", currentFeatured.id), {
+          featured: false,
+          updatedAt: serverTimestamp()
         });
       }
 
       await updateDoc(doc(db, "supportFAQs", faq.id), {
-        featured: true,
+        featured: !faq.featured,
         updatedAt: serverTimestamp()
       });
     } catch (err) {
@@ -166,38 +174,44 @@ export default function SupportFAQManagement() {
     }
   };
 
-  const moveUp = async (index) => {
+  const moveUp = async (faq) => {
+    const index = sortedFaqs.findIndex(item => item.id === faq.id);
     if (index === 0) return;
 
-    const current = filteredFaqs[index];
-    const previous = filteredFaqs[index - 1];
+    const current = sortedFaqs[index];
+    const previous = sortedFaqs[index - 1];
 
     try {
       await updateDoc(doc(db, "supportFAQs", current.id), {
-        sortOrder: previous.sortOrder
+        sortOrder: previous.sortOrder,
+        updatedAt: serverTimestamp()
       });
 
       await updateDoc(doc(db, "supportFAQs", previous.id), {
-        sortOrder: current.sortOrder
+        sortOrder: current.sortOrder,
+        updatedAt: serverTimestamp()
       });
     } catch (err) {
       console.log(err);
     }
   };
 
-  const moveDown = async (index) => {
-    if (index === filteredFaqs.length - 1) return;
+  const moveDown = async (faq) => {
+    const index = sortedFaqs.findIndex(item => item.id === faq.id);
+    if (index === sortedFaqs.length - 1) return;
 
-    const current = filteredFaqs[index];
-    const next = filteredFaqs[index + 1];
+    const current = sortedFaqs[index];
+    const next = sortedFaqs[index + 1];
 
     try {
       await updateDoc(doc(db, "supportFAQs", current.id), {
-        sortOrder: next.sortOrder
+        sortOrder: next.sortOrder,
+        updatedAt: serverTimestamp()
       });
 
       await updateDoc(doc(db, "supportFAQs", next.id), {
-        sortOrder: current.sortOrder
+        sortOrder: current.sortOrder,
+        updatedAt: serverTimestamp()
       });
     } catch (err) {
       console.log(err);
@@ -218,9 +232,9 @@ export default function SupportFAQManagement() {
 
   const sortedFaqs = [...faqs].sort((a, b) => {
     if (a.pinned === b.pinned) {
-      return a.sortOrder - b.sortOrder;
+      return (a.sortOrder || 0) - (b.sortOrder || 0);
     }
-    return b.pinned - a.pinned;
+    return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
   });
 
   const filteredFaqs = sortedFaqs.filter((faq) => {
@@ -295,7 +309,7 @@ export default function SupportFAQManagement() {
           ["📌 Pinned", pinnedFaqsCount],
           ["⭐ Featured", featuredFaqsCount],
           ["👁 Total Views", totalViews],
-          ["👍 Helpful %", `${helpfulPercentage}%`],
+          ["👍 Helpful Rate", `${helpfulPercentage}%`],
           ["📂 Categories", totalCategories]
         ].map(([title, value]) => (
           <div
@@ -440,9 +454,9 @@ export default function SupportFAQManagement() {
             border: "1px solid #E8DED2"
           }}
         >
-          <option>All Categories</option>
+          <option value="All">All Categories</option>
           {[...new Set(faqs.map(f => f.category))].map(cat => (
-            <option key={cat}>{cat}</option>
+            <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
 
@@ -455,16 +469,31 @@ export default function SupportFAQManagement() {
             border: "1px solid #E8DED2"
           }}
         >
-          <option>All Status</option>
-          <option>Active</option>
-          <option>Disabled</option>
-          <option>Pinned</option>
-          <option>Featured</option>
+          <option value="All">All Status</option>
+          <option value="Active">Active</option>
+          <option value="Disabled">Disabled</option>
+          <option value="Pinned">Pinned</option>
+          <option value="Featured">Featured</option>
         </select>
       </div>
 
       {loading ? (
         <p>Loading FAQs...</p>
+      ) : filteredFaqs.length === 0 ? (
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #E8DED2",
+            borderRadius: "16px",
+            padding: "40px",
+            textAlign: "center",
+            color: "#9A8C82"
+          }}
+        >
+          <div style={{ fontSize: "36px", marginBottom: "12px" }}>🔍</div>
+          <h3 style={{ margin: "0 0 8px", color: "#2C221E" }}>No FAQs found</h3>
+          <p style={{ margin: 0 }}>Try another search or filter.</p>
+        </div>
       ) : (
         <div
           style={{
@@ -473,7 +502,7 @@ export default function SupportFAQManagement() {
             gap: "16px"
           }}
         >
-          {filteredFaqs.map((faq, index) => (
+          {filteredFaqs.map((faq) => (
             <div
               key={faq.id}
               style={{
@@ -499,9 +528,13 @@ export default function SupportFAQManagement() {
                     color: "#9A8C82",
                     cursor: "pointer"
                   }}
-                  onClick={() => {
-                    navigator.clipboard.writeText(faq.id);
-                    alert("Copied FAQ ID: " + faq.id);
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(faq.id);
+                      alert("Copied FAQ ID: " + faq.id);
+                    } catch (e) {
+                      console.log(e);
+                    }
                   }}
                 >
                   ID: {faq.id.slice(0, 6)}... 📋
@@ -518,13 +551,14 @@ export default function SupportFAQManagement() {
                   gap: "16px",
                   marginTop: "12px",
                   fontSize: "12px",
-                  color: "#9A8C82"
+                  color: "#9A8C82",
+                  flexWrap: "wrap"
                 }}
               >
                 <span>Updated: {faq.updatedAt?.toDate?.().toLocaleString() || "Never"}</span>
                 <span>👁 {faq.views || 0} Views</span>
-                <span>👍 {faq.helpful || 0}</span>
-                <span>👎 {faq.notHelpful || 0}</span>
+                <span>👍 {faq.helpful || 0} Helpful</span>
+                <span>👎 {faq.notHelpful || 0} Not Helpful</span>
               </div>
 
               <div
@@ -609,7 +643,7 @@ export default function SupportFAQManagement() {
                   }}
                 >
                   <button
-                    onClick={() => moveUp(index)}
+                    onClick={() => moveUp(faq)}
                     style={{
                       padding: "6px 10px",
                       borderRadius: "6px",
@@ -622,7 +656,7 @@ export default function SupportFAQManagement() {
                   </button>
 
                   <button
-                    onClick={() => moveDown(index)}
+                    onClick={() => moveDown(faq)}
                     style={{
                       padding: "6px 10px",
                       borderRadius: "6px",
