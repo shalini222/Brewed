@@ -42,6 +42,7 @@ export default function App() {
   const [page, setPage] = useState("menu");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [activeOrder, setActiveOrder] = useState(null); 
+  const [selectedTicket, setSelectedTicket] = useState(null);
 
   const navigateTo = (nextPage, orderSnapshot = null) => {
     if (orderSnapshot) {
