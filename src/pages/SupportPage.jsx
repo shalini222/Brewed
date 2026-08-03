@@ -11,7 +11,7 @@ import {
   serverTimestamp,
   updateDoc,
   increment
-} from "firestore";
+} from "firebase/firestore";
 import { Send, CheckCheck, Eye, Lock, FileText, UserCheck, MessageSquarePlus } from "lucide-react";
 
 export default function SupportPage({ setPage, setActivePage, selectedTicket }) {
