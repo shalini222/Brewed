@@ -43,6 +43,8 @@ export default function SupportPage({ setPage }) {
   // FAQ state
   const [openFaq, setOpenFaq] = useState(null);
   const [search, setSearch] = useState("");
+  const [faqVotes, setFaqVotes] = useState({});
+  const [selectedCategory, setSelectedCategory] = useState("All");
   
   // Ticket states
   const [tickets, setTickets] = useState([]);
@@ -70,12 +72,22 @@ export default function SupportPage({ setPage }) {
 
   // Filter FAQs by question, answer, or category
   const filteredFaqs = faqs.filter((faq) => {
-    return (
-      (faq.question && faq.question.toLowerCase().includes(search.toLowerCase())) ||
-      (faq.answer && faq.answer.toLowerCase().includes(search.toLowerCase())) ||
-      (faq.category && faq.category.toLowerCase().includes(search.toLowerCase()))
-    );
+    const matchesSearch =
+      (faq.question || "").toLowerCase().includes(search.toLowerCase()) ||
+      (faq.answer || "").toLowerCase().includes(search.toLowerCase()) ||
+      (faq.category || "").toLowerCase().includes(search.toLowerCase());
+
+    const matchesCategory =
+      selectedCategory === "All" ||
+      faq.category === selectedCategory;
+
+    return matchesSearch && matchesCategory;
   });
+
+  const featuredFaq = faqs.find(faq => faq.featured);
+  const regularFaqs = filteredFaqs.filter(
+    faq => !faq.featured
+  );
 
   // Help Categories Data
   const helpCategories = [
@@ -199,19 +211,26 @@ export default function SupportPage({ setPage }) {
   useEffect(() => {
     const q = query(
       collection(db, "supportFAQs"),
-      where("active", "==", true)
+      where("active", "==", true),
+      orderBy("sortOrder", "asc")
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setFaqs(
-        snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-      );
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      // Keep pinned FAQs at the top
+      data.sort((a, b) => {
+        if (a.pinned === b.pinned) {
+          return (a.sortOrder || 0) - (b.sortOrder || 0);
+        }
+        return b.pinned - a.pinned;
+      });
+      setFaqs(data);
     });
 
-    return () => unsubscribe();
+    return unsubscribe;
   }, []);
 
   // Auto-scroll when messages update
@@ -334,6 +353,40 @@ export default function SupportPage({ setPage }) {
     if (isToday) return `Today • ${timeString}`;
     if (isYesterday) return `Yesterday • ${timeString}`;
     return `${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} • ${timeString}`;
+  };
+
+  const openFAQ = async (faq, index) => {
+    if (openFaq === index) {
+      setOpenFaq(null);
+      return;
+    }
+
+    setOpenFaq(index);
+
+    try {
+      await updateDoc(doc(db, "supportFAQs", faq.id), {
+        views: increment(1)
+      });
+    } catch (err) {
+      console.log("Error updating FAQ views:", err);
+    }
+  };
+
+  const voteFAQ = async (faqId, type) => {
+    if (faqVotes[faqId]) return;
+
+    try {
+      await updateDoc(doc(db, "supportFAQs", faqId), {
+        [type]: increment(1)
+      });
+
+      setFaqVotes((prev) => ({
+        ...prev,
+        [faqId]: type
+      }));
+    } catch (err) {
+      console.log("Error voting:", err);
+    }
   };
 
   const isClosed = selectedTicket?.status === "Closed";
@@ -485,6 +538,16 @@ export default function SupportPage({ setPage }) {
                   <div
                     key={item.title}
                     className="help-card"
+                    onClick={() => {
+                      setSelectedCategory(item.title);
+                      setSearch("");
+                    }}
+                    style={{
+                      border:
+                        selectedCategory === item.title
+                          ? "2px solid #C4956A"
+                          : undefined
+                    }}
                   >
                     <Icon
                       size={28}
@@ -593,66 +656,144 @@ export default function SupportPage({ setPage }) {
 
           {/* FREQUENTLY ASKED QUESTIONS SECTION */}
           <section style={{ marginTop: "24px" }}>
-            <h2 className="support-heading">
-              ❓ Frequently Asked Questions
-            </h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2 className="support-heading" style={{ margin: 0 }}>
+                ❓ Frequently Asked Questions {selectedCategory !== "All" && `(${selectedCategory})`}
+              </h2>
+              {selectedCategory !== "All" && (
+                <button
+                  className="support-btn support-btn-secondary"
+                  onClick={() => setSelectedCategory("All")}
+                  style={{ marginBottom: "0px", padding: "6px 12px", fontSize: "12px" }}
+                >
+                  Show All FAQs
+                </button>
+              )}
+            </div>
 
-            {filteredFaqs.length === 0 ? (
-              <div className="support-card">
-                <p
-                  style={{
-                    margin: 0,
-                    color: "#9A8C82"
-                  }}
-                >
-                  No FAQs found.
-                </p>
-              </div>
-            ) : (
-              filteredFaqs.map((faq, index) => (
-                <div
-                  key={index}
-                  className="faq-card"
-                >
-                  <div
+            <div style={{ marginTop: "16px" }}>
+              {featuredFaq && search.trim() === "" && selectedCategory === "All" && (
+                <div className="support-card" style={{ background: "#FFF8E8", border: "2px solid #F4D27A", marginBottom: "18px" }}>
+                  <div style={{ color: "#B8860B", fontWeight: 700, marginBottom: "8px" }}>
+                    ⭐ Featured FAQ
+                  </div>
+                  <h3 style={{ marginTop: 0, color: "#2C221E" }}>
+                    {featuredFaq.question}
+                  </h3>
+                  <p style={{ color: "#6E5E53", whiteSpace: "pre-wrap" }}>
+                    {featuredFaq.answer}
+                  </p>
+                </div>
+              )}
+
+              {regularFaqs.length === 0 ? (
+                <div className="support-card">
+                  <p
                     style={{
-                      display: "inline-block",
-                      background: "#FAF6F0",
-                      color: "#C4956A",
-                      padding: "4px 10px",
-                      borderRadius: "999px",
-                      fontSize: "11px",
-                      fontWeight: "600",
-                      margin: "12px 18px 0"
+                      margin: 0,
+                      color: "#9A8C82"
                     }}
                   >
-                    {faq.category || "General"}
-                  </div>
-                  <button
-                    className="faq-btn"
-                    onClick={() =>
-                      setOpenFaq(
-                        openFaq === index ? null : index
-                      )
-                    }
-                  >
-                    <span>{faq.question}</span>
-
-                    {openFaq === index ? (
-                      <ChevronUp size={18} />
-                    ) : (
-                      <ChevronDown size={18} />
-                    )}
-                  </button>
-
-                  {openFaq === index && (
-                    <div className="faq-answer">
-                      {faq.answer}
-                    </div>
-                  )}
+                    No FAQs found for this category.
+                  </p>
                 </div>
-              ))
-            )}
+              ) : (
+                regularFaqs.map((faq, index) => (
+                  <div
+                    key={index}
+                    className="faq-card"
+                  >
+                    <div
+                      style={{
+                        display: "inline-block",
+                        background: "#FAF6F0",
+                        color: "#C4956A",
+                        padding: "4px 10px",
+                        borderRadius: "999px",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        margin: "12px 18px 0"
+                      }}
+                    >
+                      {faq.category || "General"}
+                    </div>
+                    <button
+                      className="faq-btn"
+                      onClick={() => openFAQ(faq, index)}
+                    >
+                      <span>{faq.question}</span>
+
+                      {openFaq === index ? (
+                        <ChevronUp size={18} />
+                      ) : (
+                        <ChevronDown size={18} />
+                      )}
+                    </button>
+
+                    {openFaq === index && (
+                      <div className="faq-answer">
+                        <div style={{ whiteSpace: "pre-wrap" }}>
+                          {faq.answer}
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: "18px",
+                            paddingTop: "14px",
+                            borderTop: "1px solid #E8DED2"
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: "13px",
+                              color: "#6E5E53",
+                              marginBottom: "10px"
+                            }}
+                          >
+                            Was this helpful?
+                          </div>
+
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "10px"
+                            }}
+                          >
+                            <button
+                              disabled={faqVotes[faq.id]}
+                              onClick={() => voteFAQ(faq.id, "helpful")}
+                              className="support-btn support-btn-secondary"
+                            >
+                              👍 Yes
+                            </button>
+
+                            <button
+                              disabled={faqVotes[faq.id]}
+                              onClick={() => voteFAQ(faq.id, "notHelpful")}
+                              className="support-btn support-btn-secondary"
+                            >
+                              👎 No
+                            </button>
+                          </div>
+
+                          {faqVotes[faq.id] && (
+                            <div
+                              style={{
+                                marginTop: "10px",
+                                fontSize: "12px",
+                                color: "#9A8C82"
+                              }}
+                            >
+                              Thanks for your feedback!
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </section>
 
           {/* CONTACT SUPPORT SECTION */}
