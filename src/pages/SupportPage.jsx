@@ -71,8 +71,26 @@ export default function SupportPage({ setPage }) {
   const [faqs, setFaqs] = useState([]);
 
   // Support Policies state
-  const [supportPolicies, setSupportPolicies] = useState([]);
+  const [policies, setPolicies] = useState([]);
+  const [selectedPolicy, setSelectedPolicy] = useState(null);
+  const [showPolicyModal, setShowPolicyModal] = useState(false);
   const [openPolicy, setOpenPolicy] = useState(null);
+  const [selectedPolicyCategory, setSelectedPolicyCategory] = useState("All");
+  const [policySearch, setPolicySearch] = useState("");
+
+  const filteredPolicies = policies.filter((policy) => {
+    const matchesCategory = selectedPolicyCategory === "All" || policy.category === selectedPolicyCategory;
+    const matchesSearch =
+      (policy.title || "").toLowerCase().includes(policySearch.toLowerCase()) ||
+      (policy.content || "").toLowerCase().includes(policySearch.toLowerCase()) ||
+      (policy.category || "").toLowerCase().includes(policySearch.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  const policyCategories = [
+    "All",
+    ...new Set(policies.map((policy) => policy.category))
+  ];
 
   // Filter FAQs by question, answer, or category
   const filteredFaqs = faqs.filter((faq) => {
@@ -153,7 +171,7 @@ export default function SupportPage({ setPage }) {
         setLoadingTickets(false);
       },
       (err) => {
-        console.log("Error fetching customer tickets (Index may be required):", err);
+        console.log("Error fetching customer tickets:", err);
         setLoadingTickets(false);
       }
     );
@@ -185,7 +203,7 @@ export default function SupportPage({ setPage }) {
     if (!selectedTicket?.id) return;
 
     setLoadingMessages(true);
-    setMessages([]); // Clear previous messages to avoid flashing old data
+    setMessages([]);
 
     const q = query(
       collection(db, "supportTickets", selectedTicket.id, "messages"),
@@ -223,7 +241,6 @@ export default function SupportPage({ setPage }) {
         id: doc.id,
         ...doc.data()
       }));
-      // Keep pinned FAQs at the top
       data.sort((a, b) => {
         if (a.pinned === b.pinned) {
           return (a.sortOrder || 0) - (b.sortOrder || 0);
@@ -236,12 +253,11 @@ export default function SupportPage({ setPage }) {
     return unsubscribe;
   }, []);
 
-  // Load published customer policies
+  // Fetch published policies
   useEffect(() => {
     const q = query(
       collection(db, "supportPolicies"),
-      where("status", "==", "Published"),
-      where("visibility", "==", "Customer")
+      where("status", "==", "Published")
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -249,13 +265,10 @@ export default function SupportPage({ setPage }) {
         id: doc.id,
         ...doc.data()
       }));
-      data.sort((a, b) => {
-        if (a.pinned === b.pinned) {
-          return (a.sortOrder || 0) - (b.sortOrder || 0);
-        }
-        return b.pinned - a.pinned;
-      });
-      setSupportPolicies(data);
+
+      data.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
+      setPolicies(data);
     });
 
     return unsubscribe;
@@ -293,7 +306,6 @@ export default function SupportPage({ setPage }) {
         lastMessageAt: serverTimestamp()
       });
 
-      // Add initial message to subcollection
       await addDoc(collection(db, "supportTickets", ticketRef.id, "messages"), {
         sender: "customer",
         senderName: currentUser.displayName || currentUser.email || "Customer",
@@ -301,11 +313,9 @@ export default function SupportPage({ setPage }) {
         createdAt: serverTimestamp()
       });
 
-      // Reload ticket fresh from Firestore to guarantee consistency
       const snap = await getDoc(ticketRef);
       setSelectedTicket({ id: ticketRef.id, ...snap.data() });
       
-      // Reset form fields
       setSubject("");
       setCategory("General");
       setInitialMessage("");
@@ -528,7 +538,6 @@ export default function SupportPage({ setPage }) {
               />
             </div>
 
-            {/* Display FAQ search results live if searching */}
             {search.trim() !== "" && (
               <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
                 {filteredFaqs.length === 0 ? (
@@ -829,111 +838,41 @@ export default function SupportPage({ setPage }) {
             <h2 className="support-heading">Contact Support</h2>
 
             <div className="support-grid">
-
-              {/* Call */}
               <div className="support-card" style={{ marginBottom: 0 }}>
                 <Phone size={28} color="#C4956A" />
-
-                <h3
-                  style={{
-                    marginTop: "12px",
-                    marginBottom: "6px"
-                  }}
-                >
-                  Call Us
-                </h3>
-
+                <h3 style={{ marginTop: "12px", marginBottom: "6px" }}>Call Us</h3>
                 <p>+91 XXXXX XXXXX</p>
-
-                <p
-                  style={{
-                    fontSize: "12px",
-                    color: "#9A8C82",
-                    marginTop: "8px"
-                  }}
-                >
+                <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "8px" }}>
                   Available during business hours.
                 </p>
               </div>
 
-              {/* Email */}
               <div className="support-card" style={{ marginBottom: 0 }}>
                 <Mail size={28} color="#C4956A" />
-
-                <h3
-                  style={{
-                    marginTop: "12px",
-                    marginBottom: "6px"
-                  }}
-                >
-                  Email
-                </h3>
-
+                <h3 style={{ marginTop: "12px", marginBottom: "6px" }}>Email</h3>
                 <p>support@brewed.com</p>
-
-                <p
-                  style={{
-                    fontSize: "12px",
-                    color: "#9A8C82",
-                    marginTop: "8px"
-                  }}
-                >
+                <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "8px" }}>
                   Usually replies within 24 hours.
                 </p>
               </div>
 
-              {/* WhatsApp */}
               <div className="support-card" style={{ marginBottom: 0 }}>
                 <MessageCircle size={28} color="#C4956A" />
-
-                <h3
-                  style={{
-                    marginTop: "12px",
-                    marginBottom: "6px"
-                  }}
-                >
-                  WhatsApp
-                </h3>
-
+                <h3 style={{ marginTop: "12px", marginBottom: "6px" }}>WhatsApp</h3>
                 <p>Chat with our support team</p>
-
-                <p
-                  style={{
-                    fontSize: "12px",
-                    color: "#9A8C82",
-                    marginTop: "8px"
-                  }}
-                >
+                <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "8px" }}>
                   Fastest way to get help.
                 </p>
               </div>
 
-              {/* Instagram */}
               <div className="support-card" style={{ marginBottom: 0 }}>
                 <Camera size={28} color="#C4956A" />
-
-                <h3
-                  style={{
-                    marginTop: "12px",
-                    marginBottom: "6px"
-                  }}
-                >
-                  Instagram
-                </h3>
-
+                <h3 style={{ marginTop: "12px", marginBottom: "6px" }}>Instagram</h3>
                 <p>@brewedcoffee</p>
-
-                <p
-                  style={{
-                    fontSize: "12px",
-                    color: "#9A8C82",
-                    marginTop: "8px"
-                  }}
-                >
+                <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "8px" }}>
                   Send us a DM anytime.
                 </p>
               </div>
-
             </div>
           </section>
 
@@ -951,24 +890,9 @@ export default function SupportPage({ setPage }) {
                 }}
               >
                 <Clock size={28} color="#C4956A" />
-
                 <div>
-                  <h3
-                    style={{
-                      margin: 0,
-                      color: "#2C221E"
-                    }}
-                  >
-                    Customer Support Hours
-                  </h3>
-
-                  <p
-                    style={{
-                      marginTop: "4px",
-                      color: "#9A8C82",
-                      fontSize: "13px"
-                    }}
-                  >
+                  <h3 style={{ margin: 0, color: "#2C221E" }}>Customer Support Hours</h3>
+                  <p style={{ marginTop: "4px", color: "#9A8C82", fontSize: "13px" }}>
                     We're here to help every day.
                   </p>
                 </div>
@@ -982,36 +906,17 @@ export default function SupportPage({ setPage }) {
                   color: "#2C221E"
                 }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    borderBottom: "1px solid #F2ECE5",
-                    paddingBottom: "10px"
-                  }}
-                >
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #F2ECE5", paddingBottom: "10px" }}>
                   <span>Monday – Friday</span>
                   <strong>9:00 AM – 10:00 PM</strong>
                 </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    borderBottom: "1px solid #F2ECE5",
-                    paddingBottom: "10px"
-                  }}
-                >
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #F2ECE5", paddingBottom: "10px" }}>
                   <span>Saturday</span>
                   <strong>9:00 AM – 11:00 PM</strong>
                 </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between"
-                  }}
-                >
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Sunday</span>
                   <strong>9:00 AM – 10:00 PM</strong>
                 </div>
@@ -1022,58 +927,231 @@ export default function SupportPage({ setPage }) {
           {/* SUPPORT POLICIES SECTION */}
           <section style={{ marginTop: "28px" }}>
             <h2 className="support-heading">
-              📄 Support Policies
+              📜 Support Policies
             </h2>
-            {supportPolicies.length === 0 ? (
-              <div className="support-card">
-                No policies available.
+
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                overflowX: "auto",
+                margin: "16px 0 20px"
+              }}
+            >
+              {policyCategories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedPolicyCategory(category)}
+                  className="support-btn support-btn-secondary"
+                  style={{
+                    background:
+                      selectedPolicyCategory === category
+                        ? "#C4956A"
+                        : "#FAF6F0",
+                    color:
+                      selectedPolicyCategory === category
+                        ? "#fff"
+                        : "#2C221E",
+                    whiteSpace: "nowrap"
+                  }}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", background: "#fff", border: "1px solid #E8DED2", borderRadius: "14px", padding: "12px 16px", marginBottom: "20px" }}>
+              <Search size={18} color="#C4956A" />
+              <input
+                type="text"
+                value={policySearch}
+                onChange={(e) => setPolicySearch(e.target.value)}
+                placeholder="Search policies..."
+                style={{ flex: 1, border: "none", outline: "none", marginLeft: "10px", background: "transparent", fontSize: "14px" }}
+              />
+            </div>
+
+            {filteredPolicies.length === 0 ? (
+              <div className="support-card" style={{ textAlign: "center", padding: "35px" }}>
+                <ShieldCheck size={42} color="#C4956A" />
+                <h3 style={{ marginTop: "14px", color: "#2C221E" }}>
+                  No policies found
+                </h3>
+                <p style={{ color: "#9A8C82" }}>
+                  Try another keyword or category.
+                </p>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {supportPolicies.map(policy => (
-                  <div key={policy.id} className="support-card" style={{ marginBottom: 0 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                      <h3 style={{ margin: 0, color: "#2C221E", fontSize: "18px", fontWeight: 700 }}>
-                        📄 {policy.title}
-                      </h3>
-                      <span style={{ background: "#FAF6F0", color: "#C4956A", padding: "4px 10px", borderRadius: "999px", fontSize: "11px", fontWeight: 600 }}>
-                        {policy.category}
-                      </span>
-                    </div>
-                    <p style={{ color: "#6E5E53", marginTop: "12px", whiteSpace: "pre-wrap", lineHeight: "1.7", fontSize: "14px" }}>
-                      {openPolicy === policy.id
-                        ? policy.content
-                        : `${policy.content.slice(0, 180)}${
-                            policy.content.length > 180 ? "..." : ""
-                          }`}
-                    </p>
-                    {policy.content.length > 180 && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "14px"
+                }}
+              >
+                {filteredPolicies.map((policy) => {
+                  const relatedPolicies = policies
+                    .filter((p) => p.id !== policy.id && p.category === policy.category)
+                    .slice(0, 3);
+
+                  return (
+                    <div
+                      id={`policy-${policy.id}`}
+                      key={policy.id}
+                      className="faq-card"
+                    >
                       <button
+                        className="faq-btn"
                         onClick={() =>
                           setOpenPolicy(
                             openPolicy === policy.id ? null : policy.id
                           )
                         }
-                        className="support-btn support-btn-secondary"
-                        style={{
-                          marginTop: "14px",
-                          padding: "6px 14px",
-                          fontSize: "12px"
-                        }}
                       >
-                        {openPolicy === policy.id
-                          ? "Read Less"
-                          : "Read More"}
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-start",
+                            gap: "6px"
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontWeight: 700,
+                              color: "#2C221E"
+                            }}
+                          >
+                            {policy.title}
+                          </span>
+
+                          <span
+                            style={{
+                              background: "#FAF6F0",
+                              color: "#C4956A",
+                              padding: "3px 10px",
+                              borderRadius: "999px",
+                              fontSize: "11px",
+                              fontWeight: 600
+                            }}
+                          >
+                            {policy.category}
+                          </span>
+                        </div>
+
+                        {openPolicy === policy.id ? (
+                          <ChevronUp size={18} />
+                        ) : (
+                          <ChevronDown size={18} />
+                        )}
                       </button>
-                    )}
-                    {policy.editedAt && (
-                      <div style={{ marginTop: "14px", fontSize: "12px", color: "#9A8C82" }}>
-                        Last updated{" "}
-                        {policy.editedAt.toDate().toLocaleDateString()}
-                      </div>
-                    )}
-                  </div>
-                ))}
+
+                      {openPolicy === policy.id && (
+                        <div className="faq-answer">
+
+                          <div
+                            style={{
+                              whiteSpace: "pre-wrap",
+                              lineHeight: "1.8"
+                            }}
+                          >
+                            {policy.content}
+                          </div>
+
+                          {relatedPolicies.length > 0 && (
+                            <div
+                              style={{
+                                marginTop: "24px",
+                                borderTop: "1px solid #E8DED2",
+                                paddingTop: "18px"
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontWeight: 600,
+                                  color: "#2C221E",
+                                  marginBottom: "12px"
+                                }}
+                              >
+                                Related Policies
+                              </div>
+
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "10px"
+                                }}
+                              >
+                                {relatedPolicies.map((related) => (
+                                  <button
+                                    key={related.id}
+                                    onClick={() => {
+                                      setOpenPolicy(related.id);
+                                      setTimeout(() => {
+                                        document
+                                          .getElementById(`policy-${related.id}`)
+                                          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                      }, 100);
+                                    }}
+                                    style={{
+                                      background: "#FAF6F0",
+                                      border: "1px solid #E8DED2",
+                                      borderRadius: "10px",
+                                      padding: "12px 14px",
+                                      textAlign: "left",
+                                      cursor: "pointer"
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        fontWeight: 600,
+                                        color: "#2C221E"
+                                      }}
+                                    >
+                                      {related.title}
+                                    </div>
+
+                                    <div
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#9A8C82",
+                                        marginTop: "4px"
+                                      }}
+                                    >
+                                      {related.category}
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div
+                            style={{
+                              marginTop: "18px",
+                              paddingTop: "14px",
+                              borderTop: "1px solid #E8DED2",
+                              fontSize: "12px",
+                              color: "#9A8C82",
+                              display: "flex",
+                              justifyContent: "space-between"
+                            }}
+                          >
+                            <span>
+                              Category: {policy.category}
+                            </span>
+
+                            <span>
+                              Updated by {policy.editedBy || "Admin"}
+                            </span>
+                          </div>
+
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </section>
@@ -1186,7 +1264,6 @@ export default function SupportPage({ setPage }) {
       {/* CONVERSATION VIEW */}
       {activePage === "conversation" && selectedTicket && (
         <div className="support-card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {/* Header Info */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", color: "#9A8C82", background: "#FAF6F0", padding: "10px 14px", borderRadius: "10px", border: "1px solid #E8DED2" }}>
             <div>
               <strong style={{ color: "#2C221E" }}>{selectedTicket.subject}</strong>
@@ -1198,7 +1275,6 @@ export default function SupportPage({ setPage }) {
             </div>
           </div>
 
-          {/* Message List */}
           {loadingMessages ? (
             <div style={{ textAlign: "center", padding: "40px", color: "#9A8C82" }}>Loading conversation...</div>
           ) : messages.length === 0 ? (
@@ -1238,7 +1314,6 @@ export default function SupportPage({ setPage }) {
             </div>
           )}
 
-          {/* Reply Box or Closed Notice */}
           {isClosed ? (
             <div style={{ background: "#FAF6F0", border: "1px solid #E8DED2", borderRadius: "12px", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#6E5E53", fontSize: "14px" }}>
@@ -1271,6 +1346,36 @@ export default function SupportPage({ setPage }) {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* POLICY VIEWER MODAL */}
+      {showPolicyModal && selectedPolicy && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 9999, padding: "20px" }}>
+          <div style={{ width: "100%", maxWidth: "700px", maxHeight: "85vh", overflowY: "auto", background: "#fff", borderRadius: "18px", padding: "28px", boxShadow: "0 25px 60px rgba(0,0,0,.2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <div>
+                <h2 style={{ margin: 0, color: "#2C221E" }}>
+                  📄 {selectedPolicy.title}
+                </h2>
+                <div style={{ color: "#9A8C82", fontSize: "13px", marginTop: "6px" }}>
+                  {selectedPolicy.category}
+                </div>
+              </div>
+              <button className="support-btn support-btn-secondary" onClick={() => { setShowPolicyModal(false); setSelectedPolicy(null); }}>
+                Close
+              </button>
+            </div>
+            <div style={{ whiteSpace: "pre-wrap", lineHeight: "1.8", color: "#4B3B33", fontSize: "15px" }}>
+              {selectedPolicy.content}
+            </div>
+            {selectedPolicy.editedAt && (
+              <div style={{ marginTop: "24px", borderTop: "1px solid #E8DED2", paddingTop: "16px", fontSize: "13px", color: "#9A8C82" }}>
+                Last updated{" "}
+                {selectedPolicy.editedAt.toDate().toLocaleDateString()}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
