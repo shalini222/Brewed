@@ -15,6 +15,7 @@ import {
 import SupportFAQManagement from "./SupportFAQManagement";
 import SupportPolicyManagement from "./SupportPolicyManagement";
 import SupportSettingsManagement from "./SupportSettingsManagement";
+import SupportHelpCategoryManagement from "./SupportHelpCategoryManagement";
 
 const supportStaff = [
   "Unassigned",
@@ -421,7 +422,21 @@ export default function SupportManagement({ setPage, setActivePage }) {
             color: activeTab === "supportsettings" ? "#fff" : "#2C221E"
           }}
         >
-          ⚙️Settings
+         📞 Contact Settings
+        </button>
+
+         <button
+          onClick={() => setActiveTab("supporthelpdesk")}
+          style={{
+            padding: "10px 18px",
+            borderRadius: "12px",
+            border: "none",
+            cursor: "pointer",
+            background: activeTab === "supporthelpdesk" ? "#C4956A" : "#fff",
+            color: activeTab === "supporthelpdesk" ? "#fff" : "#2C221E"
+          }}
+        >
+         🚛 Help Desk 
         </button>
       </div>
 
@@ -1399,6 +1414,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
 
       {activeTab === "supportfaq" && <SupportFAQManagement />}
     {activeTab === "supportsettings" && <SupportSettingsManagement />}
+        {activeTab === "supporthelpdesk" && <SupportHelpCategoryManagement  />}
       {activeTab === "supportpolicies" && <SupportPolicyManagement />}
     </div>
   );
