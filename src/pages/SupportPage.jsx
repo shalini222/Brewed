@@ -64,6 +64,23 @@ export default function SupportPage({ setPage }) {
   const [sending, setSending] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(true);
 
+  // Support Settings state
+  const [supportSettings, setSupportSettings] = useState({
+    phone: "",
+    email: "",
+    whatsapp: "",
+    instagram: "",
+    callDescription: "",
+    emailDescription: "",
+    whatsappDescription: "",
+    instagramDescription: "",
+    mondayFriday: "",
+    saturday: "",
+    sunday: "",
+    businessHoursTitle: "",
+    businessHoursDescription: ""
+  });
+
   const containerRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -250,6 +267,19 @@ export default function SupportPage({ setPage }) {
       setFaqs(data);
     });
 
+    return unsubscribe;
+  }, []);
+
+  // Fetch support settings in real-time
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      doc(db, "supportSettings", "general"),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          setSupportSettings(snapshot.data());
+        }
+      }
+    );
     return unsubscribe;
   }, []);
 
@@ -841,36 +871,36 @@ export default function SupportPage({ setPage }) {
               <div className="support-card" style={{ marginBottom: 0 }}>
                 <Phone size={28} color="#C4956A" />
                 <h3 style={{ marginTop: "12px", marginBottom: "6px" }}>Call Us</h3>
-                <p>+91 XXXXX XXXXX</p>
+                <p>{supportSettings.phone}</p>
                 <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "8px" }}>
-                  Available during business hours.
+                  {supportSettings.callDescription}
                 </p>
               </div>
 
               <div className="support-card" style={{ marginBottom: 0 }}>
                 <Mail size={28} color="#C4956A" />
                 <h3 style={{ marginTop: "12px", marginBottom: "6px" }}>Email</h3>
-                <p>support@brewed.com</p>
+                <p>{supportSettings.email}</p>
                 <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "8px" }}>
-                  Usually replies within 24 hours.
+                  {supportSettings.emailDescription}
                 </p>
               </div>
 
               <div className="support-card" style={{ marginBottom: 0 }}>
                 <MessageCircle size={28} color="#C4956A" />
                 <h3 style={{ marginTop: "12px", marginBottom: "6px" }}>WhatsApp</h3>
-                <p>Chat with our support team</p>
+                <p>{supportSettings.whatsapp}</p>
                 <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "8px" }}>
-                  Fastest way to get help.
+                  {supportSettings.whatsappDescription}
                 </p>
               </div>
 
               <div className="support-card" style={{ marginBottom: 0 }}>
                 <Camera size={28} color="#C4956A" />
                 <h3 style={{ marginTop: "12px", marginBottom: "6px" }}>Instagram</h3>
-                <p>@brewedcoffee</p>
+                <p>{supportSettings.instagram}</p>
                 <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "8px" }}>
-                  Send us a DM anytime.
+                  {supportSettings.instagramDescription}
                 </p>
               </div>
             </div>
