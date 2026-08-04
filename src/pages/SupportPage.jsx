@@ -921,9 +921,9 @@ export default function SupportPage({ setPage }) {
               >
                 <Clock size={28} color="#C4956A" />
                 <div>
-                  <h3 style={{ margin: 0, color: "#2C221E" }}>Customer Support Hours</h3>
+                  <h3 style={{ margin: 0, color: "#2C221E" }}>{supportSettings.businessHoursTitle}</h3>
                   <p style={{ marginTop: "4px", color: "#9A8C82", fontSize: "13px" }}>
-                    We're here to help every day.
+                    {supportSettings.businessHoursDescription}
                   </p>
                 </div>
               </div>
@@ -938,17 +938,17 @@ export default function SupportPage({ setPage }) {
               >
                 <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #F2ECE5", paddingBottom: "10px" }}>
                   <span>Monday – Friday</span>
-                  <strong>9:00 AM – 10:00 PM</strong>
+                  <strong>{supportSettings.mondayFriday}</strong>
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #F2ECE5", paddingBottom: "10px" }}>
                   <span>Saturday</span>
-                  <strong>9:00 AM – 11:00 PM</strong>
+                  <strong>{supportSettings.saturday}</strong>
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Sunday</span>
-                  <strong>9:00 AM – 10:00 PM</strong>
+                  <strong>{supportSettings.sunday}</strong>
                 </div>
               </div>
             </div>
