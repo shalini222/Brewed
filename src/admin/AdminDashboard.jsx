@@ -597,6 +597,12 @@ return (
           title: "📞 Support",
           page: "supportadmin",
         },
+
+
+       {
+          title: "🤵🏼‍♀️employees",
+          page: "employeeadmin",
+        },
       {
           title: "⚙ Settings",
           page: "settingsadmin",
