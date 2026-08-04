@@ -27,7 +27,9 @@ import {
   Pencil,
   Trash2,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Eye,
+  EyeOff
 } from "lucide-react";
 
 export default function SupportHelpCategoryManagement() {
@@ -143,320 +145,586 @@ export default function SupportHelpCategoryManagement() {
   };
 
   return (
-    <div style={{ padding: "24px", maxWidth: "900px", margin: "0 auto" }}>
-      <h2>🗂 Support Help Categories</h2>
+    <>
+      <style>{`
+        /* ===========================
+           HELP CATEGORIES PAGE
+        =========================== */
 
-      {/* Add / Edit Form */}
-      <div className="support-card" style={{ background: "#fff", padding: "20px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", marginTop: "16px" }}>
-        <h3>
-          {editingId ? "Edit Category" : "New Category"}
-        </h3>
+        .help-page{
+            max-width:1200px;
+            margin:auto;
+            padding:28px;
+            background:#FDFBF8;
+        }
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Category title"
-            style={{ padding: "8px 12px", borderRadius: "4px", border: "1px solid #ccc" }}
-          />
+        /* Header */
 
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description"
-            rows="3"
-            style={{ padding: "8px 12px", borderRadius: "4px", border: "1px solid #ccc" }}
-          />
+        .help-header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:28px;
+        }
 
-          <select
-            value={icon}
-            onChange={(e) => setIcon(e.target.value)}
-            style={{ padding: "8px 12px", borderRadius: "4px", border: "1px solid #ccc", background: "#fff" }}
-          >
-            {icons.map(i => (
-              <option key={i} value={i}>
-                {i}
-              </option>
-            ))}
-          </select>
+        .help-header h2{
+            margin:0;
+            font-size:30px;
+            color:#2C221E;
+        }
 
-          <div style={{ display: "flex", gap: "10px" }}>
-            <button 
-              onClick={saveCategory}
-              style={{ padding: "10px 16px", background: "#007bff", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" }}
-            >
-              {editingId ? "Update Category" : "Add Category"}
-            </button>
-            {editingId && (
-              <button 
-                onClick={() => {
-                  setEditingId(null);
-                  setTitle("");
-                  setDescription("");
-                  setIcon("Truck");
-                }}
-                style={{ padding: "10px 16px", background: "#6c757d", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" }}
-              >
-                Cancel
-              </button>
-            )}
+        .help-header p{
+            color:#8B7B70;
+            margin-top:8px;
+        }
+
+        /* Cards */
+
+        .help-card{
+            background:#fff;
+            border-radius:22px;
+            padding:28px;
+            margin-bottom:24px;
+            border:1px solid #F1E8DE;
+            box-shadow:
+                0 8px 24px rgba(44,34,30,.04),
+                0 18px 40px rgba(44,34,30,.04);
+            transition:.25s;
+        }
+
+        .help-card:hover{
+            transform:translateY(-3px);
+            box-shadow:
+                0 12px 32px rgba(44,34,30,.07),
+                0 24px 50px rgba(44,34,30,.08);
+        }
+
+        /* Form */
+
+        .help-form{
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:22px;
+        }
+
+        .help-form textarea{
+            grid-column:1/-1;
+        }
+
+        .help-form input,
+        .help-form textarea,
+        .help-form select{
+
+            width:100%;
+            padding:15px 18px;
+            border-radius:16px;
+            border:2px solid transparent;
+            background:#FAF6F0;
+            font-size:15px;
+            transition:.25s;
+            outline:none;
+
+        }
+
+        .help-form input:hover,
+        .help-form textarea:hover,
+        .help-form select:hover{
+
+            border-color:#E8DED2;
+            background:white;
+
+        }
+
+        .help-form input:focus,
+        .help-form textarea:focus,
+        .help-form select:focus{
+
+            background:white;
+            border-color:#C4956A;
+            box-shadow:0 0 0 5px rgba(196,149,106,.15);
+
+        }
+
+        /* Buttons */
+
+        .primary-btn{
+
+            background:#C4956A;
+            color:white;
+            border:none;
+            border-radius:14px;
+            padding:14px 22px;
+            font-weight:700;
+            cursor:pointer;
+            transition:.25s;
+
+        }
+
+        .primary-btn:hover{
+
+            background:#B7865E;
+            transform:translateY(-2px);
+
+        }
+
+        .secondary-btn{
+
+            background:white;
+            border:2px solid #E8DED2;
+            border-radius:12px;
+            padding:12px 18px;
+            cursor:pointer;
+            transition:.25s;
+
+        }
+
+        .secondary-btn:hover{
+
+            border-color:#C4956A;
+            background:#FAF6F0;
+
+        }
+
+        /* Category List */
+
+        .category-grid{
+
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(350px,1fr));
+            gap:22px;
+
+        }
+
+        .category-item{
+
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:22px;
+            border-radius:18px;
+            border:1px solid #EEE3D7;
+            background:white;
+            transition:.25s;
+
+        }
+
+        .category-item:hover{
+
+            transform:translateY(-3px);
+            border-color:#C4956A;
+
+        }
+
+        .category-left{
+
+            display:flex;
+            align-items:center;
+            gap:18px;
+
+        }
+
+        .icon-box{
+
+            width:58px;
+            height:58px;
+            border-radius:18px;
+            background:#FAF6F0;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            flex-shrink:0;
+
+        }
+
+        .category-title{
+
+            font-size:18px;
+            font-weight:700;
+            color:#2C221E;
+            margin-bottom:6px;
+
+        }
+
+        .category-desc{
+
+            color:#8B7B70;
+            line-height:1.5;
+            font-size:14px;
+
+        }
+
+        /* Badge */
+
+        .status-badge{
+
+            padding:6px 12px;
+            border-radius:999px;
+            font-size:12px;
+            font-weight:700;
+
+        }
+
+        .status-active{
+
+            background:#E8F8EE;
+            color:#2E7D32;
+
+        }
+
+        .status-disabled{
+
+            background:#FFF1F1;
+            color:#D32F2F;
+
+        }
+
+        /* Action Buttons */
+
+        .category-actions{
+
+            display:flex;
+            flex-wrap:wrap;
+            gap:8px;
+            justify-content:flex-end;
+
+        }
+
+        .action-btn{
+
+            width:38px;
+            height:38px;
+            border:none;
+            border-radius:10px;
+            background:#FAF6F0;
+            cursor:pointer;
+            transition:.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+        }
+
+        .action-btn:hover{
+
+            background:#C4956A;
+            color:white;
+
+        }
+
+        /* Live Preview */
+
+        .preview-grid{
+
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+            gap:20px;
+
+        }
+
+        .preview-card{
+
+            background:white;
+            border-radius:18px;
+            padding:22px;
+            border:1px solid #EEE3D7;
+            transition:.25s;
+
+        }
+
+        .preview-card:hover{
+
+            transform:translateY(-4px);
+            border-color:#C4956A;
+            box-shadow:0 12px 30px rgba(44,34,30,.08);
+
+        }
+
+        .preview-card h4{
+
+            margin:16px 0 8px;
+            color:#2C221E;
+
+        }
+
+        .preview-card p{
+
+            color:#8B7B70;
+            line-height:1.6;
+
+        }
+
+        /* Responsive */
+
+        @media(max-width:768px){
+
+          .help-form{
+            grid-template-columns:1fr;
+          }
+
+          .category-item{
+            flex-direction:column;
+            align-items:flex-start;
+            gap:20px;
+          }
+
+          .category-actions{
+            width:100%;
+            justify-content:flex-start;
+          }
+
+        }
+      `}</style>
+
+      <div className="help-page">
+        <div className="help-header">
+          <div>
+            <h2>🗂 Support Help Categories</h2>
+            <p>Manage help topics and customer support routing.</p>
           </div>
         </div>
-      </div>
 
-      {/* Customer Preview Section */}
-      <div className="settings-card" style={{ background: "#fff", padding: "20px", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", marginTop: "25px" }}>
-        <h3>👀 Customer Preview</h3>
-        <p style={{ color: "#666", marginBottom: "15px" }}>
-          This is how categories will appear in the Help Centre.
-        </p>
+        {/* Add / Edit Form */}
+        <div className="help-card">
+          <h3 style={{ margin: "0 0 18px", color: "#2C221E" }}>
+            {editingId ? "Edit Category" : "New Category"}
+          </h3>
 
-        <div
-          style={{
-            marginBottom: "18px",
-            fontWeight: 600,
-            color: "#6E5E53"
-          }}
-        >
-          Showing {categories.filter(c => c.active).length} categories
+          <div className="help-form">
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Category title"
+            />
+
+            <select
+              value={icon}
+              onChange={(e) => setIcon(e.target.value)}
+            >
+              {icons.map(i => (
+                <option key={i} value={i}>
+                  {i}
+                </option>
+              ))}
+            </select>
+
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description"
+              rows="3"
+            />
+
+            <div style={{ display: "flex", gap: "10px", gridColumn: "1/-1" }}>
+              <button 
+                className="primary-btn"
+                onClick={saveCategory}
+              >
+                {editingId ? "Update Category" : "Add Category"}
+              </button>
+              {editingId && (
+                <button 
+                  className="secondary-btn"
+                  onClick={() => {
+                    setEditingId(null);
+                    setTitle("");
+                    setDescription("");
+                    setIcon("Truck");
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
-            gap: "18px"
-          }}
-        >
-          {categories
-            .filter(category => category.active)
-            .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-            .map(category => {
+        {/* Customer Preview Section */}
+        <div className="help-card">
+          <h3 style={{ margin: "0 0 6px", color: "#2C221E" }}>👀 Customer Preview</h3>
+          <p style={{ color: "#8B7B70", marginBottom: "18px" }}>
+            This is how categories will appear in the Help Centre.
+          </p>
+
+          <div
+            style={{
+              marginBottom: "18px",
+              fontWeight: 600,
+              color: "#6E5E53"
+            }}
+          >
+            Showing {categories.filter(c => c.active).length} categories
+          </div>
+
+          <div className="preview-grid">
+            {categories
+              .filter(category => category.active)
+              .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+              .map(category => {
+                const Icon = iconMap[category.icon] || HelpCircle;
+
+                return (
+                  <div
+                    key={category.id}
+                    className="preview-card"
+                  >
+                    <div
+                      style={{
+                        width: "52px",
+                        height: "52px",
+                        borderRadius: "14px",
+                        background: "#FAF6F0",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center"
+                      }}
+                    >
+                      <Icon
+                        size={26}
+                        color="#C4956A"
+                      />
+                    </div>
+
+                    <h4>
+                      {category.title}
+                    </h4>
+
+                    <p>
+                      {category.description}
+                    </p>
+                  </div>
+                );
+              })}
+          </div>
+
+          {categories.filter(c => c.active).length === 0 && (
+            <div
+              style={{
+                padding: "40px",
+                textAlign: "center",
+                color: "#999"
+              }}
+            >
+              No active help categories.
+            </div>
+          )}
+        </div>
+
+        {/* Category List */}
+        <div>
+          <h3 style={{ margin: "0 0 18px", color: "#2C221E" }}>🛠 Manage Categories</h3>
+          
+          <div className="category-grid">
+            {categories.map((category, index) => {
               const Icon = iconMap[category.icon] || HelpCircle;
+              const isActive = category.active !== false;
 
               return (
                 <div
                   key={category.id}
-                  style={{
-                    background: "white",
-                    border: "1px solid #E8DED2",
-                    borderRadius: "18px",
-                    padding: "22px",
-                    transition: ".2s",
-                    cursor: "default"
-                  }}
+                  className="category-item"
+                  style={{ opacity: isActive ? 1 : 0.6 }}
                 >
-                  <div
-                    style={{
-                      width: "52px",
-                      height: "52px",
-                      borderRadius: "14px",
-                      background: "#FAF6F0",
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      marginBottom: "14px"
-                    }}
-                  >
-                    <Icon
-                      size={26}
-                      color="#C4956A"
-                    />
+                  <div className="category-left">
+                    <div className="icon-box">
+                      <Icon size={26} color="#C4956A" />
+                    </div>
+
+                    <div>
+                      <div className="category-title">{category.title}</div>
+                      <div className="category-desc">{category.description}</div>
+                      
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "10px",
+                          marginTop: "10px",
+                          alignItems: "center"
+                        }}
+                      >
+                        <span style={{ fontSize: "13px", color: "#8B7B70" }}>
+                          📦 {category.icon}
+                        </span>
+
+                        <span
+                          className={`status-badge ${isActive ? 'status-active' : 'status-disabled'}`}
+                        >
+                          {isActive ? "Active" : "Disabled"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  <h4
-                    style={{
-                      margin: "0 0 8px",
-                      color: "#2C221E"
-                    }}
-                  >
-                    {category.title}
-                  </h4>
+                  <div className="category-actions">
+                    {/* Move Up Button */}
+                    <button
+                      disabled={index === 0}
+                      onClick={() => moveCategory(index, -1)}
+                      className="action-btn"
+                      style={{ opacity: index === 0 ? 0.4 : 1, cursor: index === 0 ? "not-allowed" : "pointer" }}
+                      title="Move Up"
+                    >
+                      <ArrowUp size={16} />
+                    </button>
 
-                  <p
-                    style={{
-                      margin: 0,
-                      color: "#8B7B70",
-                      lineHeight: 1.5
-                    }}
-                  >
-                    {category.description}
-                  </p>
+                    {/* Move Down Button */}
+                    <button
+                      disabled={index === categories.length - 1}
+                      onClick={() => moveCategory(index, 1)}
+                      className="action-btn"
+                      style={{ opacity: index === categories.length - 1 ? 0.4 : 1, cursor: index === categories.length - 1 ? "not-allowed" : "pointer" }}
+                      title="Move Down"
+                    >
+                      <ArrowDown size={16} />
+                    </button>
+
+                    {/* Enable/Disable Toggle */}
+                    <button
+                      onClick={() => toggleStatus(category)}
+                      className="action-btn"
+                      title={isActive ? "Disable" : "Enable"}
+                    >
+                      {isActive ? <Eye size={16} /> : <EyeOff size={16} />}
+                    </button>
+
+                    {/* Edit Button */}
+                    <button
+                      onClick={() => {
+                        setEditingId(category.id);
+                        setTitle(category.title);
+                        setDescription(category.description);
+                        setIcon(category.icon);
+                      }}
+                      className="action-btn"
+                      title="Edit"
+                    >
+                      <Pencil size={16} />
+                    </button>
+
+                    {/* Delete Button */}
+                    <button
+                      onClick={async () => {
+                        if (window.confirm("Delete this category?")) {
+                          await deleteDoc(
+                            doc(
+                              db,
+                              "supportHelpCategories",
+                              category.id
+                            )
+                          );
+                        }
+                      }}
+                      className="action-btn"
+                      title="Delete"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               );
             })}
-        </div>
-
-        {categories.filter(c => c.active).length === 0 && (
-          <div
-            style={{
-              padding: "40px",
-              textAlign: "center",
-              color: "#999"
-            }}
-          >
-            No active help categories.
           </div>
-        )}
+        </div>
       </div>
-
-      {/* Category List */}
-      <div
-        style={{
-          display: "grid",
-          gap: "18px",
-          marginTop: "25px"
-        }}
-      >
-        <h3>🛠 Manage Categories</h3>
-        {categories.map((category, index) => {
-          const Icon = iconMap[category.icon] || HelpCircle;
-          const isActive = category.active !== false;
-
-          return (
-            <div
-              key={category.id}
-              className="support-card"
-              style={{
-                background: "#fff",
-                padding: "16px 20px",
-                borderRadius: "8px",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                opacity: isActive ? 1 : 0.6,
-                borderLeft: isActive ? "4px solid #28a745" : "4px solid #6c757d"
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center"
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "18px",
-                    alignItems: "center"
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 52,
-                      height: 52,
-                      borderRadius: 16,
-                      background: "#FAF6F0",
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center"
-                    }}
-                  >
-                    <Icon size={26} color="#C4956A" />
-                  </div>
-
-                  <div>
-                    <h3 style={{ margin: 0 }}>{category.title}</h3>
-                    <p style={{ margin: "4px 0", color: "#666" }}>{category.description}</p>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "10px",
-                        marginTop: "10px",
-                        alignItems: "center"
-                      }}
-                    >
-                      <span>
-                        📦 {category.icon}
-                      </span>
-
-                      <span
-                        style={{
-                          padding: "4px 10px",
-                          borderRadius: "999px",
-                          background: category.active ? "#E8F8EE" : "#FFF2F2",
-                          color: category.active ? "#2E7D32" : "#C62828",
-                          fontWeight: 600,
-                          fontSize: "12px"
-                        }}
-                      >
-                        {category.active ? "Active" : "Disabled"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "8px",
-                    alignItems: "center"
-                  }}
-                >
-                  {/* Move Up Button */}
-                  <button
-                    disabled={index === 0}
-                    onClick={() => moveCategory(index, -1)}
-                    style={{ padding: "6px 10px", background: "#f8f9fa", border: "1px solid #ccc", borderRadius: "4px", cursor: index === 0 ? "not-allowed" : "pointer", opacity: index === 0 ? 0.4 : 1 }}
-                    title="Move Up"
-                  >
-                    <ArrowUp size={14} />
-                  </button>
-
-                  {/* Move Down Button */}
-                  <button
-                    disabled={index === categories.length - 1}
-                    onClick={() => moveCategory(index, 1)}
-                    style={{ padding: "6px 10px", background: "#f8f9fa", border: "1px solid #ccc", borderRadius: "4px", cursor: index === categories.length - 1 ? "not-allowed" : "pointer", opacity: index === categories.length - 1 ? 0.4 : 1 }}
-                    title="Move Down"
-                  >
-                    <ArrowDown size={14} />
-                  </button>
-
-                  {/* Enable/Disable Toggle */}
-                  <button
-                    onClick={() => toggleStatus(category)}
-                    style={{ padding: "6px 10px", background: "#f8f9fa", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
-                  >
-                    {category.active ? "👁 Disable" : "👁‍🗨 Enable"}
-                  </button>
-
-                  {/* Edit Button */}
-                  <button
-                    onClick={() => {
-                      setEditingId(category.id);
-                      setTitle(category.title);
-                      setDescription(category.description);
-                      setIcon(category.icon);
-                    }}
-                    style={{ padding: "6px 10px", background: "#ffc107", border: "none", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
-                  >
-                    <Pencil size={14} /> Edit
-                  </button>
-
-                  {/* Delete Button */}
-                  <button
-                    onClick={async () => {
-                      if (window.confirm("Delete this category?")) {
-                        await deleteDoc(
-                          doc(
-                            db,
-                            "supportHelpCategories",
-                            category.id
-                          )
-                        );
-                      }
-                    }}
-                    style={{ padding: "6px 10px", background: "#dc3545", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
-                  >
-                    <Trash2 size={14} /> Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    </>
   );
 }
