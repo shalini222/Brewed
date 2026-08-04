@@ -14,6 +14,7 @@ import {
 
 import SupportFAQManagement from "./SupportFAQManagement";
 import SupportPolicyManagement from "./SupportPolicyManagement";
+import SupportSettingsManagement from "./SupportSettingsManagement";
 
 const supportStaff = [
   "Unassigned",
@@ -408,6 +409,19 @@ export default function SupportManagement({ setPage, setActivePage }) {
           }}
         >
           📜 Policies
+        </button>
+         <button
+          onClick={() => setActiveTab("supportsettings")}
+          style={{
+            padding: "10px 18px",
+            borderRadius: "12px",
+            border: "none",
+            cursor: "pointer",
+            background: activeTab === "supportpolicies" ? "#C4956A" : "#fff",
+            color: activeTab === "supportpolicies" ? "#fff" : "#2C221E"
+          }}
+        >
+          ⚙️Settings
         </button>
       </div>
 
@@ -1384,7 +1398,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
       )}
 
       {activeTab === "supportfaq" && <SupportFAQManagement />}
-
+    {activeTab === "supportsettings" && <SupportSettingsManagement />}
       {activeTab === "supportpolicies" && <SupportPolicyManagement />}
     </div>
   );
