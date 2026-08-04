@@ -196,7 +196,7 @@ export default function SupportPolicyManagement() {
       const q = query(
         collection(db, "supportPolicyHistory"),
         where("policyId", "==", policy.id),
-        orderBy("editedAt", "desc")
+        
       );
 
       const snapshot = await getDocs(q);
