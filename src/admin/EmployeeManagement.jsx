@@ -11,7 +11,7 @@ import {
 } from "firebase/firestore";
 
 
-export default function EmployeeManagement(){
+export default function EmployeeManagement({ setPage, setActivePage}){
 
   const [employees,setEmployees] = useState([]);
 
