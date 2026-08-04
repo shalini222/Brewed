@@ -212,7 +212,7 @@ export default function SupportPage({ setPage }) {
     const q = query(
       collection(db, "supportFAQs"),
       where("active", "==", true),
-      orderBy("sortOrder", "asc")
+     
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
