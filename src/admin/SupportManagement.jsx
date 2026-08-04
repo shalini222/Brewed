@@ -417,8 +417,8 @@ export default function SupportManagement({ setPage, setActivePage }) {
             borderRadius: "12px",
             border: "none",
             cursor: "pointer",
-            background: activeTab === "supportpolicies" ? "#C4956A" : "#fff",
-            color: activeTab === "supportpolicies" ? "#fff" : "#2C221E"
+            background: activeTab === "supportsettings" ? "#C4956A" : "#fff",
+            color: activeTab === "supportsettings" ? "#fff" : "#2C221E"
           }}
         >
           ⚙️Settings
