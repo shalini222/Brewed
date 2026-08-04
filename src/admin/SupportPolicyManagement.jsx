@@ -553,6 +553,31 @@ export default function SupportPolicyManagement() {
     });
   };
 
+  const actionBtnStyle = {
+    minWidth: "110px",
+    height: "40px",
+    padding: "0 14px",
+    borderRadius: "10px",
+    border: "1px solid #E8DED2",
+    background: "#fff",
+    cursor: "pointer",
+    fontWeight: 500,
+    transition: "0.2s"
+  };
+
+  const actionDangerBtnStyle = {
+    minWidth: "110px",
+    height: "40px",
+    padding: "0 14px",
+    borderRadius: "10px",
+    border: "1px solid #F5C2C2",
+    background: "#FFEAEA",
+    color: "#C62828",
+    cursor: "pointer",
+    fontWeight: 500,
+    transition: "0.2s"
+  };
+
   return (
     <div className="admin-page">
       <style>{`
@@ -1257,73 +1282,75 @@ export default function SupportPolicyManagement() {
                       "Recently"}
                   </div>
                 </div>
+              </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 8,
-                    minWidth: 150
-                  }}
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "8px",
+                  justifyContent: "flex-end",
+                  alignItems: "center",
+                  marginTop: "16px"
+                }}
+              >
+                <button
+                  style={actionBtnStyle}
+                  onClick={() => moveUp(policy)}
                 >
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => moveUp(policy)}
-                  >
-                    ⬆
-                  </button>
+                  ⬆
+                </button>
 
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => moveDown(policy)}
-                  >
-                    ⬇
-                  </button>
+                <button
+                  style={actionBtnStyle}
+                  onClick={() => moveDown(policy)}
+                >
+                  ⬇
+                </button>
 
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => togglePinned(policy)}
-                  >
-                    {policy.pinned ? "📍 Unpin" : "📌 Pin"}
-                  </button>
+                <button
+                  style={actionBtnStyle}
+                  onClick={() => togglePinned(policy)}
+                >
+                  {policy.pinned ? "📍 Unpin" : "📌 Pin"}
+                </button>
 
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setPreviewPolicy(policy)}
-                  >
-                    👁 Preview
-                  </button>
+                <button
+                  style={actionBtnStyle}
+                  onClick={() => setPreviewPolicy(policy)}
+                >
+                  👁 Preview
+                </button>
 
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => openHistory(policy)}
-                  >
-                    🕒 History
-                  </button>
+                <button
+                  style={actionBtnStyle}
+                  onClick={() => openHistory(policy)}
+                >
+                  🕒 History
+                </button>
 
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => editPolicy(policy)}
-                  >
-                    ✏ Edit
-                  </button>
+                <button
+                  style={actionBtnStyle}
+                  onClick={() => editPolicy(policy)}
+                >
+                  ✏️ Edit
+                </button>
 
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => toggleStatus(policy)}
-                  >
-                    {policy.status === "Published"
-                      ? "📄 Draft"
-                      : "🚀 Publish"}
-                  </button>
+                <button
+                  style={actionBtnStyle}
+                  onClick={() => toggleStatus(policy)}
+                >
+                  {policy.status === "Published"
+                    ? "📄 Draft"
+                    : "🚀 Publish"}
+                </button>
 
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => deletePolicy(policy.id)}
-                  >
-                    🗑 Delete
-                  </button>
-                </div>
+                <button
+                  style={actionDangerBtnStyle}
+                  onClick={() => deletePolicy(policy.id)}
+                >
+                  🗑 Delete
+                </button>
               </div>
             </div>
           ))
@@ -1439,9 +1466,8 @@ export default function SupportPolicyManagement() {
                     </div>
 
                     <button
-                      className="btn btn-secondary"
+                      style={actionBtnStyle}
                       onClick={() => restoreVersion(item)}
-                      style={{ whiteSpace: "nowrap" }}
                     >
                       Restore
                     </button>
