@@ -12,7 +12,8 @@ import {
   addDoc,
   serverTimestamp,
   updateDoc,
-  increment
+  increment,
+  limit
 } from "firebase/firestore";
 import { 
   Send, 
@@ -33,6 +34,9 @@ import {
   Gift,
   CreditCard
 } from "lucide-react";
+
+// Map icon names from Firestore to Lucide components
+const iconMap = { Truck, CreditCard, Gift, ShieldCheck };
 
 export default function SupportPage({ setPage }) {
   const { currentUser } = useAuth();
@@ -87,6 +91,9 @@ export default function SupportPage({ setPage }) {
   // FAQ 
   const [faqs, setFaqs] = useState([]);
 
+  // Help Categories state
+  const [helpCategories, setHelpCategories] = useState([]);
+
   // Support Policies state
   const [policies, setPolicies] = useState([]);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
@@ -127,30 +134,6 @@ export default function SupportPage({ setPage }) {
   const regularFaqs = filteredFaqs.filter(
     faq => !faq.featured
   );
-
-  // Help Categories Data
-  const helpCategories = [
-    {
-      title: "Orders",
-      icon: Truck,
-      description: "Track orders, cancellations and delivery issues."
-    },
-    {
-      title: "Payments",
-      icon: CreditCard,
-      description: "Refunds, payments and coupon problems."
-    },
-    {
-      title: "Rewards",
-      icon: Gift,
-      description: "Loyalty points, rewards and redemption."
-    },
-    {
-      title: "Account",
-      icon: ShieldCheck,
-      description: "Profile, login and account settings."
-    }
-  ];
 
   // Auto-scroll logic
   const scrollToBottom = (behavior = "smooth") => {
@@ -267,6 +250,23 @@ export default function SupportPage({ setPage }) {
       setFaqs(data);
     });
 
+    return unsubscribe;
+  }, []);
+
+  // Load categories from Firestore
+  useEffect(() => {
+    const q = query(
+      collection(db, "supportHelpCategories"),
+      where("active", "==", true),
+      orderBy("sortOrder", "asc")
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setHelpCategories(data);
+    });
     return unsubscribe;
   }, []);
 
@@ -600,10 +600,11 @@ export default function SupportPage({ setPage }) {
             </h2>
             <div className="support-grid">
               {helpCategories.map((item) => {
-                const Icon = item.icon;
+                const Icon = iconMap[item.icon] || LifeBuoy;
+
                 return (
                   <div
-                    key={item.title}
+                    key={item.id}
                     className="help-card"
                     onClick={() => {
                       setSelectedCategory(item.title);
@@ -620,7 +621,9 @@ export default function SupportPage({ setPage }) {
                       size={28}
                       color="#C4956A"
                     />
+
                     <h3>{item.title}</h3>
+
                     <p>{item.description}</p>
                   </div>
                 );
