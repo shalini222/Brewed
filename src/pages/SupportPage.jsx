@@ -70,6 +70,10 @@ export default function SupportPage({ setPage }) {
   // FAQ 
   const [faqs, setFaqs] = useState([]);
 
+  // Support Policies state
+  const [supportPolicies, setSupportPolicies] = useState([]);
+  const [openPolicy, setOpenPolicy] = useState(null);
+
   // Filter FAQs by question, answer, or category
   const filteredFaqs = faqs.filter((faq) => {
     const matchesSearch =
@@ -212,7 +216,6 @@ export default function SupportPage({ setPage }) {
     const q = query(
       collection(db, "supportFAQs"),
       where("active", "==", true),
-     
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -228,6 +231,31 @@ export default function SupportPage({ setPage }) {
         return b.pinned - a.pinned;
       });
       setFaqs(data);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // Load published customer policies
+  useEffect(() => {
+    const q = query(
+      collection(db, "supportPolicies"),
+      where("status", "==", "Published"),
+      where("visibility", "==", "Customer")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      data.sort((a, b) => {
+        if (a.pinned === b.pinned) {
+          return (a.sortOrder || 0) - (b.sortOrder || 0);
+        }
+        return b.pinned - a.pinned;
+      });
+      setSupportPolicies(data);
     });
 
     return unsubscribe;
@@ -993,30 +1021,61 @@ export default function SupportPage({ setPage }) {
 
           {/* SUPPORT POLICIES SECTION */}
           <section style={{ marginTop: "28px" }}>
-            <h2 className="support-heading">Support Policies</h2>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <div className="support-card" style={{ marginBottom: 0 }}>
-                <h3 style={{ marginTop: 0, marginBottom: "6px", color: "#2C221E", fontSize: "16px" }}>Refund Policy</h3>
-                <p style={{ margin: 0, color: "#6E5E53", fontSize: "14px", lineHeight: "1.5" }}>
-                  Refunds are processed after verification and usually appear within 5–7 business days.
-                </p>
+            <h2 className="support-heading">
+              📄 Support Policies
+            </h2>
+            {supportPolicies.length === 0 ? (
+              <div className="support-card">
+                No policies available.
               </div>
-
-              <div className="support-card" style={{ marginBottom: 0 }}>
-                <h3 style={{ marginTop: 0, marginBottom: "6px", color: "#2C221E", fontSize: "16px" }}>Delivery Policy</h3>
-                <p style={{ margin: 0, color: "#6E5E53", fontSize: "14px", lineHeight: "1.5" }}>
-                  Orders can be cancelled before preparation begins. Delivery times may vary based on traffic and weather.
-                </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {supportPolicies.map(policy => (
+                  <div key={policy.id} className="support-card" style={{ marginBottom: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                      <h3 style={{ margin: 0, color: "#2C221E", fontSize: "18px", fontWeight: 700 }}>
+                        📄 {policy.title}
+                      </h3>
+                      <span style={{ background: "#FAF6F0", color: "#C4956A", padding: "4px 10px", borderRadius: "999px", fontSize: "11px", fontWeight: 600 }}>
+                        {policy.category}
+                      </span>
+                    </div>
+                    <p style={{ color: "#6E5E53", marginTop: "12px", whiteSpace: "pre-wrap", lineHeight: "1.7", fontSize: "14px" }}>
+                      {openPolicy === policy.id
+                        ? policy.content
+                        : `${policy.content.slice(0, 180)}${
+                            policy.content.length > 180 ? "..." : ""
+                          }`}
+                    </p>
+                    {policy.content.length > 180 && (
+                      <button
+                        onClick={() =>
+                          setOpenPolicy(
+                            openPolicy === policy.id ? null : policy.id
+                          )
+                        }
+                        className="support-btn support-btn-secondary"
+                        style={{
+                          marginTop: "14px",
+                          padding: "6px 14px",
+                          fontSize: "12px"
+                        }}
+                      >
+                        {openPolicy === policy.id
+                          ? "Read Less"
+                          : "Read More"}
+                      </button>
+                    )}
+                    {policy.editedAt && (
+                      <div style={{ marginTop: "14px", fontSize: "12px", color: "#9A8C82" }}>
+                        Last updated{" "}
+                        {policy.editedAt.toDate().toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-
-              <div className="support-card" style={{ marginBottom: 0 }}>
-                <h3 style={{ marginTop: 0, marginBottom: "6px", color: "#2C221E", fontSize: "16px" }}>Privacy & Terms</h3>
-                <p style={{ margin: 0, color: "#6E5E53", fontSize: "14px", lineHeight: "1.5" }}>
-                  We respect your data privacy and protect your information according to our secure platform guidelines.
-                </p>
-              </div>
-            </div>
+            )}
           </section>
 
         </div>
