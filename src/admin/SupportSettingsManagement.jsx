@@ -90,77 +90,98 @@ export default function SupportSettingsManagement() {
   return (
     <>
       <style>{`
+        /* ===========================
+           SUPPORT SETTINGS
+        =========================== */
+
         .support-settings-page{
-            max-width:1100px;
+            max-width:1150px;
             margin:auto;
-            padding:24px;
+            padding:28px;
+            background:#FDFBF8;
         }
+
+        /* ===========================
+           HEADER
+        =========================== */
 
         .page-header{
             display:flex;
             justify-content:space-between;
             align-items:center;
-            margin-bottom:24px;
+            margin-bottom:28px;
+            padding:24px 28px;
+            background:white;
+            border-radius:22px;
+            box-shadow:0 8px 30px rgba(44,34,30,.05);
         }
 
         .page-header h2{
             margin:0;
+            font-size:30px;
             color:#2C221E;
+            font-weight:700;
         }
 
         .page-header p{
-            margin-top:6px;
+            margin-top:8px;
             color:#8B7B70;
+            font-size:15px;
         }
 
-        .success-banner{
-            background:#EAF8EF;
-            color:#2E7D32;
-            border:1px solid #B8E6C4;
-            padding:14px 18px;
-            border-radius:12px;
-            margin-bottom:20px;
-            font-weight:600;
-        }
-
-        .error-banner{
-            background:#FFF1F1;
-            color:#C62828;
-            border:1px solid #F3C2C2;
-            padding:14px 18px;
-            border-radius:12px;
-            margin-bottom:20px;
-            font-weight:600;
-        }
+        /* ===========================
+           CARDS
+        =========================== */
 
         .settings-card{
-            background:#fff;
-            border:1px solid #E8DED2;
-            border-radius:18px;
-            padding:24px;
+            background:white;
+            border-radius:22px;
+            padding:28px;
             margin-bottom:24px;
+            box-shadow:
+                0 4px 12px rgba(0,0,0,.03),
+                0 12px 40px rgba(44,34,30,.04);
+            transition:.25s;
+        }
+
+        .settings-card:hover{
+            transform:translateY(-2px);
+            box-shadow:
+                0 8px 22px rgba(0,0,0,.05),
+                0 20px 50px rgba(44,34,30,.08);
         }
 
         .settings-card h3{
-            margin:0 0 8px;
+            margin:0;
             color:#2C221E;
+            font-size:22px;
+            font-weight:700;
         }
 
         .settings-card p{
-            margin-bottom:22px;
+            margin:10px 0 24px;
             color:#8B7B70;
+            line-height:1.6;
         }
+
+        /* ===========================
+           GRID
+        =========================== */
 
         .settings-grid{
             display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
-            gap:20px;
+            grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+            gap:22px;
         }
+
+        /* ===========================
+           INPUTS
+        =========================== */
 
         .input-group{
             display:flex;
             flex-direction:column;
-            gap:8px;
+            gap:10px;
             margin-bottom:16px;
         }
 
@@ -169,71 +190,108 @@ export default function SupportSettingsManagement() {
         }
 
         .input-group label{
-            font-weight:600;
-            color:#2C221E;
-            font-size:14px;
+            font-size:13px;
+            font-weight:700;
+            color:#6E5E53;
+            letter-spacing:.4px;
+            text-transform:uppercase;
         }
 
-        .input-group input{
-            padding:12px 14px;
-            border:1px solid #DDD4C9;
-            border-radius:12px;
-            font-size:14px;
+        .input-group input,
+        .input-group textarea{
+            background:#FCF8F3;
+            border:2px solid transparent;
+            border-radius:16px;
+            padding:16px;
+            font-size:15px;
+            transition:.25s;
             outline:none;
-            transition:.2s;
-        }
-
-        .input-group input:focus{
-            border-color:#C4956A;
-            box-shadow:0 0 0 3px rgba(196,149,106,.15);
+            color:#2C221E;
+            font-family:inherit;
         }
 
         .input-group textarea{
-            padding:12px 14px;
-            border:1px solid #DDD4C9;
-            border-radius:12px;
-            font-size:14px;
-            outline:none;
+            min-height:110px;
             resize:vertical;
-            min-height:80px;
-            font-family:inherit;
-            transition:.2s;
         }
 
+        .input-group input:hover,
+        .input-group textarea:hover{
+            background:white;
+            border-color:#E8DED2;
+        }
+
+        .input-group input:focus,
         .input-group textarea:focus{
+            background:white;
             border-color:#C4956A;
-            box-shadow:0 0 0 3px rgba(196,149,106,.15);
+            box-shadow:0 0 0 5px rgba(196,149,106,.15);
         }
 
-        .unsaved{
-            color:#D97706;
-            font-size:14px;
-            font-weight:600;
-        }
+        /* ===========================
+           ACTION BAR
+        =========================== */
 
         .action-bar{
+            position:sticky;
+            bottom:20px;
+            background:white;
+            border-radius:22px;
+            padding:20px 24px;
             display:flex;
             justify-content:space-between;
             align-items:center;
-            margin-top:32px;
-            padding-top:20px;
-            border-top:1px solid #E8DED2;
+            margin-top:30px;
+            box-shadow:0 10px 35px rgba(44,34,30,.08);
+            z-index: 10;
         }
 
         .actions{
             display:flex;
-            gap:12px;
+            gap:14px;
+        }
+
+        /* ===========================
+           BUTTONS
+        =========================== */
+
+        .save-btn{
+            background:#C4956A;
+            color:white;
+            border:none;
+            padding:14px 24px;
+            border-radius:14px;
+            cursor:pointer;
+            font-size:15px;
+            font-weight:700;
+            transition:.25s;
+        }
+
+        .save-btn:hover:not(:disabled){
+            background:#B7865E;
+            transform:translateY(-2px);
+        }
+
+        .save-btn:disabled{
+            background:#D9C6B4;
+            cursor:not-allowed;
+            transform:none;
         }
 
         .reset-btn{
             background:white;
-            border:1px solid #DDD;
-            padding:12px 20px;
-            border-radius:12px;
+            border:2px solid #E8DED2;
+            padding:14px 22px;
+            border-radius:14px;
             cursor:pointer;
             font-weight:600;
             color:#2C221E;
-            transition:.2s;
+            transition:.25s;
+        }
+
+        .reset-btn:hover:not(:disabled){
+            background:#FAF6F0;
+            border-color:#C4956A;
         }
 
         .reset-btn:disabled{
@@ -241,38 +299,78 @@ export default function SupportSettingsManagement() {
             cursor:not-allowed;
         }
 
-        .reset-btn:hover:not(:disabled){
-            background:#F9F9F9;
+        /* ===========================
+           STATUS
+        =========================== */
+
+        .unsaved{
+            color:#D97706;
+            font-weight:700;
+            display:flex;
+            align-items:center;
+            gap:8px;
         }
 
-        .save-btn{
-            background:#C4956A;
-            color:white;
-            border:none;
-            padding:12px 20px;
-            border-radius:12px;
-            cursor:pointer;
+        .success-banner{
+            background:#EAF8EF;
+            border-left:5px solid #4CAF50;
+            padding:18px;
+            border-radius:14px;
+            margin-bottom:20px;
+            color:#2E7D32;
             font-weight:600;
-            transition:.2s;
         }
 
-        .save-btn:disabled{
-            opacity:0.5;
-            cursor:not-allowed;
-        }
-
-        .save-btn:hover:not(:disabled){
-            background:#B8865F;
+        .error-banner{
+            background:#FFF2F2;
+            border-left:5px solid #E53935;
+            padding:18px;
+            border-radius:14px;
+            margin-bottom:20px;
+            color:#C62828;
+            font-weight:600;
         }
 
         .loading-card{
             background:white;
             padding:60px;
             text-align:center;
-            border-radius:18px;
-            border:1px solid #E8DED2;
+            border-radius:22px;
+            box-shadow:0 8px 30px rgba(44,34,30,.05);
             color:#8B7B70;
             font-weight:500;
+            font-size:16px;
+        }
+
+        /* ===========================
+           MOBILE
+        =========================== */
+
+        @media(max-width:768px){
+            .page-header{
+                flex-direction:column;
+                align-items:flex-start;
+                gap:20px;
+            }
+
+            .settings-grid{
+                grid-template-columns:1fr;
+            }
+
+            .action-bar{
+                flex-direction:column;
+                gap:16px;
+                align-items:stretch;
+            }
+
+            .actions{
+                width:100%;
+            }
+
+            .save-btn,
+            .reset-btn{
+                width:100%;
+            }
         }
       `}</style>
 
