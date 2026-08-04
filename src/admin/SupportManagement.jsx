@@ -16,8 +16,10 @@ import SupportFAQManagement from "./SupportFAQManagement";
 import SupportPolicyManagement from "./SupportPolicyManagement";
 import SupportSettingsManagement from "./SupportSettingsManagement";
 import SupportHelpCategoryManagement from "./SupportHelpCategoryManagement";
+import SupportAnalyticsManagement from "./SupportAnalyticsManagement";
 
-const supportStaff = [
+  
+  const supportStaff = [
   "Unassigned",
   "Olivia",
   "Support Team",
@@ -437,6 +439,19 @@ export default function SupportManagement({ setPage, setActivePage }) {
           }}
         >
          🚛 Help Desk 
+        </button>
+         <button
+          onClick={() => setActiveTab("supportanalytics")}
+          style={{
+            padding: "10px 18px",
+            borderRadius: "12px",
+            border: "none",
+            cursor: "pointer",
+            background: activeTab === "supportanalytics" ? "#C4956A" : "#fff",
+            color: activeTab === "supportanalytics" ? "#fff" : "#2C221E"
+          }}
+        >
+         📊 Analytics 
         </button>
       </div>
 
@@ -1415,6 +1430,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
       {activeTab === "supportfaq" && <SupportFAQManagement />}
     {activeTab === "supportsettings" && <SupportSettingsManagement />}
         {activeTab === "supporthelpdesk" && <SupportHelpCategoryManagement  />}
+       {activeTab === "supportanalytics" && <  SupportAnalyticsManagement/>}
       {activeTab === "supportpolicies" && <SupportPolicyManagement />}
     </div>
   );
