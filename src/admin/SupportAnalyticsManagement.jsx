@@ -23,18 +23,15 @@ import {
   CheckCircle2, 
   TrendingUp, 
   Users, 
-  Briefcase, 
   Download, 
   BarChart3,
-  AlertCircle,
   Activity,
   Star,
   ChevronDown,
-  Layers,
-  Flame
+  Layers
 } from "lucide-react";
 
-// Custom hook for smooth spring-like animated counting numbers
+// Custom hook for smooth animated counting numbers
 function useCountUp(end, duration = 1200) {
   const [count, setCount] = useState(0);
 
@@ -110,7 +107,7 @@ export default function SupportAnalyticsManagement() {
     });
   }, [tickets, dateFilter, customStart, customEnd]);
 
-  // Calculate statistics
+  // Calculate statistics dynamically
   const totalTickets = filteredTickets.length;
   const openTickets = filteredTickets.filter((t) => t.status === "Open").length;
   const pendingTickets = filteredTickets.filter((t) => t.status === "Pending").length;
@@ -133,7 +130,7 @@ export default function SupportAnalyticsManagement() {
   const categoryData = useMemo(() => {
     const categoryCounts = {};
     filteredTickets.forEach((ticket) => {
-      const category = ticket.category || "Other";
+      const category = ticket.category || "General";
       categoryCounts[category] = (categoryCounts[category] || 0) + 1;
     });
     return Object.entries(categoryCounts)
@@ -148,17 +145,17 @@ export default function SupportAnalyticsManagement() {
   const normalPriority = filteredTickets.filter(t => (t.priority || "").toLowerCase() === "normal").length;
   const lowPriority = filteredTickets.filter(t => (t.priority || "").toLowerCase() === "low").length;
 
-  // Response Time Analytics
-  const responseTimes = useMemo(() => {
+  // Real Response Time Analytics (calculated from timestamps)
+  const averageResponse = useMemo(() => {
     const respondedTickets = filteredTickets.filter(t => t.createdAt && t.firstResponseAt);
-    return respondedTickets.map(ticket => {
+    if (respondedTickets.length === 0) return 0;
+    const totalMinutes = respondedTickets.reduce((acc, ticket) => {
       const created = ticket.createdAt.toDate();
       const replied = ticket.firstResponseAt.toDate();
-      return (replied - created) / 60000;
-    });
+      return acc + (replied - created) / 60000;
+    }, 0);
+    return Math.round(totalMinutes / respondedTickets.length);
   }, [filteredTickets]);
-
-  const averageResponse = responseTimes.length ? (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length).toFixed(1) : "7";
 
   // Daily Trend Data & Sparklines
   const { trendData, miniSparklineData } = useMemo(() => {
@@ -195,7 +192,7 @@ export default function SupportAnalyticsManagement() {
     red: "#D9534F"
   };
 
-  // Staff Performance
+  // Staff Performance (Real assignments)
   const staffStats = useMemo(() => {
     const stats = {};
     filteredTickets.forEach(ticket => {
@@ -216,18 +213,10 @@ export default function SupportAnalyticsManagement() {
   }, [filteredTickets]);
 
   const topStaff = useMemo(() => {
-    const entries = Object.entries(staffStats);
+    const entries = Object.entries(staffStats).filter(([name]) => name !== "Unassigned");
     if (entries.length === 0) return null;
     return entries.sort((a, b) => b[1].closed - a[1].closed)[0];
   }, [staffStats]);
-
-  // Heatmap simulation
-  const heatmapCells = useMemo(() => {
-    return Array.from({ length: 28 }).map((_, i) => {
-      const count = Math.floor(Math.abs(Math.sin(i * 1.5)) * 8) + (i % 3 === 0 ? 3 : 0);
-      return { id: i, count, level: count > 6 ? 3 : count > 3 ? 2 : count > 0 ? 1 : 0 };
-    });
-  }, []);
 
   // Export functions
   const downloadFile = (data, filename, type) => {
@@ -455,7 +444,7 @@ export default function SupportAnalyticsManagement() {
         .export-menu {
           position: absolute;
           right: 0;
-          top: calc(100 + 8px);
+          top: calc(100% + 8px);
           background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(20px);
           border: 1px solid rgba(255, 255, 255, 0.9);
@@ -579,7 +568,7 @@ export default function SupportAnalyticsManagement() {
           border: 1px solid rgba(232,222,210,0.6);
         }
 
-        /* Section Headers (Stripe/Linear Style) */
+        /* Section Headers */
         .analytics-section {
           margin-top: 64px;
         }
@@ -717,12 +706,6 @@ export default function SupportAnalyticsManagement() {
           font-weight: 700;
           color: #2C221E;
         }
-        .staff-stars {
-          display: flex;
-          gap: 2px;
-          color: #C4956A;
-          margin-top: 3px;
-        }
         .staff-efficiency-badge {
           background: rgba(126, 155, 135, 0.12);
           color: #7E9B87;
@@ -731,7 +714,6 @@ export default function SupportAnalyticsManagement() {
           padding: 6px 14px;
           border-radius: 14px;
         }
-        /* Minimal Rounded Progress Bars (6px height) */
         .minimal-progress-track {
           height: 6px;
           background: #E8DED2;
@@ -750,31 +732,6 @@ export default function SupportAnalyticsManagement() {
           font-size: 13px;
           font-weight: 600;
           color: #8B7B70;
-        }
-
-        /* Heatmap Card */
-        .heatmap-card {
-          background: rgba(255, 255, 255, 0.72);
-          backdrop-filter: blur(24px);
-          border: 1px solid rgba(255, 255, 255, 0.65);
-          border-radius: 32px;
-          padding: 36px;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
-        }
-        .heatmap-grid {
-          display: grid;
-          grid-template-columns: repeat(7, 1fr);
-          gap: 10px;
-          max-width: 480px;
-          margin-top: 20px;
-        }
-        .heatmap-box {
-          height: 38px;
-          border-radius: 12px;
-          transition: transform 0.15s;
-        }
-        .heatmap-box:hover {
-          transform: scale(1.15);
         }
 
         /* Category Pill Cards */
@@ -831,8 +788,8 @@ export default function SupportAnalyticsManagement() {
           {/* Hero Analytics Banner */}
           <div className="hero-banner">
             <div className="hero-title-area">
-              <h1>Support Intelligence</h1>
-              <p>Operational insights and performance metrics.</p>
+              <h1>Support Analytics</h1>
+              <p>Operational overview and live workload metrics.</p>
             </div>
             <div className="hero-stats-pills">
               <div className="hero-pill">
@@ -845,11 +802,11 @@ export default function SupportAnalyticsManagement() {
               </div>
               <div className="hero-pill">
                 <span>{averageResponse} min</span>
-                <span>Response</span>
+                <span>Avg Response</span>
               </div>
               <div className="hero-pill">
-                <span>98.4%</span>
-                <span>Satisfaction</span>
+                <span>{totalTickets}</span>
+                <span>Total Period</span>
               </div>
             </div>
           </div>
@@ -893,24 +850,24 @@ export default function SupportAnalyticsManagement() {
           <div className="insights-panel">
             <div className="insights-header">
               <TrendingUp size={20} strokeWidth={2} color={PALETTE.coffee} />
-              Executive Insights
+              Key Insights
             </div>
             <div className="insights-list">
               <div className="insight-item">
                 <Activity size={16} color={PALETTE.forest} />
-                Resolution rate increased by 12% compared to last period.
+                Current resolution performance is at <strong>{resolutionRate}%</strong> for this period.
               </div>
               <div className="insight-item">
                 <BarChart3 size={16} color={PALETTE.coffee} />
-                <strong>{mostCommonCategory}</strong> category generates {Math.round((categoryData[0]?.value || 0) / (totalTickets || 1) * 100)}% of total tickets.
+                <strong>{mostCommonCategory}</strong> is the most frequent ticket category ({categoryData[0]?.value || 0} tickets).
               </div>
               <div className="insight-item">
                 <Star size={16} color={PALETTE.coffee} />
-                Top performer <strong>{topStaff ? topStaff[0] : 'Olivia'}</strong> closed {topStaff ? topStaff[1].closed : 0} tickets.
+                Leading assignee: <strong>{topStaff ? topStaff[0] : 'None'}</strong> with {topStaff ? topStaff[1].closed : 0} closed tickets.
               </div>
               <div className="insight-item">
                 <Clock size={16} color={PALETTE.slate} />
-                Average response time improved down to {averageResponse} minutes.
+                Average initial response time is currently {averageResponse} minutes.
               </div>
             </div>
           </div>
@@ -924,7 +881,7 @@ export default function SupportAnalyticsManagement() {
                   <Ticket size={18} strokeWidth={2} color={PALETTE.mutedText} />
                   <span>Total Tickets</span>
                 </div>
-                <div className="kpi-badge-growth">+8%</div>
+                <div className="kpi-badge-growth">Live</div>
               </div>
               <div className="kpi-label-meta">Volume</div>
               <div className="kpi-main-value">{animatedTotal}</div>
@@ -949,9 +906,9 @@ export default function SupportAnalyticsManagement() {
                   <FolderOpen size={18} strokeWidth={2} color={PALETTE.mutedText} />
                   <span>Active Queue</span>
                 </div>
-                <div className="kpi-badge-growth" style={{ color: '#D97706', background: 'rgba(217, 119, 6, 0.1)' }}>Live</div>
+                <div className="kpi-badge-growth" style={{ color: '#D97706', background: 'rgba(217, 119, 6, 0.1)' }}>Pending</div>
               </div>
-              <div className="kpi-label-meta">Pending Review</div>
+              <div className="kpi-label-meta">Unresolved</div>
               <div className="kpi-main-value">{animatedOpen}</div>
               <div style={{ height: "45px", width: "100%", marginTop: "10px" }}>
                 <ResponsiveContainer width="100%" height={45}>
@@ -974,9 +931,9 @@ export default function SupportAnalyticsManagement() {
                   <CheckCircle2 size={18} strokeWidth={2} color={PALETTE.mutedText} />
                   <span>Resolved</span>
                 </div>
-                <div className="kpi-badge-growth">+12%</div>
+                <div className="kpi-badge-growth">Completed</div>
               </div>
-              <div className="kpi-label-meta">Completed</div>
+              <div className="kpi-label-meta">Closed Out</div>
               <div className="kpi-main-value">{animatedResolved}</div>
               <div style={{ height: "45px", width: "100%", marginTop: "10px" }}>
                 <ResponsiveContainer width="100%" height={45}>
@@ -999,9 +956,9 @@ export default function SupportAnalyticsManagement() {
                   <TrendingUp size={18} strokeWidth={2} color={PALETTE.mutedText} />
                   <span>Resolution Rate</span>
                 </div>
-                <div className="kpi-badge-growth">Optimal</div>
+                <div className="kpi-badge-growth">Efficiency</div>
               </div>
-              <div className="kpi-label-meta">Efficiency Score</div>
+              <div className="kpi-label-meta">Success Score</div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
                 <div>
                   <div className="kpi-main-value" style={{ marginBottom: "0" }}>{animatedRate}%</div>
@@ -1034,7 +991,7 @@ export default function SupportAnalyticsManagement() {
           <div className="analytics-section">
             <div className="section-header-group">
               <div className="section-tiny-label">Metrics</div>
-              <h2 className="section-large-title">Operational Analytics</h2>
+              <h2 className="section-large-title">Operational Trends</h2>
             </div>
             
             <div className="chart-grid-2col">
@@ -1131,57 +1088,30 @@ export default function SupportAnalyticsManagement() {
             </div>
           </div>
 
-          {/* Heatmap & Priority Section */}
+          {/* Priority Distribution Section */}
           <div className="analytics-section">
-            <div className="chart-grid-2col">
-              
-              <div className="heatmap-card">
-                <div className="chart-card-header">
-                  <h3>Activity Heatmap</h3>
-                  <p>Daily ticket distribution pattern</p>
-                </div>
-                <div className="heatmap-grid">
-                  {heatmapCells.map((cell) => {
-                    let bg = PALETTE.stone;
-                    if (cell.level === 1) bg = "#E5D7C8";
-                    if (cell.level === 2) bg = "#D4B89A";
-                    if (cell.level >= 3) bg = PALETTE.coffee;
-                    return (
-                      <div 
-                        key={cell.id} 
-                        className="heatmap-box" 
-                        style={{ background: bg }} 
-                        title={`${cell.count} tickets recorded`}
-                      />
-                    );
-                  })}
-                </div>
+            <div className="glass-chart-card">
+              <div className="chart-card-header">
+                <h3>Priority Levels</h3>
+                <p>Urgent vs normal ticket distribution</p>
               </div>
-
-              <div className="glass-chart-card">
-                <div className="chart-card-header">
-                  <h3>Priority Levels</h3>
-                  <p>Urgent vs normal distribution</p>
-                </div>
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={[
-                    { name: "High", count: highPriority },
-                    { name: "Normal", count: normalPriority },
-                    { name: "Low", count: lowPriority }
-                  ]}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.03)" vertical={false} />
-                    <XAxis dataKey="name" tick={{ fill: PALETTE.mutedText, fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: PALETTE.mutedText, fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <Tooltip />
-                    <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-                      <Cell fill={PALETTE.red} />
-                      <Cell fill={PALETTE.coffee} />
-                      <Cell fill={PALETTE.forest} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={[
+                  { name: "High", count: highPriority },
+                  { name: "Normal", count: normalPriority },
+                  { name: "Low", count: lowPriority }
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.03)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fill: PALETTE.mutedText, fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: PALETTE.mutedText, fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <Tooltip />
+                  <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                    <Cell fill={PALETTE.red} />
+                    <Cell fill={PALETTE.coffee} />
+                    <Cell fill={PALETTE.forest} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
@@ -1206,16 +1136,9 @@ export default function SupportAnalyticsManagement() {
                           <div className="staff-avatar">{staff.charAt(0).toUpperCase()}</div>
                           <div>
                             <h4>{staff}</h4>
-                            <div className="staff-stars">
-                              <Star size={12} fill={PALETTE.coffee} />
-                              <Star size={12} fill={PALETTE.coffee} />
-                              <Star size={12} fill={PALETTE.coffee} />
-                              <Star size={12} fill={PALETTE.coffee} />
-                              <Star size={12} fill={PALETTE.coffee} />
-                            </div>
                           </div>
                         </div>
-                        <div className="staff-efficiency-badge">{efficiency}%</div>
+                        <div className="staff-efficiency-badge">{efficiency}% Closed</div>
                       </div>
                       <div className="minimal-progress-track">
                         <div className="minimal-progress-fill" style={{ width: `${efficiency}%`, background: PALETTE.forest }} />
