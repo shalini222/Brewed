@@ -55,6 +55,7 @@ import {
   useSortable 
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { createPortal } from "react-dom";
 
 function SortableCategoryItem({ category, index, categories, toggleStatus, openEdit, setDeleteTarget, duplicateCategory, expandCard, expandedId, iconMap, openMenuId, setOpenMenuId }) {
   const {
@@ -74,6 +75,22 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
   const isActive = category.active !== false;
   const isExpanded = expandedId === category.id;
   const menuOpen = openMenuId === category.id;
+  const btnRef = useRef(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
+
+  const handleToggleMenu = (e) => {
+    e.stopPropagation();
+    if (!menuOpen && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 6,
+        right: window.innerWidth - rect.right
+      });
+      setOpenMenuId(category.id);
+    } else {
+      setOpenMenuId(null);
+    }
+  };
 
   return (
     <div
@@ -107,17 +124,19 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
 
           <div className="dropdown-container">
             <button 
+              ref={btnRef}
               className="action-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpenMenuId(menuOpen ? null : category.id);
-              }}
+              onClick={handleToggleMenu}
             >
               <MoreVertical size={16} strokeWidth={1.7} />
             </button>
 
-            {menuOpen && (
-              <div className="action-dropdown" onClick={(e) => e.stopPropagation()}>
+            {menuOpen && createPortal(
+              <div 
+                className="action-dropdown" 
+                style={{ top: dropdownPos.top, right: dropdownPos.right }}
+                onClick={(e) => e.stopPropagation()}
+              >
                 <button onClick={() => { setOpenMenuId(null); openEdit(category); }}>
                   <Pencil size={14} /> Edit
                 </button>
@@ -131,7 +150,8 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
                 <button className="danger-text" onClick={() => { setOpenMenuId(null); setDeleteTarget(category); }}>
                   <Trash2 size={14} /> Delete
                 </button>
-              </div>
+              </div>,
+              document.body
             )}
           </div>
 
@@ -377,7 +397,7 @@ export default function SupportHelpCategoryManagement() {
             font-family: inherit;
         }
         .toast{
-            position:fixed; top:24px; right:24px; z-index:99999;
+            position:fixed; top:24px; right:24px; z-index:999999;
             display:flex; align-items:center; gap:12px; padding:16px 18px;
             border-radius:18px; background:rgba(36,28,24,.96); color:white;
             font-size:14px; font-weight:600; backdrop-filter:blur(16px);
@@ -391,7 +411,7 @@ export default function SupportHelpCategoryManagement() {
         .modal-overlay{
             position:fixed; inset:0; background:rgba(18,14,12,.45);
             backdrop-filter:blur(8px); display:flex; align-items:center;
-            justify-content:center; z-index:99999; animation:fadeIn .22s ease;
+            justify-content:center; z-index:999999; animation:fadeIn .22s ease;
         }
         .modal-card{
             width:min(420px,92vw); background:white; border-radius:28px;
@@ -567,10 +587,10 @@ export default function SupportHelpCategoryManagement() {
         }
         .action-btn:hover{ background:#241C18; color:white; border-color:#241C18; }
 
-        /* Dropdown Actions - FIXED TO RENDER ON TOP */
+        /* Dropdown Actions - FIXED PORTAL STYLING */
         .dropdown-container{ position:relative; }
         .action-dropdown{
-            position:absolute; top:46px; right:0; z-index:99999; min-width:180px; 
+            position:fixed; z-index:999999; min-width:180px; 
             background:white; border-radius:16px; box-shadow:0 18px 45px rgba(0,0,0,.15); 
             border:1px solid #ECE3DA; padding:8px;
         }
@@ -629,7 +649,7 @@ export default function SupportHelpCategoryManagement() {
         </div>
       )}
 
-      {deleteTarget && (
+      {deleteTarget && createPortal(
         <div className="modal-overlay">
           <div className="modal-card">
             <div className="modal-icon">
@@ -644,7 +664,8 @@ export default function SupportHelpCategoryManagement() {
               <button className="danger-btn" onClick={confirmDelete}>Delete Category</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <div className="help-page">
