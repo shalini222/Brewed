@@ -1,17 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  doc,
-  addDoc,
-  updateDoc,
-  serverTimestamp,
-  increment
-} from "firebase/firestore";
-
+import { collection, query, orderBy, onSnapshot, doc, addDoc, updateDoc, serverTimestamp, increment } from "firebase/firestore";
 import SupportFAQManagement from "./SupportFAQManagement";
 import SupportPolicyManagement from "./SupportPolicyManagement";
 import SupportSettingsManagement from "./SupportSettingsManagement";
@@ -29,21 +18,17 @@ const supportStaff = [
 export default function SupportManagement({ setPage, setActivePage }) {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [sortBy, setSortBy] = useState("Newest");
-
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [messages, setMessages] = useState([]);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
   const [activeTab, setActiveTab] = useState("tickets");
-
   const [internalNotes, setInternalNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
-
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -51,15 +36,11 @@ export default function SupportManagement({ setPage, setActivePage }) {
       collection(db, "supportTickets"),
       orderBy("createdAt", "desc")
     );
-
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
         setTickets(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data()
-          }))
+          snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
         );
         setLoading(false);
       },
@@ -68,7 +49,6 @@ export default function SupportManagement({ setPage, setActivePage }) {
         setLoading(false);
       }
     );
-
     return () => unsubscribe();
   }, []);
 
@@ -85,27 +65,21 @@ export default function SupportManagement({ setPage, setActivePage }) {
       setMessages([]);
       return;
     }
-
     const q = query(
       collection(db, "supportTickets", selectedTicket.id, "messages"),
       orderBy("createdAt", "asc")
     );
-
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
         setMessages(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data()
-          }))
+          snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
         );
       },
       (err) => {
         console.log("Error loading conversation:", err);
       }
     );
-
     return () => unsubscribe();
   }, [selectedTicket]);
 
@@ -160,7 +134,6 @@ export default function SupportManagement({ setPage, setActivePage }) {
           createdAt: serverTimestamp()
         }
       );
-
       await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
         updatedAt: serverTimestamp(),
         customerUnread: increment(1),
@@ -168,7 +141,6 @@ export default function SupportManagement({ setPage, setActivePage }) {
         lastMessage: reply.trim(),
         lastMessageAt: serverTimestamp()
       });
-
       setReply("");
     } catch (err) {
       console.log("Error sending reply:", err);
@@ -221,10 +193,8 @@ export default function SupportManagement({ setPage, setActivePage }) {
       (ticket.subject || "").toLowerCase().includes(search) ||
       (ticket.customerName || "").toLowerCase().includes(search) ||
       (ticket.customerEmail || "").toLowerCase().includes(search);
-
     const matchesStatus = statusFilter === "All" || ticket.status === statusFilter;
     const matchesPriority = priorityFilter === "All" || ticket.priority === priorityFilter;
-
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
@@ -333,17 +303,10 @@ export default function SupportManagement({ setPage, setActivePage }) {
           >
             Support Operations
           </h1>
-          <p
-            style={{
-              color: "#6B5E55",
-              fontSize: "15px",
-              margin: 0
-            }}
-          >
+          <p style={{ color: "#6B5E55", fontSize: "15px", margin: 0 }}>
             Customer Support Center — Manage tickets, conversations, help articles and support performance.
           </p>
         </div>
-
         <div style={{ display: "flex", gap: "12px" }}>
           <button
             onClick={() => setActiveTab("supportfaq")}
@@ -380,7 +343,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
         </div>
       </div>
 
-      {/* Segmented Control Container for Tabs */}
+      {/* Tabs - Segmented Control */}
       <div
         style={{
           display: "flex",
@@ -415,7 +378,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
               onMouseLeave={(e) => {
                 if (!isActive) {
                   e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.transform = "translateY(0px)";
+                  e.currentTarget.style.transform = "translateY(0)";
                 }
               }}
               style={
@@ -429,8 +392,8 @@ export default function SupportManagement({ setPage, setActivePage }) {
                       fontWeight: 700,
                       fontSize: "14px",
                       boxShadow: "0 6px 18px rgba(196,149,106,.18), inset 0 1px 0 rgba(255,255,255,.9)",
-                      cursor: "pointer",
-                      transition: "background .25s ease, box-shadow .25s ease, transform .2s ease, color .2s ease"
+                      transition: "background .25s ease, box-shadow .25s ease, transform .2s ease, color .2s ease",
+                      cursor: "pointer"
                     }
                   : {
                       padding: "12px 22px",
@@ -440,23 +403,12 @@ export default function SupportManagement({ setPage, setActivePage }) {
                       color: "#7A6E65",
                       fontWeight: 500,
                       fontSize: "14px",
-                      cursor: "pointer",
-                      transition: "background .25s ease, box-shadow .25s ease, transform .2s ease, color .2s ease"
+                      transition: "background .25s ease, box-shadow .25s ease, transform .2s ease, color .2s ease",
+                      cursor: "pointer"
                     }
               }
             >
               {tab.label}
-              {isActive && (
-                <div
-                  style={{
-                    height: "3px",
-                    width: "28px",
-                    borderRadius: "999px",
-                    background: "#C4956A",
-                    margin: "8px auto 0"
-                  }}
-                />
-              )}
             </button>
           );
         })}
@@ -505,16 +457,12 @@ export default function SupportManagement({ setPage, setActivePage }) {
                     letterSpacing: "0.5px"
                   }}
                 >
-                  {kpi.dot && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: kpi.dot }}></span>}
+                  {kpi.dot && (
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: kpi.dot }}></span>
+                  )}
                   {kpi.label}
                 </div>
-                <div
-                  style={{
-                    fontSize: "28px",
-                    fontWeight: 700,
-                    color: kpi.color
-                  }}
-                >
+                <div style={{ fontSize: "28px", fontWeight: 700, color: kpi.color }}>
                   {kpi.count}
                 </div>
               </div>
@@ -551,7 +499,6 @@ export default function SupportManagement({ setPage, setActivePage }) {
                 outline: "none"
               }}
             />
-
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -573,7 +520,6 @@ export default function SupportManagement({ setPage, setActivePage }) {
               <option value="Resolved">Resolved</option>
               <option value="Closed">Closed</option>
             </select>
-
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
@@ -593,7 +539,6 @@ export default function SupportManagement({ setPage, setActivePage }) {
               <option value="Medium">Medium</option>
               <option value="Low">Low</option>
             </select>
-
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -666,33 +611,17 @@ export default function SupportManagement({ setPage, setActivePage }) {
                       }}
                     >
                       <div>
-                        <div
-                          style={{
-                            fontSize: "12px",
-                            color: "#9A8C82",
-                            fontWeight: 600,
-                            marginBottom: "4px"
-                          }}
-                        >
+                        <div style={{ fontSize: "12px", color: "#9A8C82", fontWeight: 600, marginBottom: "4px" }}>
                           #{ticket.ticketNumber || ticket.id.slice(0, 8)}
                         </div>
-                        <h3
-                          style={{
-                            margin: 0,
-                            color: "#2C221E",
-                            fontSize: "18px",
-                            fontWeight: 700
-                          }}
-                        >
+                        <h3 style={{ margin: 0, color: "#2C221E", fontSize: "18px", fontWeight: 700 }}>
                           {ticket.subject}
                         </h3>
                       </div>
-
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         {getStatusBadge(ticket.status)}
                       </div>
                     </div>
-
                     <div
                       style={{
                         display: "flex",
@@ -734,7 +663,6 @@ export default function SupportManagement({ setPage, setActivePage }) {
                           {ticket.priority || "Normal"}
                         </span>
                       </div>
-
                       <div style={{ fontSize: "13px", color: "#9A8C82" }}>
                         Assigned: <strong style={{ color: "#2C221E" }}>{ticket.assignedTo || "Unassigned"}</strong>
                       </div>
@@ -771,18 +699,10 @@ export default function SupportManagement({ setPage, setActivePage }) {
                   <div style={{ fontSize: "12px", color: "#9A8C82", fontWeight: 600, marginBottom: "4px" }}>
                     TICKET DETAILS MANAGEMENT
                   </div>
-                  <h2
-                    style={{
-                      margin: 0,
-                      color: "#2C221E",
-                      fontFamily: "Playfair Display, serif",
-                      fontSize: "24px"
-                    }}
-                  >
+                  <h2 style={{ margin: 0, color: "#2C221E", fontFamily: "Playfair Display, serif", fontSize: "24px" }}>
                     #{selectedTicket.ticketNumber} — {selectedTicket.subject}
                   </h2>
                 </div>
-
                 <button
                   onClick={() => setSelectedTicket(null)}
                   style={{
@@ -855,7 +775,6 @@ export default function SupportManagement({ setPage, setActivePage }) {
                     </div>
                   </div>
                 </div>
-
                 <div style={{ background: "#F8F6F2", padding: "20px", borderRadius: "18px" }}>
                   <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: 700, color: "#2C221E" }}>
                     Customer Details
@@ -888,7 +807,6 @@ export default function SupportManagement({ setPage, setActivePage }) {
                 <h3 style={{ margin: "0 0 16px 0", fontFamily: "Playfair Display, serif", fontSize: "20px" }}>
                   Conversation
                 </h3>
-
                 {messages.length === 0 ? (
                   <div
                     style={{
@@ -925,14 +843,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
                             alignItems: isCustomer ? "flex-start" : "flex-end"
                           }}
                         >
-                          <div
-                            style={{
-                              fontSize: "12px",
-                              color: "#9A8C82",
-                              marginBottom: "4px",
-                              fontWeight: 600
-                            }}
-                          >
+                          <div style={{ fontSize: "12px", color: "#9A8C82", marginBottom: "4px", fontWeight: 600 }}>
                             {isCustomer ? msg.senderName || "Customer" : "Support Team"}
                           </div>
                           <div
@@ -949,14 +860,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
                             }}
                           >
                             <div>{msg.message}</div>
-                            <div
-                              style={{
-                                marginTop: "6px",
-                                fontSize: "11px",
-                                opacity: 0.75,
-                                textAlign: "right"
-                              }}
-                            >
+                            <div style={{ marginTop: "6px", fontSize: "11px", opacity: 0.75, textAlign: "right" }}>
                               {msg.createdAt?.toDate?.().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || "Sending..."}
                             </div>
                           </div>
@@ -1018,14 +922,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
               </div>
 
               {/* Internal Notes */}
-              <div
-                style={{
-                  background: "#FFF9EE",
-                  border: "1px solid #F3EAD3",
-                  borderRadius: "18px",
-                  padding: "20px"
-                }}
-              >
+              <div style={{ background: "#FFF9EE", border: "1px solid #F3EAD3", borderRadius: "18px", padding: "20px" }}>
                 <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: 700, color: "#2C221E" }}>
                   Internal Notes
                 </h3>
