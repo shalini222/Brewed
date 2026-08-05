@@ -66,7 +66,7 @@ export default function SupportPage({ setPage }) {
 
   // Form states for creating a ticket
   const [subject, setSubject] = useState("");
-  const [category, setCategory] = useState("General");
+  const [category, setCategory] = useState("");
   const [initialMessage, setInitialMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -184,7 +184,8 @@ export default function SupportPage({ setPage }) {
     setLoadingTickets(true);
     const q = query(
       collection(db, "supportTickets"),
-      where("customerId", "==", currentUser.uid)
+      where("customerId", "==", currentUser.uid),
+      orderBy("updatedAt", "desc")
     );
 
     const unsubscribe = onSnapshot(
@@ -357,7 +358,7 @@ export default function SupportPage({ setPage }) {
       setSelectedTicket({ id: ticketRef.id, ...snap.data() });
       
       setSubject("");
-      setCategory(helpCategories.length > 0 ? helpCategories[0].title : "General");
+      setCategory(helpCategories.length > 0 ? helpCategories[0].title : "");
       setInitialMessage("");
       setActivePage("conversation");
     } catch (err) {
@@ -1240,12 +1241,7 @@ export default function SupportPage({ setPage }) {
                     </option>
                   ))
                 ) : (
-                  <>
-                    <option value="General">General</option>
-                    <option value="Order">Order</option>
-                    <option value="Account">Account</option>
-                    <option value="Billing">Billing</option>
-                  </>
+                  <option value="" disabled> No categories available </option>
                 )}
               </select>
             </div>
