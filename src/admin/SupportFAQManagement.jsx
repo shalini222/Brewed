@@ -178,13 +178,6 @@ export default function SupportFaqManagement() {
     settings.instagramEnabled
   ].filter(Boolean).length;
 
-  const visibleChannelsCount = [
-    settings.showPhone, 
-    settings.showEmail, 
-    settings.showWhatsapp, 
-    settings.showInstagram
-  ].filter(Boolean).length;
-
   if (loading) {
     return (
       <div className="admin-page">
@@ -242,12 +235,6 @@ export default function SupportFaqManagement() {
           margin: 6px 0 0;
           color: #7A6E65;
           font-size: 15px;
-        }
-
-        .hero-action-slot {
-          display: flex;
-          gap: 12px;
-          align-items: center;
         }
 
         .hero-stats-grid {
@@ -345,15 +332,6 @@ export default function SupportFaqManagement() {
           align-items: center;
           gap: 8px;
           box-shadow: 0 2px 8px rgba(139, 106, 43, 0.05);
-        }
-
-        .saved-status-text {
-          color: #7A6E65;
-          font-size: 13px;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-          gap: 6px;
         }
 
         /* DASHBOARD CARDS */
@@ -905,10 +883,6 @@ export default function SupportFaqManagement() {
             gap: 16px;
             padding: 20px;
           }
-          .hero-action-slot {
-            width: 100%;
-            justify-content: space-between;
-          }
           .section-footer-actions {
             flex-direction: column-reverse;
             align-items: stretch;
@@ -925,36 +899,7 @@ export default function SupportFaqManagement() {
           <div className="hero-top-row">
             <div className="hero-title-area">
               <h2>Support & FAQ Management</h2>
-              <p>Manage support settings, contact channels, and FAQs./p>
-            </div>
-            <div className="hero-action-slot">
-              {hasChanges ? (
-                <div className="unsaved-pill-banner">
-                  ● You have unsaved changes
-                </div>
-              ) : (
-                <div className="saved-status-text">
-                  <CheckCircle2 size={16} color="#36543A" /> All changes saved
-                </div>
-              )}
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button
-                  className="reset-btn"
-                  onClick={resetChanges}
-                  disabled={!hasChanges || saving}
-                  style={{ padding: "10px 16px", height: "46px" }}
-                >
-                  Reset
-                </button>
-                <button
-                  className="save-btn"
-                  onClick={saveSettings}
-                  disabled={!hasChanges || saving}
-                  style={{ padding: "10px 20px", height: "46px" }}
-                >
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
+              <p>Manage support settings, contact channels, and FAQs.</p>
             </div>
           </div>
 
@@ -1719,4 +1664,3 @@ export default function SupportFaqManagement() {
     </>
   );
 }
-
