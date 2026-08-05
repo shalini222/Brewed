@@ -14,8 +14,7 @@ import {
   Upload,
   Search as SearchIcon,
   Plus,
-  X,
-  Check
+  X
 } from "lucide-react";
 
 import {
@@ -161,7 +160,7 @@ export default function SupportPolicyManagement() {
           updatedBy: admin,
         });
 
-        showToast("Policy updated.");
+        showToast("Policy updated successfully.");
       } else {
         await addDoc(collection(db, "supportPolicies"), {
           title,
@@ -182,12 +181,13 @@ export default function SupportPolicyManagement() {
           updatedBy: admin,
         });
 
-        showToast("Policy created.");
+        showToast("Policy created successfully.");
       }
 
       resetForm();
     } catch (err) {
       console.log(err);
+      showToast("Error saving policy.");
     }
   };
 
@@ -292,10 +292,7 @@ export default function SupportPolicyManagement() {
   };
 
   const deletePolicy = async (id) => {
-    const confirmed = window.confirm(
-      "Delete this policy?"
-    );
-
+    const confirmed = window.confirm("Are you sure you want to delete this policy?");
     if (!confirmed) return;
 
     try {
@@ -308,21 +305,14 @@ export default function SupportPolicyManagement() {
 
   const toggleSelection = (id) => {
     if (selectedPolicies.includes(id)) {
-      setSelectedPolicies(
-        selectedPolicies.filter(item => item !== id)
-      );
+      setSelectedPolicies(selectedPolicies.filter(item => item !== id));
     } else {
-      setSelectedPolicies([
-        ...selectedPolicies,
-        id
-      ]);
+      setSelectedPolicies([...selectedPolicies, id]);
     }
   };
 
   const selectAll = () => {
-    setSelectedPolicies(
-      sortedPolicies.map(policy => policy.id)
-    );
+    setSelectedPolicies(sortedPolicies.map(policy => policy.id));
   };
 
   const clearSelection = () => {
@@ -331,7 +321,6 @@ export default function SupportPolicyManagement() {
 
   const bulkPublish = async () => {
     const adminName = getCurrentAdminName();
-
     for (const id of selectedPolicies) {
       await updateDoc(doc(db, "supportPolicies", id), {
         status: "Published",
@@ -340,14 +329,12 @@ export default function SupportPolicyManagement() {
         updatedBy: adminName
       });
     }
-
     showToast(`${selectedPolicies.length} policies published.`);
     setSelectedPolicies([]);
   };
 
   const bulkDraft = async () => {
     const adminName = getCurrentAdminName();
-
     for (const id of selectedPolicies) {
       await updateDoc(doc(db, "supportPolicies", id), {
         status: "Draft",
@@ -356,27 +343,21 @@ export default function SupportPolicyManagement() {
         updatedBy: adminName
       });
     }
-
     showToast(`${selectedPolicies.length} policies moved to Draft.`);
     setSelectedPolicies([]);
   };
 
   const bulkDelete = async () => {
-    if (!window.confirm(
-      `Delete ${selectedPolicies.length} policies?`
-    )) return;
-
+    if (!window.confirm(`Delete ${selectedPolicies.length} policies?`)) return;
     for (const id of selectedPolicies) {
       await deleteDoc(doc(db, "supportPolicies", id));
     }
-
     showToast(`${selectedPolicies.length} policies deleted.`);
     setSelectedPolicies([]);
   };
 
   const bulkPin = async (value) => {
     const adminName = getCurrentAdminName();
-
     for (const id of selectedPolicies) {
       await updateDoc(doc(db, "supportPolicies", id), {
         pinned: value,
@@ -384,13 +365,7 @@ export default function SupportPolicyManagement() {
         updatedBy: adminName
       });
     }
-
-    showToast(
-      value
-        ? "Policies pinned."
-        : "Policies unpinned."
-    );
-
+    showToast(value ? "Policies pinned." : "Policies unpinned.");
     setSelectedPolicies([]);
   };
 
@@ -421,75 +396,53 @@ export default function SupportPolicyManagement() {
       })
     );
 
-    const data =
-      "data:text/json;charset=utf-8," +
-      encodeURIComponent(
-        JSON.stringify(cleanPolicies, null, 2)
-      );
-
+    const data = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cleanPolicies, null, 2));
     const link = document.createElement("a");
-
     link.href = data;
     link.download = "support-policies.json";
-
     document.body.appendChild(link);
-
     link.click();
-
     link.remove();
-
     showToast("Policies exported successfully.");
   };
 
   const importPolicies = (e) => {
     const reader = new FileReader();
-
     if (!e.target.files[0]) return;
 
     reader.readAsText(e.target.files[0]);
-
     reader.onload = async (event) => {
       try {
         const imported = JSON.parse(event.target.result);
-
         if (!Array.isArray(imported)) return;
 
         const admin = getCurrentAdminName();
-
         let index = 0;
 
         for (const item of imported) {
           const exists = policies.some(
-            p =>
-              p.title.trim().toLowerCase() ===
-              item.title.trim().toLowerCase()
+            p => p.title.trim().toLowerCase() === item.title.trim().toLowerCase()
           );
 
           if (!exists) {
-            await addDoc(
-              collection(db, "supportPolicies"),
-              {
-                title: item.title,
-                content: item.content,
-                category: item.category || "General",
-                status: item.status || "Draft",
-                pinned: item.pinned || false,
-                sortOrder:
-                  policies.length + index + 1,
-                visibility: item.visibility || "Customer",
-                required: item.required || false,
-                effectiveDate: item.effectiveDate || null,
-                expiryDate: item.expiryDate || null,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                updatedBy: admin
-              }
-            );
-
+            await addDoc(collection(db, "supportPolicies"), {
+              title: item.title,
+              content: item.content,
+              category: item.category || "General",
+              status: item.status || "Draft",
+              pinned: item.pinned || false,
+              sortOrder: policies.length + index + 1,
+              visibility: item.visibility || "Customer",
+              required: item.required || false,
+              effectiveDate: item.effectiveDate || null,
+              expiryDate: item.expiryDate || null,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+              updatedBy: admin
+            });
             index++;
           }
         }
-
         showToast("Policies imported successfully.");
       } catch (err) {
         console.log(err);
@@ -499,37 +452,19 @@ export default function SupportPolicyManagement() {
   };
 
   const totalPolicies = policies.length;
-
-  const publishedPolicies = policies.filter(
-    p => p.status === "Published"
-  ).length;
-
-  const draftPolicies = policies.filter(
-    p => p.status === "Draft"
-  ).length;
-
-  const totalCategories = [
-    ...new Set(policies.map(p => p.category))
-  ].length;
+  const publishedPolicies = policies.filter(p => p.status === "Published").length;
+  const draftPolicies = policies.filter(p => p.status === "Draft").length;
+  const totalCategories = [...new Set(policies.map(p => p.category))].length;
 
   const filteredPolicies = policies.filter(policy => {
     const matchesSearch =
       policy.title.toLowerCase().includes(search.toLowerCase()) ||
       policy.content.toLowerCase().includes(search.toLowerCase());
 
-    const matchesCategory =
-      categoryFilter === "All" ||
-      policy.category === categoryFilter;
+    const matchesCategory = categoryFilter === "All" || policy.category === categoryFilter;
+    const matchesStatus = statusFilter === "All" || policy.status === statusFilter;
 
-    const matchesStatus =
-      statusFilter === "All" ||
-      policy.status === statusFilter;
-
-    return (
-      matchesSearch &&
-      matchesCategory &&
-      matchesStatus
-    );
+    return matchesSearch && matchesCategory && matchesStatus;
   });
 
   const sortedPolicies = [...filteredPolicies].sort((a, b) => {
@@ -540,889 +475,386 @@ export default function SupportPolicyManagement() {
   });
 
   const moveUp = async (policy) => {
-    const index = sortedPolicies.findIndex(
-      p => p.id === policy.id
-    );
+    const index = sortedPolicies.findIndex(p => p.id === policy.id);
     if (index === 0) return;
     const current = sortedPolicies[index];
     const previous = sortedPolicies[index - 1];
-    await updateDoc(doc(db, "supportPolicies", current.id), {
-      sortOrder: previous.sortOrder
-    });
-    await updateDoc(doc(db, "supportPolicies", previous.id), {
-      sortOrder: current.sortOrder
-    });
+    await updateDoc(doc(db, "supportPolicies", current.id), { sortOrder: previous.sortOrder });
+    await updateDoc(doc(db, "supportPolicies", previous.id), { sortOrder: current.sortOrder });
   };
 
   const moveDown = async (policy) => {
-    const index = sortedPolicies.findIndex(
-      p => p.id === policy.id
-    );
+    const index = sortedPolicies.findIndex(p => p.id === policy.id);
     if (index === sortedPolicies.length - 1) return;
     const current = sortedPolicies[index];
     const next = sortedPolicies[index + 1];
-    await updateDoc(doc(db, "supportPolicies", current.id), {
-      sortOrder: next.sortOrder
-    });
-    await updateDoc(doc(db, "supportPolicies", next.id), {
-      sortOrder: current.sortOrder
-    });
-  };
-
-  const actionBtnStyle = {
-    minWidth: "90px",
-    height: "38px",
-    padding: "0 12px",
-    borderRadius: "12px",
-    border: "1px solid #EAE0D5",
-    background: "#FFFFFF",
-    color: "#54463C",
-    cursor: "pointer",
-    fontWeight: 500,
-    fontSize: "13px",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "6px",
-    transition: "0.2s"
-  };
-
-  const actionDangerBtnStyle = {
-    minWidth: "90px",
-    height: "38px",
-    padding: "0 12px",
-    borderRadius: "12px",
-    border: "1px solid #F5C2C2",
-    background: "#FAECEB",
-    color: "#B55656",
-    cursor: "pointer",
-    fontWeight: 500,
-    fontSize: "13px",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "6px",
-    transition: "0.2s"
+    await updateDoc(doc(db, "supportPolicies", current.id), { sortOrder: next.sortOrder });
+    await updateDoc(doc(db, "supportPolicies", next.id), { sortOrder: current.sortOrder });
   };
 
   return (
-    <div className="admin-page">
-      <style>{`
-        /* ===== Page ===== */
-        .admin-page {
-          max-width: 1240px;
-          margin: auto;
-          padding: 40px 24px;
-          position: relative;
-          background: #FCFAF7;
-          min-height: 100vh;
-          font-family: 'Inter', sans-serif;
-          color: #241C17;
-        }
-
-        .admin-title {
-          font-family: "Playfair Display", serif;
-          color: #241C17;
-          font-size: 38px;
-          font-weight: 600;
-          margin-bottom: 8px;
-          margin-top: 0;
-          letter-spacing: -0.01em;
-        }
-
-        .admin-subtitle {
-          color: #8A8B81;
-          margin-bottom: 36px;
-          margin-top: 0;
-          font-size: 15px;
-        }
-
-        /* ===== Cards ===== */
-        .admin-card {
-          background: #FFFFFF;
-          border: 1px solid #EFE7DD;
-          border-radius: 24px;
-          padding: 32px;
-          margin-bottom: 28px;
-          box-shadow: 0 8px 24px rgba(25,20,15,.04), 0 24px 60px rgba(25,20,15,.05);
-          transition: .3s;
-        }
-
-        .admin-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 12px 30px rgba(25,20,15,.06), 0 30px 70px rgba(25,20,15,.07);
-        }
-
-        /* ===== Stats ===== */
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 24px;
-          margin-bottom: 36px;
-        }
-
-        .stat-card {
-          background: white;
-          border-radius: 22px;
-          border: 1px solid #EFE6DB;
-          padding: 26px;
-          transition: .3s;
-          box-shadow: 0 4px 20px rgba(25,20,15,.02);
-        }
-
-        .stat-card:hover {
-          border-color: #D8C4B3;
-          transform: translateY(-3px);
-          box-shadow: 0 8px 25px rgba(25,20,15,.04);
-        }
-
-        .stat-title {
-          font-size: 12px;
-          letter-spacing: .14em;
-          text-transform: uppercase;
-          color: #9A8B81;
-          font-weight: 600;
-        }
-
-        .stat-value {
-          font-size: 42px;
-          font-weight: 700;
-          color: #241C17;
-          margin-top: 8px;
-          font-family: 'Inter', sans-serif;
-        }
-
-        /* ===== Inputs ===== */
-        .admin-input,
-        .admin-select,
-        .admin-textarea {
-          width: 100%;
-          padding: 15px 18px;
-          border-radius: 16px;
-          border: 1px solid #ECE2D8;
-          font-size: 14px;
-          margin-bottom: 16px;
-          transition: .2s;
-          box-sizing: border-box;
-          background: #FCFAF8;
-          color: #241C17;
-          font-family: 'Inter', sans-serif;
-        }
-
-        .admin-input {
-          height: 52px;
-        }
-
-        .admin-input:focus,
-        .admin-select:focus,
-        .admin-textarea:focus {
-          outline: none;
-          border-color: #C4956A;
-          box-shadow: 0 0 0 5px rgba(196,149,106,.12);
-          background: #FFFFFF;
-        }
-
-        /* ===== Buttons ===== */
-        .btn {
-          padding: 13px 22px;
-          border-radius: 14px;
-          border: none;
-          cursor: pointer;
-          font-weight: 600;
-          font-size: 14px;
-          transition: .2s;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          font-family: 'Inter', sans-serif;
-        }
-
-        .btn-primary {
-          background: #C4956A;
-          color: white;
-        }
-
-        .btn-primary:hover {
-          background: #B7865E;
-          transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-          background: white;
-          border: 1px solid #E8DED2;
-          color: #54463C;
-        }
-
-        .btn-secondary:hover {
-          background: #FAF7F3;
-          border-color: #D8C4B3;
-        }
-
-        .btn-danger {
-          background: #FAECEB;
-          color: #B55656;
-          border: 1px solid #F5C2C2;
-        }
-
-        .btn-danger:hover {
-          background: #F8D7D6;
-        }
-
-        /* ===== Table/List ===== */
-        .admin-list {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-
-        .list-item {
-          background: white;
-          border: 1px solid #EEE4DA;
-          border-radius: 24px;
-          padding: 28px;
-          transition: .25s;
-          box-shadow: 0 4px 20px rgba(25,20,15,.02);
-        }
-
-        .list-item:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 14px 40px rgba(0,0,0,.05);
-          border-color: #D8C4B3;
-        }
-
-        /* ===== Chips / Badges ===== */
-        .badge {
-          display: inline-flex;
-          align-items: center;
-          padding: 6px 14px;
-          border-radius: 999px;
-          font-size: 12px;
-          font-weight: 600;
-        }
-
-        .badge-green {
-          background: #EEF6EF;
-          color: #5D7B64;
-        }
-
-        .badge-red {
-          background: #FAECEB;
-          color: #B55656;
-        }
-
-        .badge-orange {
-          background: #F7F2EA;
-          color: #8A735A;
-        }
-
-        .badge-blue {
-          background: #F0F4F8;
-          color: #4A607A;
-        }
-
-        .badge-pinned {
-          background: #F6F1EA;
-          color: #7B624C;
-        }
-
-        /* ===== Modal ===== */
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(36, 28, 23, 0.4);
-          backdrop-filter: blur(4px);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 1001;
-          padding: 20px;
-          box-sizing: border-box;
-        }
-
-        .modal-card {
-          background: #fff;
-          border: 1px solid #EEE5DB;
-          border-radius: 26px;
-          padding: 32px;
-          max-width: 640px;
-          width: 100%;
-          max-height: 85vh;
-          overflow-y: auto;
-          box-shadow: 0 25px 80px rgba(0,0,0,.18);
-        }
-
-        /* ===== Analytics / History Cards ===== */
-        .analytics-card {
-          background: #FCFAF7;
-          border: 1px solid #EFE6DB;
-          border-radius: 18px;
-          padding: 20px;
-        }
-
-        /* ===== Empty State ===== */
-        .empty-state {
-          text-align: center;
-          padding: 60px 20px;
-          border: 2px dashed #EAE0D5;
-          border-radius: 24px;
-          color: #8A8B81;
-          background: #FFFDFB;
-        }
-
-        /* ===== Responsive ===== */
-        @media(max-width: 768px) {
-          .admin-page {
-            padding: 20px 16px;
-          }
-          .admin-title {
-            font-size: 30px;
-          }
-          .stats-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
-
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 bg-slate-50/50 min-h-screen text-slate-900 font-sans">
+      {/* Toast Notification */}
       {toastMessage && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 24,
-            right: 24,
-            background: "#FFFFFF",
-            color: "#241C17",
-            border: "1px solid #E8DED2",
-            padding: "14px 22px",
-            borderRadius: "16px",
-            fontWeight: 600,
-            fontSize: "14px",
-            boxShadow: "0 20px 40px rgba(0,0,0,.08)",
-            zIndex: 1000,
-          }}
-        >
+        <div className="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-xl font-medium text-sm shadow-xl z-50 animate-fade-in border border-slate-800">
           {toastMessage}
         </div>
       )}
 
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-          gap: "20px",
-        }}
-      >
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
         <div>
-          <h1 className="admin-title" style={{ fontFamily: "Playfair Display, serif" }}>Support Policy Management</h1>
-          <p className="admin-subtitle">Manage all customer support policies with precision.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+            Support Policy Management
+          </h1>
+          <p className="text-slate-500 text-sm mt-1">
+            Manage terms, conditions, and customer guidelines efficiently.
+          </p>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 12
-          }}
-        >
+        <div className="flex items-center gap-3">
           <button
-            className="btn btn-secondary"
             onClick={exportPolicies}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-sm"
           >
             <Download size={16} /> Export
           </button>
 
-          <label className="btn btn-secondary" style={{ cursor: "pointer" }}>
+          <label className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-sm cursor-pointer">
             <Upload size={16} /> Import
-            <input
-              type="file"
-              accept=".json"
-              onChange={importPolicies}
-              hidden
-            />
+            <input type="file" accept=".json" onChange={importPolicies} hidden />
           </label>
         </div>
       </div>
 
       {/* Statistics Cards */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-title">Total Policies</div>
-          <div className="stat-value">{totalPolicies}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Policies</span>
+          <div className="text-3xl font-bold text-slate-900 mt-2">{totalPolicies}</div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-title">Published</div>
-          <div className="stat-value">{publishedPolicies}</div>
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Published</span>
+          <div className="text-3xl font-bold text-emerald-600 mt-2">{publishedPolicies}</div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-title">Drafts</div>
-          <div className="stat-value">{draftPolicies}</div>
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Drafts</span>
+          <div className="text-3xl font-bold text-amber-600 mt-2">{draftPolicies}</div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-title">Categories</div>
-          <div className="stat-value">{totalCategories}</div>
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Categories</span>
+          <div className="text-3xl font-bold text-indigo-600 mt-2">{totalCategories}</div>
         </div>
       </div>
 
-      {/* Form */}
-      <div className="admin-card">
-        <h2 style={{ marginTop: 0, marginBottom: 24, color: "#241C17", fontFamily: "Playfair Display, serif", fontSize: "24px" }}>
-          {editingId ? "Edit Policy" : "Add Policy"}
+      {/* Main Creation / Edit Form Card */}
+      <div className="bg-white p-6 md:p-8 rounded-2xl border border-slate-100 shadow-sm space-y-6">
+        <h2 className="text-xl font-bold text-slate-900">
+          {editingId ? "Edit Policy" : "Create New Policy"}
         </h2>
 
-        <input
-          className="admin-input"
-          placeholder="Policy Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 140px",
-            gap: "16px",
-          }}
-        >
-          <select
-            className="admin-select"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            <option>General</option>
-            <option>Delivery</option>
-            <option>Refunds</option>
-            <option>Payments</option>
-            <option>Privacy</option>
-            <option>Terms</option>
-            <option>Rewards</option>
-          </select>
-
-          <select
-            className="admin-select"
-            value={visibility}
-            onChange={(e) => setVisibility(e.target.value)}
-          >
-            <option>Customer</option>
-            <option>Employee</option>
-            <option>Rider</option>
-            <option>Admin Only</option>
-            <option>Everyone</option>
-          </select>
-
+        <div>
+          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Title</label>
           <input
-            className="admin-input"
-            value={version}
-            onChange={(e) => setVersion(e.target.value)}
-            placeholder="1.0"
+            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+            placeholder="e.g., Refund & Return Policy"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
           />
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "16px",
-          }}
-        >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label style={{ fontSize: 13, color: "#8A8B81", display: "block", marginBottom: 6, fontWeight: 500 }}>
-              Effective Date
-            </label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Category</label>
+            <select
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option>General</option>
+              <option>Delivery</option>
+              <option>Refunds</option>
+              <option>Payments</option>
+              <option>Privacy</option>
+              <option>Terms</option>
+              <option>Rewards</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Visibility</label>
+            <select
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value)}
+            >
+              <option>Customer</option>
+              <option>Employee</option>
+              <option>Rider</option>
+              <option>Admin Only</option>
+              <option>Everyone</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Version</label>
+            <input
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+              value={version}
+              onChange={(e) => setVersion(e.target.value)}
+              placeholder="1.0"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Effective Date</label>
             <input
               type="date"
-              className="admin-input"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
               value={effectiveDate}
               onChange={(e) => setEffectiveDate(e.target.value)}
             />
           </div>
 
           <div>
-            <label style={{ fontSize: 13, color: "#8A8B81", display: "block", marginBottom: 6, fontWeight: 500 }}>
-              Expiry Date (Optional)
-            </label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Expiry Date (Optional)</label>
             <input
               type="date"
-              className="admin-input"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
               value={expiryDate}
               onChange={(e) => setExpiryDate(e.target.value)}
             />
           </div>
         </div>
 
-        <textarea
-          className="admin-textarea"
-          rows={10}
-          placeholder="Write policy content..."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          style={{ resize: "vertical", padding: "16px 18px" }}
-        />
+        <div>
+          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Policy Content</label>
+          <textarea
+            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+            rows={8}
+            placeholder="Write detailed policy text..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            style={{ resize: "vertical" }}
+          />
+        </div>
 
-        <div style={{ display: "flex", gap: "28px", alignItems: "center", margin: "8px 0 24px 0" }}>
-          <label style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer", fontSize: "14px", fontWeight: 500 }}>
+        <div className="flex items-center gap-6 pt-2">
+          <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
             <input
               type="checkbox"
               checked={published}
               onChange={(e) => setPublished(e.target.checked)}
-              style={{ width: 16, height: 16, accentColor: "#C4956A" }}
+              className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
             />
             Published
           </label>
 
-          <label
-            style={{
-              display: "flex",
-              gap: 10,
-              alignItems: "center",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: 500
-            }}
-          >
+          <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
             <input
               type="checkbox"
               checked={required}
-              onChange={(e) =>
-                setRequired(e.target.checked)
-              }
-              style={{ width: 16, height: 16, accentColor: "#C4956A" }}
+              onChange={(e) => setRequired(e.target.checked)}
+              className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
             />
-            Required Policy
+            Required Policy (Must accept)
           </label>
         </div>
 
-        <div style={{ display: "flex", gap: "12px" }}>
+        <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
           <button
-            className="btn btn-primary"
             onClick={savePolicy}
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white font-medium text-sm rounded-xl hover:bg-indigo-700 transition shadow-sm shadow-indigo-200"
           >
             <Plus size={16} /> {editingId ? "Update Policy" : "Create Policy"}
           </button>
 
           {editingId && (
-            <button className="btn btn-secondary" onClick={resetForm}>
+            <button
+              onClick={resetForm}
+              className="px-5 py-2.5 bg-slate-100 text-slate-700 font-medium text-sm rounded-xl hover:bg-slate-200 transition"
+            >
               Cancel
             </button>
           )}
         </div>
       </div>
 
-      {/* Search & Filters */}
-      <div
-        style={{
-          display: "flex",
-          gap: 16,
-          flexWrap: "wrap",
-          marginBottom: 28
-        }}
-      >
-        <div style={{ flex: 1, position: "relative", minWidth: "260px" }}>
+      {/* Filtering & Search Bar */}
+      <div className="flex flex-col md:flex-row items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+        <div className="relative flex-1 w-full">
+          <SearchIcon size={18} className="absolute left-4 top-3.5 text-slate-400" />
           <input
-            className="admin-input"
-            placeholder="Search policies..."
+            className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+            placeholder="Search policies by title or content..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ marginBottom: 0, paddingLeft: "46px" }}
           />
-          <SearchIcon size={18} style={{ position: "absolute", left: 16, top: 17, color: "#8A8B81" }} />
         </div>
 
         <select
-          className="admin-select"
+          className="w-full md:w-48 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          style={{ width: 180, marginBottom: 0, height: 52 }}
         >
           <option value="All">All Categories</option>
-
           {[...new Set(policies.map(p => p.category))].map(cat => (
-            <option key={cat}>
-              {cat}
-            </option>
+            <option key={cat}>{cat}</option>
           ))}
         </select>
 
         <select
-          className="admin-select"
+          className="w-full md:w-44 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          style={{ width: 170, marginBottom: 0, height: 52 }}
         >
-          <option value="All">All Status</option>
+          <option value="All">All Statuses</option>
           <option value="Published">Published</option>
           <option value="Draft">Draft</option>
         </select>
       </div>
 
-      {/* Bulk Actions Toolbar */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 24,
-          flexWrap: "wrap",
-          gap: 12
-        }}
-      >
-        <div>
+      {/* Bulk Action Controls */}
+      <div className="flex items-center justify-between flex-wrap gap-4 px-2">
+        <div className="flex items-center gap-2">
           <button
-            className="btn btn-secondary"
             onClick={selectAll}
+            className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition shadow-xs"
           >
             Select All
           </button>
-
           <button
-            className="btn btn-secondary"
             onClick={clearSelection}
-            style={{ marginLeft: 8 }}
+            className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition shadow-xs"
           >
-            Clear
+            Clear Selection
           </button>
         </div>
 
         {selectedPolicies.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap"
-            }}
-          >
-            <button
-              className="btn btn-primary"
-              onClick={bulkPublish}
-            >
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-medium text-slate-500 mr-2">{selectedPolicies.length} selected:</span>
+            <button onClick={bulkPublish} className="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition">
               Publish
             </button>
-
-            <button
-              className="btn btn-secondary"
-              onClick={bulkDraft}
-            >
+            <button onClick={bulkDraft} className="px-3 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition">
               Draft
             </button>
-
-            <button
-              className="btn btn-secondary"
-              onClick={() => bulkPin(true)}
-            >
+            <button onClick={() => bulkPin(true)} className="px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition">
               Pin
             </button>
-
-            <button
-              className="btn btn-secondary"
-              onClick={() => bulkPin(false)}
-            >
+            <button onClick={() => bulkPin(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-lg hover:bg-slate-200 transition">
               Unpin
             </button>
-
-            <button
-              className="btn btn-danger"
-              onClick={bulkDelete}
-            >
+            <button onClick={bulkDelete} className="px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg hover:bg-rose-100 transition">
               Delete
             </button>
           </div>
         )}
       </div>
 
-      {/* Policies List Display */}
-      <div className="admin-list">
+      {/* Policies Stack */}
+      <div className="space-y-4">
         {loading ? (
-          <div className="empty-state">Loading policies...</div>
+          <div className="text-center py-16 bg-white rounded-2xl border border-slate-100 text-slate-400 text-sm">
+            Loading policies...
+          </div>
         ) : sortedPolicies.length === 0 ? (
-          <div className="empty-state">
-            <h3 style={{ fontFamily: "Playfair Display, serif", fontSize: "20px", marginTop: 0 }}>No Policies Yet</h3>
-            <p>Create your first support policy above.</p>
+          <div className="text-center py-16 bg-white rounded-2xl border border-slate-100 text-slate-400 space-y-2">
+            <h3 className="font-bold text-slate-700 text-base">No Policies Found</h3>
+            <p className="text-sm">Create your first entry above or adjust filters.</p>
           </div>
         ) : (
           sortedPolicies.map((policy) => (
             <div
               key={policy.id}
-              className="list-item"
+              className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all space-y-4"
             >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  gap: 20,
-                  flexWrap: "wrap"
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "flex-start", paddingTop: 4 }}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3 flex-1">
                   <input
                     type="checkbox"
                     checked={selectedPolicies.includes(policy.id)}
                     onChange={() => toggleSelection(policy.id)}
-                    style={{ width: 16, height: 16, accentColor: "#C4956A", cursor: "pointer" }}
+                    className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
                   />
-                </div>
+                  <div className="space-y-2 flex-1">
+                    <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+                      {policy.title}
+                    </h3>
 
-                <div style={{ flex: 1 }}>
-                  <h3
-                    style={{
-                      margin: 0,
-                      color: "#241C17",
-                      fontFamily: "Playfair Display, serif",
-                      fontSize: "20px"
-                    }}
-                  >
-                    {policy.title}
-                  </h3>
-
-                  <div
-                    style={{
-                      marginTop: 12,
-                      display: "flex",
-                      gap: 8,
-                      flexWrap: "wrap"
-                    }}
-                  >
-                    <span className="badge badge-blue">
-                      {policy.category}
-                    </span>
-
-                    <span className="badge badge-blue">
-                      {policy.visibility}
-                    </span>
-
-                    <span
-                      className={`badge ${
-                        policy.status === "Published"
-                          ? "badge-green"
-                          : "badge-orange"
-                      }`}
-                    >
-                      {policy.status}
-                    </span>
-
-                    {policy.required && (
-                      <span className="badge badge-red">
-                        Required
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slate-100 text-slate-700">
+                        {policy.category}
                       </span>
-                    )}
-
-                    {policy.pinned && (
-                      <span className="badge badge-pinned">
-                        Pinned
+                      <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-700">
+                        {policy.visibility}
                       </span>
-                    )}
-
-                    {policy.expiryDate && (
-                      <span className="badge badge-orange">
-                        Expires {policy.expiryDate}
+                      <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${
+                        policy.status === "Published" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                      }`}>
+                        {policy.status}
                       </span>
-                    )}
-                  </div>
+                      {policy.required && (
+                        <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-rose-50 text-rose-700">
+                          Required
+                        </span>
+                      )}
+                      {policy.pinned && (
+                        <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-purple-50 text-purple-700">
+                          Pinned
+                        </span>
+                      )}
+                      {policy.expiryDate && (
+                        <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-orange-50 text-orange-700">
+                          Expires {policy.expiryDate}
+                        </span>
+                      )}
+                    </div>
 
-                  <p
-                    style={{
-                      marginTop: 16,
-                      color: "#6B5E55",
-                      whiteSpace: "pre-wrap",
-                      lineHeight: "1.6",
-                      fontSize: "14px"
-                    }}
-                  >
-                    {policy.content.length > 220
-                      ? policy.content.substring(0, 220) + "..."
-                      : policy.content}
-                  </p>
+                    <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap pt-1">
+                      {policy.content.length > 200
+                        ? policy.content.substring(0, 200) + "..."
+                        : policy.content}
+                    </p>
 
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "#9A8B81",
-                      marginTop: 16
-                    }}
-                  >
-                    Last Updated{" "}
-                    {policy.updatedAt?.toDate?.().toLocaleDateString() ||
-                      "Recently"}
+                    <div className="text-xs text-slate-400 pt-1">
+                      Updated {policy.updatedAt?.toDate?.().toLocaleDateString() || "Recently"}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "10px",
-                  justifyContent: "flex-end",
-                  alignItems: "center",
-                  marginTop: "20px",
-                  paddingTop: "16px",
-                  borderTop: "1px solid #F4EBE2"
-                }}
-              >
-                <button
-                  style={actionBtnStyle}
-                  onClick={() => moveUp(policy)}
-                  title="Move Up"
-                >
+              {/* Action Toolbar */}
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 flex-wrap">
+                <button onClick={() => moveUp(policy)} className="p-2 text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl transition text-xs font-medium flex items-center gap-1">
                   <ArrowUp size={14} /> Up
                 </button>
-
-                <button
-                  style={actionBtnStyle}
-                  onClick={() => moveDown(policy)}
-                  title="Move Down"
-                >
+                <button onClick={() => moveDown(policy)} className="p-2 text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl transition text-xs font-medium flex items-center gap-1">
                   <ArrowDown size={14} /> Down
                 </button>
-
-                <button
-                  style={actionBtnStyle}
-                  onClick={() => togglePinned(policy)}
-                >
+                <button onClick={() => togglePinned(policy)} className="p-2 text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl transition text-xs font-medium flex items-center gap-1">
                   <Pin size={14} /> {policy.pinned ? "Unpin" : "Pin"}
                 </button>
-
-                <button
-                  style={actionBtnStyle}
-                  onClick={() => setPreviewPolicy(policy)}
-                >
+                <button onClick={() => setPreviewPolicy(policy)} className="p-2 text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl transition text-xs font-medium flex items-center gap-1">
                   <Eye size={14} /> Preview
                 </button>
-
-                <button
-                  style={actionBtnStyle}
-                  onClick={() => openHistory(policy)}
-                >
+                <button onClick={() => openHistory(policy)} className="p-2 text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl transition text-xs font-medium flex items-center gap-1">
                   <Clock size={14} /> History
                 </button>
-
-                <button
-                  style={actionBtnStyle}
-                  onClick={() => editPolicy(policy)}
-                >
+                <button onClick={() => editPolicy(policy)} className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition text-xs font-medium flex items-center gap-1">
                   <Edit3 size={14} /> Edit
                 </button>
-
-                <button
-                  style={actionBtnStyle}
-                  onClick={() => toggleStatus(policy)}
-                >
+                <button onClick={() => toggleStatus(policy)} className="p-2 text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-xl transition text-xs font-medium flex items-center gap-1">
                   {policy.status === "Published" ? <FileText size={14} /> : <Rocket size={14} />}
                   {policy.status === "Published" ? "Draft" : "Publish"}
                 </button>
-
-                <button
-                  style={actionDangerBtnStyle}
-                  onClick={() => deletePolicy(policy.id)}
-                >
+                <button onClick={() => deletePolicy(policy.id)} className="p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition text-xs font-medium flex items-center gap-1">
                   <Trash2 size={14} /> Delete
                 </button>
               </div>
@@ -1433,126 +865,72 @@ export default function SupportPolicyManagement() {
 
       {/* Preview Modal */}
       {previewPolicy && (
-        <div className="modal-overlay">
-          <div className="modal-card">
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h2 style={{ margin: 0, fontFamily: "Playfair Display, serif", fontSize: "24px", color: "#241C17" }}>{previewPolicy.title}</h2>
-              <button onClick={() => setPreviewPolicy(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#8A8B81" }}>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 md:p-8 space-y-4 shadow-2xl border border-slate-100 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">{previewPolicy.title}</h2>
+              <button onClick={() => setPreviewPolicy(null)} className="text-slate-400 hover:text-slate-600 p-1">
                 <X size={20} />
               </button>
             </div>
 
-            <div
-              style={{
-                marginBottom: 20,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap"
-              }}
-            >
-              <span className="badge badge-blue">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slate-100 text-slate-700">
                 {previewPolicy.category}
               </span>
-
-              <span className="badge badge-blue">
+              <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-700">
                 {previewPolicy.visibility}
               </span>
-
-              <span
-                className={`badge ${
-                  previewPolicy.status === "Published"
-                    ? "badge-green"
-                    : "badge-orange"
-                }`}
-              >
+              <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${
+                previewPolicy.status === "Published" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+              }`}>
                 {previewPolicy.status}
               </span>
-
-              {previewPolicy.required && (
-                <span className="badge badge-red">
-                  Required
-                </span>
-              )}
-
-              {previewPolicy.pinned && (
-                <span className="badge badge-pinned">
-                  Pinned
-                </span>
-              )}
-
-              {previewPolicy.expiryDate && (
-                <span className="badge badge-orange">
-                  Expires {previewPolicy.expiryDate}
-                </span>
-              )}
             </div>
 
-            <div
-              style={{
-                whiteSpace: "pre-wrap",
-                lineHeight: 1.7,
-                color: "#54463C",
-                maxHeight: "55vh",
-                overflowY: "auto",
-                fontSize: "14px"
-              }}
-            >
+            <div className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap py-2 border-y border-slate-100 max-h-[50vh] overflow-y-auto">
               {previewPolicy.content}
             </div>
 
-            <div
-              style={{
-                marginTop: 25,
-                textAlign: "right"
-              }}
-            >
+            <div className="flex justify-end pt-2">
               <button
-                className="btn btn-primary"
                 onClick={() => setPreviewPolicy(null)}
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition"
               >
                 Close
               </button>
             </div>
-
           </div>
         </div>
       )}
 
       {/* History Modal */}
       {historyModal && (
-        <div className="modal-overlay">
-          <div className="modal-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h2 style={{ margin: 0, fontFamily: "Playfair Display, serif", fontSize: "24px", color: "#241C17" }}>Policy History</h2>
-              <button onClick={() => setHistoryModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#8A8B81" }}>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 md:p-8 space-y-4 shadow-2xl border border-slate-100 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">Policy Revision History</h2>
+              <button onClick={() => setHistoryModal(false)} className="text-slate-400 hover:text-slate-600 p-1">
                 <X size={20} />
               </button>
             </div>
 
             {policyHistory.length === 0 ? (
-              <p style={{ color: "#8A8B81" }}>No version history available for this policy yet.</p>
+              <p className="text-sm text-slate-500 py-6 text-center">No recorded history updates found for this policy.</p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: "55vh", overflowY: "auto", marginBottom: 20 }}>
+              <div className="space-y-3 max-h-[50vh] overflow-y-auto py-1">
                 {policyHistory.map(item => (
-                  <div
-                    key={item.id}
-                    className="analytics-card"
-                    style={{ marginBottom: 0, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 15 }}
-                  >
+                  <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 gap-4">
                     <div>
-                      <strong style={{ color: "#241C17", fontSize: "14px" }}>{item.action}</strong>
-                      <p style={{ margin: "4px 0", color: "#6B5E55", fontSize: "13px" }}>{item.title}</p>
-                      <small style={{ color: "#9A8B81", fontSize: "12px" }}>
-                        {item.editedBy}
-                        {" • "}
-                        {item.editedAt?.toDate?.()?.toLocaleString() || "Recently"}
-                      </small>
+                      <span className="text-xs font-bold text-slate-900 uppercase tracking-wide">{item.action}</span>
+                      <p className="text-sm font-medium text-slate-700 mt-0.5">{item.title}</p>
+                      <span className="text-xs text-slate-400 mt-1 block">
+                        By {item.editedBy} • {item.editedAt?.toDate?.()?.toLocaleString() || "Recently"}
+                      </span>
                     </div>
-
                     <button
-                      style={actionBtnStyle}
                       onClick={() => restoreVersion(item)}
+                      className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-200 rounded-lg hover:bg-slate-100 transition shadow-xs text-slate-700"
                     >
                       Restore
                     </button>
@@ -1561,10 +939,10 @@ export default function SupportPolicyManagement() {
               </div>
             )}
 
-            <div style={{ textAlign: "right" }}>
+            <div className="flex justify-end pt-2">
               <button
-                className="btn btn-primary"
                 onClick={() => setHistoryModal(false)}
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition"
               >
                 Close
               </button>
