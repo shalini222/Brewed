@@ -32,7 +32,6 @@ function useCountUp(end, duration = 1200) {
     const step = (timestamp) => {
       if (!startTimestamp) startTimestamp = timestamp;
       const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      // Ease out expo for high-end feel
       const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
       setCount(Math.floor(easeProgress * end));
       if (progress < 1) {
@@ -118,11 +117,6 @@ export default function SupportAnalyticsManagement() {
   const animatedResolved = useCountUp(totalResolvedAndClosed);
   const animatedRate = useCountUp(resolutionRate);
 
-  // Percentages
-  const openPercent = totalTickets === 0 ? 0 : Math.round((openTickets / totalTickets) * 100);
-  const pendingPercent = totalTickets === 0 ? 0 : Math.round((pendingTickets / totalTickets) * 100);
-  const resolvedPercent = totalTickets === 0 ? 0 : Math.round((totalResolvedAndClosed / totalTickets) * 100);
-
   // Category Analytics
   const categoryData = useMemo(() => {
     const categoryCounts = {};
@@ -136,13 +130,11 @@ export default function SupportAnalyticsManagement() {
   }, [filteredTickets]);
 
   const mostCommonCategory = categoryData.length > 0 ? categoryData[0].name : "--";
-  const maxCategoryValue = categoryData.length > 0 ? Math.max(...categoryData.map(c => c.value), 1) : 1;
 
   // Priority Analytics
   const highPriority = filteredTickets.filter(t => (t.priority || "").toLowerCase() === "high").length;
   const normalPriority = filteredTickets.filter(t => (t.priority || "").toLowerCase() === "normal").length;
   const lowPriority = filteredTickets.filter(t => (t.priority || "").toLowerCase() === "low").length;
-  const urgentPercent = totalTickets === 0 ? 0 : Math.round((highPriority / totalTickets) * 100);
 
   // Response Time Analytics
   const responseTimes = useMemo(() => {
@@ -189,22 +181,6 @@ export default function SupportAnalyticsManagement() {
     high: "#D9534F"
   };
 
-  // Customer Analytics
-  const { customerCounts, topCustomers, repeatCustomers } = useMemo(() => {
-    const counts = {};
-    filteredTickets.forEach(ticket => {
-      const name = ticket.customerName || ticket.customerEmail || "Unknown";
-      counts[name] = (counts[name] || 0) + 1;
-    });
-    const top = Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-    const repeats = Object.values(counts)
-      .filter(count => count > 1)
-      .length;
-    return { customerCounts: counts, topCustomers: top, repeatCustomers: repeats };
-  }, [filteredTickets]);
-
   // Staff Performance
   const staffStats = useMemo(() => {
     const stats = {};
@@ -225,10 +201,14 @@ export default function SupportAnalyticsManagement() {
     return stats;
   }, [filteredTickets]);
 
-  // Heatmap dataset simulation based on day of week over last 30 days
+  const topStaff = useMemo(() => {
+    const entries = Object.entries(staffStats);
+    if (entries.length === 0) return null;
+    return entries.sort((a, b) => b[1].closed - a[1].closed)[0];
+  }, [staffStats]);
+
+  // Heatmap dataset simulation
   const heatmapCells = useMemo(() => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    // Generate 28 slots representing 4 weeks
     return Array.from({ length: 28 }).map((_, i) => {
       const count = Math.floor(Math.abs(Math.sin(i * 1.5)) * 8) + (i % 3 === 0 ? 3 : 0);
       return { id: i, count, level: count > 6 ? 3 : count > 3 ? 2 : count > 0 ? 1 : 0 };
@@ -285,10 +265,6 @@ export default function SupportAnalyticsManagement() {
           0%, 100% { transform: translate(0px, 0px) scale(1); }
           50% { transform: translate(30px, -40px) scale(1.08); }
         }
-        @keyframes pulseGlow {
-          0%, 100% { opacity: 0.6; }
-          50% { opacity: 1; }
-        }
         .support-analytics-container {
           position: relative;
           min-height: 100vh;
@@ -296,7 +272,6 @@ export default function SupportAnalyticsManagement() {
           overflow: hidden;
           font-family: inherit;
         }
-        /* Floating Glass Background Blobs & Noise Effect */
         .support-analytics-container::before {
           content: '';
           position: absolute;
@@ -332,8 +307,6 @@ export default function SupportAnalyticsManagement() {
           padding: 36px 28px;
           z-index: 1;
         }
-
-        /* Hero Banner */
         .hero-banner {
           background: linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.45) 100%);
           backdrop-filter: blur(20px);
@@ -384,8 +357,6 @@ export default function SupportAnalyticsManagement() {
           font-weight: 500;
           color: #8B7B70;
         }
-
-        /* Analytics Chips */
         .analytics-chips-bar {
           display: flex;
           justify-content: space-between;
@@ -438,8 +409,6 @@ export default function SupportAnalyticsManagement() {
           font-weight: 600;
           color: #2C221E;
         }
-
-        /* Dropdown Export */
         .export-dropdown-container {
           position: relative;
         }
@@ -474,7 +443,6 @@ export default function SupportAnalyticsManagement() {
           width: 160px;
           overflow: hidden;
           z-index: 10;
-          animation: fadeIn 0.15s ease;
         }
         .export-menu button {
           width: 100%;
@@ -491,8 +459,6 @@ export default function SupportAnalyticsManagement() {
         .export-menu button:hover {
           background: #F2ECE5;
         }
-
-        /* KPI Cards Grid */
         .kpi-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -553,8 +519,6 @@ export default function SupportAnalyticsManagement() {
           color: #A39385;
           margin-bottom: 8px;
         }
-
-        /* Top Insights Panel */
         .insights-panel {
           background: linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(250,246,240,0.8) 100%);
           backdrop-filter: blur(18px);
@@ -590,8 +554,6 @@ export default function SupportAnalyticsManagement() {
           border-radius: 14px;
           border: 1px solid rgba(232,222,210,0.6);
         }
-
-        /* Enterprise Layout Sections & Glass Chart Cards */
         .analytics-section {
           margin-top: 40px;
         }
@@ -638,8 +600,6 @@ export default function SupportAnalyticsManagement() {
           color: #8B7B70;
           font-weight: 500;
         }
-
-        /* Donut Center Label */
         .donut-container {
           position: relative;
           width: 100%;
@@ -665,18 +625,6 @@ export default function SupportAnalyticsManagement() {
           font-weight: 700;
           color: #8B7B70;
         }
-
-        /* Resolution Radial Gauge */
-        .radial-gauge-wrapper {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          padding: 10px;
-        }
-
-        /* Better Staff Cards */
         .staff-grid-modern {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -757,8 +705,6 @@ export default function SupportAnalyticsManagement() {
           font-weight: 700;
           color: #5D4F46;
         }
-
-        /* GitHub Style Heatmap */
         .heatmap-card {
           background: rgba(255, 255, 255, 0.65);
           backdrop-filter: blur(16px);
@@ -782,8 +728,6 @@ export default function SupportAnalyticsManagement() {
         .heatmap-box:hover {
           transform: scale(1.15);
         }
-
-        /* Category Cards Pill Style */
         .category-pill-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -805,8 +749,6 @@ export default function SupportAnalyticsManagement() {
           font-weight: 700;
           color: #2C221E;
         }
-
-        /* Empty State */
         .empty-state-card {
           background: rgba(255, 255, 255, 0.75);
           backdrop-filter: blur(16px);
@@ -913,10 +855,8 @@ export default function SupportAnalyticsManagement() {
             </div>
           </div>
 
-          {/* KPI Cards (Biggest Upgrade with Sparklines) */}
+          {/* KPI Cards */}
           <div className="kpi-grid">
-            
-            {/* Total Tickets */}
             <div className="kpi-card">
               <div className="kpi-top-row">
                 <div className="kpi-icon-title">
@@ -944,7 +884,6 @@ export default function SupportAnalyticsManagement() {
               </div>
             </div>
 
-            {/* Open Tickets */}
             <div className="kpi-card">
               <div className="kpi-top-row">
                 <div className="kpi-icon-title">
@@ -972,7 +911,6 @@ export default function SupportAnalyticsManagement() {
               </div>
             </div>
 
-            {/* Resolved Tickets */}
             <div className="kpi-card">
               <div className="kpi-top-row">
                 <div className="kpi-icon-title">
@@ -1000,7 +938,6 @@ export default function SupportAnalyticsManagement() {
               </div>
             </div>
 
-            {/* Resolution Rate Radial Gauge */}
             <div className="kpi-card">
               <div className="kpi-top-row">
                 <div className="kpi-icon-title">
@@ -1034,16 +971,12 @@ export default function SupportAnalyticsManagement() {
                 </div>
               </div>
             </div>
-
           </div>
 
-          {/* Charts Section: 2-Column Enterprise Layout */}
+          {/* Charts Section */}
           <div className="analytics-section">
             <h2 className="section-title">📊 Operational Analytics</h2>
-            
             <div className="chart-grid-2col">
-              
-              {/* Daily Trend Full Width / Main Column */}
               <div className="glass-chart-card">
                 <div className="chart-card-header">
                   <h3>Daily Ticket Volume Trend</h3>
@@ -1072,7 +1005,6 @@ export default function SupportAnalyticsManagement() {
                 )}
               </div>
 
-              {/* Status Donut with Center Label */}
               <div className="glass-chart-card">
                 <div className="chart-card-header">
                   <h3>Ticket Status Distribution</h3>
@@ -1101,11 +1033,10 @@ export default function SupportAnalyticsManagement() {
                   </div>
                 )}
               </div>
-
             </div>
           </div>
 
-          {/* Categories Section with Rounded Pills */}
+          {/* Categories Section */}
           <div className="analytics-section">
             <h2 className="section-title">📁 Category Workloads</h2>
             <div className="category-pill-grid">
@@ -1134,11 +1065,9 @@ export default function SupportAnalyticsManagement() {
             </div>
           </div>
 
-          {/* GitHub Style Heatmap & Timeline Section */}
+          {/* Heatmap & Priority Section */}
           <div className="analytics-section">
             <div className="chart-grid-2col">
-              
-              {/* Heatmap Card */}
               <div className="heatmap-card">
                 <div className="chart-card-header">
                   <h3>🔥 Activity Heatmap</h3>
@@ -1162,7 +1091,6 @@ export default function SupportAnalyticsManagement() {
                 </div>
               </div>
 
-              {/* Priority Breakdown Bar Chart */}
               <div className="glass-chart-card">
                 <div className="chart-card-header">
                   <h3>🚨 Priority Levels</h3>
@@ -1170,9 +1098,9 @@ export default function SupportAnalyticsManagement() {
                 </div>
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={[
-                    { name: "High", count: highPriority, fill: "#D9534F" },
-                    { name: "Normal", count: normalPriority, fill: "#E7B46A" },
-                    { name: "Low", count: lowPriority, fill: "#6CBF84" }
+                    { name: "High", count: highPriority },
+                    { name: "Normal", count: normalPriority },
+                    { name: "Low", count: lowPriority }
                   ]}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" />
                     <XAxis dataKey="name" tick={{ fill: '#8B7B70', fontSize: 12 }} />
@@ -1182,15 +1110,14 @@ export default function SupportAnalyticsManagement() {
                       <Cell fill="#D9534F" />
                       <Cell fill="#E7B46A" />
                       <Cell fill="#6CBF84" />
-                    </BarChart>
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-
             </div>
           </div>
 
-          {/* Better Staff Cards Section */}
+          {/* Staff Cards Section */}
           <div className="analytics-section">
             <h2 className="section-title">👩‍💼 Support Team Performance</h2>
             <div className="staff-grid-modern">
@@ -1233,3 +1160,4 @@ export default function SupportAnalyticsManagement() {
     </>
   );
 }
+
