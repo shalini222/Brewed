@@ -98,7 +98,6 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
     }
   };
 
-  // Keep dropdown pinned and dynamically update its position as the user scrolls
   useEffect(() => {
     if (!menuOpen) return;
     const handleScrollOrResize = () => {
@@ -215,10 +214,9 @@ export default function SupportHelpCategoryManagement() {
   const [lastSynced, setLastSynced] = useState("Just now");
   const [openMenuId, setOpenMenuId] = useState(null);
   
-  // Icon dropdown accordion state
+  // Icon dropdown list state (changed from accordion to standard dropdown list)
   const [iconDropdownOpen, setIconDropdownOpen] = useState(false);
 
-  // Real data only: initialized as an empty array
   const [recentActivities, setRecentActivities] = useState([]);
 
   const formRef = useRef(null);
@@ -406,6 +404,19 @@ export default function SupportHelpCategoryManagement() {
   return (
     <>
       <style>{`
+        /* Hide scrollbars globally for webkit, firefox, and IE/Edge while maintaining full scrolling functionality */
+        .activity-list::-webkit-scrollbar,
+        .icon-picker::-webkit-scrollbar,
+        .customer-preview-box::-webkit-scrollbar {
+          display: none;
+        }
+        .activity-list,
+        .icon-picker,
+        .customer-preview-box {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+
         .help-page{
             max-width:1450px;
             margin:auto;
@@ -491,7 +502,7 @@ export default function SupportHelpCategoryManagement() {
         }
         .form-subtitle{ margin-top:6px; margin-bottom:24px; font-size:14px; color:#8C7C72; line-height:1.6; }
 
-        /* Icon Picker Dropdown Accordion */
+        /* Icon Picker Dropdown List Style */
         .icon-dropdown-container{ position:relative; }
         .icon-dropdown-toggle{
             width:100%; background:white; border:1px solid #ECE6DE; border-radius:18px;
@@ -502,24 +513,23 @@ export default function SupportHelpCategoryManagement() {
         .icon-dropdown-menu{
             position:absolute; top:calc(100% + 8px); left:0; right:0; background:white;
             border:1px solid #ECE6DE; border-radius:18px; box-shadow:0 18px 40px rgba(0,0,0,.1);
-            padding:16px; z-index:50;
+            padding:8px; z-index:50;
         }
         .icon-picker{ 
-            display:grid; 
-            grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); 
-            gap:12px; 
+            display:flex;
+            flex-direction:column;
+            gap:4px; 
             max-height:220px; 
             overflow-y:auto; 
-            padding-right:4px; 
         }
         .icon-option{
-            background:white; border:1px solid #ECE6DE; border-radius:14px;
-            padding:12px; cursor:pointer; transition:.28s; display:flex;
-            flex-direction:column; align-items:center; gap:8px; color:#6E5E53;
+            background:white; border:none; border-radius:12px;
+            padding:10px 14px; cursor:pointer; transition:.2s; display:flex;
+            align-items:center; gap:12px; color:#6E5E53; width:100%; text-align:left;
         }
-        .icon-option:hover{ transform:translateY(-3px); border-color:#C4956A; box-shadow:0 12px 24px rgba(0,0,0,.05); }
-        .icon-option.active{ background:#241C18; color:white; border-color:#241C18; box-shadow:0 18px 40px rgba(36,28,24,.18); }
-        .icon-option span{ font-size:12px; font-weight:600; }
+        .icon-option:hover{ background:#F8F5F0; color:#221A16; }
+        .icon-option.active{ background:#241C18; color:white; }
+        .icon-option span{ font-size:14px; font-weight:600; }
 
         .field-counter{ margin-top:8px; font-size:12px; color:#9B8C82; text-align:right; }
         .unsaved-banner{
@@ -605,7 +615,6 @@ export default function SupportHelpCategoryManagement() {
         }
         .action-btn:hover{ background:#241C18; color:white; border-color:#241C18; }
 
-        /* Dropdown Actions - FIXED PORTAL STYLING */
         .dropdown-container{ position:relative; }
         .action-dropdown{
             position:fixed; z-index:999999; min-width:180px; 
@@ -626,7 +635,6 @@ export default function SupportHelpCategoryManagement() {
         }
         .detail-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; font-size:13px; color:#7E6E63; }
 
-        /* Customer Preview Lighter Version */
         .customer-preview-box{
             background:#FAF8F5; color:#221A16; border-radius:24px; padding:20px; border:1px solid #E8DED2; box-shadow:0 10px 30px rgba(0,0,0,.04);
             max-height:430px; overflow-y:auto;
@@ -640,7 +648,6 @@ export default function SupportHelpCategoryManagement() {
         .real-preview-card h5{ margin:0 0 6px; font-size:15px; font-weight:600; color:#221A16; }
         .real-preview-card p{ margin:0; font-size:13px; color:#7A6A60; line-height:1.6; }
 
-        /* Skeleton */
         .skeleton-loader{ display:flex; flex-direction:column; gap:16px; }
         .skeleton-item{
             height:80px; background:linear-gradient(90deg, #F0EAE2 25%, #E4DDD5 50%, #F0EAE2 75%);
@@ -648,7 +655,6 @@ export default function SupportHelpCategoryManagement() {
         }
         @keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
-        /* Recent Activity section - scrollable list with empty state */
         .activity-list{ display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto; padding-right:4px; }
         .activity-item{ display:flex; justify-content:space-between; font-size:13px; padding:10px 0; border-bottom:1px solid #F4EFEA; }
         .activity-item:last-child{ border-bottom:none; }
@@ -773,7 +779,7 @@ export default function SupportHelpCategoryManagement() {
                 )}
               </div>
 
-              {/* Icon Picker Accordion Dropdown */}
+              {/* Icon Picker Dropdown List */}
               <div className="icon-dropdown-container" ref={iconDropdownRef}>
                 <div 
                   className="icon-dropdown-toggle"
@@ -802,7 +808,7 @@ export default function SupportHelpCategoryManagement() {
                             }}
                             className={icon === name ? "icon-option active" : "icon-option"}
                           >
-                            <Icon size={20} strokeWidth={1.8} />
+                            <Icon size={18} strokeWidth={1.8} />
                             <span>{name}</span>
                           </button>
                         );
