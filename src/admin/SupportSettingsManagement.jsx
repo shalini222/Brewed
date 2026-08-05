@@ -16,9 +16,25 @@ export default function SupportSettingsManagement() {
     businessHoursDescription: "",
     mondayFriday: "",
     saturday: "",
-    sunday: ""
+    sunday: "",
+    supportEnabled: true,
+    phoneEnabled: true,
+    emailEnabled: true,
+    whatsappEnabled: true,
+    instagramEnabled: true,
+    showPhone: true,
+    showEmail: true,
+    showWhatsapp: true,
+    showInstagram: true,
+    showBusinessHours: true,
+    autoReplyEnabled: true,
+    autoReplyMessage: "Thanks for contacting Brewed Support! We've received your request and will get back to you as soon as possible.",
+    estimatedResponseTime: "Within 2 hours",
+    responseTargetHours: 24,
+    escalationHours: 48
   });
   const [originalSettings, setOriginalSettings] = useState({});
+  const [validationErrors, setValidationErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
@@ -30,8 +46,14 @@ export default function SupportSettingsManagement() {
       (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.data();
-          setSettings(data);
-          setOriginalSettings(data);
+          setSettings(prev => ({
+            ...prev,
+            ...data
+          }));
+          setOriginalSettings(prev => ({
+            ...prev,
+            ...data
+          }));
         }
         setLoading(false);
       },
@@ -45,11 +67,46 @@ export default function SupportSettingsManagement() {
   }, []);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setSettings(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    const val = type === "checkbox" ? checked : value;
+    setSettings(prev => ({ ...prev, [name]: val }));
+    setValidationErrors(prev => ({ ...prev, [name]: "" }));
+  };
+
+  const toggleSetting = (field) => {
+    setSettings(prev => ({ ...prev, [field]: !prev[field] }));
+  };
+
+  const validateSettings = () => {
+    const errors = {};
+    if (!settings.phone.trim()) {
+      errors.phone = "Phone number is required.";
+    } else if (!/^[0-9+\-\s()]{7,20}$/.test(settings.phone)) {
+      errors.phone = "Enter a valid phone number.";
+    }
+    if (!settings.email.trim()) {
+      errors.email = "Email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(settings.email)) {
+      errors.email = "Enter a valid email address.";
+    }
+    if (
+      settings.whatsapp &&
+      !/^[0-9+\-\s()]{7,20}$/.test(settings.whatsapp)
+    ) {
+      errors.whatsapp = "Enter a valid WhatsApp number.";
+    }
+    if (
+      settings.instagram &&
+      settings.instagram.length > 30
+    ) {
+      errors.instagram = "Instagram username is too long.";
+    }
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const saveSettings = async () => {
+    if (!validateSettings()) return;
     try {
       setSaving(true);
       setError("");
@@ -72,6 +129,7 @@ export default function SupportSettingsManagement() {
 
   const resetChanges = () => {
     setSettings(originalSettings);
+    setValidationErrors({});
     setError("");
   };
 
@@ -165,6 +223,55 @@ export default function SupportSettingsManagement() {
         }
 
         /* ===========================
+           PREVIEW CARD
+        =========================== */
+
+        .preview-card{
+            background:white;
+            border-radius:22px;
+            padding:28px;
+            margin-bottom:24px;
+            box-shadow:
+                0 4px 12px rgba(0,0,0,.03),
+                0 12px 40px rgba(44,34,30,.04);
+            border:1px solid #EFE5DA;
+        }
+
+        .preview-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+            gap:18px;
+            margin-top:22px;
+        }
+
+        .preview-item{
+            background:#FAF6F0;
+            border-radius:18px;
+            padding:18px;
+            border:1px solid #EFE5DA;
+        }
+
+        .preview-item h4{
+            margin:0 0 10px;
+            font-size:17px;
+            color:#2C221E;
+        }
+
+        .preview-item strong{
+            display:block;
+            color:#C4956A;
+            font-size:16px;
+            margin-bottom:8px;
+        }
+
+        .preview-item p{
+            margin:0;
+            color:#8B7B70;
+            font-size:14px;
+            line-height:1.5;
+        }
+
+        /* ===========================
            GRID
         =========================== */
 
@@ -197,7 +304,10 @@ export default function SupportSettingsManagement() {
             text-transform:uppercase;
         }
 
-        .input-group input,
+        .input-group input[type="text"],
+        .input-group input[type="email"],
+        .input-group input[type="number"],
+        .input-group select,
         .input-group textarea{
             background:#FCF8F3;
             border:2px solid transparent;
@@ -216,16 +326,125 @@ export default function SupportSettingsManagement() {
         }
 
         .input-group input:hover,
+        .input-group select:hover,
         .input-group textarea:hover{
             background:white;
             border-color:#E8DED2;
         }
 
         .input-group input:focus,
+        .input-group select:focus,
         .input-group textarea:focus{
             background:white;
             border-color:#C4956A;
             box-shadow:0 0 0 5px rgba(196,149,106,.15);
+        }
+
+        .checkbox-label{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            font-weight:600;
+            color:#2C221E;
+            cursor:pointer;
+            font-size:15px;
+        }
+
+        .checkbox-label input[type="checkbox"]{
+            width:20px;
+            height:20px;
+            accent-color:#C4956A;
+            cursor:pointer;
+        }
+
+        .checkbox-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+            gap:16px;
+        }
+
+        .field-error{
+            margin-top:6px;
+            color:#DC2626;
+            font-size:13px;
+            font-weight:600;
+        }
+
+        /* ===========================
+           TEST BUTTONS
+        =========================== */
+
+        .test-buttons{
+            display:flex;
+            flex-wrap:wrap;
+            gap:16px;
+            margin-top:20px;
+        }
+
+        .test-buttons button{
+            background:#FAF6F0;
+            border:1px solid #E8DED2;
+            border-radius:14px;
+            padding:14px 22px;
+            cursor:pointer;
+            font-weight:600;
+            transition:.25s;
+            color:#2C221E;
+        }
+
+        .test-buttons button:hover:not(:disabled){
+            background:#C4956A;
+            color:white;
+            border-color:#C4956A;
+        }
+
+        .test-buttons button:disabled{
+            opacity:.45;
+            cursor:not-allowed;
+        }
+
+        /* ===========================
+           TOGGLES
+        =========================== */
+
+        .toggle-list{
+            display:flex;
+            flex-direction:column;
+            gap:16px;
+        }
+
+        .toggle-row{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:18px 20px;
+            background:#FAF6F0;
+            border-radius:16px;
+        }
+
+        .toggle-row span{
+            font-weight:600;
+            color:#2C221E;
+        }
+
+        .toggle{
+            border:none;
+            background:#E5E7EB;
+            color:#444;
+            padding:10px 18px;
+            border-radius:999px;
+            cursor:pointer;
+            font-weight:700;
+            transition:.25s;
+        }
+
+        .toggle.active{
+            background:#22C55E;
+            color:white;
+        }
+
+        .toggle:hover{
+            transform:translateY(-2px);
         }
 
         /* ===========================
@@ -396,6 +615,116 @@ export default function SupportSettingsManagement() {
           </div>
         )}
 
+        {/* Support Availability */}
+        <div className="settings-card">
+          <h3>🟢 Support Availability</h3>
+          <p>
+            Enable or disable support channels without deleting their information.
+          </p>
+          <div className="toggle-list">
+            <div className="toggle-row">
+              <span>Support System</span>
+              <button
+                className={settings.supportEnabled ? "toggle active" : "toggle"}
+                onClick={() => toggleSetting("supportEnabled")}
+              >
+                {settings.supportEnabled ? "Enabled" : "Disabled"}
+              </button>
+            </div>
+            <div className="toggle-row">
+              <span>Phone</span>
+              <button
+                className={settings.phoneEnabled ? "toggle active" : "toggle"}
+                onClick={() => toggleSetting("phoneEnabled")}
+              >
+                {settings.phoneEnabled ? "Enabled" : "Disabled"}
+              </button>
+            </div>
+            <div className="toggle-row">
+              <span>Email</span>
+              <button
+                className={settings.emailEnabled ? "toggle active" : "toggle"}
+                onClick={() => toggleSetting("emailEnabled")}
+              >
+                {settings.emailEnabled ? "Enabled" : "Disabled"}
+              </button>
+            </div>
+            <div className="toggle-row">
+              <span>WhatsApp</span>
+              <button
+                className={settings.whatsappEnabled ? "toggle active" : "toggle"}
+                onClick={() => toggleSetting("whatsappEnabled")}
+              >
+                {settings.whatsappEnabled ? "Enabled" : "Disabled"}
+              </button>
+            </div>
+            <div className="toggle-row">
+              <span>Instagram</span>
+              <button
+                className={settings.instagramEnabled ? "toggle active" : "toggle"}
+                onClick={() => toggleSetting("instagramEnabled")}
+              >
+                {settings.instagramEnabled ? "Enabled" : "Disabled"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Support Channels Visibility */}
+        <div className="settings-card">
+          <h3>👁️ Support Channels Visibility</h3>
+          <p>
+            Control which contact methods and sections customers actually see in the Help Centre.
+          </p>
+          <div className="checkbox-grid">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="showPhone"
+                checked={settings.showPhone}
+                onChange={handleChange}
+              />
+              Show Phone
+            </label>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="showEmail"
+                checked={settings.showEmail}
+                onChange={handleChange}
+              />
+              Show Email
+            </label>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="showWhatsapp"
+                checked={settings.showWhatsapp}
+                onChange={handleChange}
+              />
+              Show WhatsApp
+            </label>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="showInstagram"
+                checked={settings.showInstagram}
+                onChange={handleChange}
+              />
+              Show Instagram
+            </label>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="showBusinessHours"
+                checked={settings.showBusinessHours}
+                onChange={handleChange}
+              />
+              Show Business Hours
+            </label>
+          </div>
+        </div>
+
         {/* Contact Information */}
         <div className="settings-card">
           <h3>📞 Contact Information</h3>
@@ -413,6 +742,11 @@ export default function SupportSettingsManagement() {
                 onChange={handleChange}
                 placeholder="+91 9876543210"
               />
+              {validationErrors.phone && (
+                <span className="field-error">
+                  {validationErrors.phone}
+                </span>
+              )}
             </div>
 
             <div className="input-group">
@@ -424,6 +758,11 @@ export default function SupportSettingsManagement() {
                 onChange={handleChange}
                 placeholder="support@brewed.com"
               />
+              {validationErrors.email && (
+                <span className="field-error">
+                  {validationErrors.email}
+                </span>
+              )}
             </div>
 
             <div className="input-group">
@@ -435,6 +774,11 @@ export default function SupportSettingsManagement() {
                 onChange={handleChange}
                 placeholder="+91 9876543210"
               />
+              {validationErrors.whatsapp && (
+                <span className="field-error">
+                  {validationErrors.whatsapp}
+                </span>
+              )}
             </div>
 
             <div className="input-group">
@@ -446,7 +790,54 @@ export default function SupportSettingsManagement() {
                 onChange={handleChange}
                 placeholder="@brewedcoffee"
               />
+              {validationErrors.instagram && (
+                <span className="field-error">
+                  {validationErrors.instagram}
+                </span>
+              )}
             </div>
+          </div>
+        </div>
+
+        {/* Test Contact Actions */}
+        <div className="settings-card">
+          <h3>🧪 Test Contact Actions</h3>
+          <p>
+            Quickly verify that your support contact information works correctly.
+          </p>
+          <div className="test-buttons">
+            <button
+              onClick={() => window.open(`tel:${settings.phone}`)}
+              disabled={!settings.phone}
+            >
+              📞 Test Call
+            </button>
+            <button
+              onClick={() => window.open(`mailto:${settings.email}`)}
+              disabled={!settings.email}
+            >
+              ✉️ Test Email
+            </button>
+            <button
+              onClick={() =>
+                window.open(
+                  `https://wa.me/${settings.whatsapp.replace(/\D/g, "")}`
+                )
+              }
+              disabled={!settings.whatsapp}
+            >
+              💬 Test WhatsApp
+            </button>
+            <button
+              onClick={() =>
+                window.open(
+                  `https://instagram.com/${settings.instagram.replace("@", "")}`
+                )
+              }
+              disabled={!settings.instagram}
+            >
+              📷 Test Instagram
+            </button>
           </div>
         </div>
 
@@ -502,70 +893,198 @@ export default function SupportSettingsManagement() {
           </div>
         </div>
 
-        {/* Business Hours */}
+        {/* Auto Response Settings */}
         <div className="settings-card">
-          <h3>🕒 Business Hours</h3>
+          <h3>🤖 Automatic Reply</h3>
           <p>
-            Manage the support hours displayed in the customer Help Centre.
+            Configure automated acknowledgement messages sent to customers upon ticket submission.
           </p>
 
-          <div className="input-group">
-            <label>Section Title</label>
-            <input
-              type="text"
-              name="businessHoursTitle"
-              value={settings.businessHoursTitle}
-              onChange={handleChange}
-              placeholder="Customer Support Hours"
-            />
+          <div className="input-group" style={{ marginBottom: "24px" }}>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="autoReplyEnabled"
+                checked={settings.autoReplyEnabled}
+                onChange={handleChange}
+              />
+              Enable automatic acknowledgement
+            </label>
           </div>
 
           <div className="input-group">
-            <label>Section Description</label>
-            <textarea
-              name="businessHoursDescription"
-              value={settings.businessHoursDescription}
+            <label>Estimated Response Time</label>
+            <select
+              name="estimatedResponseTime"
+              value={settings.estimatedResponseTime}
               onChange={handleChange}
-              rows={3}
-              placeholder="We're here to help every day."
+            >
+              <option value="Within 1 hour">Within 1 hour</option>
+              <option value="Within 2 hours">Within 2 hours</option>
+              <option value="Within 4 hours">Within 4 hours</option>
+              <option value="Within 24 hours">Within 24 hours</option>
+            </select>
+          </div>
+
+          <div className="input-group">
+            <label>Message Template</label>
+            <textarea
+              name="autoReplyMessage"
+              value={settings.autoReplyMessage}
+              onChange={handleChange}
+              rows={4}
+              placeholder="Thanks for contacting Brewed Support!..."
             />
           </div>
+        </div>
+
+        {/* SLA & Response Targets */}
+        <div className="settings-card">
+          <h3>⏰ SLA & Response Targets</h3>
+          <p>
+            Set expected response timeframes and escalation windows for your team.
+          </p>
 
           <div className="settings-grid">
             <div className="input-group">
-              <label>Monday – Friday</label>
+              <label>Expected First Response (Hours)</label>
               <input
-                type="text"
-                name="mondayFriday"
-                value={settings.mondayFriday}
+                type="number"
+                name="responseTargetHours"
+                value={settings.responseTargetHours}
                 onChange={handleChange}
-                placeholder="9:00 AM – 10:00 PM"
+                min={1}
+                placeholder="24"
               />
             </div>
 
             <div className="input-group">
-              <label>Saturday</label>
+              <label>Escalation Threshold (Hours)</label>
               <input
-                type="text"
-                name="saturday"
-                value={settings.saturday}
+                type="number"
+                name="escalationHours"
+                value={settings.escalationHours}
                 onChange={handleChange}
-                placeholder="9:00 AM – 11:00 PM"
-              />
-            </div>
-
-            <div className="input-group">
-              <label>Sunday</label>
-              <input
-                type="text"
-                name="sunday"
-                value={settings.sunday}
-                onChange={handleChange}
-                placeholder="9:00 AM – 10:00 PM"
+                min={1}
+                placeholder="48"
               />
             </div>
           </div>
         </div>
+
+        {/* Customer Preview */}
+        <div className="preview-card">
+          <h3>👀 Customer Preview</h3>
+          <p>
+            This is how your contact information and SLA targets will appear in the customer Help Centre.
+          </p>
+          <div style={{ marginBottom: "16px", fontSize: "14px", fontWeight: "600", color: "#C4956A" }}>
+            Average response {settings.estimatedResponseTime ? settings.estimatedResponseTime.toLowerCase() : "within 2 hours"}
+          </div>
+          {!settings.supportEnabled ? (
+            <div className="preview-item" style={{ gridColumn: "1 / -1", textAlign: "center", padding: "30px" }}>
+              <p style={{ fontWeight: 600, color: "#D97706" }}>Support is currently unavailable.</p>
+            </div>
+          ) : (
+            <div className="preview-grid">
+              {settings.showPhone && settings.phoneEnabled && (
+                <div className="preview-item">
+                  <h4>📞 Call Us</h4>
+                  <strong>{settings.phone || "Not configured"}</strong>
+                  <p>{settings.callDescription || "No description provided."}</p>
+                </div>
+              )}
+              {settings.showEmail && settings.emailEnabled && (
+                <div className="preview-item">
+                  <h4>✉️ Email</h4>
+                  <strong>{settings.email || "Not configured"}</strong>
+                  <p>{settings.emailDescription || "No description provided."}</p>
+                </div>
+              )}
+              {settings.showWhatsapp && settings.whatsappEnabled && (
+                <div className="preview-item">
+                  <h4>💬 WhatsApp</h4>
+                  <strong>{settings.whatsapp || "Not configured"}</strong>
+                  <p>{settings.whatsappDescription || "No description provided."}</p>
+                </div>
+              )}
+              {settings.showInstagram && settings.instagramEnabled && (
+                <div className="preview-item">
+                  <h4>📷 Instagram</h4>
+                  <strong>{settings.instagram || "Not configured"}</strong>
+                  <p>{settings.instagramDescription || "No description provided."}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Business Hours */}
+        {settings.showBusinessHours && (
+          <div className="settings-card">
+            <h3>🕒 Business Hours</h3>
+            <p>
+              Manage the support hours displayed in the customer Help Centre.
+            </p>
+
+            <div className="input-group">
+              <label>Section Title</label>
+              <input
+                type="text"
+                name="businessHoursTitle"
+                value={settings.businessHoursTitle}
+                onChange={handleChange}
+                placeholder="Customer Support Hours"
+              />
+            </div>
+
+            <div className="input-group">
+              <label>Section Description</label>
+              <textarea
+                name="businessHoursDescription"
+                value={settings.businessHoursDescription}
+                onChange={handleChange}
+                rows={3}
+                placeholder="We're here to help every day."
+              />
+            </div>
+
+            <div className="settings-grid">
+              <div className="input-group">
+                <label>Monday – Friday</label>
+                <input
+                  type="text"
+                  name="mondayFriday"
+                  value={settings.mondayFriday}
+                  onChange={handleChange}
+                  placeholder="9:00 AM – 10:00 PM"
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Saturday</label>
+                <input
+                  type="text"
+                  name="saturday"
+                  value={settings.saturday}
+                  onChange={handleChange}
+                  placeholder="9:00 AM – 11:00 PM"
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Sunday</label>
+                <input
+                  type="text"
+                  name="sunday"
+                  value={settings.sunday}
+                  onChange={handleChange}
+                  placeholder="9:00 AM – 10:00 PM"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Action Bar */}
         <div className="action-bar">
