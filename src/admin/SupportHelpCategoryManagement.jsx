@@ -214,9 +214,7 @@ export default function SupportHelpCategoryManagement() {
   const [lastSynced, setLastSynced] = useState("Just now");
   const [openMenuId, setOpenMenuId] = useState(null);
   
-  // Icon dropdown list state (changed from accordion to standard dropdown list)
   const [iconDropdownOpen, setIconDropdownOpen] = useState(false);
-
   const [recentActivities, setRecentActivities] = useState([]);
 
   const formRef = useRef(null);
@@ -417,14 +415,45 @@ export default function SupportHelpCategoryManagement() {
           scrollbar-width: none;
         }
 
-        .help-page{
-            max-width:1450px;
+        .support-settings-page{
+            max-width:960px;
             margin:auto;
-            padding:40px;
-            min-height:100vh;
-            background: radial-gradient(circle at top right, rgba(196,149,106,.08), transparent 32%), radial-gradient(circle at bottom left, rgba(44,34,30,.05), transparent 35%), #F8F6F2;
+            padding:32px 20px;
+            background:#FAF8F6;
             font-family: inherit;
+            color: #1A1614;
         }
+
+        /* ===========================
+           HEADER
+        =========================== */
+
+        .page-header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:24px;
+            padding:20px 24px;
+            background:white;
+            border-radius:14px;
+            border:1px solid #ECE8E3;
+            box-shadow:0 1px 3px rgba(0,0,0,.02);
+        }
+
+        .page-header h2{
+            margin:0;
+            font-size:22px;
+            color:#1A1614;
+            font-weight:600;
+            letter-spacing: -0.01em;
+        }
+
+        .page-header p{
+            margin:4px 0 0;
+            color:#7A6E65;
+            font-size:14px;
+        }
+
         .toast{
             position:fixed; top:24px; right:24px; z-index:999999;
             display:flex; align-items:center; gap:12px; padding:16px 18px;
@@ -463,11 +492,6 @@ export default function SupportHelpCategoryManagement() {
         @keyframes fadeIn{ from{opacity:0} to{opacity:1} }
         @keyframes modalIn{ from{ opacity:0; transform:translateY(8px) scale(.98); } to{ opacity:1; transform:translateY(0) scale(1); } }
 
-        .help-header{
-            display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:40px;
-        }
-        .help-header h2{ margin:0; font-size:34px; font-weight:800; letter-spacing:-1px; color:#221A16; }
-        .help-header p{ margin-top:10px; color:#8C7C72; font-size:15px; line-height:1.7; }
         .sync-info{ font-size:13px; color:#9B8C82; font-weight:500; }
 
         .help-stats{
@@ -693,8 +717,8 @@ export default function SupportHelpCategoryManagement() {
         document.body
       )}
 
-      <div className="help-page">
-        <div className="help-header">
+      <div className="support-settings-page">
+        <div className="page-header">
           <div>
             <h2>Support Help Categories</h2>
             <p>Manage help topics and customer support routing.</p>
