@@ -62,8 +62,14 @@ export default function SupportPolicyManagement() {
   const [historyModal, setHistoryModal] = useState(false);
   const [policyHistory, setPolicyHistory] = useState([]);
 
+  // Delete Modal State (Supports single or bulk)
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [isBulkDelete, setIsBulkDelete] = useState(false);
+
   const [toastMessage, setToastMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -126,14 +132,39 @@ export default function SupportPolicyManagement() {
   const savePolicy = async () => {
     if (!title.trim() || !content.trim()) return;
 
+    // Duplicate title validation
+    const exists = policies.some(
+      p => p.title.trim().toLowerCase() === title.trim().toLowerCase() && p.id !== editingId
+    );
+    if (exists) {
+      showToast("Policy already exists.");
+      return;
+    }
+
+    // Effective/Expiry validation
+    if (
+      effectiveDate &&
+      expiryDate &&
+      new Date(expiryDate) < new Date(effectiveDate)
+    ) {
+      showToast("Expiry date cannot be before effective date.");
+      return;
+    }
+
+    setSaving(true);
+
     try {
       const admin = getCurrentAdminName();
       const currentStatus = published ? "Published" : "Draft";
 
       if (editingId) {
         const existingPolicy = policies.find(p => p.id === editingId);
+        
+        // Automatic Versioning Increment
+        const nextVersion = (parseFloat(existingPolicy?.version || "1.0") + 0.1).toFixed(1);
 
         if (existingPolicy) {
+          // Save comprehensive version history fields
           await addDoc(
             collection(db, "supportPolicyHistory"),
             {
@@ -141,8 +172,13 @@ export default function SupportPolicyManagement() {
               title: existingPolicy.title,
               content: existingPolicy.content,
               category: existingPolicy.category,
+              version: existingPolicy.version || "1.0",
               status: existingPolicy.status,
+              published: existingPolicy.published || false,
+              required: existingPolicy.required || false,
               visibility: existingPolicy.visibility || "Customer",
+              effectiveDate: existingPolicy.effectiveDate || "",
+              expiryDate: existingPolicy.expiryDate || "",
               editedBy: admin,
               editedAt: serverTimestamp(),
               action: "Updated"
@@ -154,7 +190,7 @@ export default function SupportPolicyManagement() {
           title,
           category,
           content,
-          version,
+          version: version !== existingPolicy?.version ? version : nextVersion,
           published,
           status: currentStatus,
           visibility,
@@ -171,7 +207,7 @@ export default function SupportPolicyManagement() {
           title,
           category,
           content,
-          version,
+          version: "1.0",
           published,
           status: currentStatus,
           visibility,
@@ -192,6 +228,8 @@ export default function SupportPolicyManagement() {
       resetForm();
     } catch (err) {
       console.log(err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -216,7 +254,8 @@ export default function SupportPolicyManagement() {
     try {
       const q = query(
         collection(db, "supportPolicyHistory"),
-        where("policyId", "==", policy.id)
+        where("policyId", "==", policy.id),
+        orderBy("editedAt", "desc")
       );
 
       const snapshot = await getDocs(q);
@@ -237,16 +276,48 @@ export default function SupportPolicyManagement() {
 
   const restoreVersion = async (versionData) => {
     try {
+      const admin = getCurrentAdminName();
+      const existingPolicy = policies.find(p => p.id === versionData.policyId);
+
+      // Preserve current version to history before overwriting with the restored version
+      if (existingPolicy) {
+        await addDoc(
+          collection(db, "supportPolicyHistory"),
+          {
+            policyId: versionData.policyId,
+            title: existingPolicy.title,
+            content: existingPolicy.content,
+            category: existingPolicy.category,
+            version: existingPolicy.version || "1.0",
+            status: existingPolicy.status,
+            published: existingPolicy.published || false,
+            required: existingPolicy.required || false,
+            visibility: existingPolicy.visibility || "Customer",
+            effectiveDate: existingPolicy.effectiveDate || "",
+            expiryDate: existingPolicy.expiryDate || "",
+            editedBy: admin,
+            editedAt: serverTimestamp(),
+            action: "Pre-Restore Snapshot"
+          }
+        );
+      }
+
+      // Restore all comprehensive fields
       await updateDoc(
         doc(db, "supportPolicies", versionData.policyId),
         {
           title: versionData.title,
           content: versionData.content,
           category: versionData.category,
+          version: versionData.version || "1.0",
           status: versionData.status,
+          published: versionData.published || false,
+          required: versionData.required || false,
           visibility: versionData.visibility,
+          effectiveDate: versionData.effectiveDate || "",
+          expiryDate: versionData.expiryDate || "",
           updatedAt: serverTimestamp(),
-          updatedBy: getCurrentAdminName()
+          updatedBy: admin
         }
       );
 
@@ -295,15 +366,67 @@ export default function SupportPolicyManagement() {
     }
   };
 
-  const deletePolicy = async (id) => {
-    const confirmed = window.confirm("Delete this policy?");
-    if (!confirmed) return;
-
+  const confirmDelete = async () => {
     try {
-      await deleteDoc(doc(db, "supportPolicies", id));
-      showToast("Policy deleted.");
+      const admin = getCurrentAdminName();
+
+      if (isBulkDelete) {
+        for (const id of selectedPolicies) {
+          const policyToDelete = policies.find(p => p.id === id);
+          if (policyToDelete) {
+            // Archive to history collection before deletion
+            await addDoc(collection(db, "supportPolicyHistory"), {
+              policyId: id,
+              title: policyToDelete.title,
+              content: policyToDelete.content,
+              category: policyToDelete.category,
+              version: policyToDelete.version || "1.0",
+              status: policyToDelete.status,
+              published: policyToDelete.published || false,
+              required: policyToDelete.required || false,
+              visibility: policyToDelete.visibility || "Customer",
+              effectiveDate: policyToDelete.effectiveDate || "",
+              expiryDate: policyToDelete.expiryDate || "",
+              editedBy: admin,
+              editedAt: serverTimestamp(),
+              action: "Archived / Deleted"
+            });
+          }
+          await deleteDoc(doc(db, "supportPolicies", id));
+        }
+        showToast(`${selectedPolicies.length} policies deleted.`);
+        setSelectedPolicies([]);
+      } else if (deleteId) {
+        const policyToDelete = policies.find(p => p.id === deleteId);
+        if (policyToDelete) {
+          // Archive to history collection before deletion
+          await addDoc(collection(db, "supportPolicyHistory"), {
+            policyId: deleteId,
+            title: policyToDelete.title,
+            content: policyToDelete.content,
+            category: policyToDelete.category,
+            version: policyToDelete.version || "1.0",
+            status: policyToDelete.status,
+            published: policyToDelete.published || false,
+            required: policyToDelete.required || false,
+            visibility: policyToDelete.visibility || "Customer",
+            effectiveDate: policyToDelete.effectiveDate || "",
+            expiryDate: policyToDelete.expiryDate || "",
+            editedBy: admin,
+            editedAt: serverTimestamp(),
+            action: "Archived / Deleted"
+          });
+        }
+        await deleteDoc(doc(db, "supportPolicies", deleteId));
+        showToast("Policy deleted.");
+      }
+
+      setDeleteModal(false);
+      setDeleteId(null);
+      setIsBulkDelete(false);
     } catch (err) {
       console.log(err);
+      showToast("Failed to delete policy.");
     }
   };
 
@@ -351,15 +474,6 @@ export default function SupportPolicyManagement() {
     setSelectedPolicies([]);
   };
 
-  const bulkDelete = async () => {
-    if (!window.confirm(`Delete ${selectedPolicies.length} policies?`)) return;
-    for (const id of selectedPolicies) {
-      await deleteDoc(doc(db, "supportPolicies", id));
-    }
-    showToast(`${selectedPolicies.length} policies deleted.`);
-    setSelectedPolicies([]);
-  };
-
   const bulkPin = async (value) => {
     const adminName = getCurrentAdminName();
     for (const id of selectedPolicies) {
@@ -385,7 +499,9 @@ export default function SupportPolicyManagement() {
         visibility,
         required,
         effectiveDate,
-        expiryDate
+        expiryDate,
+        version,
+        published
       }) => ({
         title,
         content,
@@ -396,7 +512,9 @@ export default function SupportPolicyManagement() {
         visibility,
         required,
         effectiveDate,
-        expiryDate
+        expiryDate,
+        version,
+        published
       })
     );
 
@@ -420,7 +538,8 @@ export default function SupportPolicyManagement() {
         const imported = JSON.parse(event.target.result);
         if (!Array.isArray(imported)) return;
         const admin = getCurrentAdminName();
-        let index = 0;
+        let importedCount = 0;
+        let skippedCount = 0;
 
         for (const item of imported) {
           const exists = policies.some(
@@ -433,8 +552,10 @@ export default function SupportPolicyManagement() {
               content: item.content,
               category: item.category || "General",
               status: item.status || "Draft",
+              version: item.version || "1.0",
+              published: item.published ?? (item.status === "Published"),
               pinned: item.pinned || false,
-              sortOrder: policies.length + index + 1,
+              sortOrder: policies.length + importedCount + 1,
               visibility: item.visibility || "Customer",
               required: item.required || false,
               effectiveDate: item.effectiveDate || null,
@@ -443,10 +564,12 @@ export default function SupportPolicyManagement() {
               updatedAt: serverTimestamp(),
               updatedBy: admin
             });
-            index++;
+            importedCount++;
+          } else {
+            skippedCount++;
           }
         }
-        showToast("Policies imported successfully.");
+        showToast(`Imported ${importedCount}, Skipped ${skippedCount} duplicates.`);
       } catch (err) {
         console.log(err);
         alert("Invalid JSON file.");
@@ -715,6 +838,11 @@ export default function SupportPolicyManagement() {
           background: #332C28;
         }
 
+        .btn-primary:disabled {
+          background: #C8C2BE;
+          cursor: not-allowed;
+        }
+
         .btn-secondary {
           background: #FAF8F6;
           border: 1px solid #ECE8E3;
@@ -800,6 +928,13 @@ export default function SupportPolicyManagement() {
           box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
 
+        .modal-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          margin-top: 24px;
+        }
+
         .empty-state {
           text-align: center;
           padding: 48px 20px;
@@ -807,6 +942,60 @@ export default function SupportPolicyManagement() {
           border-radius: 18px;
           color: #7A6E65;
           background: white;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+        }
+
+        /* TOOLBAR CARD STYLES */
+        .toolbar-card {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        .toolbar-top {
+          display: flex;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+        .toolbar-bottom {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+
+        /* POLICY META */
+        .policy-meta {
+          display: flex;
+          gap: 18px;
+          margin-top: 16px;
+          font-size: 12px;
+          color: #8B8179;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        /* SKELETON LOADING STYLES */
+        .skeleton-card {
+          height: 180px;
+          border-radius: 18px;
+          background: linear-gradient(
+            90deg,
+            #f5f3ef,
+            #ffffff,
+            #f5f3ef
+          );
+          background-size: 200% 100%;
+          animation: loading 1.2s infinite;
+          border: 1px solid #ECE8E3;
+        }
+
+        @keyframes loading {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
         }
 
         @keyframes slideDown {
@@ -966,8 +1155,13 @@ export default function SupportPolicyManagement() {
         </div>
 
         <div style={{ display: "flex", gap: "12px" }}>
-          <button className="btn btn-primary" onClick={savePolicy} style={{ padding: "12px 24px" }}>
-            <Plus size={16} /> {editingId ? "Update Policy" : "Create Policy"}
+          <button
+            className="btn btn-primary"
+            onClick={savePolicy}
+            disabled={!title.trim() || !content.trim() || saving}
+            style={{ padding: "12px 24px" }}
+          >
+            <Plus size={16} /> {saving ? "Saving..." : (editingId ? "Update Policy" : "Create Policy")}
           </button>
           {editingId && (
             <button className="btn btn-secondary" onClick={resetForm} style={{ padding: "12px 20px" }}>
@@ -977,69 +1171,88 @@ export default function SupportPolicyManagement() {
         </div>
       </div>
 
-      {/* Filters & Search Toolbar */}
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 20 }}>
-        <div style={{ flex: 1, position: "relative", minWidth: "260px" }}>
-          <input
-            className="admin-input"
-            placeholder="Search policies..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ marginBottom: 0, paddingLeft: "42px" }}
-          />
-          <SearchIcon size={16} style={{ position: "absolute", left: 15, top: 16, color: "#7A6E65" }} />
-        </div>
-
-        <select
-          className="admin-select"
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          style={{ width: 180, marginBottom: 0 }}
-        >
-          <option value="All">All Categories</option>
-          {[...new Set(policies.map(p => p.category))].map(cat => (
-            <option key={cat}>{cat}</option>
-          ))}
-        </select>
-
-        <select
-          className="admin-select"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          style={{ width: 160, marginBottom: 0 }}
-        >
-          <option value="All">All Status</option>
-          <option value="Published">Published</option>
-          <option value="Draft">Draft</option>
-        </select>
-      </div>
-
-      {/* Bulk Actions */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn btn-secondary" onClick={selectAll}>Select All</button>
-          <button className="btn btn-secondary" onClick={clearSelection}>Clear</button>
-        </div>
-
-        {selectedPolicies.length > 0 && (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button className="btn btn-primary" onClick={bulkPublish}>Publish</button>
-            <button className="btn btn-secondary" onClick={bulkDraft}>Draft</button>
-            <button className="btn btn-secondary" onClick={() => bulkPin(true)}>Pin</button>
-            <button className="btn btn-secondary" onClick={() => bulkPin(false)}>Unpin</button>
-            <button className="btn btn-danger" onClick={bulkDelete}>Delete</button>
+      {/* Toolbar Card */}
+      <div className="dashboard-card toolbar-card">
+        <div className="toolbar-top">
+          <div style={{ flex: 1, position: "relative", minWidth: "260px" }}>
+            <input
+              className="admin-input"
+              placeholder="Search policies..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ marginBottom: 0, paddingLeft: "42px" }}
+            />
+            <SearchIcon size={16} style={{ position: "absolute", left: 15, top: 16, color: "#7A6E65" }} />
           </div>
-        )}
+
+          <select
+            className="admin-select"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            style={{ width: 180, marginBottom: 0 }}
+          >
+            <option value="All">All Categories</option>
+            {[...new Set(policies.map(p => p.category))].map(cat => (
+              <option key={cat}>{cat}</option>
+            ))}
+          </select>
+
+          <select
+            className="admin-select"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{ width: 160, marginBottom: 0 }}
+          >
+            <option value="All">All Status</option>
+            <option value="Published">Published</option>
+            <option value="Draft">Draft</option>
+          </select>
+        </div>
+
+        <div className="toolbar-bottom">
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="btn btn-secondary" onClick={selectAll}>Select All</button>
+            <button className="btn btn-secondary" onClick={clearSelection}>Clear</button>
+          </div>
+
+          {selectedPolicies.length > 0 && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button className="btn btn-primary" onClick={bulkPublish}>Publish</button>
+              <button className="btn btn-secondary" onClick={bulkDraft}>Draft</button>
+              <button className="btn btn-secondary" onClick={() => bulkPin(true)}>Pin</button>
+              <button className="btn btn-secondary" onClick={() => bulkPin(false)}>Unpin</button>
+              <button
+                className="btn btn-danger"
+                onClick={() => {
+                  setIsBulkDelete(true);
+                  setDeleteModal(true);
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Policies List */}
       <div className="admin-list">
         {loading ? (
-          <div className="empty-state">Loading policies...</div>
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="skeleton-card" />
+          ))
         ) : sortedPolicies.length === 0 ? (
           <div className="empty-state">
-            <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#1A1614" }}>No Policies Found</h3>
-            <p style={{ margin: 0, fontSize: "14px" }}>Create your first support policy above or adjust filters.</p>
+            <FileText size={52} />
+            <h3>No Policies Found</h3>
+            <p style={{ margin: 0, fontSize: "14px" }}>Create your first policy to get started.</p>
+            <button
+              className="btn btn-primary"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              style={{ marginTop: 8 }}
+            >
+              Create Policy
+            </button>
           </div>
         ) : (
           sortedPolicies.map((policy) => (
@@ -1067,6 +1280,9 @@ export default function SupportPolicyManagement() {
                     </span>
                     {policy.required && <span className="badge badge-red">Required</span>}
                     {policy.pinned && <span className="badge badge-pinned">Pinned</span>}
+                    {policy.effectiveDate && (
+                      <span className="badge badge-blue">Effective {policy.effectiveDate}</span>
+                    )}
                     {policy.expiryDate && <span className="badge badge-orange">Expires {policy.expiryDate}</span>}
                   </div>
 
@@ -1074,8 +1290,13 @@ export default function SupportPolicyManagement() {
                     {policy.content.length > 200 ? policy.content.substring(0, 200) + "..." : policy.content}
                   </p>
 
-                  <div style={{ fontSize: "12px", color: "#9E9085", marginTop: 12 }}>
-                    Last Updated {policy.updatedAt?.toDate?.().toLocaleDateString() || "Recently"}
+                  <div className="policy-meta">
+                    <span>Version {policy.version || "1.0"}</span>
+                    <span>Updated by {policy.updatedBy || "System"}</span>
+                    <span>{policy.updatedAt?.toDate?.().toLocaleDateString() || "Recently"}</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <Eye size={14} /> {policy.views || 0}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1103,7 +1324,14 @@ export default function SupportPolicyManagement() {
                   {policy.status === "Published" ? <FileText size={13} /> : <Rocket size={13} />}
                   {policy.status === "Published" ? "Draft" : "Publish"}
                 </button>
-                <button className="btn btn-danger" onClick={() => deletePolicy(policy.id)}>
+                <button
+                  className="btn btn-danger"
+                  onClick={() => {
+                    setDeleteId(policy.id);
+                    setIsBulkDelete(false);
+                    setDeleteModal(true);
+                  }}
+                >
                   <Trash2 size={13} /> Delete
                 </button>
               </div>
@@ -1162,7 +1390,7 @@ export default function SupportPolicyManagement() {
                 {policyHistory.map(item => (
                   <div key={item.id} style={{ background: "#FAF8F6", border: "1px solid #ECE8E3", borderRadius: "14px", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                     <div>
-                      <strong style={{ color: "#1A1614", fontSize: "13px" }}>{item.action}</strong>
+                      <strong style={{ color: "#1A1614", fontSize: "13px" }}>{item.action} (v{item.version || "1.0"})</strong>
                       <p style={{ margin: "4px 0", color: "#7A6E65", fontSize: "13px" }}>{item.title}</p>
                       <small style={{ color: "#9E9085", fontSize: "11px" }}>
                         {item.editedBy} • {item.editedAt?.toDate?.()?.toLocaleString() || "Recently"}
@@ -1178,6 +1406,26 @@ export default function SupportPolicyManagement() {
 
             <div style={{ textAlign: "right" }}>
               <button className="btn btn-primary" onClick={() => setHistoryModal(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <h2>{isBulkDelete ? `Delete ${selectedPolicies.length} Policies?` : "Delete Policy?"}</h2>
+            <p style={{ color: "#7A6E65", fontSize: "14px", margin: "8px 0 0" }}>
+              This action cannot be undone. Are you sure you want to permanently delete {isBulkDelete ? "these selected support policies" : "this support policy"}?
+            </p>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={() => { setDeleteModal(false); setIsBulkDelete(false); }}>
+                Cancel
+              </button>
+              <button className="btn btn-danger" onClick={confirmDelete}>
+                Delete
+              </button>
             </div>
           </div>
         </div>
