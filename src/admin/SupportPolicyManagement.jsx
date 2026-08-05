@@ -1,5 +1,22 @@
 import { useState, useEffect } from "react";
 import { db, auth } from "../firebase";
+import {
+  FileText,
+  Rocket,
+  Edit3,
+  Trash2,
+  Eye,
+  Clock,
+  Pin,
+  ArrowUp,
+  ArrowDown,
+  Download,
+  Upload,
+  Search as SearchIcon,
+  Plus,
+  X,
+  Check
+} from "lucide-react";
 
 import {
   collection,
@@ -195,8 +212,7 @@ export default function SupportPolicyManagement() {
     try {
       const q = query(
         collection(db, "supportPolicyHistory"),
-        where("policyId", "==", policy.id),
-        
+        where("policyId", "==", policy.id)
       );
 
       const snapshot = await getDocs(q);
@@ -554,27 +570,38 @@ export default function SupportPolicyManagement() {
   };
 
   const actionBtnStyle = {
-    minWidth: "110px",
-    height: "40px",
-    padding: "0 14px",
-    borderRadius: "10px",
-    border: "1px solid #E8DED2",
-    background: "#fff",
+    minWidth: "90px",
+    height: "38px",
+    padding: "0 12px",
+    borderRadius: "12px",
+    border: "1px solid #EAE0D5",
+    background: "#FFFFFF",
+    color: "#54463C",
     cursor: "pointer",
     fontWeight: 500,
+    fontSize: "13px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
     transition: "0.2s"
   };
 
   const actionDangerBtnStyle = {
-    minWidth: "110px",
-    height: "40px",
-    padding: "0 14px",
-    borderRadius: "10px",
+    minWidth: "90px",
+    height: "38px",
+    padding: "0 12px",
+    borderRadius: "12px",
     border: "1px solid #F5C2C2",
-    background: "#FFEAEA",
-    color: "#C62828",
+    background: "#FAECEB",
+    color: "#B55656",
     cursor: "pointer",
     fontWeight: 500,
+    fontSize: "13px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
     transition: "0.2s"
   };
 
@@ -583,65 +610,86 @@ export default function SupportPolicyManagement() {
       <style>{`
         /* ===== Page ===== */
         .admin-page {
-          max-width: 1200px;
+          max-width: 1240px;
           margin: auto;
-          padding: 28px;
+          padding: 40px 24px;
           position: relative;
+          background: #FCFAF7;
+          min-height: 100vh;
+          font-family: 'Inter', sans-serif;
+          color: #241C17;
         }
 
         .admin-title {
           font-family: "Playfair Display", serif;
-          color: #2C221E;
-          font-size: 34px;
-          margin-bottom: 6px;
+          color: #241C17;
+          font-size: 38px;
+          font-weight: 600;
+          margin-bottom: 8px;
           margin-top: 0;
+          letter-spacing: -0.01em;
         }
 
         .admin-subtitle {
-          color: #8A7C72;
-          margin-bottom: 30px;
+          color: #8A8B81;
+          margin-bottom: 36px;
           margin-top: 0;
+          font-size: 15px;
         }
 
         /* ===== Cards ===== */
         .admin-card {
-          background: #fff;
-          border: 1px solid #E8DED2;
-          border-radius: 18px;
-          padding: 22px;
-          margin-bottom: 24px;
-          transition: .25s;
+          background: #FFFFFF;
+          border: 1px solid #EFE7DD;
+          border-radius: 24px;
+          padding: 32px;
+          margin-bottom: 28px;
+          box-shadow: 0 8px 24px rgba(25,20,15,.04), 0 24px 60px rgba(25,20,15,.05);
+          transition: .3s;
         }
 
         .admin-card:hover {
-          box-shadow: 0 10px 25px rgba(0,0,0,.05);
+          transform: translateY(-2px);
+          box-shadow: 0 12px 30px rgba(25,20,15,.06), 0 30px 70px rgba(25,20,15,.07);
         }
 
         /* ===== Stats ===== */
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
-          gap: 18px;
-          margin-bottom: 30px;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 24px;
+          margin-bottom: 36px;
         }
 
         .stat-card {
           background: white;
-          border: 1px solid #E8DED2;
-          border-radius: 18px;
-          padding: 22px;
+          border-radius: 22px;
+          border: 1px solid #EFE6DB;
+          padding: 26px;
+          transition: .3s;
+          box-shadow: 0 4px 20px rgba(25,20,15,.02);
+        }
+
+        .stat-card:hover {
+          border-color: #D8C4B3;
+          transform: translateY(-3px);
+          box-shadow: 0 8px 25px rgba(25,20,15,.04);
         }
 
         .stat-title {
-          font-size: 13px;
-          color: #9A8C82;
-          margin-bottom: 8px;
+          font-size: 12px;
+          letter-spacing: .14em;
+          text-transform: uppercase;
+          color: #9A8B81;
+          font-weight: 600;
         }
 
         .stat-value {
-          font-size: 30px;
+          font-size: 42px;
           font-weight: 700;
-          color: #2C221E;
+          color: #241C17;
+          margin-top: 8px;
+          font-family: 'Inter', sans-serif;
         }
 
         /* ===== Inputs ===== */
@@ -649,15 +697,20 @@ export default function SupportPolicyManagement() {
         .admin-select,
         .admin-textarea {
           width: 100%;
-          padding: 13px 15px;
-          border-radius: 12px;
-          border: 1px solid #E8DED2;
+          padding: 15px 18px;
+          border-radius: 16px;
+          border: 1px solid #ECE2D8;
           font-size: 14px;
-          margin-bottom: 14px;
+          margin-bottom: 16px;
           transition: .2s;
           box-sizing: border-box;
-          background: #FAFAFA;
-          color: #2C221E;
+          background: #FCFAF8;
+          color: #241C17;
+          font-family: 'Inter', sans-serif;
+        }
+
+        .admin-input {
+          height: 52px;
         }
 
         .admin-input:focus,
@@ -665,20 +718,24 @@ export default function SupportPolicyManagement() {
         .admin-textarea:focus {
           outline: none;
           border-color: #C4956A;
-          box-shadow: 0 0 0 3px rgba(196,149,106,.15);
+          box-shadow: 0 0 0 5px rgba(196,149,106,.12);
+          background: #FFFFFF;
         }
 
         /* ===== Buttons ===== */
         .btn {
-          padding: 11px 18px;
-          border-radius: 10px;
+          padding: 13px 22px;
+          border-radius: 14px;
           border: none;
           cursor: pointer;
           font-weight: 600;
+          font-size: 14px;
           transition: .2s;
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          gap: 8px;
+          font-family: 'Inter', sans-serif;
         }
 
         .btn-primary {
@@ -687,72 +744,86 @@ export default function SupportPolicyManagement() {
         }
 
         .btn-primary:hover {
-          background: #b8885d;
+          background: #B7865E;
+          transform: translateY(-2px);
         }
 
         .btn-secondary {
           background: white;
           border: 1px solid #E8DED2;
-          color: #6B5E55;
+          color: #54463C;
         }
 
         .btn-secondary:hover {
-          background: #FAF6F0;
+          background: #FAF7F3;
+          border-color: #D8C4B3;
         }
 
         .btn-danger {
-          background: #FFEAEA;
-          color: #C62828;
+          background: #FAECEB;
+          color: #B55656;
           border: 1px solid #F5C2C2;
+        }
+
+        .btn-danger:hover {
+          background: #F8D7D6;
         }
 
         /* ===== Table/List ===== */
         .admin-list {
           display: flex;
           flex-direction: column;
-          gap: 18px;
+          gap: 20px;
         }
 
         .list-item {
           background: white;
-          border: 1px solid #E8DED2;
-          border-radius: 16px;
-          padding: 20px;
+          border: 1px solid #EEE4DA;
+          border-radius: 24px;
+          padding: 28px;
           transition: .25s;
+          box-shadow: 0 4px 20px rgba(25,20,15,.02);
         }
 
         .list-item:hover {
-          box-shadow: 0 8px 20px rgba(0,0,0,.05);
+          transform: translateY(-3px);
+          box-shadow: 0 14px 40px rgba(0,0,0,.05);
+          border-color: #D8C4B3;
         }
 
-        /* ===== Chips ===== */
+        /* ===== Chips / Badges ===== */
         .badge {
           display: inline-flex;
           align-items: center;
-          padding: 6px 12px;
+          padding: 6px 14px;
           border-radius: 999px;
           font-size: 12px;
           font-weight: 600;
         }
 
         .badge-green {
-          background: #E8F5E9;
-          color: #2E7D32;
+          background: #EEF6EF;
+          color: #5D7B64;
         }
 
         .badge-red {
-          background: #FDECEC;
-          color: #C62828;
+          background: #FAECEB;
+          color: #B55656;
         }
 
         .badge-orange {
-          background: #FFF8E1;
-          color: #F57F17;
+          background: #F7F2EA;
+          color: #8A735A;
         }
 
         .badge-blue {
-          background: #E1F5FE;
-          color: #0288D1;
+          background: #F0F4F8;
+          color: #4A607A;
+        }
+
+        .badge-pinned {
+          background: #F6F1EA;
+          color: #7B624C;
         }
 
         /* ===== Modal ===== */
@@ -762,70 +833,55 @@ export default function SupportPolicyManagement() {
           left: 0;
           width: 100%;
           height: 100%;
-          background: rgba(0,0,0,0.5);
+          background: rgba(36, 28, 23, 0.4);
+          backdrop-filter: blur(4px);
           display: flex;
           justify-content: center;
           align-items: center;
-          zIndex: 1001;
+          z-index: 1001;
           padding: 20px;
           box-sizing: border-box;
         }
 
         .modal-card {
           background: #fff;
-          border: 1px solid #E8DED2;
-          border-radius: 18px;
-          padding: 24px;
-          max-width: 600px;
+          border: 1px solid #EEE5DB;
+          border-radius: 26px;
+          padding: 32px;
+          max-width: 640px;
           width: 100%;
-          max-height: 80vh;
+          max-height: 85vh;
           overflow-y: auto;
-          box-shadow: 0 10px 25px rgba(0,0,0,.1);
+          box-shadow: 0 25px 80px rgba(0,0,0,.18);
         }
 
-        /* ===== Analytics ===== */
-        .analytics-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit,minmax(300px,1fr));
-          gap: 20px;
-        }
-
+        /* ===== Analytics / History Cards ===== */
         .analytics-card {
           background: #FCFAF7;
           border: 1px solid #EFE6DB;
-          border-radius: 16px;
+          border-radius: 18px;
           padding: 20px;
-        }
-
-        .analytics-title {
-          font-size: 16px;
-          font-weight: 700;
-          margin-bottom: 18px;
-          color: #2C221E;
         }
 
         /* ===== Empty State ===== */
         .empty-state {
           text-align: center;
-          padding: 50px;
-          border: 2px dashed #E8DED2;
-          border-radius: 18px;
-          color: #8A7C72;
+          padding: 60px 20px;
+          border: 2px dashed #EAE0D5;
+          border-radius: 24px;
+          color: #8A8B81;
           background: #FFFDFB;
         }
 
         /* ===== Responsive ===== */
         @media(max-width: 768px) {
           .admin-page {
-            padding: 16px;
+            padding: 20px 16px;
           }
           .admin-title {
-            font-size: 28px;
+            font-size: 30px;
           }
           .stats-grid {
-            grid-template-columns: 1fr;
-          }
-          .analytics-grid {
             grid-template-columns: 1fr;
           }
         }
@@ -835,13 +891,16 @@ export default function SupportPolicyManagement() {
         <div
           style={{
             position: "fixed",
-            bottom: 20,
-            right: 20,
-            background: "#2C221E",
-            color: "#fff",
-            padding: "12px 20px",
-            borderRadius: "12px",
+            bottom: 24,
+            right: 24,
+            background: "#FFFFFF",
+            color: "#241C17",
+            border: "1px solid #E8DED2",
+            padding: "14px 22px",
+            borderRadius: "16px",
             fontWeight: 600,
+            fontSize: "14px",
+            boxShadow: "0 20px 40px rgba(0,0,0,.08)",
             zIndex: 1000,
           }}
         >
@@ -855,31 +914,31 @@ export default function SupportPolicyManagement() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "28px",
+          marginBottom: "32px",
           flexWrap: "wrap",
-          gap: "16px",
+          gap: "20px",
         }}
       >
         <div>
-          <h1 className="admin-title">Support Policy Management</h1>
-          <p className="admin-subtitle">Manage all customer support policies.</p>
+          <h1 className="admin-title" style={{ fontFamily: "Playfair Display, serif" }}>Support Policy Management</h1>
+          <p className="admin-subtitle">Manage all customer support policies with precision.</p>
         </div>
 
         <div
           style={{
             display: "flex",
-            gap: 10
+            gap: 12
           }}
         >
           <button
             className="btn btn-secondary"
             onClick={exportPolicies}
           >
-            ⬇ Export JSON
+            <Download size={16} /> Export
           </button>
 
           <label className="btn btn-secondary" style={{ cursor: "pointer" }}>
-            📂 Import JSON
+            <Upload size={16} /> Import
             <input
               type="file"
               accept=".json"
@@ -893,29 +952,29 @@ export default function SupportPolicyManagement() {
       {/* Statistics Cards */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-title">📄 Total Policies</div>
+          <div className="stat-title">Total Policies</div>
           <div className="stat-value">{totalPolicies}</div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-title">🚀 Published</div>
+          <div className="stat-title">Published</div>
           <div className="stat-value">{publishedPolicies}</div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-title">📝 Drafts</div>
+          <div className="stat-title">Drafts</div>
           <div className="stat-value">{draftPolicies}</div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-title">📂 Categories</div>
+          <div className="stat-title">Categories</div>
           <div className="stat-value">{totalCategories}</div>
         </div>
       </div>
 
       {/* Form */}
       <div className="admin-card">
-        <h2 style={{ marginTop: 0, color: "#2C221E", fontFamily: "Playfair Display, serif" }}>
+        <h2 style={{ marginTop: 0, marginBottom: 24, color: "#241C17", fontFamily: "Playfair Display, serif", fontSize: "24px" }}>
           {editingId ? "Edit Policy" : "Add Policy"}
         </h2>
 
@@ -929,8 +988,8 @@ export default function SupportPolicyManagement() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr 120px",
-            gap: "12px",
+            gridTemplateColumns: "1fr 1fr 140px",
+            gap: "16px",
           }}
         >
           <select
@@ -971,11 +1030,11 @@ export default function SupportPolicyManagement() {
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
-            gap: "12px",
+            gap: "16px",
           }}
         >
           <div>
-            <label style={{ fontSize: 12, color: "#8A7C72", display: "block", marginBottom: 4 }}>
+            <label style={{ fontSize: 13, color: "#8A8B81", display: "block", marginBottom: 6, fontWeight: 500 }}>
               Effective Date
             </label>
             <input
@@ -987,7 +1046,7 @@ export default function SupportPolicyManagement() {
           </div>
 
           <div>
-            <label style={{ fontSize: 12, color: "#8A7C72", display: "block", marginBottom: 4 }}>
+            <label style={{ fontSize: 13, color: "#8A8B81", display: "block", marginBottom: 6, fontWeight: 500 }}>
               Expiry Date (Optional)
             </label>
             <input
@@ -1002,18 +1061,19 @@ export default function SupportPolicyManagement() {
         <textarea
           className="admin-textarea"
           rows={10}
-          placeholder="Write policy..."
+          placeholder="Write policy content..."
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          style={{ resize: "vertical" }}
+          style={{ resize: "vertical", padding: "16px 18px" }}
         />
 
-        <div style={{ display: "flex", gap: "24px", alignItems: "center" }}>
-          <label style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer" }}>
+        <div style={{ display: "flex", gap: "28px", alignItems: "center", margin: "8px 0 24px 0" }}>
+          <label style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer", fontSize: "14px", fontWeight: 500 }}>
             <input
               type="checkbox"
               checked={published}
               onChange={(e) => setPublished(e.target.checked)}
+              style={{ width: 16, height: 16, accentColor: "#C4956A" }}
             />
             Published
           </label>
@@ -1023,7 +1083,9 @@ export default function SupportPolicyManagement() {
               display: "flex",
               gap: 10,
               alignItems: "center",
-              cursor: "pointer"
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: 500
             }}
           >
             <input
@@ -1032,17 +1094,18 @@ export default function SupportPolicyManagement() {
               onChange={(e) =>
                 setRequired(e.target.checked)
               }
+              style={{ width: 16, height: 16, accentColor: "#C4956A" }}
             />
             Required Policy
           </label>
         </div>
 
-        <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+        <div style={{ display: "flex", gap: "12px" }}>
           <button
             className="btn btn-primary"
             onClick={savePolicy}
           >
-            {editingId ? "Update Policy" : "Create Policy"}
+            <Plus size={16} /> {editingId ? "Update Policy" : "Create Policy"}
           </button>
 
           {editingId && (
@@ -1057,24 +1120,27 @@ export default function SupportPolicyManagement() {
       <div
         style={{
           display: "flex",
-          gap: 12,
+          gap: 16,
           flexWrap: "wrap",
-          marginBottom: 24
+          marginBottom: 28
         }}
       >
-        <input
-          className="admin-input"
-          placeholder="Search policies..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ flex: 1, marginBottom: 0 }}
-        />
+        <div style={{ flex: 1, position: "relative", minWidth: "260px" }}>
+          <input
+            className="admin-input"
+            placeholder="Search policies..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ marginBottom: 0, paddingLeft: "46px" }}
+          />
+          <SearchIcon size={18} style={{ position: "absolute", left: 16, top: 17, color: "#8A8B81" }} />
+        </div>
 
         <select
           className="admin-select"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          style={{ width: 180, marginBottom: 0 }}
+          style={{ width: 180, marginBottom: 0, height: 52 }}
         >
           <option value="All">All Categories</option>
 
@@ -1089,7 +1155,7 @@ export default function SupportPolicyManagement() {
           className="admin-select"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          style={{ width: 170, marginBottom: 0 }}
+          style={{ width: 170, marginBottom: 0, height: 52 }}
         >
           <option value="All">All Status</option>
           <option value="Published">Published</option>
@@ -1103,7 +1169,7 @@ export default function SupportPolicyManagement() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: 20,
+          marginBottom: 24,
           flexWrap: "wrap",
           gap: 12
         }}
@@ -1177,7 +1243,7 @@ export default function SupportPolicyManagement() {
           <div className="empty-state">Loading policies...</div>
         ) : sortedPolicies.length === 0 ? (
           <div className="empty-state">
-            <h3>No Policies Yet</h3>
+            <h3 style={{ fontFamily: "Playfair Display, serif", fontSize: "20px", marginTop: 0 }}>No Policies Yet</h3>
             <p>Create your first support policy above.</p>
           </div>
         ) : (
@@ -1195,11 +1261,12 @@ export default function SupportPolicyManagement() {
                   flexWrap: "wrap"
                 }}
               >
-                <div style={{ display: "flex", alignItems: "flex-start", paddingTop: 2 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", paddingTop: 4 }}>
                   <input
                     type="checkbox"
                     checked={selectedPolicies.includes(policy.id)}
                     onChange={() => toggleSelection(policy.id)}
+                    style={{ width: 16, height: 16, accentColor: "#C4956A", cursor: "pointer" }}
                   />
                 </div>
 
@@ -1207,7 +1274,9 @@ export default function SupportPolicyManagement() {
                   <h3
                     style={{
                       margin: 0,
-                      color: "#2C221E"
+                      color: "#241C17",
+                      fontFamily: "Playfair Display, serif",
+                      fontSize: "20px"
                     }}
                   >
                     {policy.title}
@@ -1215,7 +1284,7 @@ export default function SupportPolicyManagement() {
 
                   <div
                     style={{
-                      marginTop: 8,
+                      marginTop: 12,
                       display: "flex",
                       gap: 8,
                       flexWrap: "wrap"
@@ -1246,8 +1315,8 @@ export default function SupportPolicyManagement() {
                     )}
 
                     {policy.pinned && (
-                      <span className="badge badge-orange">
-                        📌 Pinned
+                      <span className="badge badge-pinned">
+                        Pinned
                       </span>
                     )}
 
@@ -1262,7 +1331,9 @@ export default function SupportPolicyManagement() {
                     style={{
                       marginTop: 16,
                       color: "#6B5E55",
-                      whiteSpace: "pre-wrap"
+                      whiteSpace: "pre-wrap",
+                      lineHeight: "1.6",
+                      fontSize: "14px"
                     }}
                   >
                     {policy.content.length > 220
@@ -1273,8 +1344,8 @@ export default function SupportPolicyManagement() {
                   <div
                     style={{
                       fontSize: 12,
-                      color: "#9A8C82",
-                      marginTop: 12
+                      color: "#9A8B81",
+                      marginTop: 16
                     }}
                   >
                     Last Updated{" "}
@@ -1288,68 +1359,71 @@ export default function SupportPolicyManagement() {
                 style={{
                   display: "flex",
                   flexWrap: "wrap",
-                  gap: "8px",
+                  gap: "10px",
                   justifyContent: "flex-end",
                   alignItems: "center",
-                  marginTop: "16px"
+                  marginTop: "20px",
+                  paddingTop: "16px",
+                  borderTop: "1px solid #F4EBE2"
                 }}
               >
                 <button
                   style={actionBtnStyle}
                   onClick={() => moveUp(policy)}
+                  title="Move Up"
                 >
-                  ⬆
+                  <ArrowUp size={14} /> Up
                 </button>
 
                 <button
                   style={actionBtnStyle}
                   onClick={() => moveDown(policy)}
+                  title="Move Down"
                 >
-                  ⬇
+                  <ArrowDown size={14} /> Down
                 </button>
 
                 <button
                   style={actionBtnStyle}
                   onClick={() => togglePinned(policy)}
                 >
-                  {policy.pinned ? "📍 Unpin" : "📌 Pin"}
+                  <Pin size={14} /> {policy.pinned ? "Unpin" : "Pin"}
                 </button>
 
                 <button
                   style={actionBtnStyle}
                   onClick={() => setPreviewPolicy(policy)}
                 >
-                  👁 Preview
+                  <Eye size={14} /> Preview
                 </button>
 
                 <button
                   style={actionBtnStyle}
                   onClick={() => openHistory(policy)}
                 >
-                  🕒 History
+                  <Clock size={14} /> History
                 </button>
 
                 <button
                   style={actionBtnStyle}
                   onClick={() => editPolicy(policy)}
                 >
-                  ✏️ Edit
+                  <Edit3 size={14} /> Edit
                 </button>
 
                 <button
                   style={actionBtnStyle}
                   onClick={() => toggleStatus(policy)}
                 >
-                  {policy.status === "Published"
-                    ? "📄 Draft"
-                    : "🚀 Publish"}
+                  {policy.status === "Published" ? <FileText size={14} /> : <Rocket size={14} />}
+                  {policy.status === "Published" ? "Draft" : "Publish"}
                 </button>
 
                 <button
                   style={actionDangerBtnStyle}
                   onClick={() => deletePolicy(policy.id)}
                 >
-                  🗑 Delete
+                  <Trash2 size={14} /> Delete
                 </button>
               </div>
             </div>
@@ -1362,7 +1436,12 @@ export default function SupportPolicyManagement() {
         <div className="modal-overlay">
           <div className="modal-card">
 
-            <h2>{previewPolicy.title}</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h2 style={{ margin: 0, fontFamily: "Playfair Display, serif", fontSize: "24px", color: "#241C17" }}>{previewPolicy.title}</h2>
+              <button onClick={() => setPreviewPolicy(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#8A8B81" }}>
+                <X size={20} />
+              </button>
+            </div>
 
             <div
               style={{
@@ -1397,8 +1476,8 @@ export default function SupportPolicyManagement() {
               )}
 
               {previewPolicy.pinned && (
-                <span className="badge badge-orange">
-                  📌 Pinned
+                <span className="badge badge-pinned">
+                  Pinned
                 </span>
               )}
 
@@ -1413,9 +1492,10 @@ export default function SupportPolicyManagement() {
               style={{
                 whiteSpace: "pre-wrap",
                 lineHeight: 1.7,
-                color: "#555",
-                maxHeight: "60vh",
-                overflowY: "auto"
+                color: "#54463C",
+                maxHeight: "55vh",
+                overflowY: "auto",
+                fontSize: "14px"
               }}
             >
               {previewPolicy.content}
@@ -1443,12 +1523,17 @@ export default function SupportPolicyManagement() {
       {historyModal && (
         <div className="modal-overlay">
           <div className="modal-card">
-            <h2 style={{ marginTop: 0 }}>Policy History</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h2 style={{ margin: 0, fontFamily: "Playfair Display, serif", fontSize: "24px", color: "#241C17" }}>Policy History</h2>
+              <button onClick={() => setHistoryModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#8A8B81" }}>
+                <X size={20} />
+              </button>
+            </div>
 
             {policyHistory.length === 0 ? (
-              <p style={{ color: "#8A7C72" }}>No version history available for this policy yet.</p>
+              <p style={{ color: "#8A8B81" }}>No version history available for this policy yet.</p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: "60vh", overflowY: "auto", marginBottom: 20 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: "55vh", overflowY: "auto", marginBottom: 20 }}>
                 {policyHistory.map(item => (
                   <div
                     key={item.id}
@@ -1456,9 +1541,9 @@ export default function SupportPolicyManagement() {
                     style={{ marginBottom: 0, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 15 }}
                   >
                     <div>
-                      <strong style={{ color: "#2C221E" }}>{item.action}</strong>
-                      <p style={{ margin: "4px 0", color: "#6B5E55" }}>{item.title}</p>
-                      <small style={{ color: "#9A8C82" }}>
+                      <strong style={{ color: "#241C17", fontSize: "14px" }}>{item.action}</strong>
+                      <p style={{ margin: "4px 0", color: "#6B5E55", fontSize: "13px" }}>{item.title}</p>
+                      <small style={{ color: "#9A8B81", fontSize: "12px" }}>
                         {item.editedBy}
                         {" • "}
                         {item.editedAt?.toDate?.()?.toLocaleString() || "Recently"}
