@@ -95,7 +95,7 @@ export default function SupportFAQManagement() {
     );
 
     if (duplicateExists) {
-      const proceed = window.confirm("⚠️ Similar FAQ already exists. Do you still want to save?");
+      const proceed = window.confirm("Similar FAQ already exists. Do you still want to save?");
       if (!proceed) return;
     }
 
@@ -143,6 +143,7 @@ export default function SupportFAQManagement() {
     setQuestion(faq.question);
     setAnswer(faq.answer);
     setCategory(faq.category);
+    window.scrollTo({ top: 300, behavior: "smooth" });
   };
 
   const toggleFAQ = async (faq) => {
@@ -501,20 +502,20 @@ export default function SupportFAQManagement() {
   });
 
   return (
-    <div style={{ padding: "32px", maxWidth: "1300px", margin: "0 auto", position: "relative" }}>
+    <div style={{ padding: "36px 40px", maxWidth: "1320px", margin: "0 auto", position: "relative", fontFamily: "system-ui, -apple-system, sans-serif", background: "#F8F6F3", minHeight: "100vh", color: "#2B2521" }}>
       {toastMessage && (
         <div
           style={{
             position: "fixed",
-            bottom: "20px",
-            right: "20px",
-            background: "#2C221E",
+            bottom: "24px",
+            right: "24px",
+            background: "#2B2521",
             color: "#fff",
             padding: "12px 20px",
-            borderRadius: "10px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            borderRadius: "14px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
             zIndex: 1000,
-            fontWeight: 600,
+            fontWeight: 500,
             fontSize: "14px"
           }}
         >
@@ -522,7 +523,7 @@ export default function SupportFAQManagement() {
         </div>
       )}
 
-      {/* Preview Modal Overlay */}
+      {/* Preview Modal */}
       {previewFAQ && (
         <div
           style={{
@@ -531,54 +532,55 @@ export default function SupportFAQManagement() {
             left: 0,
             width: "100vw",
             height: "100vh",
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            backgroundColor: "rgba(0, 0, 0, 0.4)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            zIndex: 1100
+            zIndex: 1100,
+            backdropFilter: "blur(4px)"
           }}
           onClick={() => setPreviewFAQ(null)}
         >
           <div
             style={{
-              background: "#fff",
-              border: "1px solid #E8DED2",
-              borderRadius: "18px",
-              padding: "32px",
+              background: "#FFFFFF",
+              border: "1px solid #EEE7DF",
+              borderRadius: "24px",
+              padding: "40px",
               width: "100%",
-              maxWidth: "600px",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+              maxWidth: "720px",
+              boxShadow: "0 30px 80px rgba(0,0,0,.15)",
               margin: "20px"
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-              <span style={{ background: "#FAF6F0", padding: "4px 12px", borderRadius: "999px", fontSize: "12px", fontWeight: 600, color: "#6B5E55" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
+              <span style={{ background: "#F6F2EE", padding: "6px 14px", borderRadius: "999px", fontSize: "12px", fontWeight: 500, color: "#6F665E" }}>
                 {previewFAQ.category}
               </span>
               <button
                 onClick={() => setPreviewFAQ(null)}
-                style={{ background: "none", border: "none", fontSize: "18px", cursor: "pointer", color: "#9A8C82" }}
+                style={{ background: "none", border: "none", fontSize: "18px", cursor: "pointer", color: "#7B726C" }}
               >
                 ✕
               </button>
             </div>
-            <h2 style={{ marginTop: 0, color: "#2C221E", fontSize: "20px", fontFamily: "Playfair Display, serif" }}>
+            <h2 style={{ marginTop: 0, color: "#2B2521", fontSize: "22px", fontFamily: "Playfair Display, serif", fontWeight: 600, marginBottom: "16px" }}>
               {previewFAQ.question}
             </h2>
-            <p style={{ color: "#6B5E55", whiteSpace: "pre-wrap", fontSize: "15px", lineHeight: "1.6", marginBottom: "24px" }}>
+            <p style={{ color: "#7B726C", whiteSpace: "pre-wrap", fontSize: "15px", lineHeight: "1.8", marginBottom: "32px" }}>
               {previewFAQ.answer}
             </p>
             <button
               onClick={() => setPreviewFAQ(null)}
               style={{
-                background: "#C4956A",
+                background: "#B98A63",
                 color: "#fff",
                 border: "none",
-                borderRadius: "10px",
-                padding: "10px 20px",
+                borderRadius: "14px",
+                padding: "12px 24px",
                 cursor: "pointer",
-                fontWeight: 600,
+                fontWeight: 500,
                 fontSize: "14px"
               }}
             >
@@ -589,38 +591,47 @@ export default function SupportFAQManagement() {
       )}
 
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "32px" }}>
-        <h1 style={{ color: "#2C221E", fontFamily: "Playfair Display, serif", fontSize: "34px", margin: 0 }}>
-          Admin FAQ Management
-        </h1>
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px", marginBottom: "36px" }}>
+        <div>
+          <h1 style={{ color: "#2B2521", fontFamily: "Playfair Display, serif", fontSize: "32px", fontWeight: 600, margin: "0 0 6px 0" }}>
+            FAQ Management
+          </h1>
+          <p style={{ color: "#7B726C", fontSize: "14px", margin: 0 }}>
+            Manage customer knowledge base, categories and visibility.
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <button
             onClick={exportFAQs}
             style={{
-              background: "#fff",
-              border: "1px solid #E8DED2",
-              borderRadius: "10px",
-              padding: "10px 16px",
+              background: "#FFFFFF",
+              border: "1px solid #EEE7DF",
+              borderRadius: "14px",
+              padding: "12px 20px",
               cursor: "pointer",
-              fontWeight: 600,
-              color: "#6B5E55"
+              fontWeight: 500,
+              color: "#7B726C",
+              fontSize: "14px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.02)"
             }}
           >
-            ⬇ Export JSON
+            Export
           </button>
           <label
             style={{
-              background: "#fff",
-              border: "1px solid #E8DED2",
-              borderRadius: "10px",
-              padding: "10px 16px",
+              background: "#FFFFFF",
+              border: "1px solid #EEE7DF",
+              borderRadius: "14px",
+              padding: "12px 20px",
               cursor: "pointer",
-              fontWeight: 600,
-              color: "#6B5E55",
-              display: "inline-block"
+              fontWeight: 500,
+              color: "#7B726C",
+              fontSize: "14px",
+              display: "inline-block",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.02)"
             }}
           >
-            📂 Import JSON
+            Import
             <input type="file" accept=".json" onChange={importFAQs} style={{ display: "none" }} />
           </label>
         </div>
@@ -632,39 +643,39 @@ export default function SupportFAQManagement() {
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
           gap: "20px",
-          marginBottom: "28px"
+          marginBottom: "32px"
         }}
       >
         {[
-          ["📚", totalFaqs, "Total FAQs"],
-          ["✅", activeFaqs, "Active"],
-          ["🚫", disabledFaqs, "Disabled"],
-          ["📌", pinnedFaqsCount, "Pinned"],
-          ["⭐", featuredFaqsCount, "Featured"],
-          ["👁", totalViews, "Total Views"],
-          ["👍", `${helpfulPercentage}%`, "Helpful Rate"],
-          ["💬", totalVotes, "Feedback Received"]
-        ].map(([icon, value, title]) => (
+          [totalFaqs, "Total FAQs", "+12 this month"],
+          [activeFaqs, "Active FAQs", "Visible to users"],
+          [pinnedFaqsCount, "Pinned FAQs", "Top of list"],
+          [featuredFaqsCount, "Featured FAQ", "Highlight active"],
+          [totalViews, "Views", "Total impressions"],
+          [`${helpfulPercentage}%`, "Helpful Rate", `${totalVotes} total votes`]
+        ].map(([value, title, subtext]) => (
           <div
             key={title}
             style={{
-              background: "#fff",
-              border: "1px solid #E8DED2",
-              borderRadius: "18px",
-              padding: "24px",
-              boxShadow: "0 6px 16px rgba(0,0,0,0.04)",
-              transition: "0.2s",
+              background: "#FFFFFF",
+              border: "1px solid #EEE7DF",
+              borderRadius: "22px",
+              padding: "28px",
+              boxShadow: "0 8px 28px rgba(0,0,0,.04)",
+              transition: "all .22s ease",
               cursor: "default"
             }}
             onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
             onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
           >
-            <div style={{ fontSize: "24px", marginBottom: "12px" }}>{icon}</div>
-            <div style={{ fontSize: "28px", fontWeight: 700, color: "#2C221E", marginBottom: "4px" }}>
+            <div style={{ fontSize: "13px", letterSpacing: ".08em", textTransform: "uppercase", color: "#7B726C", marginBottom: "8px", fontWeight: 500 }}>
+              {title}
+            </div>
+            <div style={{ fontSize: "38px", fontWeight: 700, color: "#2B2521", marginBottom: "6px", lineHeight: 1.1 }}>
               {value}
             </div>
-            <div style={{ color: "#9A8C82", fontSize: "13px" }}>
-              {title}
+            <div style={{ color: "#B98A63", fontSize: "12px", fontWeight: 500 }}>
+              {subtext}
             </div>
           </div>
         ))}
@@ -673,20 +684,20 @@ export default function SupportFAQManagement() {
       {/* Add / Edit Form */}
       <div
         style={{
-          background: "#fff",
-          border: "1px solid #E8DED2",
-          borderRadius: "18px",
-          padding: "28px",
-          marginBottom: "28px",
-          boxShadow: "0 6px 16px rgba(0,0,0,0.04)"
+          background: "#FFFFFF",
+          border: "1px solid #EEE7DF",
+          borderRadius: "22px",
+          padding: "32px",
+          marginBottom: "32px",
+          boxShadow: "0 8px 28px rgba(0,0,0,.04)"
         }}
       >
-        <h2 style={{ marginTop: 0, marginBottom: "20px", color: "#2C221E", fontFamily: "Playfair Display, serif", fontSize: "24px" }}>
-          {editingId ? "Edit FAQ" : "Add FAQ"}
+        <h2 style={{ marginTop: 0, marginBottom: "24px", color: "#2B2521", fontFamily: "Playfair Display, serif", fontSize: "22px", fontWeight: 600 }}>
+          {editingId ? "Edit FAQ" : "New FAQ"}
         </h2>
 
-        <div style={{ marginBottom: "16px" }}>
-          <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#6B5E55", marginBottom: "6px" }}>Question</label>
+        <div style={{ marginBottom: "20px" }}>
+          <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#7B726C", marginBottom: "8px" }}>Question</label>
           <input
             type="text"
             placeholder="Type your question here..."
@@ -694,17 +705,21 @@ export default function SupportFAQManagement() {
             onChange={(e) => setQuestion(e.target.value)}
             style={{
               width: "100%",
-              padding: "12px",
-              borderRadius: "10px",
-              border: "1px solid #E8DED2",
+              height: "52px",
+              padding: "0 18px",
+              borderRadius: "14px",
+              background: "#FCFBF9",
+              border: "1px solid #ECE5DD",
               boxSizing: "border-box",
-              fontSize: "15px"
+              fontSize: "15px",
+              color: "#2B2521",
+              outline: "none"
             }}
           />
         </div>
 
-        <div style={{ marginBottom: "16px" }}>
-          <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#6B5E55", marginBottom: "6px" }}>Answer</label>
+        <div style={{ marginBottom: "20px" }}>
+          <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#7B726C", marginBottom: "8px" }}>Answer</label>
           <textarea
             rows={5}
             placeholder="Answer (Supports line breaks & bullet lists)..."
@@ -712,29 +727,36 @@ export default function SupportFAQManagement() {
             onChange={(e) => setAnswer(e.target.value)}
             style={{
               width: "100%",
-              padding: "12px",
-              borderRadius: "10px",
-              border: "1px solid #E8DED2",
+              padding: "18px",
+              borderRadius: "14px",
+              background: "#FCFBF9",
+              border: "1px solid #ECE5DD",
               resize: "vertical",
               boxSizing: "border-box",
-              fontSize: "15px"
+              fontSize: "15px",
+              color: "#2B2521",
+              lineHeight: "1.8",
+              outline: "none"
             }}
           />
         </div>
 
-        <div style={{ display: "flex", gap: "16px", alignItems: "flex-end", flexWrap: "wrap" }}>
-          <div style={{ flex: "1", minWidth: "250px" }}>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#6B5E55", marginBottom: "6px" }}>Category</label>
+        <div style={{ display: "flex", gap: "20px", alignItems: "flex-end", flexWrap: "wrap" }}>
+          <div style={{ flex: "1", minWidth: "260px" }}>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 500, color: "#7B726C", marginBottom: "8px" }}>Category</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               style={{
                 width: "100%",
-                padding: "12px",
-                borderRadius: "10px",
-                border: "1px solid #E8DED2",
-                backgroundColor: "#fff",
-                fontSize: "15px"
+                height: "52px",
+                padding: "0 18px",
+                borderRadius: "14px",
+                background: "#FCFBF9",
+                border: "1px solid #ECE5DD",
+                fontSize: "15px",
+                color: "#2B2521",
+                outline: "none"
               }}
             >
               <option>General</option>
@@ -749,15 +771,16 @@ export default function SupportFAQManagement() {
           <button
             onClick={saveFAQ}
             style={{
-              background: "#C4956A",
+              background: "#B98A63",
               color: "#fff",
               border: "none",
-              borderRadius: "10px",
-              padding: "12px 24px",
+              borderRadius: "14px",
+              padding: "0 28px",
               cursor: "pointer",
-              fontWeight: 600,
+              fontWeight: 500,
               fontSize: "15px",
-              height: "46px"
+              height: "52px",
+              boxShadow: "0 4px 12px rgba(185,138,99,0.2)"
             }}
           >
             {editingId ? "Update FAQ" : "Save FAQ"}
@@ -765,46 +788,53 @@ export default function SupportFAQManagement() {
         </div>
       </div>
 
-      {/* Search & Filter Section */}
+      {/* Search & Filter Toolbar */}
       <div
         style={{
-          background: "#fff",
-          border: "1px solid #E8DED2",
-          borderRadius: "18px",
+          background: "#FFFFFF",
+          border: "1px solid #EEE7DF",
+          borderRadius: "22px",
           padding: "24px",
           marginBottom: "28px",
-          boxShadow: "0 6px 16px rgba(0,0,0,0.04)"
+          boxShadow: "0 8px 28px rgba(0,0,0,.04)"
         }}
       >
         <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ flex: "7", minWidth: "280px" }}>
+          <div style={{ flex: "1", minWidth: "260px" }}>
             <input
               type="text"
-              placeholder="Search FAQ..."
+              placeholder="Search FAQs..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
                 width: "100%",
-                padding: "12px",
-                border: "1px solid #E8DED2",
-                borderRadius: "10px",
+                height: "48px",
+                padding: "0 16px",
+                border: "1px solid #ECE5DD",
+                borderRadius: "14px",
+                background: "#FCFBF9",
                 boxSizing: "border-box",
-                fontSize: "15px"
+                fontSize: "14px",
+                color: "#2B2521",
+                outline: "none"
               }}
             />
           </div>
 
-          <div style={{ flex: "2", minWidth: "160px" }}>
+          <div style={{ minWidth: "150px" }}>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
               style={{
                 width: "100%",
-                padding: "12px",
-                borderRadius: "10px",
-                border: "1px solid #E8DED2",
-                backgroundColor: "#fff",
-                fontSize: "14px"
+                height: "48px",
+                padding: "0 16px",
+                borderRadius: "14px",
+                border: "1px solid #ECE5DD",
+                background: "#FCFBF9",
+                fontSize: "14px",
+                color: "#2B2521",
+                outline: "none"
               }}
             >
               <option value="All">Category ▼</option>
@@ -814,17 +844,20 @@ export default function SupportFAQManagement() {
             </select>
           </div>
 
-          <div style={{ flex: "2", minWidth: "160px" }}>
+          <div style={{ minWidth: "150px" }}>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               style={{
                 width: "100%",
-                padding: "12px",
-                borderRadius: "10px",
-                border: "1px solid #E8DED2",
-                backgroundColor: "#fff",
-                fontSize: "14px"
+                height: "48px",
+                padding: "0 16px",
+                borderRadius: "14px",
+                border: "1px solid #ECE5DD",
+                background: "#FCFBF9",
+                fontSize: "14px",
+                color: "#2B2521",
+                outline: "none"
               }}
             >
               <option value="All">Status ▼</option>
@@ -834,20 +867,37 @@ export default function SupportFAQManagement() {
               <option value="Featured">Featured</option>
             </select>
           </div>
+
+          <button
+            onClick={() => window.scrollTo({ top: 300, behavior: "smooth" })}
+            style={{
+              background: "#B98A63",
+              color: "#fff",
+              border: "none",
+              borderRadius: "14px",
+              padding: "0 22px",
+              height: "48px",
+              cursor: "pointer",
+              fontWeight: 500,
+              fontSize: "14px"
+            }}
+          >
+            + New FAQ
+          </button>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px", paddingTop: "16px", borderTop: "1px solid #E8DED2", flexWrap: "wrap", gap: "10px" }}>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px", paddingTop: "16px", borderTop: "1px solid #EEE7DF", flexWrap: "wrap", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <button
               onClick={selectAll}
-              style={{ background: "none", border: "none", color: "#C4956A", cursor: "pointer", fontWeight: 600, padding: 0 }}
+              style={{ background: "none", border: "none", color: "#B98A63", cursor: "pointer", fontWeight: 500, padding: 0, fontSize: "13px" }}
             >
-              ☑ Select All
+              Select All
             </button>
-            <span style={{ color: "#E8DED2" }}>|</span>
+            <span style={{ color: "#EEE7DF" }}>|</span>
             <button
               onClick={clearSelection}
-              style={{ background: "none", border: "none", color: "#9A8C82", cursor: "pointer", fontWeight: 600, padding: 0 }}
+              style={{ background: "none", border: "none", color: "#7B726C", cursor: "pointer", fontWeight: 500, padding: 0, fontSize: "13px" }}
             >
               Clear Selection ({selectedFAQs.length})
             </button>
@@ -859,57 +909,57 @@ export default function SupportFAQManagement() {
       {selectedFAQs.length > 0 && (
         <div
           style={{
-            background: "#FAF6F0",
-            border: "1px solid #E8DED2",
-            borderRadius: "18px",
+            background: "#FFFFFF",
+            border: "1px solid #EEE7DF",
+            borderRadius: "22px",
             padding: "20px 24px",
             marginBottom: "28px",
-            boxShadow: "0 6px 16px rgba(0,0,0,0.04)"
+            boxShadow: "0 8px 28px rgba(0,0,0,.04)"
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
             <div>
-              <span style={{ fontWeight: 700, color: "#2C221E", fontSize: "15px" }}>Bulk Actions</span>
-              <span style={{ color: "#9A8C82", fontSize: "13px", marginLeft: "12px" }}>Selected: {selectedFAQs.length} FAQs</span>
+              <span style={{ fontWeight: 600, color: "#2B2521", fontSize: "14px" }}>Bulk Actions</span>
+              <span style={{ color: "#7B726C", fontSize: "13px", marginLeft: "12px" }}>Selected: {selectedFAQs.length} FAQs</span>
             </div>
 
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
               <button
                 onClick={bulkEnable}
-                style={{ padding: "8px 14px", background: "#E8F5E9", color: "#2E7D32", border: "1px solid #c8e6c9", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
+                style={{ padding: "8px 14px", background: "#EEF8F1", color: "#31754E", border: "1px solid #d4edda", borderRadius: "10px", cursor: "pointer", fontSize: "13px", fontWeight: 500 }}
               >
                 Enable
               </button>
               <button
                 onClick={bulkDisable}
-                style={{ padding: "8px 14px", background: "#FDECEC", color: "#C62828", border: "1px solid #ffcdd2", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
+                style={{ padding: "8px 14px", background: "#FCEEEE", color: "#C62828", border: "1px solid #f5c6cb", borderRadius: "10px", cursor: "pointer", fontSize: "13px", fontWeight: 500 }}
               >
                 Disable
               </button>
               <button
                 onClick={() => bulkPin(true)}
-                style={{ padding: "8px 14px", background: "#FFF8E1", color: "#F57F17", border: "1px solid #ffe082", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
+                style={{ padding: "8px 14px", background: "#FFFFFF", color: "#2B2521", border: "1px solid #EEE7DF", borderRadius: "10px", cursor: "pointer", fontSize: "13px", fontWeight: 500 }}
               >
                 Pin
               </button>
               <button
                 onClick={() => bulkPin(false)}
-                style={{ padding: "8px 14px", background: "#fff", color: "#6B5E55", border: "1px solid #E8DED2", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
+                style={{ padding: "8px 14px", background: "#FFFFFF", color: "#2B2521", border: "1px solid #EEE7DF", borderRadius: "10px", cursor: "pointer", fontSize: "13px", fontWeight: 500 }}
               >
                 Unpin
               </button>
               <button
                 onClick={bulkDelete}
-                style={{ padding: "8px 14px", background: "#FFE8E8", color: "#c00", border: "1px solid #ff9999", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
+                style={{ padding: "8px 14px", background: "#FCEEEE", color: "#C62828", border: "1px solid #f5c6cb", borderRadius: "10px", cursor: "pointer", fontSize: "13px", fontWeight: 500 }}
               >
                 Delete
               </button>
 
-              <div style={{ display: "flex", gap: "6px", alignItems: "center", marginLeft: "12px", borderLeft: "1px solid #E8DED2", paddingLeft: "16px" }}>
+              <div style={{ display: "flex", gap: "6px", alignItems: "center", marginLeft: "12px", borderLeft: "1px solid #EEE7DF", paddingLeft: "16px" }}>
                 <select
                   value={bulkCategory}
                   onChange={(e) => setBulkCategory(e.target.value)}
-                  style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #E8DED2", fontSize: "13px", backgroundColor: "#fff" }}
+                  style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid #ECE5DD", fontSize: "13px", backgroundColor: "#FCFBF9", color: "#2B2521" }}
                 >
                   <option>General</option>
                   <option>Orders</option>
@@ -920,7 +970,7 @@ export default function SupportFAQManagement() {
                 </select>
                 <button
                   onClick={bulkCategoryChange}
-                  style={{ padding: "8px 14px", background: "#C4956A", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
+                  style={{ padding: "8px 14px", background: "#B98A63", color: "#fff", border: "none", borderRadius: "10px", cursor: "pointer", fontSize: "13px", fontWeight: 500 }}
                 >
                   Apply
                 </button>
@@ -932,38 +982,37 @@ export default function SupportFAQManagement() {
 
       {/* Main List Section */}
       {loading ? (
-        <p>Loading FAQs...</p>
+        <p style={{ color: "#7B726C" }}>Loading FAQs...</p>
       ) : filteredFaqs.length === 0 ? (
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #E8DED2",
-            borderRadius: "18px",
-            padding: "60px 20px",
+            background: "#FFFFFF",
+            border: "1px solid #EEE7DF",
+            borderRadius: "22px",
+            padding: "80px 20px",
             textAlign: "center",
-            color: "#9A8C82",
-            boxShadow: "0 6px 16px rgba(0,0,0,0.04)"
+            color: "#7B726C",
+            boxShadow: "0 8px 28px rgba(0,0,0,.04)"
           }}
         >
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>📄</div>
-          <h3 style={{ margin: "0 0 8px", color: "#2C221E", fontSize: "20px" }}>No FAQs Found</h3>
-          <p style={{ margin: "0 0 20px", fontSize: "15px" }}>Try another search or create your first FAQ.</p>
+          <h3 style={{ margin: "0 0 8px", color: "#2B2521", fontSize: "20px", fontWeight: 600 }}>No FAQs Found</h3>
+          <p style={{ margin: "0 0 24px", fontSize: "15px" }}>Create your first FAQ to help customers find answers faster.</p>
           <button
             onClick={() => {
-              window.scrollTo({ top: 0, behavior: "smooth" });
+              window.scrollTo({ top: 300, behavior: "smooth" });
             }}
             style={{
-              background: "#C4956A",
+              background: "#B98A63",
               color: "#fff",
               border: "none",
-              borderRadius: "10px",
-              padding: "10px 20px",
+              borderRadius: "14px",
+              padding: "12px 24px",
               cursor: "pointer",
-              fontWeight: 600,
+              fontWeight: 500,
               fontSize: "14px"
             }}
           >
-            Add FAQ
+            Create FAQ
           </button>
         </div>
       ) : (
@@ -979,31 +1028,32 @@ export default function SupportFAQManagement() {
             <div
               key={faq.id}
               style={{
-                background: "#fff",
-                border: "1px solid #E8DED2",
-                borderRadius: "18px",
-                padding: "24px",
+                background: "#FFFFFF",
+                border: "1px solid #EEE7DF",
+                borderRadius: "22px",
+                padding: "28px",
                 opacity: faq.active ? 1 : 0.6,
-                boxShadow: "0 6px 16px rgba(0,0,0,0.04)"
+                boxShadow: "0 8px 28px rgba(0,0,0,.04)",
+                transition: "all .22s ease"
               }}
             >
               {/* Header Section */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", marginBottom: "16px" }}>
-                <div style={{ display: "flex", gap: "12px", alignItems: "flex-start", flex: 1 }}>
+                <div style={{ display: "flex", gap: "14px", alignItems: "flex-start", flex: 1 }}>
                   <input
                     type="checkbox"
                     checked={selectedFAQs.includes(faq.id)}
                     onChange={() => toggleSelection(faq.id)}
-                    style={{ marginTop: "6px", cursor: "pointer", width: "16px", height: "16px" }}
+                    style={{ marginTop: "5px", cursor: "pointer", width: "16px", height: "16px", accentColor: "#B98A63" }}
                   />
                   <div>
                     <h3
                       style={{
                         marginTop: 0,
                         marginBottom: "10px",
-                        color: "#2C221E",
-                        fontSize: "20px",
-                        fontFamily: "Playfair Display, serif"
+                        color: "#2B2521",
+                        fontSize: "18px",
+                        fontWeight: 600
                       }}
                     >
                       {faq.question}
@@ -1011,24 +1061,24 @@ export default function SupportFAQManagement() {
                     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
                       <span
                         style={{
-                          background: "#FAF6F0",
-                          color: "#6B5E55",
+                          background: "#F6F2EE",
+                          color: "#6F665E",
                           padding: "4px 10px",
                           borderRadius: "999px",
                           fontSize: "12px",
-                          fontWeight: 600
+                          fontWeight: 500
                         }}
                       >
                         {faq.category}
                       </span>
                       <span
                         style={{
-                          background: faq.active ? "#E8F5E9" : "#FDECEC",
-                          color: faq.active ? "#2E7D32" : "#C62828",
+                          background: faq.active ? "#EEF7F0" : "#FCEEEE",
+                          color: faq.active ? "#31754E" : "#C62828",
                           padding: "4px 10px",
                           borderRadius: "999px",
                           fontSize: "12px",
-                          fontWeight: 600
+                          fontWeight: 500
                         }}
                       >
                         {faq.active ? "Active" : "Disabled"}
@@ -1036,12 +1086,12 @@ export default function SupportFAQManagement() {
                       {faq.pinned && (
                         <span
                           style={{
-                            background: "#FFF8E1",
-                            color: "#F57F17",
+                            background: "#F8F4EB",
+                            color: "#8C6D4F",
                             padding: "4px 10px",
                             borderRadius: "999px",
                             fontSize: "12px",
-                            fontWeight: 600
+                            fontWeight: 500
                           }}
                         >
                           Pinned
@@ -1050,12 +1100,12 @@ export default function SupportFAQManagement() {
                       {faq.featured && (
                         <span
                           style={{
-                            background: "#E1F5FE",
-                            color: "#0288D1",
+                            background: "#F4F3F9",
+                            color: "#5E5284",
                             padding: "4px 10px",
                             borderRadius: "999px",
                             fontSize: "12px",
-                            fontWeight: 600
+                            fontWeight: 500
                           }}
                         >
                           Featured
@@ -1065,62 +1115,18 @@ export default function SupportFAQManagement() {
                   </div>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      color: "#9A8C82",
-                      cursor: "pointer",
-                      background: "#FAF6F0",
-                      padding: "4px 8px",
-                      borderRadius: "6px"
-                    }}
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(faq.id);
-                        showToast("Copied FAQ ID to clipboard!");
-                      } catch (e) {
-                        console.log(e);
-                      }
-                    }}
-                  >
-                    ID: {faq.id.slice(0, 6)}... 📋
-                  </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px", fontSize: "13px", color: "#7B726C" }}>
+                  <span>{faq.views || 0} views</span>
+                  <span>•</span>
+                  <span>{faq.updatedAt?.toDate?.().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) || "Recent"}</span>
                 </div>
               </div>
 
               {/* Body Section */}
-              <div style={{ marginBottom: "16px", paddingLeft: "28px" }}>
-                <p style={{ color: "#6B5E55", whiteSpace: "pre-wrap", fontSize: "15px", margin: 0, lineHeight: "1.6" }}>
+              <div style={{ marginBottom: "20px", paddingLeft: "30px" }}>
+                <p style={{ color: "#7B726C", whiteSpace: "pre-wrap", fontSize: "14px", margin: 0, lineHeight: "1.7", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
                   {faq.answer}
                 </p>
-              </div>
-
-              {/* Footer Section (Metadata) */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "10px",
-                  marginBottom: "20px",
-                  paddingLeft: "28px",
-                  fontSize: "12px",
-                  color: "#6B5E55",
-                  flexWrap: "wrap",
-                  alignItems: "center"
-                }}
-              >
-                <span style={{ background: "#FAF6F0", border: "1px solid #E8DED2", padding: "4px 10px", borderRadius: "8px" }}>
-                  👁 {faq.views || 0} Views
-                </span>
-                <span style={{ background: "#FAF6F0", border: "1px solid #E8DED2", padding: "4px 10px", borderRadius: "8px" }}>
-                  👍 {faq.helpful || 0} Helpful
-                </span>
-                <span style={{ background: "#FAF6F0", border: "1px solid #E8DED2", padding: "4px 10px", borderRadius: "8px" }}>
-                  👎 {faq.notHelpful || 0} Not Helpful
-                </span>
-                <span style={{ background: "#FAF6F0", border: "1px solid #E8DED2", padding: "4px 10px", borderRadius: "8px" }}>
-                  🕒 {faq.updatedAt?.toDate?.().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) || "Recent"} by {faq.updatedBy || "Olivia"}
-                </span>
               </div>
 
               {/* Actions Section */}
@@ -1129,42 +1135,41 @@ export default function SupportFAQManagement() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  borderTop: "1px solid #E8DED2",
+                  borderTop: "1px solid #EEE7DF",
                   paddingTop: "16px",
-                  paddingLeft: "28px",
+                  paddingLeft: "30px",
                   flexWrap: "wrap",
                   gap: "12px"
                 }}
               >
-                {/* Row 1 & Row 2 actions grouped nicely with assigned button colors */}
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
                   <button 
                     onClick={() => editFAQ(faq)}
-                    style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #E8DED2", background: "#FFF8E1", color: "#8D6E63", cursor: "pointer", fontWeight: 600, fontSize: "13px" }}
+                    style={{ padding: "8px 14px", borderRadius: "10px", border: "1px solid #EEE7DF", background: "#FFFFFF", color: "#2B2521", cursor: "pointer", fontWeight: 500, fontSize: "13px" }}
                   >
                     Edit
                   </button>
                   <button 
                     onClick={() => setPreviewFAQ(faq)}
-                    style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #E8DED2", background: "#EDF5FF", color: "#1565C0", cursor: "pointer", fontWeight: 600, fontSize: "13px" }}
+                    style={{ padding: "8px 14px", borderRadius: "10px", border: "1px solid #EEE7DF", background: "#FFFFFF", color: "#2B2521", cursor: "pointer", fontWeight: 500, fontSize: "13px" }}
                   >
                     Preview
                   </button>
                   <button 
                     onClick={() => duplicateFAQ(faq)}
-                    style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #E8DED2", background: "#F5F3FF", color: "#5E35B1", cursor: "pointer", fontWeight: 600, fontSize: "13px" }}
+                    style={{ padding: "8px 14px", borderRadius: "10px", border: "1px solid #EEE7DF", background: "#FFFFFF", color: "#2B2521", cursor: "pointer", fontWeight: 500, fontSize: "13px" }}
                   >
                     Duplicate
                   </button>
                   <button 
                     onClick={() => togglePinned(faq)}
-                    style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #E8DED2", background: "#fff", color: "#6B5E55", cursor: "pointer", fontWeight: 600, fontSize: "13px" }}
+                    style={{ padding: "8px 14px", borderRadius: "10px", border: "1px solid #EEE7DF", background: "#FFFFFF", color: "#2B2521", cursor: "pointer", fontWeight: 500, fontSize: "13px" }}
                   >
                     {faq.pinned ? "Unpin" : "Pin"}
                   </button>
                   <button 
                     onClick={() => makeFeatured(faq)}
-                    style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #E8DED2", background: "#fff", color: "#6B5E55", cursor: "pointer", fontWeight: 600, fontSize: "13px" }}
+                    style={{ padding: "8px 14px", borderRadius: "10px", border: "1px solid #EEE7DF", background: "#FFFFFF", color: "#2B2521", cursor: "pointer", fontWeight: 500, fontSize: "13px" }}
                   >
                     {faq.featured ? "Featured" : "Make Featured"}
                   </button>
@@ -1172,12 +1177,12 @@ export default function SupportFAQManagement() {
                     onClick={() => toggleFAQ(faq)}
                     style={{ 
                       padding: "8px 14px", 
-                      borderRadius: "8px", 
-                      border: "1px solid #E8DED2", 
-                      background: faq.active ? "#FDECEC" : "#E8F5E9", 
-                      color: faq.active ? "#C62828" : "#2E7D32", 
+                      borderRadius: "10px", 
+                      border: "1px solid #EEE7DF", 
+                      background: faq.active ? "#FCEEEE" : "#EEF8F1", 
+                      color: faq.active ? "#C62828" : "#31754E", 
                       cursor: "pointer", 
-                      fontWeight: 600, 
+                      fontWeight: 500, 
                       fontSize: "13px" 
                     }}
                   >
@@ -1185,41 +1190,42 @@ export default function SupportFAQManagement() {
                   </button>
                   <button 
                     onClick={() => deleteFAQ(faq.id)}
-                    style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #ff9999", background: "#FFE8E8", color: "#c00", cursor: "pointer", fontWeight: 600, fontSize: "13px" }}
+                    style={{ padding: "8px 14px", borderRadius: "10px", border: "1px solid #f5c6cb", background: "#FCEEEE", color: "#C62828", cursor: "pointer", fontWeight: 500, fontSize: "13px" }}
                   >
                     Delete
                   </button>
                 </div>
 
-                {/* Move arrows pushed to the far right */}
                 <div style={{ display: "flex", gap: "6px" }}>
                   <button
                     onClick={() => moveUp(faq)}
                     title="Move Up"
                     style={{
-                      padding: "8px 12px",
+                      padding: "6px 10px",
                       borderRadius: "8px",
-                      border: "1px solid #E8DED2",
-                      background: "#fff",
+                      border: "1px solid #EEE7DF",
+                      background: "#FFFFFF",
                       cursor: "pointer",
-                      fontWeight: 600
+                      fontWeight: 500,
+                      color: "#7B726C"
                     }}
                   >
-                    ⬆
+                    ↑
                   </button>
                   <button
                     onClick={() => moveDown(faq)}
                     title="Move Down"
                     style={{
-                      padding: "8px 12px",
+                      padding: "6px 10px",
                       borderRadius: "8px",
-                      border: "1px solid #E8DED2",
-                      background: "#fff",
+                      border: "1px solid #EEE7DF",
+                      background: "#FFFFFF",
                       cursor: "pointer",
-                      fontWeight: 600
+                      fontWeight: 500,
+                      color: "#7B726C"
                     }}
                   >
-                    ⬇
+                    ↓
                   </button>
                 </div>
               </div>
@@ -1228,99 +1234,85 @@ export default function SupportFAQManagement() {
         </div>
       )}
 
-      {/* Analytics Section */}
+      {/* Analytics Section (Four Equal Cards) */}
       <div
         style={{
-          background: "#fff",
-          border: "1px solid #E8DED2",
-          borderRadius: "18px",
-          padding: "28px",
-          marginBottom: "40px",
-          boxShadow: "0 6px 16px rgba(0,0,0,0.04)"
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+          gap: "20px",
+          marginBottom: "40px"
         }}
       >
-        <h2 style={{ marginTop: 0, color: "#2C221E", fontFamily: "Playfair Display, serif", fontSize: "24px" }}>
-          FAQ Analytics
-        </h2>
-
-        {totalFaqs === 0 ? (
-          <p style={{ color: "#9A8C82", fontStyle: "italic", margin: 0, fontSize: "15px" }}>No analytics yet.</p>
-        ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))", gap: "20px", marginTop: "20px" }}>
-            
-            {/* Card 1 */}
-            <div style={{ background: "#FAF6F0", border: "1px solid #E8DED2", borderRadius: "16px", padding: "18px", minHeight: "260px" }}>
-              <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2C221E", fontSize: "16px", fontWeight: 700, borderBottom: "1px solid #E8DED2", paddingBottom: "10px" }}>
-                ⭐ Featured FAQ
-              </h3>
-              {currentFeaturedFAQ ? (
-                <div style={{ background: "#fff", border: "1px solid #E8DED2", borderRadius: "12px", padding: "14px", marginBottom: "20px", boxShadow: "0 2px 6px rgba(0,0,0,0.05)" }}>
-                  <div style={{ fontWeight: 600, color: "#2C221E", fontSize: "14px" }}>{currentFeaturedFAQ.question}</div>
-                  <div style={{ fontSize: "12px", color: "#9A8C82", marginTop: "4px" }}>Category: {currentFeaturedFAQ.category}</div>
-                </div>
-              ) : (
-                <p style={{ color: "#9A8C82", fontSize: "13px", fontStyle: "italic", marginBottom: "20px" }}>No FAQ is currently featured.</p>
-              )}
-
-              <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2C221E", fontSize: "16px", fontWeight: 700, borderBottom: "1px solid #E8DED2", paddingBottom: "10px" }}>
-                🏆 Most Viewed FAQs
-              </h3>
-              {mostViewed.length === 0 ? (
-                <p style={{ color: "#9A8C82", fontSize: "13px", fontStyle: "italic" }}>No analytics yet.</p>
-              ) : (
-                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                  {mostViewed.map(faq => (
-                    <li key={faq.id} style={{ background: "#fff", border: "1px solid #E8DED2", borderRadius: "10px", padding: "10px", marginBottom: "10px" }}>
-                      <span style={{ fontWeight: 600, color: "#2C221E", fontSize: "13px" }}>{faq.question}</span>
-                      <div style={{ fontSize: "12px", color: "#9A8C82", marginTop: "2px" }}>👁 {faq.views || 0} views</div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+        {/* Card 1: Featured FAQ */}
+        <div style={{ background: "#FFFFFF", border: "1px solid #EEE7DF", borderRadius: "22px", padding: "28px", boxShadow: "0 8px 28px rgba(0,0,0,.04)", display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
+          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2B2521", fontSize: "16px", fontWeight: 600 }}>
+            Featured FAQ
+          </h3>
+          {currentFeaturedFAQ ? (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div style={{ fontWeight: 500, color: "#2B2521", fontSize: "14px", marginBottom: "8px", lineHeight: "1.5" }}>{currentFeaturedFAQ.question}</div>
+              <div style={{ fontSize: "12px", color: "#7B726C" }}>Category: {currentFeaturedFAQ.category}</div>
             </div>
+          ) : (
+            <p style={{ color: "#7B726C", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No FAQ is currently featured.</p>
+          )}
+        </div>
 
-            {/* Card 2 */}
-            <div style={{ background: "#FAF6F0", border: "1px solid #E8DED2", borderRadius: "16px", padding: "18px", minHeight: "260px" }}>
-              <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2C221E", fontSize: "16px", fontWeight: 700, borderBottom: "1px solid #E8DED2", paddingBottom: "10px" }}>
-                ⚠️ Needs Improvement (Most Not Helpful)
-              </h3>
-              {leastHelpful.length === 0 ? (
-                <p style={{ color: "#9A8C82", fontSize: "13px", fontStyle: "italic" }}>No analytics yet.</p>
-              ) : (
-                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                  {leastHelpful.map(faq => (
-                    <li key={faq.id} style={{ background: "#fff", border: "1px solid #F3D6D6", borderRadius: "10px", padding: "10px", marginBottom: "10px" }}>
-                      <span style={{ fontWeight: 600, color: "#2C221E", fontSize: "13px" }}>{faq.question}</span>
-                      <div style={{ fontSize: "12px", color: "#C62828", marginTop: "2px" }}>👎 {faq.notHelpful || 0} not helpful</div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+        {/* Card 2: Most Viewed */}
+        <div style={{ background: "#FFFFFF", border: "1px solid #EEE7DF", borderRadius: "22px", padding: "28px", boxShadow: "0 8px 28px rgba(0,0,0,.04)", display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
+          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2B2521", fontSize: "16px", fontWeight: 600 }}>
+            Most Viewed Top 5
+          </h3>
+          {mostViewed.length === 0 ? (
+            <p style={{ color: "#7B726C", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No analytics yet.</p>
+          ) : (
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
+              {mostViewed.slice(0, 3).map(faq => (
+                <li key={faq.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#2B2521" }}>
+                  <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "180px" }}>{faq.question}</span>
+                  <span style={{ color: "#7B726C" }}>{faq.views || 0}v</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Card 3: Lowest Rated */}
+        <div style={{ background: "#FFFFFF", border: "1px solid #EEE7DF", borderRadius: "22px", padding: "28px", boxShadow: "0 8px 28px rgba(0,0,0,.04)", display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
+          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2B2521", fontSize: "16px", fontWeight: 600 }}>
+            Lowest Rated Top 5
+          </h3>
+          {leastHelpful.length === 0 ? (
+            <p style={{ color: "#7B726C", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No analytics yet.</p>
+          ) : (
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
+              {leastHelpful.slice(0, 3).map(faq => (
+                <li key={faq.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#2B2521" }}>
+                  <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "180px" }}>{faq.question}</span>
+                  <span style={{ color: "#C62828" }}>{faq.notHelpful || 0} bad</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Card 4: Categories */}
+        <div style={{ background: "#FFFFFF", border: "1px solid #EEE7DF", borderRadius: "22px", padding: "28px", boxShadow: "0 8px 28px rgba(0,0,0,.04)", display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
+          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2B2521", fontSize: "16px", fontWeight: 600 }}>
+            Categories
+          </h3>
+          {Object.keys(categoryStats).length === 0 ? (
+            <p style={{ color: "#7B726C", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No categories yet.</p>
+          ) : (
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+              {Object.keys(categoryStats).map(cat => (
+                <span key={cat} style={{ background: "#F6F2EE", color: "#6F665E", padding: "6px 12px", borderRadius: "999px", fontSize: "12px", fontWeight: 500 }}>
+                  {cat} ({categoryStats[cat]})
+                </span>
+              ))}
             </div>
-
-            {/* Card 3 */}
-            <div style={{ background: "#FAF6F0", border: "1px solid #E8DED2", borderRadius: "16px", padding: "18px", minHeight: "260px" }}>
-              <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2C221E", fontSize: "16px", fontWeight: 700, borderBottom: "1px solid #E8DED2", paddingBottom: "10px" }}>
-                📂 Category Breakdown
-              </h3>
-              {Object.keys(categoryStats).length === 0 ? (
-                <p style={{ color: "#9A8C82", fontSize: "13px", fontStyle: "italic" }}>No categories yet.</p>
-              ) : (
-                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                  {Object.entries(categoryStats).map(([cat, count]) => (
-                    <li key={cat} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", padding: "10px 12px", borderRadius: "10px", marginBottom: "10px", border: "1px solid #E8DED2" }}>
-                      <span style={{ fontWeight: 600, color: "#2C221E", fontSize: "13px" }}>{cat}</span>
-                      <span style={{ background: "#C4956A", color: "#fff", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: 600 }}>
-                        {count}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
