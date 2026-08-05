@@ -98,11 +98,11 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
     }
   };
 
-  // Close or reposition dropdown on scroll/resize so it doesn't float away
+  // Keep dropdown pinned and dynamically update its position as the user scrolls
   useEffect(() => {
     if (!menuOpen) return;
     const handleScrollOrResize = () => {
-      setOpenMenuId(null);
+      updateDropdownPosition();
     };
     window.addEventListener("scroll", handleScrollOrResize, true);
     window.addEventListener("resize", handleScrollOrResize);
@@ -110,7 +110,7 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
       window.removeEventListener("scroll", handleScrollOrResize, true);
       window.removeEventListener("resize", handleScrollOrResize);
     };
-  }, [menuOpen, category.id, setOpenMenuId]);
+  }, [menuOpen]);
 
   return (
     <div
