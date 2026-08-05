@@ -1,6 +1,23 @@
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { 
+  Phone, 
+  Mail, 
+  MessageCircle, 
+  Instagram, 
+  Clock, 
+  Bot, 
+  Eye, 
+  Settings, 
+  CheckCircle2, 
+  AlertCircle, 
+  Sparkles,
+  Smartphone,
+  ShieldCheck,
+  Layers,
+  Timer
+} from "lucide-react";
 
 export default function SupportSettingsManagement() {
   const [settings, setSettings] = useState({
@@ -14,7 +31,11 @@ export default function SupportSettingsManagement() {
     instagramDescription: "",
     businessHoursTitle: "",
     businessHoursDescription: "",
-    mondayFriday: "",
+    monday: "",
+    tuesday: "",
+    wednesday: "",
+    thursday: "",
+    friday: "",
     saturday: "",
     sunday: "",
     supportEnabled: true,
@@ -135,10 +156,26 @@ export default function SupportSettingsManagement() {
 
   const hasChanges = JSON.stringify(settings) !== JSON.stringify(originalSettings);
 
+  // Derived stats for the hero metrics
+  const activeChannelsCount = [
+    settings.phoneEnabled, 
+    settings.emailEnabled, 
+    settings.whatsappEnabled, 
+    settings.instagramEnabled
+  ].filter(Boolean).length;
+
+  const visibleChannelsCount = [
+    settings.showPhone, 
+    settings.showEmail, 
+    settings.showWhatsapp, 
+    settings.showInstagram
+  ].filter(Boolean).length;
+
   if (loading) {
     return (
-      <div className="support-settings-page">
+      <div className="admin-page">
         <div className="loading-card">
+          <div className="spinner"></div>
           Loading support settings...
         </div>
       </div>
@@ -149,543 +186,742 @@ export default function SupportSettingsManagement() {
     <>
       <style>{`
         /* ===========================
-           SUPPORT SETTINGS (SaaS Polish)
+           BREWED LUXURY ADMIN V1 DESIGN SYSTEM
         =========================== */
 
-        .support-settings-page{
-            max-width:960px;
-            margin:auto;
-            padding:32px 20px;
-            background:#FAF8F6;
-            font-family: inherit;
-            color: #1A1614;
+        .admin-page {
+          padding: 32px;
+          background: #F8F6F2;
+          min-height: 100vh;
+          font-family: inherit;
+          color: #1A1614;
+          box-sizing: border-box;
         }
 
-        /* ===========================
-           HEADER
-        =========================== */
-
-        .page-header{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            margin-bottom:24px;
-            padding:20px 24px;
-            background:white;
-            border-radius:14px;
-            border:1px solid #ECE8E3;
-            box-shadow:0 1px 3px rgba(0,0,0,.02);
+        /* HERO HEADER & STAT CARDS */
+        .admin-hero {
+          margin-bottom: 28px;
         }
 
-        .page-header h2{
-            margin:0;
-            font-size:22px;
-            color:#1A1614;
-            font-weight:600;
-            letter-spacing: -0.01em;
+        .hero-top-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 24px;
+          background: white;
+          padding: 24px 28px;
+          border-radius: 20px;
+          border: 1px solid #ECE8E3;
+          box-shadow: 0 4px 20px rgba(44,34,30,0.02);
         }
 
-        .page-header p{
-            margin:4px 0 0;
-            color:#7A6E65;
-            font-size:14px;
+        .hero-title-area h2 {
+          margin: 0;
+          font-size: 26px;
+          color: #1A1614;
+          font-weight: 600;
+          letter-spacing: -0.02em;
         }
 
-        /* ===========================
-           CARDS
-        =========================== */
-
-        .settings-card{
-            background:white;
-            border-radius:14px;
-            padding:24px;
-            margin-bottom:20px;
-            border:1px solid #ECE8E3;
-            box-shadow:0 1px 3px rgba(0,0,0,.03), 0 8px 24px rgba(44,34,30,.02);
-            transition:border-color .2s;
+        .hero-title-area p {
+          margin: 6px 0 0;
+          color: #7A6E65;
+          font-size: 15px;
         }
 
-        .settings-card:hover{
-            border-color: #D8D0C7;
+        .hero-action-slot {
+          display: flex;
+          gap: 12px;
+          align-items: center;
         }
 
-        .settings-card h3{
-            margin:0;
-            color:#1A1614;
-            font-size:18px;
-            font-weight:600;
-            letter-spacing: -0.01em;
+        .hero-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
         }
 
-        .settings-card > p{
-            margin:6px 0 20px;
-            color:#7A6E65;
-            font-size:14px;
-            line-height:1.5;
+        .stat-card {
+          background: white;
+          border-radius: 18px;
+          padding: 20px 24px;
+          border: 1px solid #ECE8E3;
+          box-shadow: 0 4px 20px rgba(44,34,30,0.02);
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          transition: transform 0.2s ease, border-color 0.2s ease;
         }
 
-        /* ===========================
-           PREVIEW CARD (Help Centre Mock)
-        =========================== */
-
-        .preview-card{
-            background:white;
-            border-radius:14px;
-            padding:24px;
-            margin-bottom:20px;
-            border:1px solid #ECE8E3;
-            box-shadow:0 1px 3px rgba(0,0,0,.03), 0 8px 24px rgba(44,34,30,.02);
+        .stat-card:hover {
+          border-color: #D8D0C7;
+          transform: translateY(-2px);
         }
 
-        .help-centre-mock{
-            background:#FAF8F6;
-            border-radius:10px;
-            border:1px solid #ECE8E3;
-            padding:20px;
-            margin-top:16px;
+        .stat-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          background: #FAF8F6;
+          border: 1px solid #ECE8E3;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #1A1614;
+          flex-shrink: 0;
         }
 
-        .mock-header{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #ECE8E3;
+        .stat-content .stat-label {
+          font-size: 13px;
+          font-weight: 500;
+          color: #7A6E65;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          margin-bottom: 4px;
         }
 
-        .mock-header h4 {
-            margin: 0;
-            font-size: 15px;
-            font-weight: 600;
-            color: #1A1614;
+        .stat-content .stat-value {
+          font-size: 20px;
+          font-weight: 600;
+          color: #1A1614;
+          letter-spacing: -0.01em;
         }
 
-        .mock-response-badge {
-            font-size: 13px;
-            color: #5A4E46;
-            background: #F0ECE6;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-weight: 500;
+        /* BANNERS */
+        .success-banner {
+          background: #F0FDF4;
+          border: 1px solid #DCFCE7;
+          padding: 16px 20px;
+          border-radius: 14px;
+          margin-bottom: 24px;
+          color: #166534;
+          font-weight: 500;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
         }
 
-        .mock-channels-list{
-            display:flex;
-            flex-direction:column;
-            gap:12px;
+        .error-banner {
+          background: #FEF2F2;
+          border: 1px solid #FEE2E2;
+          padding: 16px 20px;
+          border-radius: 14px;
+          margin-bottom: 24px;
+          color: #991B1B;
+          font-weight: 500;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
         }
 
-        .mock-channel-row{
-            background:white;
-            border-radius:8px;
-            padding:14px 16px;
-            border:1px solid #ECE8E3;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        /* DASHBOARD CARDS */
+        .dashboard-card {
+          background: white;
+          border-radius: 20px;
+          padding: 28px;
+          margin-bottom: 24px;
+          border: 1px solid #ECE8E3;
+          box-shadow: 0 4px 24px rgba(44,34,30,0.03);
+          transition: border-color 0.2s ease;
         }
 
-        .mock-channel-info strong{
-            display:block;
-            color:#1A1614;
-            font-size:14px;
-            font-weight:600;
-            margin-bottom:2px;
+        .dashboard-card:hover {
+          border-color: #D8D0C7;
         }
 
-        .mock-channel-info span{
-            color:#7A6E65;
-            font-size:13px;
+        .dashboard-card h3 {
+          margin: 0;
+          color: #1A1614;
+          font-size: 19px;
+          font-weight: 600;
+          letter-spacing: -0.01em;
+          display: flex;
+          align-items: center;
+          gap: 10px;
         }
 
-        .mock-channel-action {
-            font-size: 13px;
-            font-weight: 500;
-            color: #2C221E;
-            background: #FAF8F6;
-            padding: 6px 12px;
-            border-radius: 6px;
-            border: 1px solid #ECE8E3;
+        .dashboard-card > p {
+          margin: 6px 0 24px;
+          color: #7A6E65;
+          font-size: 14px;
+          line-height: 1.5;
         }
 
-        /* ===========================
-           GRID
-        =========================== */
-
-        .settings-grid{
-            display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
-            gap:16px;
+        .card-subsection-title {
+          font-size: 13px;
+          font-weight: 600;
+          color: #5A4E46;
+          margin: 24px 0 14px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
 
-        /* ===========================
-           INPUTS
-        =========================== */
-
-        .input-group{
-            display:flex;
-            flex-direction:column;
-            gap:8px;
-            margin-bottom:14px;
+        /* GRIDS */
+        .settings-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 20px;
         }
 
-        .input-group:last-child{
-            margin-bottom:0;
+        /* INPUTS */
+        .input-group {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-bottom: 16px;
         }
 
-        .input-group label{
-            font-size:12px;
-            font-weight:600;
-            color:#5A4E46;
-            letter-spacing:.3px;
-            text-transform:uppercase;
+        .input-group:last-child {
+          margin-bottom: 0;
+        }
+
+        .input-group label {
+          font-size: 12px;
+          font-weight: 600;
+          color: #5A4E46;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
         }
 
         .input-group input[type="text"],
         .input-group input[type="email"],
         .input-group input[type="number"],
         .input-group select,
-        .input-group textarea{
-            background:white;
-            border:1px solid #ECE8E3;
-            border-radius:10px;
-            padding:12px 14px;
-            font-size:14px;
-            transition:.2s;
-            outline:none;
-            color:#1A1614;
-            font-family:inherit;
+        .input-group textarea {
+          background: #FCFBF8;
+          border: 1px solid #ECE8E3;
+          border-radius: 14px;
+          height: 48px;
+          padding: 0 16px;
+          font-size: 14px;
+          transition: all 0.2s ease;
+          outline: none;
+          color: #1A1614;
+          font-family: inherit;
+          box-sizing: border-box;
+          width: 100%;
         }
 
-        .input-group textarea{
-            min-height:90px;
-            resize:vertical;
+        .input-group textarea {
+          height: auto;
+          min-height: 110px;
+          padding: 14px 16px;
+          resize: vertical;
         }
 
         .input-group input:hover,
         .input-group select:hover,
-        .input-group textarea:hover{
-            border-color:#C8BFC5;
+        .input-group textarea:hover {
+          border-color: #C8BFC5;
+          background: white;
         }
 
         .input-group input:focus,
         .input-group select:focus,
-        .input-group textarea:focus{
-            border-color:#1A1614;
-            box-shadow:0 0 0 3px rgba(26,22,20,.08);
+        .input-group textarea:focus {
+          border-color: #1A1614;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(26,22,20,0.06);
         }
 
-        .checkbox-label{
-            display:flex;
-            align-items:center;
-            gap:10px;
-            font-weight:500;
-            color:#1A1614;
-            cursor:pointer;
-            font-size:14px;
+        .field-error {
+          margin-top: 4px;
+          color: #DC2626;
+          font-size: 12px;
+          font-weight: 500;
         }
 
-        .checkbox-label input[type="checkbox"]{
-            width:16px;
-            height:16px;
-            accent-color:#1A1614;
-            cursor:pointer;
+        /* CHECKBOXES & TOGGLES */
+        .checkbox-label {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          font-weight: 500;
+          color: #1A1614;
+          cursor: pointer;
+          font-size: 14px;
+          background: #FAF8F6;
+          padding: 14px 18px;
+          border-radius: 14px;
+          border: 1px solid #ECE8E3;
+          transition: border-color 0.2s ease;
         }
 
-        .checkbox-grid{
-            display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-            gap:12px;
+        .checkbox-label:hover {
+          border-color: #D8D0C7;
         }
 
-        .field-error{
-            margin-top:4px;
-            color:#DC2626;
-            font-size:12px;
-            font-weight:500;
+        .checkbox-label input[type="checkbox"] {
+          width: 18px;
+          height: 18px;
+          accent-color: #1A1614;
+          cursor: pointer;
         }
 
-        /* ===========================
-           TEST BUTTONS
-        =========================== */
-
-        .test-buttons{
-            display:flex;
-            flex-wrap:wrap;
-            gap:12px;
-            margin-top:16px;
+        .checkbox-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 14px;
         }
 
-        .test-buttons button{
-            background:white;
-            border:1px solid #ECE8E3;
-            border-radius:10px;
-            padding:10px 16px;
-            cursor:pointer;
-            font-weight:500;
-            font-size:13px;
-            transition:.2s;
-            color:#1A1614;
+        .toggle-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
         }
 
-        .test-buttons button:hover:not(:disabled){
-            background:#FAF8F6;
-            border-color:#1A1614;
+        .toggle-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 20px;
+          background: #FAF8F6;
+          border-radius: 14px;
+          border: 1px solid #ECE8E3;
+          transition: border-color 0.2s ease;
         }
 
-        .test-buttons button:disabled{
-            opacity:.4;
-            cursor:not-allowed;
+        .toggle-row:hover {
+          border-color: #D8D0C7;
         }
 
-        /* ===========================
-           SWITCH TOGGLES (iOS Style)
-        =========================== */
-
-        .toggle-list{
-            display:flex;
-            flex-direction:column;
-            gap:12px;
+        .toggle-row-info {
+          display: flex;
+          align-items: center;
+          gap: 14px;
         }
 
-        .toggle-row{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            padding:14px 16px;
-            background:#FAF8F6;
-            border-radius:10px;
-            border:1px solid #ECE8E3;
+        .toggle-row-icon {
+          width: 38px;
+          height: 38px;
+          border-radius: 10px;
+          background: white;
+          border: 1px solid #ECE8E3;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #1A1614;
         }
 
-        .toggle-row span{
-            font-weight:500;
-            color:#1A1614;
-            font-size:14px;
+        .toggle-row-text strong {
+          display: block;
+          font-weight: 600;
+          color: #1A1614;
+          font-size: 14px;
+          margin-bottom: 2px;
         }
 
+        .toggle-row-text span {
+          color: #7A6E65;
+          font-size: 13px;
+        }
+
+        /* SWITCH TOGGLE (iOS Style) */
         .switch {
-            position: relative;
-            display: inline-block;
-            width: 44px;
-            height: 24px;
-            cursor: pointer;
+          position: relative;
+          display: inline-block;
+          width: 46px;
+          height: 26px;
+          cursor: pointer;
+          flex-shrink: 0;
         }
 
         .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
+          opacity: 0;
+          width: 0;
+          height: 0;
         }
 
         .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #D6CEC7;
-            transition: .2s;
-            border-radius: 24px;
+          position: absolute;
+          cursor: pointer;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background-color: #D6CEC7;
+          transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          border-radius: 26px;
         }
 
         .slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .2s;
-            border-radius: 50%;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+          position: absolute;
+          content: "";
+          height: 20px;
+          width: 20px;
+          left: 3px;
+          bottom: 3px;
+          background-color: white;
+          transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          border-radius: 50%;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.15);
         }
 
         input:checked + .slider {
-            background-color: #1A1614;
+          background-color: #1A1614;
         }
 
         input:checked + .slider:before {
-            transform: translateX(20px);
+          transform: translateX(20px);
         }
 
-        /* ===========================
-           ACTION BAR
-        =========================== */
-
-        .action-bar{
-            position:sticky;
-            bottom:16px;
-            background:white;
-            border-radius:14px;
-            padding:16px 20px;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            margin-top:24px;
-            border:1px solid #ECE8E3;
-            box-shadow:0 4px 20px rgba(0,0,0,.06);
-            z-index: 10;
+        /* TEST BUTTONS */
+        .test-buttons {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-top: 20px;
         }
 
-        .actions{
-            display:flex;
-            gap:10px;
+        .test-buttons button {
+          background: #FAF8F6;
+          border: 1px solid #ECE8E3;
+          border-radius: 12px;
+          padding: 10px 18px;
+          cursor: pointer;
+          font-weight: 500;
+          font-size: 13px;
+          transition: all 0.2s ease;
+          color: #1A1614;
         }
 
-        /* ===========================
-           BUTTONS
-        =========================== */
-
-        .save-btn{
-            background:#1A1614;
-            color:white;
-            border:none;
-            padding:10px 18px;
-            border-radius:10px;
-            cursor:pointer;
-            font-size:14px;
-            font-weight:500;
-            transition:.2s;
+        .test-buttons button:hover:not(:disabled) {
+          background: white;
+          border-color: #1A1614;
         }
 
-        .save-btn:hover:not(:disabled){
-            background:#332C28;
+        .test-buttons button:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
         }
 
-        .save-btn:disabled{
-            background:#D6CEC7;
-            cursor:not-allowed;
+        /* PREMIUM PHONE MOCKUP PREVIEW */
+        .preview-container {
+          display: flex;
+          justify-content: center;
+          padding: 20px 0;
         }
 
-        .reset-btn{
-            background:white;
-            border:1px solid #ECE8E3;
-            padding:10px 16px;
-            border-radius:10px;
-            cursor:pointer;
-            font-weight:500;
-            color:#1A1614;
-            transition:.2s;
-            font-size: 14px;
+        .phone-mockup {
+          width: 100%;
+          max-width: 380px;
+          background: #1A1614;
+          border-radius: 40px;
+          padding: 16px;
+          box-shadow: 0 20px 40px rgba(26,22,20,0.15);
+          border: 4px solid #332C28;
         }
 
-        .reset-btn:hover:not(:disabled){
-            background:#FAF8F6;
-            border-color:#1A1614;
+        .phone-screen {
+          background: #FAF8F6;
+          border-radius: 30px;
+          padding: 24px 18px;
+          min-height: 520px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          position: relative;
+          overflow: hidden;
         }
 
-        .reset-btn:disabled{
-            opacity:0.4;
-            cursor:not-allowed;
+        .phone-notch {
+          width: 100px;
+          height: 18px;
+          background: #1A1614;
+          border-radius: 0 0 10px 10px;
+          margin: -24px auto 14px auto;
         }
 
-        /* ===========================
-           STATUS
-        =========================== */
-
-        .unsaved{
-            color:#9A6B00;
-            font-weight:500;
-            font-size: 13px;
-            display:flex;
-            align-items:center;
-            gap:6px;
+        .mock-header {
+          text-align: center;
+          border-bottom: 1px solid #ECE8E3;
+          padding-bottom: 14px;
         }
 
-        .success-banner{
-            background:#F0FDF4;
-            border:1px solid #DCFCE7;
-            padding:14px;
-            border-radius:10px;
-            margin-bottom:16px;
-            color:#166534;
-            font-weight:500;
-            font-size: 14px;
+        .mock-header h4 {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 600;
+          color: #1A1614;
         }
 
-        .error-banner{
-            background:#FEF2F2;
-            border:1px solid #FEE2E2;
-            padding:14px;
-            border-radius:10px;
-            margin-bottom:16px;
-            color:#991B1B;
-            font-weight:500;
-            font-size: 14px;
+        .mock-response-badge {
+          display: inline-block;
+          font-size: 12px;
+          color: #5A4E46;
+          background: #F0ECE6;
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-weight: 500;
+          margin-top: 6px;
         }
 
-        .loading-card{
-            background:white;
-            padding:40px;
-            text-align:center;
-            border-radius:14px;
-            border:1px solid #ECE8E3;
-            color:#7A6E65;
-            font-weight:500;
-            font-size:14px;
+        .mock-channels-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
         }
 
-        /* ===========================
-           MOBILE
-        =========================== */
+        .mock-channel-row {
+          background: white;
+          border-radius: 12px;
+          padding: 12px 14px;
+          border: 1px solid #ECE8E3;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
 
-        @media(max-width:768px){
-            .page-header{
-                flex-direction:column;
-                align-items:flex-start;
-                gap:14px;
-            }
+        .mock-channel-info strong {
+          display: block;
+          color: #1A1614;
+          font-size: 13px;
+          font-weight: 600;
+          margin-bottom: 2px;
+        }
 
-            .settings-grid{
-                grid-template-columns:1fr;
-            }
+        .mock-channel-info span {
+          color: #7A6E65;
+          font-size: 11px;
+          line-height: 1.3;
+          display: -webkit-box;
+          -webkit-line-clamp: 1;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
 
-            .action-bar{
-                flex-direction:column;
-                gap:12px;
-                align-items:stretch;
-            }
+        .mock-channel-action {
+          font-size: 11px;
+          font-weight: 600;
+          color: #FAF8F6;
+          background: #1A1614;
+          padding: 6px 10px;
+          border-radius: 8px;
+          flex-shrink: 0;
+        }
 
-            .actions{
-                width:100%;
-            }
+        /* FLOATING ACTION BAR */
+        .action-bar {
+          position: sticky;
+          bottom: 24px;
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-radius: 20px;
+          padding: 16px 24px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 32px;
+          border: 1px solid #ECE8E3;
+          box-shadow: 0 10px 30px rgba(44,34,30,0.08);
+          z-index: 100;
+        }
 
-            .save-btn,
-            .reset-btn{
-                width:100%;
-            }
+        .actions {
+          display: flex;
+          gap: 12px;
+        }
+
+        .save-btn {
+          background: #1A1614;
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 14px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          transition: background 0.2s ease;
+        }
+
+        .save-btn:hover:not(:disabled) {
+          background: #332C28;
+        }
+
+        .save-btn:disabled {
+          background: #D6CEC7;
+          cursor: not-allowed;
+        }
+
+        .reset-btn {
+          background: #FAF8F6;
+          border: 1px solid #ECE8E3;
+          padding: 12px 20px;
+          border-radius: 14px;
+          cursor: pointer;
+          font-weight: 500;
+          color: #1A1614;
+          transition: all 0.2s ease;
+          font-size: 14px;
+        }
+
+        .reset-btn:hover:not(:disabled) {
+          background: white;
+          border-color: #1A1614;
+        }
+
+        .reset-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+
+        .unsaved {
+          color: #9A6B00;
+          font-weight: 500;
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: #FEF9E7;
+          padding: 6px 12px;
+          border-radius: 20px;
+          border: 1px solid #FDE68A;
+        }
+
+        .loading-card {
+          background: white;
+          padding: 60px;
+          text-align: center;
+          border-radius: 20px;
+          border: 1px solid #ECE8E3;
+          color: #7A6E65;
+          font-weight: 500;
+          font-size: 15px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .spinner {
+          width: 32px;
+          height: 32px;
+          border: 3px solid #ECE8E3;
+          border-top-color: #1A1614;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        /* RESPONSIVE */
+        @media(max-width: 768px) {
+          .admin-page {
+            padding: 16px;
+          }
+          .hero-top-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 20px;
+          }
+          .action-bar {
+            flex-direction: column;
+            gap: 12px;
+            align-items: stretch;
+            bottom: 16px;
+          }
+          .actions {
+            width: 100%;
+          }
+          .save-btn, .reset-btn {
+            width: 100%;
+          }
         }
       `}</style>
 
-      <div className="support-settings-page">
-        <div className="page-header">
-          <div>
-            <h2>Support Settings</h2>
-            <p>Configure customer support channels.</p>
+      <div className="admin-page">
+        {/* Hero Header & Stat Cards */}
+        <div className="admin-hero">
+          <div className="hero-top-row">
+            <div className="hero-title-area">
+              <h2>Support Settings</h2>
+              <p>Configure your customer support experience and channels.</p>
+            </div>
+            <div className="hero-action-slot">
+              {hasChanges && <span className="unsaved">● Unsaved Changes</span>}
+            </div>
+          </div>
+
+          <div className="hero-stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon">
+                <ShieldCheck size={22} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-label">Support Status</div>
+                <div className="stat-value">{settings.supportEnabled ? "Active" : "Disabled"}</div>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Layers size={22} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-label">Active Channels</div>
+                <div className="stat-value">{activeChannelsCount} / 4</div>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Eye size={22} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-label">Visible Channels</div>
+                <div className="stat-value">{visibleChannelsCount} / 4</div>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Timer size={22} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-label">Avg Response</div>
+                <div className="stat-value">{settings.estimatedResponseTime || "N/A"}</div>
+              </div>
+            </div>
           </div>
         </div>
 
         {success && (
           <div className="success-banner">
+            <CheckCircle2 size={18} />
             Support settings updated successfully.
           </div>
         )}
 
         {error && (
           <div className="error-banner">
+            <AlertCircle size={18} />
             {error}
           </div>
         )}
 
-        {/* Card 1: Support • Availability • Visibility */}
-        <div className="settings-card">
-          <h3>Support Availability & Visibility</h3>
+        {/* Section 1: Support Availability */}
+        <div className="dashboard-card">
+          <h3>
+            <Settings size={20} />
+            Support Availability & Visibility
+          </h3>
           <p>Control system availability, communication channels, and frontend visibility.</p>
           
-          <div className="toggle-list" style={{ marginBottom: "20px" }}>
+          <div className="toggle-list" style={{ marginBottom: "24px" }}>
             <div className="toggle-row">
-              <span>Support System</span>
+              <div className="toggle-row-info">
+                <div className="toggle-row-icon"><ShieldCheck size={18} /></div>
+                <div className="toggle-row-text">
+                  <strong>Support System</strong>
+                  <span>Global toggle for entire customer support interface</span>
+                </div>
+              </div>
               <label className="switch">
                 <input
                   type="checkbox"
@@ -695,8 +931,15 @@ export default function SupportSettingsManagement() {
                 <span className="slider"></span>
               </label>
             </div>
+
             <div className="toggle-row">
-              <span>Phone Channel</span>
+              <div className="toggle-row-info">
+                <div className="toggle-row-icon"><Phone size={18} /></div>
+                <div className="toggle-row-text">
+                  <strong>Phone Channel</strong>
+                  <span>Receive customer phone inquiries</span>
+                </div>
+              </div>
               <label className="switch">
                 <input
                   type="checkbox"
@@ -706,8 +949,15 @@ export default function SupportSettingsManagement() {
                 <span className="slider"></span>
               </label>
             </div>
+
             <div className="toggle-row">
-              <span>Email Channel</span>
+              <div className="toggle-row-info">
+                <div className="toggle-row-icon"><Mail size={18} /></div>
+                <div className="toggle-row-text">
+                  <strong>Email Channel</strong>
+                  <span>Receive customer support tickets via email</span>
+                </div>
+              </div>
               <label className="switch">
                 <input
                   type="checkbox"
@@ -717,8 +967,15 @@ export default function SupportSettingsManagement() {
                 <span className="slider"></span>
               </label>
             </div>
+
             <div className="toggle-row">
-              <span>WhatsApp Channel</span>
+              <div className="toggle-row-info">
+                <div className="toggle-row-icon"><MessageCircle size={18} /></div>
+                <div className="toggle-row-text">
+                  <strong>WhatsApp Channel</strong>
+                  <span>Enable direct WhatsApp customer communication</span>
+                </div>
+              </div>
               <label className="switch">
                 <input
                   type="checkbox"
@@ -728,8 +985,15 @@ export default function SupportSettingsManagement() {
                 <span className="slider"></span>
               </label>
             </div>
+
             <div className="toggle-row">
-              <span>Instagram Channel</span>
+              <div className="toggle-row-info">
+                <div className="toggle-row-icon"><Instagram size={18} /></div>
+                <div className="toggle-row-text">
+                  <strong>Instagram Channel</strong>
+                  <span>Display Instagram support handle and direct DM link</span>
+                </div>
+              </div>
               <label className="switch">
                 <input
                   type="checkbox"
@@ -741,8 +1005,9 @@ export default function SupportSettingsManagement() {
             </div>
           </div>
 
-          <div style={{ fontSize: "13px", fontWeight: 600, color: "#5A4E46", marginBottom: "12px", textTransform: "uppercase", letterSpacing: ".3px" }}>
-            Channel Visibility Toggles
+          <div className="card-subsection-title">
+            <Eye size={16} />
+            Frontend Channel Visibility Toggles
           </div>
           <div className="checkbox-grid">
             <label className="checkbox-label">
@@ -793,9 +1058,12 @@ export default function SupportSettingsManagement() {
           </div>
         </div>
 
-        {/* Card 2: Contact Information */}
-        <div className="settings-card">
-          <h3>Contact Information</h3>
+        {/* Section 2: Contact Channels */}
+        <div className="dashboard-card">
+          <h3>
+            <Phone size={20} />
+            Contact Channels
+          </h3>
           <p>Provide contact credentials exposed across customer support touchpoints.</p>
 
           <div className="settings-grid">
@@ -864,48 +1132,12 @@ export default function SupportSettingsManagement() {
             </div>
           </div>
 
-          <div className="test-buttons">
-            <button
-              onClick={() => window.open(`tel:${settings.phone}`)}
-              disabled={!settings.phone}
-            >
-              Test Call
-            </button>
-            <button
-              onClick={() => window.open(`mailto:${settings.email}`)}
-              disabled={!settings.email}
-            >
-              Test Email
-            </button>
-            <button
-              onClick={() =>
-                window.open(
-                  `https://wa.me/${settings.whatsapp.replace(/\D/g, "")}`
-                )
-              }
-              disabled={!settings.whatsapp}
-            >
-              Test WhatsApp
-            </button>
-            <button
-              onClick={() =>
-                window.open(
-                  `https://instagram.com/${settings.instagram.replace("@", "")}`
-                )
-              }
-              disabled={!settings.instagram}
-            >
-              Test Instagram
-            </button>
+          <div className="card-subsection-title">
+            <Sparkles size={16} />
+            Channel Descriptions
           </div>
-        </div>
 
-        {/* Card 3: Customer Experience */}
-        <div className="settings-card">
-          <h3>Customer Experience</h3>
-          <p>Configure helper copy, automated acknowledgements, and response timelines.</p>
-
-          <div className="settings-grid" style={{ marginBottom: "16px" }}>
+          <div className="settings-grid">
             <div className="input-group">
               <label>Call Description</label>
               <textarea
@@ -948,8 +1180,58 @@ export default function SupportSettingsManagement() {
             </div>
           </div>
 
-          <div className="toggle-row" style={{ marginBottom: "16px" }}>
-            <span>Automatic Acknowledgement Email</span>
+          <div className="test-buttons">
+            <button
+              onClick={() => window.open(`tel:${settings.phone}`)}
+              disabled={!settings.phone}
+            >
+              Test Call
+            </button>
+            <button
+              onClick={() => window.open(`mailto:${settings.email}`)}
+              disabled={!settings.email}
+            >
+              Test Email
+            </button>
+            <button
+              onClick={() =>
+                window.open(
+                  `https://wa.me/${settings.whatsapp.replace(/\D/g, "")}`
+                )
+              }
+              disabled={!settings.whatsapp}
+            >
+              Test WhatsApp
+            </button>
+            <button
+              onClick={() =>
+                window.open(
+                  `https://instagram.com/${settings.instagram.replace("@", "")}`
+                )
+              }
+              disabled={!settings.instagram}
+            >
+              Test Instagram
+            </button>
+          </div>
+        </div>
+
+        {/* Section 3: Customer Experience */}
+        <div className="dashboard-card">
+          <h3>
+            <Bot size={20} />
+            Customer Experience & Automation
+          </h3>
+          <p>Configure helper copy, automated acknowledgements, and response timelines.</p>
+
+          <div className="toggle-row" style={{ marginBottom: "20px" }}>
+            <div className="toggle-row-info">
+              <div className="toggle-row-icon"><Bot size={18} /></div>
+              <div className="toggle-row-text">
+                <strong>Automatic Acknowledgement Email</strong>
+                <span>Instantly email customers when a new request is logged</span>
+              </div>
+            </div>
             <label className="switch">
               <input
                 type="checkbox"
@@ -963,7 +1245,7 @@ export default function SupportSettingsManagement() {
 
           <div className="settings-grid" style={{ marginBottom: "16px" }}>
             <div className="input-group">
-              <label>Estimated Response Time</label>
+              <label>Estimated Response Time Badge</label>
               <select
                 name="estimatedResponseTime"
                 value={settings.estimatedResponseTime}
@@ -985,25 +1267,29 @@ export default function SupportSettingsManagement() {
                 min={1}
               />
             </div>
-            <div className="input-group" style={{ gridColumn: "1 / -1" }}>
-              <label>Auto-Reply Message Template</label>
-              <textarea
-                name="autoReplyMessage"
-                value={settings.autoReplyMessage}
-                onChange={handleChange}
-                rows={3}
-              />
-            </div>
+          </div>
+
+          <div className="input-group">
+            <label>Auto-Reply Message Template</label>
+            <textarea
+              name="autoReplyMessage"
+              value={settings.autoReplyMessage}
+              onChange={handleChange}
+              rows={3}
+            />
           </div>
         </div>
 
-        {/* Card 4: Business Hours */}
+        {/* Section 4: Business Hours */}
         {settings.showBusinessHours && (
-          <div className="settings-card">
-            <h3>Business Hours</h3>
-            <p>Set team availability and schedule schedules.</p>
+          <div className="dashboard-card">
+            <h3>
+              <Clock size={20} />
+              Business Hours Schedule
+            </h3>
+            <p>Set team availability and schedule timelines across the week.</p>
 
-            <div className="settings-grid" style={{ marginBottom: "16px" }}>
+            <div className="settings-grid" style={{ marginBottom: "20px" }}>
               <div className="input-group">
                 <label>Section Title</label>
                 <input
@@ -1028,11 +1314,51 @@ export default function SupportSettingsManagement() {
 
             <div className="settings-grid">
               <div className="input-group">
-                <label>Monday – Friday</label>
+                <label>Monday</label>
                 <input
                   type="text"
-                  name="mondayFriday"
-                  value={settings.mondayFriday}
+                  name="monday"
+                  value={settings.monday}
+                  onChange={handleChange}
+                  placeholder="9:00 AM – 10:00 PM"
+                />
+              </div>
+              <div className="input-group">
+                <label>Tuesday</label>
+                <input
+                  type="text"
+                  name="tuesday"
+                  value={settings.tuesday}
+                  onChange={handleChange}
+                  placeholder="9:00 AM – 10:00 PM"
+                />
+              </div>
+              <div className="input-group">
+                <label>Wednesday</label>
+                <input
+                  type="text"
+                  name="wednesday"
+                  value={settings.wednesday}
+                  onChange={handleChange}
+                  placeholder="9:00 AM – 10:00 PM"
+                />
+              </div>
+              <div className="input-group">
+                <label>Thursday</label>
+                <input
+                  type="text"
+                  name="thursday"
+                  value={settings.thursday}
+                  onChange={handleChange}
+                  placeholder="9:00 AM – 10:00 PM"
+                />
+              </div>
+              <div className="input-group">
+                <label>Friday</label>
+                <input
+                  type="text"
+                  name="friday"
+                  value={settings.friday}
                   onChange={handleChange}
                   placeholder="9:00 AM – 10:00 PM"
                 />
@@ -1061,67 +1387,75 @@ export default function SupportSettingsManagement() {
           </div>
         )}
 
-        {/* Card 5: Live Preview */}
-        <div className="preview-card">
-          <h3>Customer Preview</h3>
-          <p>Real-time emulation of the customer Help Centre view.</p>
+        {/* Section 5: Live Preview */}
+        <div className="dashboard-card">
+          <h3>
+            <Smartphone size={20} />
+            Customer Preview
+          </h3>
+          <p>Real-time phone emulation of the customer Help Centre view.</p>
 
-          <div className="help-centre-mock">
-            <div className="mock-header">
-              <h4>Need help?</h4>
-              <div className="mock-response-badge">
-                Average response {settings.estimatedResponseTime ? settings.estimatedResponseTime.toLowerCase() : "within 2 hours"}
+          <div className="preview-container">
+            <div className="phone-mockup">
+              <div className="phone-notch"></div>
+              <div className="phone-screen">
+                <div className="mock-header">
+                  <h4>Need Help?</h4>
+                  <div className="mock-response-badge">
+                    {settings.estimatedResponseTime || "Replies within 2 hours"}
+                  </div>
+                </div>
+
+                {!settings.supportEnabled ? (
+                  <div style={{ textAlign: "center", padding: "40px 20px", color: "#7A6E65", fontSize: "13px" }}>
+                    Support is currently unavailable.
+                  </div>
+                ) : (
+                  <div className="mock-channels-list">
+                    {settings.showPhone && settings.phoneEnabled && (
+                      <div className="mock-channel-row">
+                        <div className="mock-channel-info">
+                          <strong>Phone Support</strong>
+                          <span>{settings.phone || "Not set"}</span>
+                        </div>
+                        <div className="mock-channel-action">Call</div>
+                      </div>
+                    )}
+                    {settings.showEmail && settings.emailEnabled && (
+                      <div className="mock-channel-row">
+                        <div className="mock-channel-info">
+                          <strong>Email Support</strong>
+                          <span>{settings.email || "Not set"}</span>
+                        </div>
+                        <div className="mock-channel-action">Email</div>
+                      </div>
+                    )}
+                    {settings.showWhatsapp && settings.whatsappEnabled && (
+                      <div className="mock-channel-row">
+                        <div className="mock-channel-info">
+                          <strong>WhatsApp</strong>
+                          <span>{settings.whatsapp || "Not set"}</span>
+                        </div>
+                        <div className="mock-channel-action">Chat</div>
+                      </div>
+                    )}
+                    {settings.showInstagram && settings.instagramEnabled && (
+                      <div className="mock-channel-row">
+                        <div className="mock-channel-info">
+                          <strong>Instagram</strong>
+                          <span>{settings.instagram || "Not set"}</span>
+                        </div>
+                        <div className="mock-channel-action">DM</div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
-
-            {!settings.supportEnabled ? (
-              <div style={{ textAlign: "center", padding: "20px", color: "#7A6E65", fontSize: "14px" }}>
-                Support is currently unavailable.
-              </div>
-            ) : (
-              <div className="mock-channels-list">
-                {settings.showPhone && settings.phoneEnabled && (
-                  <div className="mock-channel-row">
-                    <div className="mock-channel-info">
-                      <strong>Phone Support</strong>
-                      <span>{settings.phone || "Not configured"} • {settings.callDescription || "Available during business hours."}</span>
-                    </div>
-                    <div className="mock-channel-action">Call</div>
-                  </div>
-                )}
-                {settings.showEmail && settings.emailEnabled && (
-                  <div className="mock-channel-row">
-                    <div className="mock-channel-info">
-                      <strong>Email Support</strong>
-                      <span>{settings.email || "Not configured"} • {settings.emailDescription || "Replies within 24 hours"}</span>
-                    </div>
-                    <div className="mock-channel-action">Email</div>
-                  </div>
-                )}
-                {settings.showWhatsapp && settings.whatsappEnabled && (
-                  <div className="mock-channel-row">
-                    <div className="mock-channel-info">
-                      <strong>WhatsApp</strong>
-                      <span>{settings.whatsapp || "Not configured"} • {settings.whatsappDescription || "Fastest way to get help."}</span>
-                    </div>
-                    <div className="mock-channel-action">Chat</div>
-                  </div>
-                )}
-                {settings.showInstagram && settings.instagramEnabled && (
-                  <div className="mock-channel-row">
-                    <div className="mock-channel-info">
-                      <strong>Instagram</strong>
-                      <span>{settings.instagram || "Not configured"} • {settings.instagramDescription || "Send us a DM anytime."}</span>
-                    </div>
-                    <div className="mock-channel-action">DM</div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Action Bar */}
+        {/* Sticky Action Bar */}
         <div className="action-bar">
           {hasChanges ? (
             <span className="unsaved">● Unsaved changes</span>
@@ -1149,4 +1483,3 @@ export default function SupportSettingsManagement() {
     </>
   );
 }
-
