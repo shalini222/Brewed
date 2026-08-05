@@ -82,20 +82,22 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
       className={`category-item ${isExpanded ? "expanded" : ""}`}
     >
       <div className="category-main-row">
-        <div {...attributes} {...listeners} className="drag-handle" title="Drag to reorder">
-          <GripVertical size={18} strokeWidth={1.8} />
-        </div>
-        <div className="icon-box">
-          <Icon size={24} strokeWidth={1.7} color="#C4956A" />
-        </div>
-        <div>
-          <div className="category-title">
-            {category.title}
-            {category.updatedAt && (
-              <span className="recent-badge">Edited recently</span>
-            )}
+        <div className="category-left">
+          <div {...attributes} {...listeners} className="drag-handle" title="Drag to reorder">
+            <GripVertical size={18} strokeWidth={1.8} />
           </div>
-          <div className="category-desc">{category.description}</div>
+          <div className="icon-box">
+            <Icon size={24} strokeWidth={1.7} color="#C4956A" />
+          </div>
+          <div>
+            <div className="category-title">
+              {category.title}
+              {category.updatedAt && (
+                <span className="recent-badge">Edited recently</span>
+              )}
+            </div>
+            <div className="category-desc">{category.description}</div>
+          </div>
         </div>
 
         <div className="category-right-actions">
@@ -166,7 +168,7 @@ export default function SupportHelpCategoryManagement() {
   const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
-  const [saveState, setSaveState] = useState("idle"); // 'idle', 'saving', 'saved'
+  const [saveState, setSaveState] = useState("idle");
   const [lastSynced, setLastSynced] = useState("Just now");
   const [recentActivities, setRecentActivities] = useState([
     { id: 1, text: "Olivia created Coffee", time: "2 mins ago" },
@@ -224,7 +226,6 @@ export default function SupportHelpCategoryManagement() {
     return unsubscribe;
   }, []);
 
-  // Keyboard shortcut Ctrl + S
   useEffect(() => {
     const key = e => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
@@ -340,7 +341,7 @@ export default function SupportHelpCategoryManagement() {
     <>
       <style>{`
         .help-page{
-            max-width:1280px;
+            max-width:1450px;
             margin:auto;
             padding:40px;
             min-height:100vh;
@@ -406,9 +407,7 @@ export default function SupportHelpCategoryManagement() {
         .stat-card span{ display:block; font-size:13px; font-weight:600; color:#8B7C72; margin-bottom:8px; }
         .stat-card h2{ margin:0; font-size:34px; color:#241C18; font-weight:800; letter-spacing:-1px; }
 
-        .dashboard-grid{ display:grid; grid-template-columns:1fr; gap:36px; }
-        .top-grid{ display:grid; grid-template-columns:1.7fr .9fr; gap:30px; align-items:start; margin-bottom:34px; }
-        @media(max-width:1100px){ .top-grid{ grid-template-columns:1fr; } }
+        .dashboard-grid{ display:block; }
 
         .help-card{
             background:rgba(255,255,255,.82); backdrop-filter:blur(18px);
@@ -426,7 +425,14 @@ export default function SupportHelpCategoryManagement() {
         }
         .form-subtitle{ margin-top:6px; margin-bottom:24px; font-size:14px; color:#8C7C72; line-height:1.6; }
 
-        .icon-picker{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-height:220px; overflow-y:auto; padding-right:6px; }
+        .icon-picker{ 
+            display:grid; 
+            grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); 
+            gap:12px; 
+            max-height:220px; 
+            overflow-y:auto; 
+            padding-right:8px; 
+        }
         .icon-option{
             background:white; border:1px solid #ECE6DE; border-radius:14px;
             padding:12px; cursor:pointer; transition:.28s; display:flex;
@@ -477,7 +483,7 @@ export default function SupportHelpCategoryManagement() {
         .section-count{ background:#F5EFE8; padding:10px 16px; border-radius:999px; font-weight:600; font-size:13px; color:#6E5E53; }
 
         /* Category Item Card */
-        .category-grid{ display:flex; flex-direction:column; gap:18px; }
+        .category-grid{ display:flex; flex-direction:column; gap:22px; overflow:visible; }
         .category-item{
             background:rgba(255,255,255,.92); backdrop-filter:blur(14px);
             border-radius:22px; border:1px solid rgba(255,255,255,.8);
@@ -490,12 +496,17 @@ export default function SupportHelpCategoryManagement() {
             z-index:20;
         }
         .category-main-row{ display:flex; justify-content:space-between; align-items:center; }
-        .category-left{ display:flex; align-items:center; gap:18px; }
-        .drag-handle{ cursor:grab; color:#B5A89E; padding:4px; }
+        .category-left{ 
+            display:grid; 
+            grid-template-columns:28px 56px 1fr; 
+            align-items:center; 
+            gap:18px; 
+        }
+        .drag-handle{ cursor:grab; color:#B5A89E; padding:4px; display:flex; align-items:center; justify-content:center; }
         .drag-handle:active{ cursor:grabbing; }
 
         .icon-box{
-            width:52px; height:52px; border-radius:16px;
+            width:48px; height:48px; border-radius:16px;
             background: linear-gradient(180deg, #FBF9F6, #F2ECE5);
             border:1px solid #ECE3DA; display:flex; justify-content:center; align-items:center; flex-shrink:0;
         }
@@ -518,7 +529,7 @@ export default function SupportHelpCategoryManagement() {
         /* Dropdown Actions */
         .dropdown-container{ position:relative; }
         .action-dropdown{
-            position:absolute; right:0; top:48px; z-index:9999; min-width:180px; 
+            position:absolute; top:46px; right:0; z-index:9999; min-width:180px; 
             background:white; border-radius:16px; box-shadow:0 18px 45px rgba(0,0,0,.12); 
             border:1px solid #ECE3DA; padding:8px;
         }
@@ -539,7 +550,7 @@ export default function SupportHelpCategoryManagement() {
         /* Customer Preview Real Style */
         .customer-preview-box{
             background:#1C1613; color:white; border-radius:24px; padding:20px; box-shadow:0 20px 50px rgba(0,0,0,.2);
-            max-height:420px; overflow:auto;
+            max-height:430px; overflow-y:auto;
         }
         .customer-preview-header{ font-size:13px; text-transform:uppercase; letter-spacing:1px; color:#C4956A; margin-bottom:16px; font-weight:700; }
         .real-preview-card{
@@ -626,120 +637,92 @@ export default function SupportHelpCategoryManagement() {
         </div>
 
         <div className="dashboard-grid">
-          <div className="top-grid">
-            {/* Add / Edit Form */}
-            <div className="help-card" ref={formRef} style={{ marginBottom: 0 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: "22px" }}>{editingId ? "Edit Category" : "New Category"}</h3>
-                  <p className="form-subtitle">Configure navigation routing for customers.</p>
-                </div>
-              </div>
-
-              {dirty && (
-                <div className="unsaved-banner">
-                  You have unsaved changes. (Ctrl + S)
-                </div>
-              )}
-
-              <div className="help-form">
-                <div>
-                  <input
-                    ref={titleInputRef}
-                    value={title}
-                    maxLength={40}
-                    onChange={(e) => {
-                      setTitle(e.target.value);
-                      setDirty(true);
-                    }}
-                    placeholder="Category title"
-                  />
-                  <div className="field-counter">{title.length}/40</div>
-                  {isDuplicateTitle && (
-                    <div className="warning-text">Category already exists.</div>
-                  )}
-                </div>
-
-                <div className="icon-picker">
-                  {icons.map(name => {
-                    const Icon = iconMap[name];
-                    return (
-                      <button
-                        key={name}
-                        type="button"
-                        onClick={() => {
-                          setIcon(name);
-                          setDirty(true);
-                        }}
-                        className={icon === name ? "icon-option active" : "icon-option"}
-                      >
-                        <Icon size={20} strokeWidth={1.8} />
-                        <span>{name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div>
-                  <textarea
-                    value={description}
-                    maxLength={120}
-                    onChange={(e) => {
-                      setDescription(e.target.value);
-                      setDirty(true);
-                    }}
-                    placeholder="Description"
-                    rows="3"
-                  />
-                  <div className="field-counter">{description.length}/120</div>
-                </div>
-
-                <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
-                  <button 
-                    className="primary-btn"
-                    onClick={saveCategory}
-                  >
-                    {saveState === "saving" ? "Saving..." : saveState === "saved" ? <><Check size={16} /> Saved</> : editingId ? "Update Category" : "Create Category"}
-                  </button>
-                  <button 
-                    className="secondary-btn"
-                    onClick={() => {
-                      setTitle("");
-                      setDescription("");
-                      setIcon("Truck");
-                      setEditingId(null);
-                      setDirty(false);
-                    }}
-                  >
-                    Clear
-                  </button>
-                </div>
+          {/* Add / Edit Form (Full Width) */}
+          <div className="help-card" ref={formRef}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "22px" }}>{editingId ? "Edit Category" : "New Category"}</h3>
+                <p className="form-subtitle">Configure navigation routing for customers.</p>
               </div>
             </div>
 
-            {/* Customer Preview Real Style */}
-            <div className="help-card" style={{ marginBottom: 0 }}>
-              <h3 style={{ margin: "0 0 6px", color: "#221A16", fontSize: "20px", fontWeight: "700" }}>Customer Preview</h3>
-              <p style={{ color: "#8C7C72", marginBottom: "20px", fontSize: "14px" }}>
-                Live rendering inside the consumer Help Centre.
-              </p>
+            {dirty && (
+              <div className="unsaved-banner">
+                You have unsaved changes. (Ctrl + S)
+              </div>
+            )}
 
-              <div className="customer-preview-box">
-                <div className="customer-preview-header">Support Centre</div>
-                {categories.filter(c => c.active !== false).map(category => {
-                  const Icon = iconMap[category.icon] || HelpCircle;
+            <div className="help-form">
+              <div>
+                <input
+                  ref={titleInputRef}
+                  value={title}
+                  maxLength={40}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    setDirty(true);
+                  }}
+                  placeholder="Category title"
+                />
+                <div className="field-counter">{title.length}/40</div>
+                {isDuplicateTitle && (
+                  <div className="warning-text">Category already exists.</div>
+                )}
+              </div>
+
+              <div className="icon-picker">
+                {icons.map(name => {
+                  const Icon = iconMap[name];
                   return (
-                    <div key={category.id} className="real-preview-card">
-                      <div className="icon-box" style={{ background: "rgba(255,255,255,0.08)", border: "none" }}>
-                        <Icon size={20} strokeWidth={1.7} color="#C4956A" />
-                      </div>
-                      <div>
-                        <h5>{category.title}</h5>
-                        <p>{category.description}</p>
-                      </div>
-                    </div>
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => {
+                        setIcon(name);
+                        setDirty(true);
+                      }}
+                      className={icon === name ? "icon-option active" : "icon-option"}
+                    >
+                      <Icon size={20} strokeWidth={1.8} />
+                      <span>{name}</span>
+                    </button>
                   );
                 })}
+              </div>
+
+              <div>
+                <textarea
+                  value={description}
+                  maxLength={120}
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                    setDirty(true);
+                  }}
+                  placeholder="Description"
+                  rows="3"
+                />
+                <div className="field-counter">{description.length}/120</div>
+              </div>
+
+              <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
+                <button 
+                  className="primary-btn"
+                  onClick={saveCategory}
+                >
+                  {saveState === "saving" ? "Saving..." : saveState === "saved" ? <><Check size={16} /> Saved</> : editingId ? "Update Category" : "Create Category"}
+                </button>
+                <button 
+                  className="secondary-btn"
+                  onClick={() => {
+                    setTitle("");
+                    setDescription("");
+                    setIcon("Truck");
+                    setEditingId(null);
+                    setDirty(false);
+                  }}
+                >
+                  Clear
+                </button>
               </div>
             </div>
           </div>
@@ -818,8 +801,34 @@ export default function SupportHelpCategoryManagement() {
             )}
           </div>
 
-          {/* Recent Activity Full Section */}
+          {/* Customer Preview Real Style */}
           <div className="help-card">
+            <h3 style={{ margin: "0 0 6px", color: "#221A16", fontSize: "20px", fontWeight: "700" }}>Customer Preview</h3>
+            <p style={{ color: "#8C7C72", marginBottom: "20px", fontSize: "14px" }}>
+              Live rendering inside the consumer Help Centre.
+            </p>
+
+            <div className="customer-preview-box">
+              <div className="customer-preview-header">Support Centre</div>
+              {categories.filter(c => c.active !== false).map(category => {
+                const Icon = iconMap[category.icon] || HelpCircle;
+                return (
+                  <div key={category.id} className="real-preview-card">
+                    <div className="icon-box" style={{ background: "rgba(255,255,255,0.08)", border: "none" }}>
+                      <Icon size={20} strokeWidth={1.7} color="#C4956A" />
+                    </div>
+                    <div>
+                      <h5>{category.title}</h5>
+                      <p>{category.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Recent Activity Full Section */}
+          <div className="help-card" style={{ marginBottom: 0 }}>
             <div className="section-header" style={{ marginBottom: "16px" }}>
               <h3 style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "20px" }}>
                 <Activity size={18} color="#C4956A" /> Recent Activity
