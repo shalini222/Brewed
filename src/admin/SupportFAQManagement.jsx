@@ -12,6 +12,26 @@ import {
   orderBy,
   serverTimestamp
 } from "firebase/firestore";
+import {
+  HelpCircle,
+  Plus,
+  Search,
+  FileText,
+  ThumbsUp,
+  Eye,
+  Pin,
+  Star,
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
+  Edit3,
+  Copy,
+  ArrowUpDown,
+  Upload,
+  Download,
+  Layers,
+  Sparkles
+} from "lucide-react";
 
 export default function SupportFAQManagement() {
   const [faqs, setFaqs] = useState([]);
@@ -498,894 +518,830 @@ export default function SupportFAQManagement() {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
+  if (loading) {
+    return (
+      <div className="admin-page">
+        <div className="loading-card">
+          <div className="spinner"></div>
+          Loading FAQ management...
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "40px 48px 64px", position: "relative", fontFamily: "Inter, system-ui, -apple-system, sans-serif", background: "#F8F6F2", minHeight: "100vh", color: "#2C221E" }}>
-      {toastMessage && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: "28px",
-            right: "28px",
-            background: "#2C221E",
-            color: "#fff",
-            padding: "12px 24px",
-            borderRadius: "16px",
-            boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
-            zIndex: 1000,
-            fontWeight: 500,
-            fontSize: "14px"
-          }}
-        >
-          {toastMessage}
-        </div>
-      )}
+    <>
+      <style>{`
+        /* ===========================
+           BREWED LUXURY ADMIN V1 DESIGN SYSTEM
+        =========================== */
 
-      {/* Preview Modal */}
-      {previewFAQ && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            backgroundColor: "rgba(0, 0, 0, 0.4)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1100,
-            backdropFilter: "blur(6px)"
-          }}
-          onClick={() => setPreviewFAQ(null)}
-        >
+        .admin-page {
+          padding: 32px;
+          background: #F8F6F2;
+          min-height: 100vh;
+          font-family: inherit;
+          color: #1A1614;
+          box-sizing: border-box;
+          position: relative;
+        }
+
+        /* HERO HEADER & STAT CARDS */
+        .admin-hero {
+          margin-bottom: 28px;
+        }
+
+        .hero-top-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+          background: white;
+          padding: 24px 28px;
+          border-radius: 20px;
+          border: 1px solid #ECE8E3;
+          box-shadow: 0 4px 20px rgba(44,34,30,0.02);
+        }
+
+        .hero-title-area h2 {
+          margin: 0;
+          font-size: 26px;
+          color: #1A1614;
+          font-weight: 600;
+          letter-spacing: -0.02em;
+        }
+
+        .hero-title-area p {
+          margin: 6px 0 0;
+          color: #7A6E65;
+          font-size: 15px;
+        }
+
+        .hero-action-slot {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+        }
+
+        .hero-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
+        }
+
+        .stat-card {
+          background: white;
+          border-radius: 18px;
+          padding: 20px 24px;
+          border: 1px solid #ECE8E3;
+          box-shadow: 0 4px 20px rgba(44,34,30,0.02);
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .stat-card:hover {
+          border-color: #D8D0C7;
+          transform: translateY(-2px);
+        }
+
+        .stat-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          background: #FAF8F6;
+          border: 1px solid #ECE8E3;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #1A1614;
+          flex-shrink: 0;
+        }
+
+        .stat-content .stat-label {
+          font-size: 13px;
+          font-weight: 500;
+          color: #7A6E65;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          margin-bottom: 4px;
+        }
+
+        .stat-content .stat-value {
+          font-size: 20px;
+          font-weight: 600;
+          color: #1A1614;
+          letter-spacing: -0.01em;
+        }
+
+        /* TOAST NOTIFICATION */
+        .success-toast {
+          position: fixed;
+          bottom: 28px;
+          right: 28px;
+          background: #1A1614;
+          color: white;
+          padding: 14px 24px;
+          border-radius: 14px;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+          z-index: 1000;
+          font-weight: 500;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          animation: slideDown 0.3s ease;
+        }
+
+        /* DASHBOARD CARDS */
+        .dashboard-card {
+          background: white;
+          border-radius: 20px;
+          padding: 28px;
+          margin-bottom: 24px;
+          border: 1px solid #ECE8E3;
+          box-shadow: 0 4px 24px rgba(44,34,30,0.03);
+          transition: border-color 0.2s ease;
+        }
+
+        .dashboard-card:hover {
+          border-color: #D8D0C7;
+        }
+
+        .dashboard-card h3 {
+          margin: 0;
+          color: #1A1614;
+          font-size: 19px;
+          font-weight: 600;
+          letter-spacing: -0.01em;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .dashboard-card > p {
+          margin: 6px 0 24px;
+          color: #7A6E65;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+
+        .card-subsection-title {
+          font-size: 13px;
+          font-weight: 600;
+          color: #5A4E46;
+          margin: 24px 0 14px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        /* GRIDS */
+        .settings-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 20px;
+        }
+
+        /* INPUTS */
+        .input-group {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-bottom: 16px;
+        }
+
+        .input-group:last-child {
+          margin-bottom: 0;
+        }
+
+        .input-group label {
+          font-size: 12px;
+          font-weight: 600;
+          color: #5A4E46;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+
+        .input-group input[type="text"],
+        .input-group select,
+        .input-group textarea {
+          background: #FCFBF8;
+          border: 1px solid #ECE8E3;
+          border-radius: 14px;
+          height: 48px;
+          padding: 0 16px;
+          font-size: 14px;
+          transition: all 0.2s ease;
+          outline: none;
+          color: #1A1614;
+          font-family: inherit;
+          box-sizing: border-box;
+          width: 100%;
+        }
+
+        .input-group textarea {
+          height: auto;
+          min-height: 110px;
+          padding: 14px 16px;
+          resize: vertical;
+        }
+
+        .input-group input:hover,
+        .input-group select:hover,
+        .input-group textarea:hover {
+          border-color: #C8BFC5;
+          background: white;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus,
+        .input-group textarea:focus {
+          border-color: #1A1614;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(26,22,20,0.06);
+        }
+
+        /* BUTTONS */
+        .save-btn {
+          background: #1A1614;
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 14px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          transition: background 0.2s ease;
+        }
+
+        .save-btn:hover:not(:disabled) {
+          background: #332C28;
+        }
+
+        .reset-btn {
+          background: #FAF8F6;
+          border: 1px solid #ECE8E3;
+          padding: 12px 20px;
+          border-radius: 14px;
+          cursor: pointer;
+          font-weight: 500;
+          color: #1A1614;
+          transition: all 0.2s ease;
+          font-size: 14px;
+        }
+
+        .reset-btn:hover:not(:disabled) {
+          background: white;
+          border-color: #1A1614;
+        }
+
+        .action-btn {
+          background: #FAF8F6;
+          border: 1px solid #ECE8E3;
+          border-radius: 12px;
+          padding: 8px 14px;
+          cursor: pointer;
+          font-weight: 500;
+          font-size: 13px;
+          transition: all 0.2s ease;
+          color: #1A1614;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .action-btn:hover {
+          background: white;
+          border-color: #1A1614;
+        }
+
+        .action-btn-danger {
+          background: #FAF8F6;
+          border: 1px solid #FEE2E2;
+          color: #991B1B;
+        }
+
+        .action-btn-danger:hover {
+          background: #FEF2F2;
+          border-color: #F87171;
+        }
+
+        /* LOADING / SPINNER */
+        .loading-card {
+          background: white;
+          padding: 60px;
+          text-align: center;
+          border-radius: 20px;
+          border: 1px solid #ECE8E3;
+          color: #7A6E65;
+          font-weight: 500;
+          font-size: 15px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .spinner {
+          width: 32px;
+          height: 32px;
+          border: 3px solid #ECE8E3;
+          border-top-color: #1A1614;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* RESPONSIVE */
+        @media(max-width: 768px) {
+          .admin-page {
+            padding: 16px;
+          }
+          .hero-top-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 20px;
+          }
+          .hero-action-slot {
+            width: 100%;
+            justify-content: space-between;
+          }
+        }
+      `}</style>
+
+      <div className="admin-page">
+        {toastMessage && (
+          <div className="success-toast">
+            <CheckCircle2 size={18} color="#36543A" />
+            {toastMessage}
+          </div>
+        )}
+
+        {/* Preview Modal */}
+        {previewFAQ && (
           <div
             style={{
-              background: "#FFFFFF",
-              border: "1px solid #ECE8E3",
-              borderRadius: "24px",
-              padding: "40px",
-              width: "100%",
-              maxWidth: "760px",
-              boxShadow: "0 30px 80px rgba(0,0,0,.18)",
-              margin: "20px"
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
-              <span style={{ background: "#FCFBFA", border: "1px solid #ECE8E3", padding: "5px 12px", borderRadius: "999px", fontSize: "12px", fontWeight: 500, color: "#726A63" }}>
-                {previewFAQ.category}
-              </span>
-              <button
-                onClick={() => setPreviewFAQ(null)}
-                style={{ background: "none", border: "none", fontSize: "18px", cursor: "pointer", color: "#726A63" }}
-              >
-                ✕
-              </button>
-            </div>
-            <h2 style={{ marginTop: 0, color: "#2C221E", fontSize: "24px", fontFamily: "Playfair Display, serif", fontWeight: 600, marginBottom: "16px" }}>
-              {previewFAQ.question}
-            </h2>
-            <p style={{ color: "#726A63", whiteSpace: "pre-wrap", fontSize: "15px", lineHeight: "1.8", marginBottom: "32px" }}>
-              {previewFAQ.answer}
-            </p>
-            <button
-              onClick={() => setPreviewFAQ(null)}
-              style={{
-                height: "46px",
-                padding: "0 22px",
-                borderRadius: "14px",
-                background: "#A97A52",
-                color: "#FFFFFF",
-                border: "none",
-                cursor: "pointer",
-                fontWeight: 600,
-                fontSize: "14px",
-                transition: ".2s"
-              }}
-            >
-              Close Preview
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Hero Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "20px", marginBottom: "40px" }}>
-        <div>
-          <h1 style={{ color: "#2C221E", fontFamily: "Playfair Display, serif", fontSize: "40px", fontWeight: 600, margin: "0 0 8px 0", letterSpacing: "-0.02em" }}>
-            FAQ Management
-          </h1>
-          <p style={{ color: "#726A63", fontSize: "15px", margin: 0, fontWeight: 400, lineHeight: 1.7 }}>
-            Maintain your customer knowledge base, organize categories and optimize support quality.
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <button
-            onClick={exportFAQs}
-            style={{
-              height: "46px",
-              padding: "0 22px",
-              borderRadius: "14px",
-              background: "white",
-              border: "1px solid #ECE8E3",
-              cursor: "pointer",
-              fontWeight: 600,
-              color: "#2C221E",
-              fontSize: "14px",
-              boxShadow: "0 4px 12px rgba(44,34,30,.03), 0 14px 32px rgba(44,34,30,.05)",
-              transition: ".2s"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#FAF8F5";
-              e.currentTarget.style.borderColor = "#D8CCC0";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "white";
-              e.currentTarget.style.borderColor = "#ECE8E3";
-            }}
-          >
-            Export
-          </button>
-          <label
-            style={{
-              height: "46px",
-              padding: "0 22px",
-              borderRadius: "14px",
-              background: "white",
-              border: "1px solid #ECE8E3",
-              cursor: "pointer",
-              fontWeight: 600,
-              color: "#2C221E",
-              fontSize: "14px",
-              display: "inline-flex",
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              backgroundColor: "rgba(26, 22, 20, 0.4)",
+              display: "flex",
+              justifyContent: "center",
               alignItems: "center",
-              boxShadow: "0 4px 12px rgba(44,34,30,.03), 0 14px 32px rgba(44,34,30,.05)",
-              transition: ".2s"
+              zIndex: 1100,
+              backdropFilter: "blur(6px)"
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#FAF8F5";
-              e.currentTarget.style.borderColor = "#D8CCC0";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "white";
-              e.currentTarget.style.borderColor = "#ECE8E3";
-            }}
+            onClick={() => setPreviewFAQ(null)}
           >
-            Import
-            <input type="file" accept=".json" onChange={importFAQs} style={{ display: "none" }} />
-          </label>
-          <button
-            onClick={() => window.scrollTo({ top: 300, behavior: "smooth" })}
-            style={{
-              height: "46px",
-              padding: "0 22px",
-              borderRadius: "14px",
-              background: "#A97A52",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: 600,
-              fontSize: "14px",
-              transition: ".2s"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#956947";
-              e.currentTarget.style.transform = "translateY(-1px)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#A97A52";
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
-            + New FAQ
-          </button>
-        </div>
-      </div>
-
-      {/* Statistics Cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: "24px",
-          marginBottom: "40px"
-        }}
-      >
-        {[
-          [totalFaqs, "Total FAQs", "+12 this month", "📄"],
-          [`${helpfulPercentage}%`, "Helpful Rate", "Customer satisfaction", "👍"],
-          [totalViews, "Total Views", "Last 30 days", "👁"],
-          [pinnedFaqsCount, "Pinned FAQs", "Prioritized visibility", "📌"]
-        ].map(([value, title, subtext, icon]) => (
-          <div
-            key={title}
-            style={{
-              background: "#FFFFFF",
-              border: "1px solid #ECE8E3",
-              borderRadius: "24px",
-              padding: "32px",
-              boxShadow: "0 4px 12px rgba(44,34,30,.03), 0 14px 32px rgba(44,34,30,.05)",
-              transition: "transform .22s ease, box-shadow .22s ease, border-color .22s ease",
-              cursor: "default",
-              position: "hidden"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.borderColor = "#DDD2C7";
-              e.currentTarget.style.boxShadow = "0 10px 22px rgba(44,34,30,.05), 0 22px 50px rgba(44,34,30,.08)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.borderColor = "#ECE8E3";
-              e.currentTarget.style.boxShadow = "0 4px 12px rgba(44,34,30,.03), 0 14px 32px rgba(44,34,30,.05)";
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-              <div style={{ fontSize: "13px", letterSpacing: ".08em", textTransform: "uppercase", color: "#8C837B", fontWeight: 600 }}>
-                {title}
-              </div>
-              <span style={{ fontSize: "18px" }}>{icon}</span>
-            </div>
-            <div style={{ fontSize: "38px", fontWeight: 700, color: "#2C221E", marginBottom: "6px" }}>
-              {value}
-            </div>
-            <div style={{ fontSize: "13px", color: "#8C837B" }}>
-              {subtext}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Add / Edit Form */}
-      <div
-        style={{
-          background: "#FFFFFF",
-          border: "1px solid #ECE8E3",
-          borderRadius: "24px",
-          padding: "32px",
-          marginBottom: "36px",
-          boxShadow: "0 4px 12px rgba(44,34,30,.03), 0 14px 32px rgba(44,34,30,.05)",
-          transition: "transform .22s ease, box-shadow .22s ease, border-color .22s ease"
-        }}
-      >
-        <h2 style={{ fontFamily: "Playfair Display, serif", fontSize: "24px", fontWeight: 600, color: "#2C221E", margin: "0 0 28px 0" }}>
-          {editingId ? "Edit FAQ" : "New FAQ"}
-        </h2>
-
-        <div style={{ marginBottom: "24px" }}>
-          <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#8C837B", marginBottom: "8px" }}>Question</label>
-          <input
-            type="text"
-            placeholder="Type your question here..."
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            style={{
-              width: "100%",
-              height: "54px",
-              borderRadius: "16px",
-              border: "1px solid #ECE8E3",
-              background: "#FCFBFA",
-              padding: "0 18px",
-              fontSize: "15px",
-              color: "#2C221E",
-              boxSizing: "border-box",
-              transition: ".2s"
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = "#A97A52";
-              e.target.style.boxShadow = "0 0 0 4px rgba(169,122,82,.08)";
-              e.target.style.outline = "none";
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = "#ECE8E3";
-              e.target.style.boxShadow = "none";
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: "24px" }}>
-          <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#8C837B", marginBottom: "8px" }}>Answer</label>
-          <textarea
-            rows={5}
-            placeholder="Answer (Supports line breaks & bullet lists)..."
-            value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-            style={{
-              width: "100%",
-              borderRadius: "16px",
-              border: "1px solid #ECE8E3",
-              background: "#FCFBFA",
-              padding: "18px",
-              fontSize: "15px",
-              color: "#2C221E",
-              lineHeight: "1.8",
-              resize: "vertical",
-              boxSizing: "border-box",
-              transition: ".2s"
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = "#A97A52";
-              e.target.style.boxShadow = "0 0 0 4px rgba(169,122,82,.08)";
-              e.target.style.outline = "none";
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = "#ECE8E3";
-              e.target.style.boxShadow = "none";
-            }}
-          />
-        </div>
-
-        <div style={{ display: "flex", gap: "20px", alignItems: "flex-end", flexWrap: "wrap" }}>
-          <div style={{ flex: "1", minWidth: "260px" }}>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#8C837B", marginBottom: "8px" }}>Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              style={{
-                width: "100%",
-                height: "54px",
-                borderRadius: "16px",
-                border: "1px solid #ECE8E3",
-                background: "#FCFBFA",
-                padding: "0 18px",
-                fontSize: "15px",
-                color: "#2C221E",
-                boxSizing: "border-box",
-                transition: ".2s"
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = "#A97A52";
-                e.target.style.boxShadow = "0 0 0 4px rgba(169,122,82,.08)";
-                e.target.style.outline = "none";
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = "#ECE8E3";
-                e.target.style.boxShadow = "none";
-              }}
-            >
-              <option>General</option>
-              <option>Orders</option>
-              <option>Delivery</option>
-              <option>Payments</option>
-              <option>Rewards</option>
-              <option>Account</option>
-            </select>
-          </div>
-
-          <button
-            onClick={saveFAQ}
-            style={{
-              height: "46px",
-              padding: "0 22px",
-              borderRadius: "14px",
-              background: "#A97A52",
-              color: "white",
-              border: "none",
-              fontWeight: 600,
-              fontSize: "14px",
-              cursor: "pointer",
-              transition: ".2s"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#956947";
-              e.currentTarget.style.transform = "translateY(-1px)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#A97A52";
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
-            {editingId ? "Update FAQ" : "Save FAQ"}
-          </button>
-        </div>
-      </div>
-
-      {/* Search & Filter Toolbar */}
-      <div
-        style={{
-          background: "#FFFFFF",
-          border: "1px solid #ECE8E3",
-          borderRadius: "24px",
-          padding: "32px",
-          marginBottom: "32px",
-          boxShadow: "0 4px 12px rgba(44,34,30,.03), 0 14px 32px rgba(44,34,30,.05)"
-        }}
-      >
-        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ flex: "1", minWidth: "260px" }}>
-            <input
-              type="text"
-              placeholder="Search FAQs..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{
-                width: "100%",
-                height: "54px",
-                borderRadius: "16px",
-                border: "1px solid #ECE8E3",
-                background: "#FCFBFA",
-                padding: "0 18px",
-                fontSize: "15px",
-                color: "#2C221E",
-                boxSizing: "border-box"
-              }}
-            />
-          </div>
-
-          <div style={{ minWidth: "160px" }}>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              style={{
-                width: "100%",
-                height: "54px",
-                borderRadius: "16px",
-                border: "1px solid #ECE8E3",
-                background: "#FCFBFA",
-                padding: "0 18px",
-                fontSize: "15px",
-                color: "#2C221E",
-                boxSizing: "border-box"
-              }}
-            >
-              <option value="All">Category ▼</option>
-              {[...new Set(faqs.map(f => f.category))].map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ minWidth: "160px" }}>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              style={{
-                width: "100%",
-                height: "54px",
-                borderRadius: "16px",
-                border: "1px solid #ECE8E3",
-                background: "#FCFBFA",
-                padding: "0 18px",
-                fontSize: "15px",
-                color: "#2C221E",
-                boxSizing: "border-box"
-              }}
-            >
-              <option value="All">Status ▼</option>
-              <option value="Active">Active</option>
-              <option value="Disabled">Disabled</option>
-              <option value="Pinned">Pinned</option>
-              <option value="Featured">Featured</option>
-            </select>
-          </div>
-
-          <button
-            onClick={() => window.scrollTo({ top: 300, behavior: "smooth" })}
-            style={{
-              height: "46px",
-              padding: "0 22px",
-              borderRadius: "14px",
-              background: "#A97A52",
-              color: "white",
-              border: "none",
-              fontWeight: 600,
-              fontSize: "14px",
-              cursor: "pointer",
-              transition: ".2s"
-            }}
-          >
-            + New FAQ
-          </button>
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "18px", paddingTop: "18px", borderTop: "1px solid #ECE8E3", flexWrap: "wrap", gap: "10px" }}>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <button
-              onClick={selectAll}
-              style={{ background: "none", border: "none", color: "#A97A52", cursor: "pointer", fontWeight: 600, padding: 0, fontSize: "13px" }}
-            >
-              Select All
-            </button>
-            <span style={{ color: "#ECE8E3" }}>|</span>
-            <button
-              onClick={clearSelection}
-              style={{ background: "none", border: "none", color: "#726A63", cursor: "pointer", fontWeight: 600, padding: 0, fontSize: "13px" }}
-            >
-              Clear Selection ({selectedFAQs.length})
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Bulk Actions Card */}
-      {selectedFAQs.length > 0 && (
-        <div
-          style={{
-            background: "#FFFFFF",
-            border: "1px solid #ECE8E3",
-            borderRadius: "24px",
-            padding: "24px 32px",
-            marginBottom: "32px",
-            boxShadow: "0 4px 12px rgba(44,34,30,.03), 0 14px 32px rgba(44,34,30,.05)"
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
-            <div>
-              <span style={{ fontWeight: 600, color: "#2C221E", fontSize: "14px" }}>Bulk Actions</span>
-              <span style={{ color: "#726A63", fontSize: "13px", marginLeft: "12px" }}>Selected: {selectedFAQs.length} FAQs</span>
-            </div>
-
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-              <button
-                onClick={bulkEnable}
-                style={{ height: "46px", padding: "0 18px", background: "white", color: "#2C221E", border: "1px solid #ECE8E3", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
-              >
-                Enable
-              </button>
-              <button
-                onClick={bulkDisable}
-                style={{ height: "46px", padding: "0 18px", background: "white", color: "#2C221E", border: "1px solid #ECE8E3", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
-              >
-                Disable
-              </button>
-              <button
-                onClick={() => bulkPin(true)}
-                style={{ height: "46px", padding: "0 18px", background: "white", color: "#2C221E", border: "1px solid #ECE8E3", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
-              >
-                Pin
-              </button>
-              <button
-                onClick={() => bulkPin(false)}
-                style={{ height: "46px", padding: "0 18px", background: "white", color: "#2C221E", border: "1px solid #ECE8E3", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
-              >
-                Unpin
-              </button>
-              <button
-                onClick={bulkDelete}
-                style={{ height: "46px", padding: "0 18px", background: "white", color: "#A64A4A", border: "1px solid #F0D9D9", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
-              >
-                Delete
-              </button>
-
-              <div style={{ display: "flex", gap: "8px", alignItems: "center", marginLeft: "12px", borderLeft: "1px solid #ECE8E3", paddingLeft: "16px" }}>
-                <select
-                  value={bulkCategory}
-                  onChange={(e) => setBulkCategory(e.target.value)}
-                  style={{ height: "46px", padding: "0 14px", borderRadius: "14px", border: "1px solid #ECE8E3", fontSize: "13px", background: "#FCFBFA", color: "#2C221E" }}
-                >
-                  <option>General</option>
-                  <option>Orders</option>
-                  <option>Delivery</option>
-                  <option>Payments</option>
-                  <option>Rewards</option>
-                  <option>Account</option>
-                </select>
-                <button
-                  onClick={bulkCategoryChange}
-                  style={{ height: "46px", padding: "0 18px", background: "#A97A52", color: "white", border: "none", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
-                >
-                  Apply
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main List Section */}
-      {loading ? (
-        <p style={{ color: "#726A63" }}>Loading FAQs...</p>
-      ) : filteredFaqs.length === 0 ? (
-        <div
-          style={{
-            background: "#FFFFFF",
-            border: "1px solid #ECE8E3",
-            borderRadius: "24px",
-            padding: "96px 32px",
-            textAlign: "center",
-            boxShadow: "0 4px 12px rgba(44,34,30,.03), 0 14px 32px rgba(44,34,30,.05)"
-          }}
-        >
-          <div style={{ fontSize: "40px", marginBottom: "16px" }}>📖</div>
-          <h3 style={{ fontSize: "22px", fontWeight: 600, color: "#2C221E", margin: "0 0 8px 0" }}>No FAQs yet</h3>
-          <p style={{ fontSize: "15px", color: "#726A63", margin: "0 0 24px 0" }}>Start building your knowledge base.</p>
-          <button
-            onClick={() => window.scrollTo({ top: 300, behavior: "smooth" })}
-            style={{
-              height: "46px",
-              padding: "0 22px",
-              borderRadius: "14px",
-              background: "#A97A52",
-              color: "white",
-              border: "none",
-              fontWeight: 600,
-              fontSize: "14px",
-              cursor: "pointer"
-            }}
-          >
-            Create FAQ
-          </button>
-        </div>
-      ) : (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "24px",
-            marginBottom: "48px"
-          }}
-        >
-          {filteredFaqs.map((faq) => (
             <div
-              key={faq.id}
               style={{
                 background: "#FFFFFF",
                 border: "1px solid #ECE8E3",
                 borderRadius: "24px",
-                padding: "32px",
-                opacity: faq.active ? 1 : 0.6,
-                boxShadow: "0 4px 12px rgba(44,34,30,.03), 0 14px 32px rgba(44,34,30,.05)",
-                transition: "transform .22s ease, box-shadow .22s ease, border-color .22s ease"
+                padding: "36px",
+                width: "100%",
+                maxWidth: "720px",
+                boxShadow: "0 30px 80px rgba(26,22,20,.15)",
+                margin: "20px"
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.borderColor = "#DDD2C7";
-                e.currentTarget.style.boxShadow = "0 10px 22px rgba(44,34,30,.05), 0 22px 50px rgba(44,34,30,.08)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.borderColor = "#ECE8E3";
-                e.currentTarget.style.boxShadow = "0 4px 12px rgba(44,34,30,.03), 0 14px 32px rgba(44,34,30,.05)";
-              }}
+              onClick={(e) => e.stopPropagation()}
             >
-              {/* Header Section */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", marginBottom: "16px" }}>
-                <div style={{ display: "flex", gap: "14px", alignItems: "flex-start", flex: 1 }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedFAQs.includes(faq.id)}
-                    onChange={() => toggleSelection(faq.id)}
-                    style={{ marginTop: "5px", cursor: "pointer", width: "16px", height: "16px", accentColor: "#A97A52" }}
-                  />
-                  <div>
-                    <h3
-                      style={{
-                        marginTop: 0,
-                        marginBottom: "10px",
-                        color: "#2C221E",
-                        fontSize: "18px",
-                        fontWeight: 600
-                      }}
-                    >
-                      {faq.question}
-                    </h3>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", fontSize: "12px" }}>
-                      <span style={{ background: "#FCFBFA", border: "1px solid #ECE8E3", borderRadius: "999px", padding: "5px 12px", fontWeight: 500, color: "#2C221E" }}>
-                        {faq.category}
-                      </span>
-                      <span style={{ background: "#FCFBFA", border: "1px solid #ECE8E3", borderRadius: "999px", padding: "5px 12px", fontWeight: 500, color: "#726A63" }}>
-                        {faq.active ? "Active" : "Disabled"}
-                      </span>
-                      {faq.pinned && (
-                        <span style={{ background: "#FCFBFA", border: "1px solid #ECE8E3", borderRadius: "999px", padding: "5px 12px", fontWeight: 500, color: "#A97A52" }}>
-                          Pinned
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
+                <span style={{ background: "#FAF8F6", border: "1px solid #ECE8E3", padding: "6px 14px", borderRadius: "999px", fontSize: "12px", fontWeight: 600, color: "#7A6E65" }}>
+                  {previewFAQ.category}
+                </span>
+                <button
+                  onClick={() => setPreviewFAQ(null)}
+                  style={{ background: "none", border: "none", fontSize: "18px", cursor: "pointer", color: "#7A6E65" }}
+                >
+                  ✕
+                </button>
+              </div>
+              <h2 style={{ marginTop: 0, color: "#1A1614", fontSize: "22px", fontWeight: 600, marginBottom: "16px" }}>
+                {previewFAQ.question}
+              </h2>
+              <p style={{ color: "#7A6E65", whiteSpace: "pre-wrap", fontSize: "15px", lineHeight: "1.7", marginBottom: "28px" }}>
+                {previewFAQ.answer}
+              </p>
+              <button
+                className="save-btn"
+                onClick={() => setPreviewFAQ(null)}
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Hero Header */}
+        <div className="admin-hero">
+          <div className="hero-top-row">
+            <div className="hero-title-area">
+              <h2>FAQ Management</h2>
+              <p>Maintain your customer knowledge base, organize categories and optimize support quality.</p>
+            </div>
+            <div className="hero-action-slot">
+              <button
+                className="reset-btn"
+                onClick={exportFAQs}
+              >
+                <Download size={16} /> Export
+              </button>
+              <label className="reset-btn" style={{ display: "inline-flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                <Upload size={16} /> Import
+                <input type="file" accept=".json" onChange={importFAQs} style={{ display: "none" }} />
+              </label>
+              <button
+                className="save-btn"
+                onClick={() => window.scrollTo({ top: 300, behavior: "smooth" })}
+              >
+                <Plus size={16} /> New FAQ
+              </button>
+            </div>
+          </div>
+
+          <div className="hero-stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon"><FileText size={22} /></div>
+              <div className="stat-content">
+                <div className="stat-label">Total FAQs</div>
+                <div className="stat-value">{totalFaqs}</div>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon"><ThumbsUp size={22} /></div>
+              <div className="stat-content">
+                <div className="stat-label">Helpful Rate</div>
+                <div className="stat-value">{helpfulPercentage}%</div>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon"><Eye size={22} /></div>
+              <div className="stat-content">
+                <div className="stat-label">Total Views</div>
+                <div className="stat-value">{totalViews}</div>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon"><Pin size={22} /></div>
+              <div className="stat-content">
+                <div className="stat-label">Pinned FAQs</div>
+                <div className="stat-value">{pinnedFaqsCount}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Add / Edit Form */}
+        <div className="dashboard-card">
+          <h3>
+            <Sparkles size={20} />
+            {editingId ? "Edit FAQ Item" : "Create New FAQ Item"}
+          </h3>
+          <p>Fill out the question, clear answer copy, and assign the proper help category.</p>
+
+          <div className="input-group" style={{ marginBottom: "20px" }}>
+            <label>Question</label>
+            <input
+              type="text"
+              placeholder="Type your question here..."
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+            />
+          </div>
+
+          <div className="input-group" style={{ marginBottom: "20px" }}>
+            <label>Answer</label>
+            <textarea
+              rows={4}
+              placeholder="Answer (Supports line breaks & bullet lists)..."
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+            />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "16px", alignItems: "end" }}>
+            <div className="input-group">
+              <label>Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option>General</option>
+                <option>Orders</option>
+                <option>Delivery</option>
+                <option>Payments</option>
+                <option>Rewards</option>
+                <option>Account</option>
+              </select>
+            </div>
+
+            <div style={{ display: "flex", gap: "10px" }}>
+              {editingId && (
+                <button
+                  className="reset-btn"
+                  onClick={() => {
+                    setEditingId(null);
+                    setQuestion("");
+                    setAnswer("");
+                    setCategory("General");
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                className="save-btn"
+                onClick={saveFAQ}
+              >
+                {editingId ? "Update FAQ" : "Save FAQ"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Search & Filter Toolbar */}
+        <div className="dashboard-card">
+          <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "center" }}>
+            <div className="input-group" style={{ flex: "1", minWidth: "260px", margin: 0 }}>
+              <input
+                type="text"
+                placeholder="Search FAQs by question or answer..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            <div className="input-group" style={{ minWidth: "180px", margin: 0 }}>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              >
+                <option value="All">All Categories</option>
+                {[...new Set(faqs.map(f => f.category))].map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="input-group" style={{ minWidth: "160px", margin: 0 }}>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="All">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Disabled">Disabled</option>
+                <option value="Pinned">Pinned</option>
+                <option value="Featured">Featured</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px", paddingTop: "16px", borderTop: "1px solid #ECE8E3" }}>
+            <div style={{ display: "flex", gap: "12px", alignItems: "center", fontSize: "13px" }}>
+              <button
+                onClick={selectAll}
+                style={{ background: "none", border: "none", color: "#1A1614", cursor: "pointer", fontWeight: 600, padding: 0 }}
+              >
+                Select All
+              </button>
+              <span style={{ color: "#D6CEC7" }}>|</span>
+              <button
+                onClick={clearSelection}
+                style={{ background: "none", border: "none", color: "#7A6E65", cursor: "pointer", fontWeight: 500, padding: 0 }}
+              >
+                Clear Selection ({selectedFAQs.length})
+              </button>
+            </div>
+            <div style={{ color: "#7A6E65", fontSize: "13px" }}>
+              Showing {filteredFaqs.length} of {totalFaqs} items
+            </div>
+          </div>
+        </div>
+
+        {/* Bulk Actions Bar */}
+        {selectedFAQs.length > 0 && (
+          <div className="dashboard-card" style={{ padding: "20px 28px", background: "#FAF8F6" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+              <div style={{ fontWeight: 600, fontSize: "14px", color: "#1A1614" }}>
+                Bulk Actions ({selectedFAQs.length} selected)
+              </div>
+
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+                <button className="action-btn" onClick={bulkEnable}>Enable</button>
+                <button className="action-btn" onClick={bulkDisable}>Disable</button>
+                <button className="action-btn" onClick={() => bulkPin(true)}>Pin</button>
+                <button className="action-btn" onClick={() => bulkPin(false)}>Unpin</button>
+                <button className="action-btn action-btn-danger" onClick={bulkDelete}>Delete</button>
+
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", marginLeft: "8px", borderLeft: "1px solid #ECE8E3", paddingLeft: "12px" }}>
+                  <select
+                    value={bulkCategory}
+                    onChange={(e) => setBulkCategory(e.target.value)}
+                    style={{ background: "white", border: "1px solid #ECE8E3", borderRadius: "10px", height: "38px", padding: "0 12px", fontSize: "13px" }}
+                  >
+                    <option>General</option>
+                    <option>Orders</option>
+                    <option>Delivery</option>
+                    <option>Payments</option>
+                    <option>Rewards</option>
+                    <option>Account</option>
+                  </select>
+                  <button className="action-btn" onClick={bulkCategoryChange} style={{ background: "#1A1614", color: "white", border: "none" }}>
+                    Move
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* FAQ List */}
+        {filteredFaqs.length === 0 ? (
+          <div className="dashboard-card" style={{ textAlign: "center", padding: "60px" }}>
+            <HelpCircle size={40} style={{ color: "#D6CEC7", marginBottom: "12px" }} />
+            <h3 style={{ fontSize: "18px", marginBottom: "6px" }}>No FAQs found</h3>
+            <p style={{ margin: 0, color: "#7A6E65" }}>Try adjusting your search criteria or filters.</p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "32px" }}>
+            {filteredFaqs.map((faq) => (
+              <div
+                key={faq.id}
+                className="dashboard-card"
+                style={{
+                  margin: 0,
+                  opacity: faq.active ? 1 : 0.55
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", marginBottom: "14px" }}>
+                  <div style={{ display: "flex", gap: "12px", alignItems: "flex-start", flex: 1 }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedFAQs.includes(faq.id)}
+                      onChange={() => toggleSelection(faq.id)}
+                      style={{ marginTop: "4px", cursor: "pointer", width: "16px", height: "16px", accentColor: "#1A1614" }}
+                    />
+                    <div>
+                      <h3 style={{ fontSize: "17px", marginBottom: "10px" }}>{faq.question}</h3>
+                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
+                        <span style={{ background: "#FAF8F6", border: "1px solid #ECE8E3", borderRadius: "999px", padding: "3px 10px", fontSize: "11px", fontWeight: 600, color: "#5A4E46" }}>
+                          {faq.category}
                         </span>
-                      )}
-                      {faq.featured && (
-                        <span style={{ background: "#FCFBFA", border: "1px solid #ECE8E3", borderRadius: "999px", padding: "5px 12px", fontWeight: 500, color: "#A97A52" }}>
-                          Featured
+                        <span style={{ background: "#FAF8F6", border: "1px solid #ECE8E3", borderRadius: "999px", padding: "3px 10px", fontSize: "11px", fontWeight: 600, color: faq.active ? "#36543A" : "#7A6E65" }}>
+                          {faq.active ? "Active" : "Disabled"}
                         </span>
-                      )}
+                        {faq.pinned && (
+                          <span style={{ background: "#FAF8F6", border: "1px solid #ECE8E3", borderRadius: "999px", padding: "3px 10px", fontSize: "11px", fontWeight: 600, color: "#8B6A2B" }}>
+                            Pinned
+                          </span>
+                        )}
+                        {faq.featured && (
+                          <span style={{ background: "#FAF8F6", border: "1px solid #ECE8E3", borderRadius: "999px", padding: "3px 10px", fontSize: "11px", fontWeight: 600, color: "#8B6A2B" }}>
+                            Featured
+                          </span>
+                        )}
+                      </div>
                     </div>
+                  </div>
+
+                  <div style={{ fontSize: "12px", color: "#7A6E65", display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
+                    <span>{faq.views || 0} views</span>
+                    <span>•</span>
+                    <span>{faq.updatedAt?.toDate?.().toLocaleDateString("en-US", { month: "short", day: "numeric" }) || "Recent"}</span>
                   </div>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#726A63", fontWeight: 400, textAlign: "right" }}>
-                  <span>{faq.views || 0} views</span>
-                  <span>•</span>
-                  <span>{faq.updatedAt?.toDate?.().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) || "Recent"}</span>
+                <div style={{ paddingLeft: "28px", marginBottom: "16px" }}>
+                  <p style={{ margin: 0, fontSize: "14px", color: "#7A6E65", lineHeight: "1.6", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    {faq.answer}
+                  </p>
+                </div>
+
+                <div style={{ borderTop: "1px solid #ECE8E3", paddingTop: "14px", marginLeft: "28px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                    <button className="action-btn" onClick={() => editFAQ(faq)}>
+                      <Edit3 size={13} /> Edit
+                    </button>
+                    <button className="action-btn" onClick={() => setPreviewFAQ(faq)}>
+                      <Eye size={13} /> Preview
+                    </button>
+                    <button className="action-btn" onClick={() => duplicateFAQ(faq)}>
+                      <Copy size={13} /> Duplicate
+                    </button>
+                    <button className="action-btn" onClick={() => togglePinned(faq)}>
+                      <Pin size={13} /> {faq.pinned ? "Unpin" : "Pin"}
+                    </button>
+                    <button className="action-btn" onClick={() => makeFeatured(faq)}>
+                      <Star size={13} /> {faq.featured ? "Featured" : "Make Featured"}
+                    </button>
+                    <button className="action-btn" onClick={() => toggleFAQ(faq)}>
+                      {faq.active ? "Disable" : "Enable"}
+                    </button>
+                    <button className="action-btn action-btn-danger" onClick={() => deleteFAQ(faq.id)}>
+                      <Trash2 size={13} /> Delete
+                    </button>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "4px" }}>
+                    <button className="action-btn" onClick={() => moveUp(faq)} title="Move Up">↑</button>
+                    <button className="action-btn" onClick={() => moveDown(faq)} title="Move Down">↓</button>
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
+        )}
 
-              {/* Body Section */}
-              <div style={{ marginBottom: "20px", paddingLeft: "30px" }}>
-                <p style={{ color: "#726A63", whiteSpace: "pre-wrap", fontSize: "14px", margin: 0, lineHeight: "1.8", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-                  {faq.answer}
+        {/* Analytics Section */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px" }}>
+          <div className="dashboard-card" style={{ margin: 0, display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
+            <h3 style={{ fontSize: "16px", marginBottom: "14px" }}>Featured FAQ</h3>
+            {currentFeaturedFAQ ? (
+              <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1 }}>
+                <p style={{ fontSize: "14px", color: "#1A1614", fontWeight: 500, margin: "0 0 12px 0", lineHeight: "1.4" }}>
+                  {currentFeaturedFAQ.question}
                 </p>
-              </div>
-
-              <div style={{ borderTop: "1px solid #ECE8E3", marginBottom: "18px", marginLeft: "30px" }} />
-
-              {/* Actions Section */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  paddingLeft: "30px",
-                  flexWrap: "wrap",
-                  gap: "12px"
-                }}
-              >
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-                  <button 
-                    onClick={() => editFAQ(faq)}
-                    style={{ height: "40px", padding: "0 16px", borderRadius: "12px", border: "1px solid #ECE8E3", background: "white", color: "#2C221E", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: ".2s" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F5"; e.currentTarget.style.borderColor = "#D8CCC0"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.borderColor = "#ECE8E3"; }}
-                  >
-                    ✏ Edit
-                  </button>
-                  <button 
-                    onClick={() => setPreviewFAQ(faq)}
-                    style={{ height: "40px", padding: "0 16px", borderRadius: "12px", border: "1px solid #ECE8E3", background: "white", color: "#2C221E", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: ".2s" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F5"; e.currentTarget.style.borderColor = "#D8CCC0"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.borderColor = "#ECE8E3"; }}
-                  >
-                    👁 Preview
-                  </button>
-                  <button 
-                    onClick={() => duplicateFAQ(faq)}
-                    style={{ height: "40px", padding: "0 16px", borderRadius: "12px", border: "1px solid #ECE8E3", background: "white", color: "#2C221E", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: ".2s" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F5"; e.currentTarget.style.borderColor = "#D8CCC0"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.borderColor = "#ECE8E3"; }}
-                  >
-                    📄 Duplicate
-                  </button>
-                  <button 
-                    onClick={() => togglePinned(faq)}
-                    style={{ height: "40px", padding: "0 16px", borderRadius: "12px", border: "1px solid #ECE8E3", background: "white", color: "#2C221E", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: ".2s" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F5"; e.currentTarget.style.borderColor = "#D8CCC0"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.borderColor = "#ECE8E3"; }}
-                  >
-                    📌 {faq.pinned ? "Unpin" : "Pin"}
-                  </button>
-                  <button 
-                    onClick={() => makeFeatured(faq)}
-                    style={{ height: "40px", padding: "0 16px", borderRadius: "12px", border: "1px solid #ECE8E3", background: "white", color: "#2C221E", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: ".2s" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F5"; e.currentTarget.style.borderColor = "#D8CCC0"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.borderColor = "#ECE8E3"; }}
-                  >
-                    ⭐ {faq.featured ? "Featured" : "Make Featured"}
-                  </button>
-                  <button 
-                    onClick={() => toggleFAQ(faq)}
-                    style={{ height: "40px", padding: "0 16px", borderRadius: "12px", border: "1px solid #ECE8E3", background: "white", color: "#2C221E", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: ".2s" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "#FAF8F5"; e.currentTarget.style.borderColor = "#D8CCC0"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "white"; e.currentTarget.style.borderColor = "#ECE8E3"; }}
-                  >
-                    ⏸ {faq.active ? "Disable" : "Enable"}
-                  </button>
-                  <button 
-                    onClick={() => deleteFAQ(faq.id)}
-                    style={{ height: "40px", padding: "0 16px", borderRadius: "12px", border: "1px solid #F0D9D9", background: "white", color: "#A64A4A", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: ".2s" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "#FFF8F8"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "white"; }}
-                  >
-                    🗑 Delete
-                  </button>
-                </div>
-
-                <div style={{ display: "flex", gap: "6px" }}>
-                  <button
-                    onClick={() => moveUp(faq)}
-                    title="Move Up"
-                    style={{
-                      height: "40px",
-                      padding: "0 14px",
-                      borderRadius: "12px",
-                      border: "1px solid #ECE8E3",
-                      background: "white",
-                      cursor: "pointer",
-                      fontWeight: 600,
-                      color: "#726A63"
-                    }}
-                  >
-                    ↑
-                  </button>
-                  <button
-                    onClick={() => moveDown(faq)}
-                    title="Move Down"
-                    style={{
-                      height: "40px",
-                      padding: "0 14px",
-                      borderRadius: "12px",
-                      border: "1px solid #ECE8E3",
-                      background: "white",
-                      cursor: "pointer",
-                      fontWeight: 600,
-                      color: "#726A63"
-                    }}
-                  >
-                    ↓
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Analytics Section */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: "24px",
-          marginBottom: "48px"
-        }}
-      >
-        {/* Panel 1: Featured FAQ */}
-        <div style={{ background: "#FFFFFF", border: "1px solid #ECE8E3", borderRadius: "24px", padding: "32px", boxShadow: "0 4px 12px rgba(44,34,30,.03), 0 14px 32px rgba(44,34,30,.05)", display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
-          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2C221E", fontSize: "16px", fontWeight: 600 }}>
-            Featured FAQ
-          </h3>
-          {currentFeaturedFAQ ? (
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-              <div style={{ fontWeight: 500, color: "#2C221E", fontSize: "14px", marginBottom: "12px", lineHeight: "1.5" }}>{currentFeaturedFAQ.question}</div>
-              <div style={{ fontSize: "12px", background: "#FCFBFA", padding: "5px 12px", borderRadius: "999px", display: "inline-block", width: "fit-content", color: "#726A63", border: "1px solid #ECE8E3" }}>{currentFeaturedFAQ.category}</div>
-            </div>
-          ) : (
-            <p style={{ color: "#726A63", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No FAQ is currently featured.</p>
-          )}
-        </div>
-
-        {/* Panel 2: Most Viewed */}
-        <div style={{ background: "#FFFFFF", border: "1px solid #ECE8E3", borderRadius: "24px", padding: "32px", boxShadow: "0 4px 12px rgba(44,34,30,.03), 0 14px 32px rgba(44,34,30,.05)", display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
-          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2C221E", fontSize: "16px", fontWeight: 600 }}>
-            Most Viewed
-          </h3>
-          {mostViewed.length === 0 ? (
-            <p style={{ color: "#726A63", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No analytics yet.</p>
-          ) : (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, flex: 1, display: "flex", flexDirection: "column", gap: "10px" }}>
-              {mostViewed.slice(0, 3).map((faq, idx) => (
-                <li key={faq.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px", color: "#2C221E" }}>
-                  <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "170px" }}>{idx + 1}. {faq.question}</span>
-                  <span style={{ color: "#726A63", fontWeight: 500 }}>{faq.views || 0}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {/* Panel 3: Needs Attention */}
-        <div style={{ background: "#FFFFFF", border: "1px solid #ECE8E3", borderRadius: "24px", padding: "32px", boxShadow: "0 4px 12px rgba(44,34,30,.03), 0 14px 32px rgba(44,34,30,.05)", display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
-          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2C221E", fontSize: "16px", fontWeight: 600 }}>
-            Needs Attention
-          </h3>
-          {leastHelpful.length === 0 ? (
-            <p style={{ color: "#726A63", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No analytics yet.</p>
-          ) : (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, flex: 1, display: "flex", flexDirection: "column", gap: "10px" }}>
-              {leastHelpful.slice(0, 3).map((faq, idx) => (
-                <li key={faq.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px", color: "#2C221E" }}>
-                  <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "170px" }}>{idx + 1}. {faq.question}</span>
-                  <span style={{ color: "#A64A4A", fontWeight: 500 }}>{faq.notHelpful || 0} negative</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {/* Panel 4: Categories */}
-        <div style={{ background: "#FFFFFF", border: "1px solid #ECE8E3", borderRadius: "24px", padding: "32px", boxShadow: "0 4px 12px rgba(44,34,30,.03), 0 14px 32px rgba(44,34,30,.05)", display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
-          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2C221E", fontSize: "16px", fontWeight: 600 }}>
-            Categories
-          </h3>
-          {Object.keys(categoryStats).length === 0 ? (
-            <p style={{ color: "#726A63", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No categories yet.</p>
-          ) : (
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              {Object.keys(categoryStats).map(cat => (
-                <span key={cat} style={{ background: "#FCFBFA", border: "1px solid #ECE8E3", color: "#726A63", padding: "5px 12px", borderRadius: "999px", fontSize: "12px", fontWeight: 500 }}>
-                  {cat} ({categoryStats[cat]})
+                <span style={{ fontSize: "11px", background: "#FAF8F6", padding: "4px 10px", borderRadius: "999px", width: "fit-content", color: "#7A6E65", border: "1px solid #ECE8E3" }}>
+                  {currentFeaturedFAQ.category}
                 </span>
-              ))}
-            </div>
-          )}
+              </div>
+            ) : (
+              <p style={{ color: "#7A6E65", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No FAQ currently featured.</p>
+            )}
+          </div>
+
+          <div className="dashboard-card" style={{ margin: 0, display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
+            <h3 style={{ fontSize: "16px", marginBottom: "14px" }}>Most Viewed</h3>
+            {mostViewed.length === 0 ? (
+              <p style={{ color: "#7A6E65", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No analytics yet.</p>
+            ) : (
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
+                {mostViewed.slice(0, 3).map((faq, idx) => (
+                  <li key={faq.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px" }}>
+                    <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "180px", color: "#1A1614" }}>
+                      {idx + 1}. {faq.question}
+                    </span>
+                    <span style={{ color: "#7A6E65", fontWeight: 600 }}>{faq.views || 0}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="dashboard-card" style={{ margin: 0, display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
+            <h3 style={{ fontSize: "16px", marginBottom: "14px" }}>Needs Attention</h3>
+            {leastHelpful.length === 0 ? (
+              <p style={{ color: "#7A6E65", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No analytics yet.</p>
+            ) : (
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
+                {leastHelpful.slice(0, 3).map((faq, idx) => (
+                  <li key={faq.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px" }}>
+                    <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "180px", color: "#1A1614" }}>
+                      {idx + 1}. {faq.question}
+                    </span>
+                    <span style={{ color: "#991B1B", fontWeight: 600 }}>{faq.notHelpful || 0} flags</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="dashboard-card" style={{ margin: 0, display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
+            <h3 style={{ fontSize: "16px", marginBottom: "14px" }}>Categories Overview</h3>
+            {Object.keys(categoryStats).length === 0 ? (
+              <p style={{ color: "#7A6E65", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No categories yet.</p>
+            ) : (
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", flex: 1 }}>
+                {Object.keys(categoryStats).map(cat => (
+                  <span key={cat} style={{ background: "#FAF8F6", border: "1px solid #ECE8E3", color: "#7A6E65", padding: "4px 10px", borderRadius: "999px", fontSize: "11px", fontWeight: 600, height: "fit-content" }}>
+                    {cat} ({categoryStats[cat]})
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
