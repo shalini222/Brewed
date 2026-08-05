@@ -198,14 +198,8 @@ export default function SupportHelpCategoryManagement() {
   // Icon dropdown accordion state
   const [iconDropdownOpen, setIconDropdownOpen] = useState(false);
 
-  const [recentActivities, setRecentActivities] = useState([
-    { id: 1, text: "Olivia created Coffee", time: "2 mins ago" },
-    { id: 2, text: "Manager disabled Payments", time: "5 mins ago" },
-    { id: 3, text: "System sync completed", time: "10 mins ago" },
-    { id: 4, text: "Admin updated support hours", time: "25 mins ago" },
-    { id: 5, text: "New device connected", time: "1 hour ago" },
-    { id: 6, text: "Backup verified successfully", time: "2 hours ago" }
-  ]);
+  // Real data only: initialized as an empty array
+  const [recentActivities, setRecentActivities] = useState([]);
 
   const formRef = useRef(null);
   const titleInputRef = useRef(null);
@@ -301,6 +295,7 @@ export default function SupportHelpCategoryManagement() {
 
     if (editingId) {
       await updateDoc(doc(db, "supportHelpCategories", editingId), data);
+      setRecentActivities(prev => [{ id: Date.now(), text: `You updated ${title}`, time: "Just now" }, ...prev]);
     } else {
       await addDoc(collection(db, "supportHelpCategories"), {
         ...data,
@@ -342,6 +337,7 @@ export default function SupportHelpCategoryManagement() {
         active: newActiveState
       }
     );
+    setRecentActivities(prev => [{ id: Date.now(), text: `You ${newActiveState ? 'showed' : 'hid'} ${category.title}`, time: "Just now" }, ...prev]);
     showToast(category.active ? "Category hidden" : "Category is now live");
   };
 
@@ -360,12 +356,14 @@ export default function SupportHelpCategoryManagement() {
         sortOrder: i + 1
       });
     }
+    setRecentActivities(prev => [{ id: Date.now(), text: `You reordered categories`, time: "Just now" }, ...prev]);
     showToast("Order updated");
   };
 
   const confirmDelete = async () => { 
     if (!deleteTarget) return; 
     await deleteDoc(doc(db, "supportHelpCategories", deleteTarget.id)); 
+    setRecentActivities(prev => [{ id: Date.now(), text: `You deleted ${deleteTarget.title}`, time: "Just now" }, ...prev]);
     showToast("Category deleted"); 
     setDeleteTarget(null); 
   };
@@ -630,12 +628,13 @@ export default function SupportHelpCategoryManagement() {
         }
         @keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
-        /* Recent Activity section - scrollable list up to 5 items */
-        .activity-list{ display:flex; flex-direction:column; gap:8px; max-height:230px; overflow-y:auto; padding-right:4px; }
+        /* Recent Activity section - scrollable list with empty state */
+        .activity-list{ display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto; padding-right:4px; }
         .activity-item{ display:flex; justify-content:space-between; font-size:13px; padding:10px 0; border-bottom:1px solid #F4EFEA; }
         .activity-item:last-child{ border-bottom:none; }
         .activity-text{ color:#554840; font-weight:500; }
         .activity-time{ color:#A19288; font-size:12px; }
+        .activity-empty{ text-align:center; padding:24px 0; color:#9B8C82; font-size:14px; }
 
         .empty-search{ text-align:center; padding:40px; background:white; border-radius:22px; border:1px solid #ECE3DA; }
         .empty-search h4{ margin:0 0 6px; color:#221A16; font-size:16px; }
@@ -650,7 +649,7 @@ export default function SupportHelpCategoryManagement() {
       )}
 
       {deleteTarget && createPortal(
-        <div className="modal-overlay">
+        <div className="modal-overlay" style={{ position: "fixed" }}>
           <div className="modal-card">
             <div className="modal-icon">
               <Trash2 size={22} strokeWidth={1.8} />
@@ -706,15 +705,18 @@ export default function SupportHelpCategoryManagement() {
               <h3 style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "20px" }}>
                 <Activity size={18} color="#C4956A" /> Recent Activity
               </h3>
-              <div className="section-count">Latest {Math.min(recentActivities.length, 5)}</div>
             </div>
             <div className="activity-list">
-              {recentActivities.slice(0, 5).map(act => (
-                <div key={act.id} className="activity-item">
-                  <span className="activity-text">{act.text}</span>
-                  <span className="activity-time">{act.time}</span>
-                </div>
-              ))}
+              {recentActivities.length === 0 ? (
+                <div className="activity-empty">No recent activity yet. Actions will appear here as you manage categories.</div>
+              ) : (
+                recentActivities.map(act => (
+                  <div key={act.id} className="activity-item">
+                    <span className="activity-text">{act.text}</span>
+                    <span className="activity-time">{act.time}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
