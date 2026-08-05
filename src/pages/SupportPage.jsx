@@ -12,8 +12,7 @@ import {
   addDoc,
   serverTimestamp,
   updateDoc,
-  increment,
-  limit
+  increment
 } from "firebase/firestore";
 import { 
   Send, 
@@ -38,9 +37,7 @@ import {
   FileText,
   Clock3,
   ExternalLink,
-  MessageSquare,
-  AlertCircle,
-  CheckCircle2
+  MessageSquare
 } from "lucide-react";
 
 // Map icon names from Firestore to Lucide components
@@ -484,7 +481,6 @@ export default function SupportPage({ setPage }) {
   const isClosed = selectedTicket?.status === "Closed";
 
   const openTicketsCount = tickets.filter(t => t.status !== "Closed" && t.status !== "Resolved").length;
-  const closedTicketsCount = tickets.filter(t => t.status === "Closed" || t.status === "Resolved").length;
 
   const recentTickets = [...tickets]
     .sort((a, b) => {
@@ -551,7 +547,6 @@ export default function SupportPage({ setPage }) {
       <style>{`
         .support-container { display: flex; flex-direction: column; gap: 20px; }
         .support-card { background: white; border: 1px solid #E8DED2; border-radius: 16px; padding: 24px; box-shadow: 0 4px 20px rgba(44,34,30,0.03); margin-bottom: 16px; transition: all 0.2s ease; }
-        .support-hero-card { background: linear-gradient(135deg, #FAF6F0 0%, #F5EBE0 100%); border: 1px solid #E8DED2; border-radius: 20px; padding: 32px; box-shadow: 0 4px 20px rgba(44,34,30,0.04); margin-bottom: 24px; }
         .support-btn { background: #C4956A; color: white; border: none; border-radius: 12px; padding: 10px 18px; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background .2s, transform 0.1s; }
         .support-btn:hover { background: #b38259; }
         .support-btn:active { transform: scale(0.98); }
@@ -625,29 +620,125 @@ export default function SupportPage({ setPage }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           
           {/* HERO HEADER SECTION */}
-          <div className="support-hero-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px" }}>
-              <div>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#EFE2D5", color: "#8C5E3C", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: "600", marginBottom: "12px" }}>
-                  <LifeBuoy size={14} /> Help Center & Support
-                </div>
-                <h1 style={{ margin: "0 0 8px 0", color: "#2C221E", fontSize: "28px", fontWeight: "750", letterSpacing: "-0.5px" }}>
-                  Customer Support
-                </h1>
-                <p style={{ margin: 0, color: "#7A6A5E", fontSize: "15px", lineHeight: "1.5", maxWidth: "500px" }}>
-                  Find instant answers, contact our support team, or manage your active support requests seamlessly.
-                </p>
+          <div 
+            style={{ 
+              background: "#FFFFFF", 
+              border: "1px solid #E8DED2", 
+              borderRadius: "24px", 
+              padding: "36px", 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center", 
+              gap: "28px", 
+              flexWrap: "wrap", 
+              boxShadow: "0 8px 24px rgba(44,34,30,0.04)" 
+            }}
+          >
+            <div style={{ flex: 1, minWidth: "260px" }}>
+              <div 
+                style={{ 
+                  display: "inline-flex", 
+                  alignItems: "center", 
+                  gap: "8px", 
+                  padding: "8px 14px", 
+                  borderRadius: "999px", 
+                  background: "#FAF6F0", 
+                  color: "#C4956A", 
+                  fontWeight: 600, 
+                  fontSize: "12px", 
+                  marginBottom: "18px" 
+                }}
+              >
+                <LifeBuoy size={15} /> Customer Support
               </div>
+              
+              <h1 
+                style={{ 
+                  margin: 0, 
+                  fontSize: "34px", 
+                  fontWeight: 750, 
+                  color: "#2C221E", 
+                  letterSpacing: "-1px", 
+                  lineHeight: 1.1 
+                }}
+              >
+                How can we help?
+              </h1>
+              
+              <p 
+                style={{ 
+                  marginTop: "14px", 
+                  maxWidth: "520px", 
+                  color: "#75685F", 
+                  lineHeight: 1.7, 
+                  fontSize: "15px" 
+                }}
+              >
+                Search our knowledge base, browse help articles, or contact our support team whenever you need assistance.
+              </p>
+              
+              <div style={{ display: "flex", gap: "12px", marginTop: "26px", flexWrap: "wrap" }}>
+                <button className="support-btn" onClick={() => setActivePage("create")}>
+                  <PlusCircle size={16} /> New Ticket
+                </button>
+                <button className="support-btn support-btn-secondary" onClick={() => setActivePage("list")}>
+                  <MessageSquare size={16} /> My Tickets
+                </button>
+              </div>
+            </div>
 
-              <div style={{ display: "flex", gap: "12px", background: "white", padding: "16px", borderRadius: "16px", border: "1px solid #E8DED2", boxShadow: "0 2px 8px rgba(44,34,30,0.02)" }}>
-                <div style={{ textAlign: "center", paddingRight: "16px", borderRight: "1px solid #F2ECE5" }}>
-                  <div style={{ fontSize: "20px", fontWeight: "750", color: "#C4956A" }}>{openTicketsCount}</div>
-                  <div style={{ fontSize: "11px", color: "#9A8C82", fontWeight: "600", marginTop: "2px" }}>Open Tickets</div>
+            <div 
+              style={{ 
+                width: "220px", 
+                border: "1px solid #EFE7DE", 
+                borderRadius: "18px", 
+                padding: "22px", 
+                background: "#FCFBF8" 
+              }}
+            >
+              <div style={{ fontSize: "12px", color: "#8B7D72", marginBottom: "18px", fontWeight: 600 }}>
+                SUPPORT OVERVIEW
+              </div>
+              
+              <div style={{ marginBottom: "18px" }}>
+                <div style={{ fontSize: "28px", fontWeight: 750, color: "#2C221E" }}>
+                  {openTicketsCount}
                 </div>
-                <div style={{ textAlign: "center", paddingLeft: "4px" }}>
-                  <div style={{ fontSize: "20px", fontWeight: "750", color: "#2C221E" }}>{faqs.length}</div>
-                  <div style={{ fontSize: "11px", color: "#9A8C82", fontWeight: "600", marginTop: "2px" }}>FAQs Available</div>
+                <div style={{ color: "#8D7E73", fontSize: "13px" }}>
+                  Open Tickets
                 </div>
+              </div>
+              
+              <div style={{ height: "1px", background: "#ECE5DD", margin: "16px 0" }} />
+              
+              <div style={{ marginBottom: "18px" }}>
+                <div style={{ fontSize: "28px", fontWeight: 750, color: "#2C221E" }}>
+                  {faqs.length}
+                </div>
+                <div style={{ color: "#8D7E73", fontSize: "13px" }}>
+                  Help Articles
+                </div>
+              </div>
+              
+              <div 
+                style={{ 
+                  display: "inline-flex", 
+                  alignItems: "center", 
+                  gap: "8px", 
+                  fontSize: "13px", 
+                  fontWeight: 600, 
+                  color: isBusinessOpen ? "#15803D" : "#DC2626" 
+                }}
+              >
+                <span 
+                  style={{ 
+                    width: "8px", 
+                    height: "8px", 
+                    borderRadius: "50%", 
+                    background: isBusinessOpen ? "#22C55E" : "#EF4444" 
+                  }} 
+                />
+                {isBusinessOpen ? "Support Online" : "Currently Offline"}
               </div>
             </div>
           </div>
