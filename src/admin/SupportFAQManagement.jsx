@@ -453,9 +453,7 @@ export default function SupportFAQManagement() {
   };
 
   const totalFaqs = faqs.length;
-  const activeFaqs = faqs.filter(faq => faq.active).length;
   const pinnedFaqsCount = faqs.filter(faq => faq.pinned).length;
-  const featuredFaqsCount = faqs.filter(faq => faq.featured).length;
   const totalViews = faqs.reduce((sum, faq) => sum + (faq.views || 0), 0);
   const totalHelpful = faqs.reduce((sum, faq) => sum + (faq.helpful || 0), 0);
   const totalNotHelpful = faqs.reduce((sum, faq) => sum + (faq.notHelpful || 0), 0);
@@ -501,14 +499,14 @@ export default function SupportFAQManagement() {
   });
 
   return (
-    <div style={{ padding: "48px 56px", maxWidth: "1360px", margin: "0 auto", position: "relative", fontFamily: "Inter, system-ui, -apple-system, sans-serif", background: "linear-gradient(180deg, rgba(255,255,255,.9), rgba(247,245,242,1))", minHeight: "100vh", color: "#1F1C18" }}>
+    <div style={{ padding: "48px 56px", maxWidth: "1360px", margin: "0 auto", position: "relative", fontFamily: "Inter, system-ui, -apple-system, sans-serif", background: "#F8F6F2", minHeight: "100vh", color: "#2C221E" }}>
       {toastMessage && (
         <div
           style={{
             position: "fixed",
             bottom: "28px",
             right: "28px",
-            background: "#1F1C18",
+            background: "#2C221E",
             color: "#fff",
             padding: "12px 24px",
             borderRadius: "16px",
@@ -544,8 +542,8 @@ export default function SupportFAQManagement() {
             style={{
               background: "#FFFFFF",
               border: "1px solid #ECE7E1",
-              borderRadius: "28px",
-              padding: "44px",
+              borderRadius: "24px",
+              padding: "40px",
               width: "100%",
               maxWidth: "760px",
               boxShadow: "0 30px 80px rgba(0,0,0,.18)",
@@ -553,27 +551,27 @@ export default function SupportFAQManagement() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
-              <span style={{ background: "#FCFBF9", border: "1px solid #ECE7E1", padding: "6px 14px", borderRadius: "999px", fontSize: "12px", fontWeight: 500, color: "#7D756D" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
+              <span style={{ background: "#F8F6F2", border: "1px solid #ECE7E1", padding: "6px 14px", borderRadius: "999px", fontSize: "12px", fontWeight: 500, color: "#6A5E57" }}>
                 {previewFAQ.category}
               </span>
               <button
                 onClick={() => setPreviewFAQ(null)}
-                style={{ background: "none", border: "none", fontSize: "18px", cursor: "pointer", color: "#7D756D" }}
+                style={{ background: "none", border: "none", fontSize: "18px", cursor: "pointer", color: "#6A5E57" }}
               >
                 ✕
               </button>
             </div>
-            <h2 style={{ marginTop: 0, color: "#1F1C18", fontSize: "24px", fontFamily: "Playfair Display, serif", fontWeight: 600, marginBottom: "16px" }}>
+            <h2 style={{ marginTop: 0, color: "#2C221E", fontSize: "24px", fontFamily: "Playfair Display, serif", fontWeight: 600, marginBottom: "16px" }}>
               {previewFAQ.question}
             </h2>
-            <p style={{ color: "#7D756D", whiteSpace: "pre-wrap", fontSize: "15px", lineHeight: "1.8", marginBottom: "36px" }}>
+            <p style={{ color: "#6A5E57", whiteSpace: "pre-wrap", fontSize: "15px", lineHeight: "1.8", marginBottom: "32px" }}>
               {previewFAQ.answer}
             </p>
             <button
               onClick={() => setPreviewFAQ(null)}
               style={{
-                height: "46px",
+                height: "44px",
                 padding: "0 22px",
                 borderRadius: "14px",
                 background: "#A97A52",
@@ -591,12 +589,12 @@ export default function SupportFAQManagement() {
       )}
 
       {/* Hero Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "20px", marginBottom: "44px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "20px", marginBottom: "48px" }}>
         <div>
-          <h1 style={{ color: "#1F1C18", fontFamily: "Playfair Display, serif", fontSize: "38px", fontWeight: 600, margin: "0 0 8px 0", letterSpacing: "-0.01em" }}>
+          <h1 style={{ color: "#2C221E", fontFamily: "Playfair Display, serif", fontSize: "38px", fontWeight: 600, margin: "0 0 8px 0", letterSpacing: "-0.01em" }}>
             FAQ Management
           </h1>
-          <p style={{ color: "#7D756D", fontSize: "15px", margin: 0, fontWeight: 500 }}>
+          <p style={{ color: "#6A5E57", fontSize: "15px", margin: 0, fontWeight: 500 }}>
             Maintain your customer knowledge base, organize categories and optimize support quality.
           </p>
         </div>
@@ -604,34 +602,38 @@ export default function SupportFAQManagement() {
           <button
             onClick={exportFAQs}
             style={{
-              height: "46px",
-              padding: "0 22px",
+              height: "44px",
+              padding: "0 20px",
               borderRadius: "14px",
               background: "#FFFFFF",
               border: "1px solid #ECE7E1",
               cursor: "pointer",
               fontWeight: 600,
-              color: "#1F1C18",
+              color: "#2C221E",
               fontSize: "14px",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.02)"
+              boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+              transition: "transform .18s ease"
             }}
+            onMouseDown={(e) => e.currentTarget.style.transform = "translateY(1px)"}
+            onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0)"}
           >
             Export
           </button>
           <label
             style={{
-              height: "46px",
-              padding: "0 22px",
+              height: "44px",
+              padding: "0 20px",
               borderRadius: "14px",
               background: "#FFFFFF",
               border: "1px solid #ECE7E1",
               cursor: "pointer",
               fontWeight: 600,
-              color: "#1F1C18",
+              color: "#2C221E",
               fontSize: "14px",
               display: "inline-flex",
               alignItems: "center",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.02)"
+              boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+              transition: "transform .18s ease"
             }}
           >
             Import
@@ -640,7 +642,7 @@ export default function SupportFAQManagement() {
           <button
             onClick={() => window.scrollTo({ top: 300, behavior: "smooth" })}
             style={{
-              height: "46px",
+              height: "44px",
               padding: "0 22px",
               borderRadius: "14px",
               background: "#A97A52",
@@ -648,10 +650,14 @@ export default function SupportFAQManagement() {
               border: "none",
               cursor: "pointer",
               fontWeight: 600,
-              fontSize: "14px"
+              fontSize: "14px",
+              boxShadow: "0 4px 12px rgba(169,122,82,0.2)",
+              transition: "transform .18s ease"
             }}
+            onMouseDown={(e) => e.currentTarget.style.transform = "translateY(1px)"}
+            onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0)"}
           >
-            New FAQ
+            + New FAQ
           </button>
         </div>
       </div>
@@ -666,32 +672,45 @@ export default function SupportFAQManagement() {
         }}
       >
         {[
-          [totalFaqs, "Total FAQs", "+12 this month"],
-          [`${helpfulPercentage}%`, "Helpful Rate", "Customer satisfaction"],
-          [totalViews, "Total Views", "Last 30 days"],
-          [pinnedFaqsCount, "Pinned FAQs", "Prioritized visibility"]
-        ].map(([value, title, subtext]) => (
+          [totalFaqs, "Total FAQs", "+12 this month", "📄"],
+          [`${helpfulPercentage}%`, "Helpful Rate", "Customer satisfaction", "👍"],
+          [totalViews, "Total Views", "Last 30 days", "👁"],
+          [pinnedFaqsCount, "Pinned FAQs", "Prioritized visibility", "📌"]
+        ].map(([value, title, subtext, icon]) => (
           <div
             key={title}
             style={{
               background: "#FFFFFF",
               border: "1px solid #ECE7E1",
               borderRadius: "24px",
-              padding: "32px",
+              padding: "28px 32px",
               boxShadow: "0 2px 6px rgba(0,0,0,0.02), 0 16px 40px rgba(0,0,0,0.035)",
               transition: "all .22s cubic-bezier(.2,.8,.2,1)",
-              cursor: "default"
+              cursor: "default",
+              position: "relative",
+              overflow: "hidden"
             }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-3px)"}
-            onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-4px)";
+              e.currentTarget.style.borderColor = "#DCC8B5";
+              e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.06)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.borderColor = "#ECE7E1";
+              e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.02), 0 16px 40px rgba(0,0,0,0.035)";
+            }}
           >
-            <div style={{ fontSize: "13px", letterSpacing: ".08em", textTransform: "uppercase", color: "#7D756D", marginBottom: "12px", fontWeight: 600 }}>
+            <div style={{ position: "absolute", top: "24px", right: "24px", fontSize: "20px", opacity: 0.6 }}>
+              {icon}
+            </div>
+            <div style={{ fontSize: "12px", letterSpacing: ".08em", textTransform: "uppercase", color: "#6A5E57", marginBottom: "10px", fontWeight: 600 }}>
               {title}
             </div>
-            <div style={{ fontSize: "38px", fontWeight: 700, color: "#1F1C18", marginBottom: "6px", lineHeight: 1.1 }}>
+            <div style={{ fontSize: "34px", fontWeight: 700, color: "#2C221E", marginBottom: "4px", lineHeight: 1.1 }}>
               {value}
             </div>
-            <div style={{ color: "#7D756D", fontSize: "13px", fontWeight: 500 }}>
+            <div style={{ color: "#6A5E57", fontSize: "13px", fontWeight: 500 }}>
               {subtext}
             </div>
           </div>
@@ -705,16 +724,16 @@ export default function SupportFAQManagement() {
           border: "1px solid #ECE7E1",
           borderRadius: "24px",
           padding: "36px",
-          marginBottom: "36px",
+          marginBottom: "40px",
           boxShadow: "0 2px 6px rgba(0,0,0,0.02), 0 16px 40px rgba(0,0,0,0.035)"
         }}
       >
-        <h2 style={{ marginTop: 0, marginBottom: "28px", color: "#1F1C18", fontFamily: "Playfair Display, serif", fontSize: "24px", fontWeight: 600 }}>
+        <h2 style={{ marginTop: 0, marginBottom: "28px", color: "#2C221E", fontFamily: "Playfair Display, serif", fontSize: "24px", fontWeight: 600 }}>
           {editingId ? "Edit FAQ" : "New FAQ"}
         </h2>
 
         <div style={{ marginBottom: "24px" }}>
-          <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#7D756D", marginBottom: "8px" }}>Question</label>
+          <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#6A5E57", marginBottom: "8px" }}>Question</label>
           <input
             type="text"
             placeholder="Type your question here..."
@@ -722,14 +741,14 @@ export default function SupportFAQManagement() {
             onChange={(e) => setQuestion(e.target.value)}
             style={{
               width: "100%",
-              height: "54px",
+              height: "50px",
               padding: "0 18px",
               borderRadius: "16px",
-              background: "#FCFBF9",
+              background: "#F8F6F2",
               border: "1px solid #ECE7E1",
               boxSizing: "border-box",
               fontSize: "15px",
-              color: "#1F1C18",
+              color: "#2C221E",
               outline: "none",
               transition: ".2s"
             }}
@@ -745,7 +764,7 @@ export default function SupportFAQManagement() {
         </div>
 
         <div style={{ marginBottom: "24px" }}>
-          <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#7D756D", marginBottom: "8px" }}>Answer</label>
+          <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#6A5E57", marginBottom: "8px" }}>Answer</label>
           <textarea
             rows={5}
             placeholder="Answer (Supports line breaks & bullet lists)..."
@@ -755,12 +774,12 @@ export default function SupportFAQManagement() {
               width: "100%",
               padding: "18px",
               borderRadius: "16px",
-              background: "#FCFBF9",
+              background: "#F8F6F2",
               border: "1px solid #ECE7E1",
               resize: "vertical",
               boxSizing: "border-box",
               fontSize: "15px",
-              color: "#1F1C18",
+              color: "#2C221E",
               lineHeight: "1.8",
               outline: "none",
               transition: ".2s"
@@ -778,19 +797,19 @@ export default function SupportFAQManagement() {
 
         <div style={{ display: "flex", gap: "20px", alignItems: "flex-end", flexWrap: "wrap" }}>
           <div style={{ flex: "1", minWidth: "260px" }}>
-            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#7D756D", marginBottom: "8px" }}>Category</label>
+            <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#6A5E57", marginBottom: "8px" }}>Category</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               style={{
                 width: "100%",
-                height: "54px",
+                height: "50px",
                 padding: "0 18px",
                 borderRadius: "16px",
-                background: "#FCFBF9",
+                background: "#F8F6F2",
                 border: "1px solid #ECE7E1",
                 fontSize: "15px",
-                color: "#1F1C18",
+                color: "#2C221E",
                 outline: "none"
               }}
             >
@@ -807,15 +826,19 @@ export default function SupportFAQManagement() {
             onClick={saveFAQ}
             style={{
               height: "46px",
-              padding: "0 22px",
+              padding: "0 24px",
               borderRadius: "14px",
               background: "#A97A52",
               color: "#FFFFFF",
               border: "none",
               cursor: "pointer",
               fontWeight: 600,
-              fontSize: "14px"
+              fontSize: "14px",
+              boxShadow: "0 4px 12px rgba(169,122,82,0.2)",
+              transition: "transform .18s ease"
             }}
+            onMouseDown={(e) => e.currentTarget.style.transform = "translateY(1px)"}
+            onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0)"}
           >
             {editingId ? "Update FAQ" : "Save FAQ"}
           </button>
@@ -842,14 +865,14 @@ export default function SupportFAQManagement() {
               onChange={(e) => setSearch(e.target.value)}
               style={{
                 width: "100%",
-                height: "46px",
+                height: "44px",
                 padding: "0 16px",
                 border: "1px solid #ECE7E1",
-                borderRadius: "14px",
-                background: "#FCFBF9",
+                borderRadius: "16px",
+                background: "#F8F6F2",
                 boxSizing: "border-box",
                 fontSize: "14px",
-                color: "#1F1C18",
+                color: "#2C221E",
                 outline: "none"
               }}
             />
@@ -861,13 +884,13 @@ export default function SupportFAQManagement() {
               onChange={(e) => setCategoryFilter(e.target.value)}
               style={{
                 width: "100%",
-                height: "46px",
+                height: "44px",
                 padding: "0 16px",
-                borderRadius: "14px",
+                borderRadius: "16px",
                 border: "1px solid #ECE7E1",
-                background: "#FCFBF9",
+                background: "#F8F6F2",
                 fontSize: "14px",
-                color: "#1F1C18",
+                color: "#2C221E",
                 outline: "none"
               }}
             >
@@ -884,13 +907,13 @@ export default function SupportFAQManagement() {
               onChange={(e) => setStatusFilter(e.target.value)}
               style={{
                 width: "100%",
-                height: "46px",
+                height: "44px",
                 padding: "0 16px",
-                borderRadius: "14px",
+                borderRadius: "16px",
                 border: "1px solid #ECE7E1",
-                background: "#FCFBF9",
+                background: "#F8F6F2",
                 fontSize: "14px",
-                color: "#1F1C18",
+                color: "#2C221E",
                 outline: "none"
               }}
             >
@@ -905,7 +928,7 @@ export default function SupportFAQManagement() {
           <button
             onClick={() => window.scrollTo({ top: 300, behavior: "smooth" })}
             style={{
-              height: "46px",
+              height: "44px",
               padding: "0 22px",
               borderRadius: "14px",
               background: "#A97A52",
@@ -913,10 +936,14 @@ export default function SupportFAQManagement() {
               border: "none",
               cursor: "pointer",
               fontWeight: 600,
-              fontSize: "14px"
+              fontSize: "14px",
+              boxShadow: "0 4px 12px rgba(169,122,82,0.2)",
+              transition: "transform .18s ease"
             }}
+            onMouseDown={(e) => e.currentTarget.style.transform = "translateY(1px)"}
+            onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0)"}
           >
-            New FAQ
+            + New FAQ
           </button>
         </div>
 
@@ -931,7 +958,7 @@ export default function SupportFAQManagement() {
             <span style={{ color: "#ECE7E1" }}>|</span>
             <button
               onClick={clearSelection}
-              style={{ background: "none", border: "none", color: "#7D756D", cursor: "pointer", fontWeight: 600, padding: 0, fontSize: "13px" }}
+              style={{ background: "none", border: "none", color: "#6A5E57", cursor: "pointer", fontWeight: 600, padding: 0, fontSize: "13px" }}
             >
               Clear Selection ({selectedFAQs.length})
             </button>
@@ -953,38 +980,38 @@ export default function SupportFAQManagement() {
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
             <div>
-              <span style={{ fontWeight: 600, color: "#1F1C18", fontSize: "14px" }}>Bulk Actions</span>
-              <span style={{ color: "#7D756D", fontSize: "13px", marginLeft: "12px" }}>Selected: {selectedFAQs.length} FAQs</span>
+              <span style={{ fontWeight: 600, color: "#2C221E", fontSize: "14px" }}>Bulk Actions</span>
+              <span style={{ color: "#6A5E57", fontSize: "13px", marginLeft: "12px" }}>Selected: {selectedFAQs.length} FAQs</span>
             </div>
 
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
               <button
                 onClick={bulkEnable}
-                style={{ height: "46px", padding: "0 18px", background: "#FFFFFF", color: "#1F1C18", border: "1px solid #ECE7E1", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
+                style={{ height: "42px", padding: "0 16px", background: "#FFFFFF", color: "#2C221E", border: "1px solid #ECE7E1", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
               >
                 Enable
               </button>
               <button
                 onClick={bulkDisable}
-                style={{ height: "46px", padding: "0 18px", background: "#FFFFFF", color: "#1F1C18", border: "1px solid #ECE7E1", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
+                style={{ height: "42px", padding: "0 16px", background: "#FFFFFF", color: "#2C221E", border: "1px solid #ECE7E1", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
               >
                 Disable
               </button>
               <button
                 onClick={() => bulkPin(true)}
-                style={{ height: "46px", padding: "0 18px", background: "#FFFFFF", color: "#1F1C18", border: "1px solid #ECE7E1", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
+                style={{ height: "42px", padding: "0 16px", background: "#FFFFFF", color: "#2C221E", border: "1px solid #ECE7E1", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
               >
                 Pin
               </button>
               <button
                 onClick={() => bulkPin(false)}
-                style={{ height: "46px", padding: "0 18px", background: "#FFFFFF", color: "#1F1C18", border: "1px solid #ECE7E1", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
+                style={{ height: "42px", padding: "0 16px", background: "#FFFFFF", color: "#2C221E", border: "1px solid #ECE7E1", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
               >
                 Unpin
               </button>
               <button
                 onClick={bulkDelete}
-                style={{ height: "46px", padding: "0 18px", background: "#FFF7F7", color: "#A64A4A", border: "1px solid #ECE7E1", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
+                style={{ height: "42px", padding: "0 16px", background: "#FFF7F7", color: "#A64A4A", border: "1px solid #ECE7E1", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
               >
                 Delete
               </button>
@@ -993,7 +1020,7 @@ export default function SupportFAQManagement() {
                 <select
                   value={bulkCategory}
                   onChange={(e) => setBulkCategory(e.target.value)}
-                  style={{ height: "46px", padding: "0 14px", borderRadius: "14px", border: "1px solid #ECE7E1", fontSize: "13px", backgroundColor: "#FCFBF9", color: "#1F1C18" }}
+                  style={{ height: "42px", padding: "0 14px", borderRadius: "14px", border: "1px solid #ECE7E1", fontSize: "13px", backgroundColor: "#F8F6F2", color: "#2C221E" }}
                 >
                   <option>General</option>
                   <option>Orders</option>
@@ -1004,7 +1031,7 @@ export default function SupportFAQManagement() {
                 </select>
                 <button
                   onClick={bulkCategoryChange}
-                  style={{ height: "46px", padding: "0 18px", background: "#A97A52", color: "#FFFFFF", border: "none", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
+                  style={{ height: "42px", padding: "0 18px", background: "#A97A52", color: "#FFFFFF", border: "none", borderRadius: "14px", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
                 >
                   Apply
                 </button>
@@ -1016,7 +1043,7 @@ export default function SupportFAQManagement() {
 
       {/* Main List Section */}
       {loading ? (
-        <p style={{ color: "#7D756D" }}>Loading FAQs...</p>
+        <p style={{ color: "#6A5E57" }}>Loading FAQs...</p>
       ) : filteredFaqs.length === 0 ? (
         <div
           style={{
@@ -1025,18 +1052,19 @@ export default function SupportFAQManagement() {
             borderRadius: "24px",
             padding: "90px 20px",
             textAlign: "center",
-            color: "#7D756D",
+            color: "#6A5E57",
             boxShadow: "0 2px 6px rgba(0,0,0,0.02), 0 16px 40px rgba(0,0,0,0.035)"
           }}
         >
-          <h3 style={{ margin: "0 0 8px", color: "#1F1C18", fontSize: "20px", fontWeight: 600 }}>No FAQs Found</h3>
-          <p style={{ margin: "0 0 24px", fontSize: "15px" }}>Create your first FAQ to help customers find answers faster.</p>
+          <div style={{ fontSize: "36px", marginBottom: "16px" }}>📖</div>
+          <h3 style={{ margin: "0 0 8px", color: "#2C221E", fontSize: "20px", fontWeight: 600 }}>No FAQs yet</h3>
+          <p style={{ margin: "0 0 24px", fontSize: "15px" }}>Start building your knowledge base.</p>
           <button
             onClick={() => {
               window.scrollTo({ top: 300, behavior: "smooth" });
             }}
             style={{
-              height: "46px",
+              height: "44px",
               padding: "0 22px",
               borderRadius: "14px",
               background: "#A97A52",
@@ -1071,8 +1099,16 @@ export default function SupportFAQManagement() {
                 boxShadow: "0 2px 6px rgba(0,0,0,0.02), 0 16px 40px rgba(0,0,0,0.035)",
                 transition: "all .22s cubic-bezier(.2,.8,.2,1)"
               }}
-              onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-3px)"}
-              onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.borderColor = "#DCC8B5";
+                e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.06)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.borderColor = "#ECE7E1";
+                e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.02), 0 16px 40px rgba(0,0,0,0.035)";
+              }}
             >
               {/* Header Section */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", marginBottom: "16px" }}>
@@ -1088,75 +1124,34 @@ export default function SupportFAQManagement() {
                       style={{
                         marginTop: 0,
                         marginBottom: "10px",
-                        color: "#1F1C18",
+                        color: "#2C221E",
                         fontSize: "18px",
                         fontWeight: 600
                       }}
                     >
                       {faq.question}
                     </h3>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-                      <span
-                        style={{
-                          background: "#FCFBF9",
-                          border: "1px solid #ECE7E1",
-                          color: "#7D756D",
-                          padding: "4px 10px",
-                          borderRadius: "999px",
-                          fontSize: "12px",
-                          fontWeight: 500
-                        }}
-                      >
-                        {faq.category}
-                      </span>
-                      <span
-                        style={{
-                          background: "#FCFBF9",
-                          border: "1px solid #ECE7E1",
-                          color: faq.active ? "#1F1C18" : "#7D756D",
-                          padding: "4px 10px",
-                          borderRadius: "999px",
-                          fontSize: "12px",
-                          fontWeight: 500
-                        }}
-                      >
-                        {faq.active ? "Active" : "Disabled"}
-                      </span>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", fontSize: "12px", color: "#6A5E57" }}>
+                      <span style={{ fontWeight: 500, color: "#2C221E" }}>{faq.category}</span>
+                      <span>•</span>
+                      <span>{faq.active ? "Active" : "Disabled"}</span>
                       {faq.pinned && (
-                        <span
-                          style={{
-                            background: "#FCFBF9",
-                            border: "1px solid #ECE7E1",
-                            color: "#A97A52",
-                            padding: "4px 10px",
-                            borderRadius: "999px",
-                            fontSize: "12px",
-                            fontWeight: 500
-                          }}
-                        >
-                          Pinned
-                        </span>
+                        <>
+                          <span>•</span>
+                          <span style={{ color: "#A97A52", fontWeight: 500 }}>Pinned</span>
+                        </>
                       )}
                       {faq.featured && (
-                        <span
-                          style={{
-                            background: "#FCFBF9",
-                            border: "1px solid #ECE7E1",
-                            color: "#A97A52",
-                            padding: "4px 10px",
-                            borderRadius: "999px",
-                            fontSize: "12px",
-                            fontWeight: 500
-                          }}
-                        >
-                          Featured
-                        </span>
+                        <>
+                          <span>•</span>
+                          <span style={{ color: "#A97A52", fontWeight: 500 }}>Featured</span>
+                        </>
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "16px", fontSize: "13px", color: "#7D756D", fontWeight: 500 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "13px", color: "#6A5E57", fontWeight: 500, textAlign: "right" }}>
                   <span>{faq.views || 0} views</span>
                   <span>•</span>
                   <span>{faq.updatedAt?.toDate?.().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) || "Recent"}</span>
@@ -1165,10 +1160,12 @@ export default function SupportFAQManagement() {
 
               {/* Body Section */}
               <div style={{ marginBottom: "20px", paddingLeft: "30px" }}>
-                <p style={{ color: "#7D756D", whiteSpace: "pre-wrap", fontSize: "14px", margin: 0, lineHeight: "1.8", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                <p style={{ color: "#6A5E57", whiteSpace: "pre-wrap", fontSize: "14px", margin: 0, lineHeight: "1.8", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
                   {faq.answer}
                 </p>
               </div>
+
+              <div style={{ borderTop: "1px solid #ECE7E1", marginBottom: "18px", marginLeft: "30px" }} />
 
               {/* Actions Section */}
               <div
@@ -1176,8 +1173,6 @@ export default function SupportFAQManagement() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  borderTop: "1px solid #ECE7E1",
-                  paddingTop: "18px",
                   paddingLeft: "30px",
                   flexWrap: "wrap",
                   gap: "12px"
@@ -1186,59 +1181,59 @@ export default function SupportFAQManagement() {
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
                   <button 
                     onClick={() => editFAQ(faq)}
-                    style={{ height: "46px", padding: "0 18px", borderRadius: "14px", border: "1px solid #ECE7E1", background: "#FFFFFF", color: "#1F1C18", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: ".18s" }}
-                    onMouseDown={(e) => e.currentTarget.style.transform = "scale(.98)"}
-                    onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
+                    style={{ height: "40px", padding: "0 16px", borderRadius: "12px", border: "1px solid #ECE7E1", background: "#FFFFFF", color: "#2C221E", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: "transform .18s ease" }}
+                    onMouseDown={(e) => e.currentTarget.style.transform = "translateY(1px)"}
+                    onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0)"}
                   >
-                    Edit
+                    ✏ Edit
                   </button>
                   <button 
                     onClick={() => setPreviewFAQ(faq)}
-                    style={{ height: "46px", padding: "0 18px", borderRadius: "14px", border: "1px solid #ECE7E1", background: "#FFFFFF", color: "#1F1C18", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: ".18s" }}
-                    onMouseDown={(e) => e.currentTarget.style.transform = "scale(.98)"}
-                    onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
+                    style={{ height: "40px", padding: "0 16px", borderRadius: "12px", border: "1px solid #ECE7E1", background: "#FFFFFF", color: "#2C221E", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: "transform .18s ease" }}
+                    onMouseDown={(e) => e.currentTarget.style.transform = "translateY(1px)"}
+                    onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0)"}
                   >
-                    Preview
+                    👁 Preview
                   </button>
                   <button 
                     onClick={() => duplicateFAQ(faq)}
-                    style={{ height: "46px", padding: "0 18px", borderRadius: "14px", border: "1px solid #ECE7E1", background: "#FFFFFF", color: "#1F1C18", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: ".18s" }}
-                    onMouseDown={(e) => e.currentTarget.style.transform = "scale(.98)"}
-                    onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
+                    style={{ height: "40px", padding: "0 16px", borderRadius: "12px", border: "1px solid #ECE7E1", background: "#FFFFFF", color: "#2C221E", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: "transform .18s ease" }}
+                    onMouseDown={(e) => e.currentTarget.style.transform = "translateY(1px)"}
+                    onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0)"}
                   >
-                    Duplicate
+                    📄 Duplicate
                   </button>
                   <button 
                     onClick={() => togglePinned(faq)}
-                    style={{ height: "46px", padding: "0 18px", borderRadius: "14px", border: "1px solid #ECE7E1", background: "#FFFFFF", color: "#1F1C18", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: ".18s" }}
-                    onMouseDown={(e) => e.currentTarget.style.transform = "scale(.98)"}
-                    onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
+                    style={{ height: "40px", padding: "0 16px", borderRadius: "12px", border: "1px solid #ECE7E1", background: "#FFFFFF", color: "#2C221E", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: "transform .18s ease" }}
+                    onMouseDown={(e) => e.currentTarget.style.transform = "translateY(1px)"}
+                    onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0)"}
                   >
-                    {faq.pinned ? "Unpin" : "Pin"}
+                    📌 {faq.pinned ? "Unpin" : "Pin"}
                   </button>
                   <button 
                     onClick={() => makeFeatured(faq)}
-                    style={{ height: "46px", padding: "0 18px", borderRadius: "14px", border: "1px solid #ECE7E1", background: "#FFFFFF", color: "#1F1C18", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: ".18s" }}
-                    onMouseDown={(e) => e.currentTarget.style.transform = "scale(.98)"}
-                    onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
+                    style={{ height: "40px", padding: "0 16px", borderRadius: "12px", border: "1px solid #ECE7E1", background: "#FFFFFF", color: "#2C221E", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: "transform .18s ease" }}
+                    onMouseDown={(e) => e.currentTarget.style.transform = "translateY(1px)"}
+                    onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0)"}
                   >
-                    {faq.featured ? "Featured" : "Make Featured"}
+                    ⭐ {faq.featured ? "Featured" : "Make Featured"}
                   </button>
                   <button 
                     onClick={() => toggleFAQ(faq)}
-                    style={{ height: "46px", padding: "0 18px", borderRadius: "14px", border: "1px solid #ECE7E1", background: "#FFFFFF", color: "#1F1C18", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: ".18s" }}
-                    onMouseDown={(e) => e.currentTarget.style.transform = "scale(.98)"}
-                    onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
+                    style={{ height: "40px", padding: "0 16px", borderRadius: "12px", border: "1px solid #ECE7E1", background: "#FFFFFF", color: "#2C221E", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: "transform .18s ease" }}
+                    onMouseDown={(e) => e.currentTarget.style.transform = "translateY(1px)"}
+                    onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0)"}
                   >
-                    {faq.active ? "Disable" : "Enable"}
+                    ⏸ {faq.active ? "Disable" : "Enable"}
                   </button>
                   <button 
                     onClick={() => deleteFAQ(faq.id)}
-                    style={{ height: "46px", padding: "0 18px", borderRadius: "14px", border: "1px solid #ECE7E1", background: "#FFF7F7", color: "#A64A4A", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: ".18s" }}
-                    onMouseDown={(e) => e.currentTarget.style.transform = "scale(.98)"}
-                    onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
+                    style={{ height: "40px", padding: "0 16px", borderRadius: "12px", border: "1px solid #ECE7E1", background: "#FFF7F7", color: "#A64A4A", cursor: "pointer", fontWeight: 600, fontSize: "13px", transition: "transform .18s ease" }}
+                    onMouseDown={(e) => e.currentTarget.style.transform = "translateY(1px)"}
+                    onMouseUp={(e) => e.currentTarget.style.transform = "translateY(0)"}
                   >
-                    Delete
+                    🗑 Delete
                   </button>
                 </div>
 
@@ -1247,14 +1242,14 @@ export default function SupportFAQManagement() {
                     onClick={() => moveUp(faq)}
                     title="Move Up"
                     style={{
-                      height: "46px",
+                      height: "40px",
                       padding: "0 14px",
-                      borderRadius: "14px",
+                      borderRadius: "12px",
                       border: "1px solid #ECE7E1",
                       background: "#FFFFFF",
                       cursor: "pointer",
                       fontWeight: 600,
-                      color: "#7D756D"
+                      color: "#6A5E57"
                     }}
                   >
                     ↑
@@ -1263,14 +1258,14 @@ export default function SupportFAQManagement() {
                     onClick={() => moveDown(faq)}
                     title="Move Down"
                     style={{
-                      height: "46px",
+                      height: "40px",
                       padding: "0 14px",
-                      borderRadius: "14px",
+                      borderRadius: "12px",
                       border: "1px solid #ECE7E1",
                       background: "#FFFFFF",
                       cursor: "pointer",
                       fontWeight: 600,
-                      color: "#7D756D"
+                      color: "#6A5E57"
                     }}
                   >
                     ↓
@@ -1282,7 +1277,7 @@ export default function SupportFAQManagement() {
         </div>
       )}
 
-      {/* Analytics Section (Four Equal Dashboard Panels) */}
+      {/* Analytics Section */}
       <div
         style={{
           display: "grid",
@@ -1293,32 +1288,32 @@ export default function SupportFAQManagement() {
       >
         {/* Panel 1: Featured FAQ */}
         <div style={{ background: "#FFFFFF", border: "1px solid #ECE7E1", borderRadius: "24px", padding: "32px", boxShadow: "0 2px 6px rgba(0,0,0,0.02), 0 16px 40px rgba(0,0,0,0.035)", display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
-          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#1F1C18", fontSize: "16px", fontWeight: 600 }}>
+          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2C221E", fontSize: "16px", fontWeight: 600 }}>
             Featured FAQ
           </h3>
           {currentFeaturedFAQ ? (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-              <div style={{ fontWeight: 500, color: "#1F1C18", fontSize: "14px", marginBottom: "8px", lineHeight: "1.5" }}>{currentFeaturedFAQ.question}</div>
-              <div style={{ fontSize: "12px", color: "#7D756D" }}>Category: {currentFeaturedFAQ.category}</div>
+              <div style={{ fontWeight: 500, color: "#2C221E", fontSize: "14px", marginBottom: "12px", lineHeight: "1.5" }}>{currentFeaturedFAQ.question}</div>
+              <div style={{ fontSize: "12px", background: "#F8F6F2", padding: "4px 10px", borderRadius: "999px", display: "inline-block", width: "fit-content", color: "#6A5E57", border: "1px solid #ECE7E1" }}>{currentFeaturedFAQ.category}</div>
             </div>
           ) : (
-            <p style={{ color: "#7D756D", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No FAQ is currently featured.</p>
+            <p style={{ color: "#6A5E57", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No FAQ is currently featured.</p>
           )}
         </div>
 
         {/* Panel 2: Most Viewed */}
         <div style={{ background: "#FFFFFF", border: "1px solid #ECE7E1", borderRadius: "24px", padding: "32px", boxShadow: "0 2px 6px rgba(0,0,0,0.02), 0 16px 40px rgba(0,0,0,0.035)", display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
-          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#1F1C18", fontSize: "16px", fontWeight: 600 }}>
+          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2C221E", fontSize: "16px", fontWeight: 600 }}>
             Most Viewed
           </h3>
           {mostViewed.length === 0 ? (
-            <p style={{ color: "#7D756D", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No analytics yet.</p>
+            <p style={{ color: "#6A5E57", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No analytics yet.</p>
           ) : (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, flex: 1, display: "flex", flexDirection: "column", gap: "10px" }}>
               {mostViewed.slice(0, 3).map((faq, idx) => (
-                <li key={faq.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#1F1C18" }}>
+                <li key={faq.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px", color: "#2C221E" }}>
                   <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "170px" }}>{idx + 1}. {faq.question}</span>
-                  <span style={{ color: "#7D756D" }}>{faq.views || 0} views</span>
+                  <span style={{ color: "#6A5E57", fontWeight: 500 }}>{faq.views || 0}</span>
                 </li>
               ))}
             </ul>
@@ -1327,17 +1322,17 @@ export default function SupportFAQManagement() {
 
         {/* Panel 3: Needs Attention */}
         <div style={{ background: "#FFFFFF", border: "1px solid #ECE7E1", borderRadius: "24px", padding: "32px", boxShadow: "0 2px 6px rgba(0,0,0,0.02), 0 16px 40px rgba(0,0,0,0.035)", display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
-          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#1F1C18", fontSize: "16px", fontWeight: 600 }}>
+          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2C221E", fontSize: "16px", fontWeight: 600 }}>
             Needs Attention
           </h3>
           {leastHelpful.length === 0 ? (
-            <p style={{ color: "#7D756D", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No analytics yet.</p>
+            <p style={{ color: "#6A5E57", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No analytics yet.</p>
           ) : (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, flex: 1, display: "flex", flexDirection: "column", gap: "10px" }}>
               {leastHelpful.slice(0, 3).map((faq, idx) => (
-                <li key={faq.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#1F1C18" }}>
+                <li key={faq.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px", color: "#2C221E" }}>
                   <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "170px" }}>{idx + 1}. {faq.question}</span>
-                  <span style={{ color: "#A64A4A" }}>{faq.notHelpful || 0} negative</span>
+                  <span style={{ color: "#A64A4A", fontWeight: 500 }}>{faq.notHelpful || 0} negative</span>
                 </li>
               ))}
             </ul>
@@ -1346,15 +1341,15 @@ export default function SupportFAQManagement() {
 
         {/* Panel 4: Categories */}
         <div style={{ background: "#FFFFFF", border: "1px solid #ECE7E1", borderRadius: "24px", padding: "32px", boxShadow: "0 2px 6px rgba(0,0,0,0.02), 0 16px 40px rgba(0,0,0,0.035)", display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" }}>
-          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#1F1C18", fontSize: "16px", fontWeight: 600 }}>
+          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#2C221E", fontSize: "16px", fontWeight: 600 }}>
             Categories
           </h3>
           {Object.keys(categoryStats).length === 0 ? (
-            <p style={{ color: "#7D756D", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No categories yet.</p>
+            <p style={{ color: "#6A5E57", fontSize: "13px", fontStyle: "italic", margin: 0 }}>No categories yet.</p>
           ) : (
             <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
               {Object.keys(categoryStats).map(cat => (
-                <span key={cat} style={{ background: "#FCFBF9", border: "1px solid #ECE7E1", color: "#7D756D", padding: "6px 12px", borderRadius: "999px", fontSize: "12px", fontWeight: 500 }}>
+                <span key={cat} style={{ background: "#F8F6F2", border: "1px solid #ECE7E1", color: "#6A5E57", padding: "6px 12px", borderRadius: "999px", fontSize: "12px", fontWeight: 500 }}>
                   {cat} ({categoryStats[cat]})
                 </span>
               ))}
