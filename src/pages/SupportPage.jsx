@@ -480,8 +480,6 @@ export default function SupportPage({ setPage }) {
 
   const isClosed = selectedTicket?.status === "Closed";
 
-  const openTicketsCount = tickets.filter(t => t.status !== "Closed" && t.status !== "Resolved").length;
-
   const recentTickets = [...tickets]
     .sort((a, b) => {
       const aTime = a.updatedAt?.seconds || 0;
@@ -603,16 +601,6 @@ export default function SupportPage({ setPage }) {
             </button>
           )}
         </div>
-        {activePage === "home" && (
-          <div style={{ display: "flex", gap: "10px" }}>
-            <button onClick={() => setActivePage("list")} className="support-btn support-btn-secondary">
-              My Tickets ({tickets.length})
-            </button>
-            <button onClick={() => setActivePage("create")} className="support-btn">
-              <PlusCircle size={16} /> New Ticket
-            </button>
-          </div>
-        )}
       </div>
 
       {/* HOME PAGE VIEW */}
@@ -684,61 +672,6 @@ export default function SupportPage({ setPage }) {
                 <button className="support-btn support-btn-secondary" onClick={() => setActivePage("list")}>
                   <MessageSquare size={16} /> My Tickets
                 </button>
-              </div>
-            </div>
-
-            <div 
-              style={{ 
-                width: "220px", 
-                border: "1px solid #EFE7DE", 
-                borderRadius: "18px", 
-                padding: "22px", 
-                background: "#FCFBF8" 
-              }}
-            >
-              <div style={{ fontSize: "12px", color: "#8B7D72", marginBottom: "18px", fontWeight: 600 }}>
-                SUPPORT OVERVIEW
-              </div>
-              
-              <div style={{ marginBottom: "18px" }}>
-                <div style={{ fontSize: "28px", fontWeight: 750, color: "#2C221E" }}>
-                  {openTicketsCount}
-                </div>
-                <div style={{ color: "#8D7E73", fontSize: "13px" }}>
-                  Open Tickets
-                </div>
-              </div>
-              
-              <div style={{ height: "1px", background: "#ECE5DD", margin: "16px 0" }} />
-              
-              <div style={{ marginBottom: "18px" }}>
-                <div style={{ fontSize: "28px", fontWeight: 750, color: "#2C221E" }}>
-                  {faqs.length}
-                </div>
-                <div style={{ color: "#8D7E73", fontSize: "13px" }}>
-                  Help Articles
-                </div>
-              </div>
-              
-              <div 
-                style={{ 
-                  display: "inline-flex", 
-                  alignItems: "center", 
-                  gap: "8px", 
-                  fontSize: "13px", 
-                  fontWeight: 600, 
-                  color: isBusinessOpen ? "#15803D" : "#DC2626" 
-                }}
-              >
-                <span 
-                  style={{ 
-                    width: "8px", 
-                    height: "8px", 
-                    borderRadius: "50%", 
-                    background: isBusinessOpen ? "#22C55E" : "#EF4444" 
-                  }} 
-                />
-                {isBusinessOpen ? "Support Online" : "Currently Offline"}
               </div>
             </div>
           </div>
