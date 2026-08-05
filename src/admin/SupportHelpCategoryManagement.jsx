@@ -78,19 +78,39 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
   const btnRef = useRef(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
 
-  const handleToggleMenu = (e) => {
-    e.stopPropagation();
-    if (!menuOpen && btnRef.current) {
+  const updateDropdownPosition = () => {
+    if (btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
       setDropdownPos({
         top: rect.bottom + 6,
         right: window.innerWidth - rect.right
       });
+    }
+  };
+
+  const handleToggleMenu = (e) => {
+    e.stopPropagation();
+    if (!menuOpen) {
+      updateDropdownPosition();
       setOpenMenuId(category.id);
     } else {
       setOpenMenuId(null);
     }
   };
+
+  // Close or reposition dropdown on scroll/resize so it doesn't float away
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleScrollOrResize = () => {
+      setOpenMenuId(null);
+    };
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+    return () => {
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [menuOpen, category.id, setOpenMenuId]);
 
   return (
     <div
@@ -699,7 +719,7 @@ export default function SupportHelpCategoryManagement() {
         </div>
 
         <div className="dashboard-grid">
-          {/* Recent Activity Section (Moved before Create Category) */}
+          {/* Recent Activity Section */}
           <div className="help-card">
             <div className="section-header" style={{ marginBottom: "16px" }}>
               <h3 style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "20px" }}>
