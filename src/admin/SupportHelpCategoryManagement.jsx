@@ -57,6 +57,13 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { createPortal } from "react-dom";
 
+const formatDate = (timestamp) => {
+  if (!timestamp?.toDate) return "Just now";
+  return timestamp
+    .toDate()
+    .toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+};
+
 function SortableCategoryItem({ category, index, categories, toggleStatus, openEdit, setDeleteTarget, duplicateCategory, expandCard, expandedId, iconMap, openMenuId, setOpenMenuId }) {
   const {
     attributes,
@@ -129,7 +136,7 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
             <div className="category-title">
               {category.title}
               {category.updatedAt && (
-                <span className="recent-badge">Edited recently</span>
+                <span className="recent-badge">Updated {formatDate(category.updatedAt)}</span>
               )}
             </div>
             <div className="category-desc">{category.description}</div>
@@ -286,15 +293,24 @@ export default function SupportHelpCategoryManagement() {
     const key = e => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
-        saveCategory();
+        if (canSave) {
+          saveCategory();
+        }
       }
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [title, description, icon, editingId, categories]);
+  }, [title, description, icon, editingId, categories, saveState]);
+
+  const isDuplicateTitle = categories.some(
+    c => c.title.toLowerCase() === title.trim().toLowerCase() && c.id !== editingId
+  );
+
+  const hasChanges = dirty && (title.trim() || description.trim() || icon !== "Truck");
+  const canSave = title.trim() && !isDuplicateTitle && hasChanges && saveState !== "saving";
 
   const saveCategory = async () => {
-    if (!title.trim()) return;
+    if (!canSave) return;
     
     setSaveState("saving");
 
@@ -383,10 +399,6 @@ export default function SupportHelpCategoryManagement() {
     showToast("Category deleted"); 
     setDeleteTarget(null); 
   };
-
-  const isDuplicateTitle = categories.some(
-    c => c.title.toLowerCase() === title.trim().toLowerCase() && c.id !== editingId
-  );
 
   const filteredCategories = categories.filter(c => {
     const matchesSearch = c.title.toLowerCase().includes(search.toLowerCase()) || 
@@ -503,6 +515,7 @@ export default function SupportHelpCategoryManagement() {
             border:1px solid rgba(255,255,255,.75); border-radius:24px; padding:24px;
             transition:.3s; box-shadow:0 8px 28px rgba(30,22,18,.05);
             min-height:120px; display:flex; flex-direction:column; justify-content:center;
+            cursor:pointer;
         }
         .stat-card:hover{ transform:translateY(-4px); box-shadow:0 18px 40px rgba(30,22,18,.08); }
         .stat-card span{ display:block; font-size:13px; font-weight:600; color:#8B7C72; margin-bottom:8px; }
@@ -562,11 +575,9 @@ export default function SupportHelpCategoryManagement() {
         }
         .warning-text{ color:#C25E38; font-size:13px; margin-top:6px; font-weight:600; }
 
-        .search-input{
-            width:100%; padding:16px 20px; border-radius:18px; border:1px solid #E8DED2;
-            background:white; font-size:15px; margin-bottom:20px; transition:.25s;
-        }
-        .search-input:focus{ outline:none; border-color:#C4956A; box-shadow:0 0 0 4px rgba(196,149,106,.12); }
+        .search-box{ display:flex; align-items:center; gap:10px; padding:0 16px; border:1px solid #E8DED2; border-radius:18px; background:white; margin-bottom:20px; }
+        .search-box input{ border:none; width:100%; padding:16px 0; background:transparent; font-size:15px; }
+        .search-box input:focus{ outline:none; }
 
         .filter-row{ display:flex; gap:12px; margin-bottom:24px; }
         .filter-btn, .filter-active{
@@ -581,6 +592,8 @@ export default function SupportHelpCategoryManagement() {
             padding:15px 26px; font-weight:700; cursor:pointer; transition:.3s; display:flex; align-items:center; gap:8px; justify-content:center;
         }
         .primary-btn:hover{ transform:translateY(-2px); background:#17120F; box-shadow: 0 12px 24px rgba(0,0,0,.15); }
+        .primary-btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
+
         .secondary-btn{
             background:white; border:1px solid #E7DED5; border-radius:16px;
             padding:14px 22px; font-weight:600; cursor:pointer; transition:.25s;
@@ -730,21 +743,21 @@ export default function SupportHelpCategoryManagement() {
 
         {/* Analytics Cards */}
         <div className="help-stats">
-          <div className="stat-card">
+          <div className="stat-card" onClick={() => setFilter("All")}>
             <span>Total Categories</span>
             <h2>{categories.length}</h2>
           </div>
-          <div className="stat-card">
+          <div className="stat-card" onClick={() => setFilter("Active")}>
             <span>Active</span>
             <h2>{categories.filter(c => c.active !== false).length}</h2>
           </div>
-          <div className="stat-card">
+          <div className="stat-card" onClick={() => setFilter("Hidden")}>
             <span>Hidden</span>
             <h2>{categories.filter(c => c.active === false).length}</h2>
           </div>
           <div className="stat-card">
-            <span>Icons Used</span>
-            <h2>{new Set(categories.map(c => c.icon)).size}</h2>
+            <span>Recently Updated</span>
+            <h2>{categories.filter(c => c.updatedAt).length}</h2>
           </div>
         </div>
 
@@ -860,12 +873,17 @@ export default function SupportHelpCategoryManagement() {
                 <button 
                   className="primary-btn"
                   onClick={saveCategory}
+                  disabled={!canSave}
                 >
                   {saveState === "saving" ? "Saving..." : saveState === "saved" ? <><Check size={16} /> Saved</> : editingId ? "Update Category" : "Create Category"}
                 </button>
                 <button 
                   className="secondary-btn"
                   onClick={() => {
+                    if (dirty) {
+                      const ok = window.confirm("Discard unsaved changes?");
+                      if (!ok) return;
+                    }
                     setTitle("");
                     setDescription("");
                     setIcon("Truck");
@@ -891,12 +909,14 @@ export default function SupportHelpCategoryManagement() {
               </div>
             </div>
 
-            <input 
-              className="search-input" 
-              placeholder="Search categories..." 
-              value={search} 
-              onChange={(e) => setSearch(e.target.value)} 
-            />
+            <div className="search-box">
+              <Search size={18} color="#8C7C72" />
+              <input 
+                placeholder="Search categories..." 
+                value={search} 
+                onChange={(e) => setSearch(e.target.value)} 
+              />
+            </div>
 
             <div className="filter-row">
               <button className={filter === "All" ? "filter-active" : "filter-btn"} onClick={() => setFilter("All")}>All</button>
@@ -964,20 +984,26 @@ export default function SupportHelpCategoryManagement() {
 
             <div className="customer-preview-box">
               <div className="customer-preview-header">Support Centre</div>
-              {categories.filter(c => c.active !== false).map(category => {
-                const Icon = iconMap[category.icon] || HelpCircle;
-                return (
-                  <div key={category.id} className="real-preview-card">
-                    <div className="icon-box" style={{ background: "#FAF3EE", border: "1px solid #F1E5DB" }}>
-                      <Icon size={20} strokeWidth={1.7} color="#C4956A" />
+              {categories.filter(c => c.active !== false).length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px", color: "#8C7C72" }}>
+                  No visible categories.
+                </div>
+              ) : (
+                categories.filter(c => c.active !== false).map(category => {
+                  const Icon = iconMap[category.icon] || HelpCircle;
+                  return (
+                    <div key={category.id} className="real-preview-card">
+                      <div className="icon-box" style={{ background: "#FAF3EE", border: "1px solid #F1E5DB" }}>
+                        <Icon size={20} strokeWidth={1.7} color="#C4956A" />
+                      </div>
+                      <div>
+                        <h5>{category.title}</h5>
+                        <p>{category.description}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h5>{category.title}</h5>
-                      <p>{category.description}</p>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
