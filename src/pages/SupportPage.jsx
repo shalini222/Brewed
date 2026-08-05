@@ -61,6 +61,9 @@ export default function SupportPage({ setPage }) {
   const [loadingTickets, setLoadingTickets] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
 
+  // Help Categories state
+  const [helpCategories, setHelpCategories] = useState([]);
+
   // Form states for creating a ticket
   const [subject, setSubject] = useState("");
   const [category, setCategory] = useState("General");
@@ -95,9 +98,6 @@ export default function SupportPage({ setPage }) {
 
   // FAQ 
   const [faqs, setFaqs] = useState([]);
-
-  // Help Categories state
-  const [helpCategories, setHelpCategories] = useState([]);
 
   // Support Policies state
   const [policies, setPolicies] = useState([]);
@@ -149,6 +149,30 @@ export default function SupportPage({ setPage }) {
     const nearBottom = scrollHeight - scrollTop - clientHeight < 150;
     setIsNearBottom(nearBottom);
   };
+
+  // Load categories from Firestore (Moved up so it's ready for useEffect category sync)
+  useEffect(() => {
+    const q = query(
+      collection(db, "supportHelpCategories"),
+      where("active", "==", true),
+      orderBy("sortOrder", "asc")
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setHelpCategories(data);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Sync category default state when helpCategories load
+  useEffect(() => {
+    if (helpCategories.length > 0 && !helpCategories.some(c => c.title === category)) {
+      setCategory(helpCategories[0].title);
+    }
+  }, [helpCategories]);
 
   // Fetch customer's tickets in real-time
   useEffect(() => {
@@ -256,23 +280,6 @@ export default function SupportPage({ setPage }) {
     return unsubscribe;
   }, []);
 
-  // Load categories from Firestore
-  useEffect(() => {
-    const q = query(
-      collection(db, "supportHelpCategories"),
-      where("active", "==", true),
-      orderBy("sortOrder", "asc")
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setHelpCategories(data);
-    });
-    return unsubscribe;
-  }, []);
-
   // Fetch support settings in real-time
   useEffect(() => {
     const unsubscribe = onSnapshot(
@@ -350,7 +357,7 @@ export default function SupportPage({ setPage }) {
       setSelectedTicket({ id: ticketRef.id, ...snap.data() });
       
       setSubject("");
-      setCategory("General");
+      setCategory(helpCategories.length > 0 ? helpCategories[0].title : "General");
       setInitialMessage("");
       setActivePage("conversation");
     } catch (err) {
@@ -1226,10 +1233,20 @@ export default function SupportPage({ setPage }) {
                 onChange={(e) => setCategory(e.target.value)}
                 style={{ padding: "12px", border: "1px solid #E8DED2", borderRadius: "10px", background: "#FDFAF5", color: "#2C221E", outline: "none", fontSize: "14px" }}
               >
-                <option value="General">General Inquiry</option>
-                <option value="Order">Order Issue</option>
-                <option value="Account">Account & Login</option>
-                <option value="Billing">Billing & Payment</option>
+                {helpCategories.length > 0 ? (
+                  helpCategories.map((item) => (
+                    <option key={item.id} value={item.title}>
+                      {item.title}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="General">General</option>
+                    <option value="Order">Order</option>
+                    <option value="Account">Account</option>
+                    <option value="Billing">Billing</option>
+                  </>
+                )}
               </select>
             </div>
 
