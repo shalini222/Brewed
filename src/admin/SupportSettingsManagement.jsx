@@ -149,14 +149,16 @@ export default function SupportSettingsManagement() {
     <>
       <style>{`
         /* ===========================
-           SUPPORT SETTINGS
+           SUPPORT SETTINGS (SaaS Polish)
         =========================== */
 
         .support-settings-page{
-            max-width:1150px;
+            max-width:960px;
             margin:auto;
-            padding:28px;
-            background:#FDFBF8;
+            padding:32px 20px;
+            background:#FAF8F6;
+            font-family: inherit;
+            color: #1A1614;
         }
 
         /* ===========================
@@ -167,24 +169,26 @@ export default function SupportSettingsManagement() {
             display:flex;
             justify-content:space-between;
             align-items:center;
-            margin-bottom:28px;
-            padding:24px 28px;
+            margin-bottom:24px;
+            padding:20px 24px;
             background:white;
-            border-radius:22px;
-            box-shadow:0 8px 30px rgba(44,34,30,.05);
+            border-radius:14px;
+            border:1px solid #ECE8E3;
+            box-shadow:0 1px 3px rgba(0,0,0,.02);
         }
 
         .page-header h2{
             margin:0;
-            font-size:30px;
-            color:#2C221E;
-            font-weight:700;
+            font-size:22px;
+            color:#1A1614;
+            font-weight:600;
+            letter-spacing: -0.01em;
         }
 
         .page-header p{
-            margin-top:8px;
-            color:#8B7B70;
-            font-size:15px;
+            margin:4px 0 0;
+            color:#7A6E65;
+            font-size:14px;
         }
 
         /* ===========================
@@ -193,82 +197,116 @@ export default function SupportSettingsManagement() {
 
         .settings-card{
             background:white;
-            border-radius:22px;
-            padding:28px;
-            margin-bottom:24px;
-            box-shadow:
-                0 4px 12px rgba(0,0,0,.03),
-                0 12px 40px rgba(44,34,30,.04);
-            transition:.25s;
+            border-radius:14px;
+            padding:24px;
+            margin-bottom:20px;
+            border:1px solid #ECE8E3;
+            box-shadow:0 1px 3px rgba(0,0,0,.03), 0 8px 24px rgba(44,34,30,.02);
+            transition:border-color .2s;
         }
 
         .settings-card:hover{
-            transform:translateY(-2px);
-            box-shadow:
-                0 8px 22px rgba(0,0,0,.05),
-                0 20px 50px rgba(44,34,30,.08);
+            border-color: #D8D0C7;
         }
 
         .settings-card h3{
             margin:0;
-            color:#2C221E;
-            font-size:22px;
-            font-weight:700;
+            color:#1A1614;
+            font-size:18px;
+            font-weight:600;
+            letter-spacing: -0.01em;
         }
 
-        .settings-card p{
-            margin:10px 0 24px;
-            color:#8B7B70;
-            line-height:1.6;
+        .settings-card > p{
+            margin:6px 0 20px;
+            color:#7A6E65;
+            font-size:14px;
+            line-height:1.5;
         }
 
         /* ===========================
-           PREVIEW CARD
+           PREVIEW CARD (Help Centre Mock)
         =========================== */
 
         .preview-card{
             background:white;
-            border-radius:22px;
-            padding:28px;
-            margin-bottom:24px;
-            box-shadow:
-                0 4px 12px rgba(0,0,0,.03),
-                0 12px 40px rgba(44,34,30,.04);
-            border:1px solid #EFE5DA;
+            border-radius:14px;
+            padding:24px;
+            margin-bottom:20px;
+            border:1px solid #ECE8E3;
+            box-shadow:0 1px 3px rgba(0,0,0,.03), 0 8px 24px rgba(44,34,30,.02);
         }
 
-        .preview-grid{
-            display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-            gap:18px;
-            margin-top:22px;
+        .help-centre-mock{
+            background:#FAF8F6;
+            border-radius:10px;
+            border:1px solid #ECE8E3;
+            padding:20px;
+            margin-top:16px;
         }
 
-        .preview-item{
-            background:#FAF6F0;
-            border-radius:18px;
-            padding:18px;
-            border:1px solid #EFE5DA;
+        .mock-header{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #ECE8E3;
         }
 
-        .preview-item h4{
-            margin:0 0 10px;
-            font-size:17px;
-            color:#2C221E;
+        .mock-header h4 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #1A1614;
         }
 
-        .preview-item strong{
+        .mock-response-badge {
+            font-size: 13px;
+            color: #5A4E46;
+            background: #F0ECE6;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .mock-channels-list{
+            display:flex;
+            flex-direction:column;
+            gap:12px;
+        }
+
+        .mock-channel-row{
+            background:white;
+            border-radius:8px;
+            padding:14px 16px;
+            border:1px solid #ECE8E3;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mock-channel-info strong{
             display:block;
-            color:#C4956A;
-            font-size:16px;
-            margin-bottom:8px;
+            color:#1A1614;
+            font-size:14px;
+            font-weight:600;
+            margin-bottom:2px;
         }
 
-        .preview-item p{
-            margin:0;
-            color:#8B7B70;
-            font-size:14px;
-            line-height:1.5;
+        .mock-channel-info span{
+            color:#7A6E65;
+            font-size:13px;
+        }
+
+        .mock-channel-action {
+            font-size: 13px;
+            font-weight: 500;
+            color: #2C221E;
+            background: #FAF8F6;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #ECE8E3;
         }
 
         /* ===========================
@@ -277,8 +315,8 @@ export default function SupportSettingsManagement() {
 
         .settings-grid{
             display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
-            gap:22px;
+            grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+            gap:16px;
         }
 
         /* ===========================
@@ -288,8 +326,8 @@ export default function SupportSettingsManagement() {
         .input-group{
             display:flex;
             flex-direction:column;
-            gap:10px;
-            margin-bottom:16px;
+            gap:8px;
+            margin-bottom:14px;
         }
 
         .input-group:last-child{
@@ -297,10 +335,10 @@ export default function SupportSettingsManagement() {
         }
 
         .input-group label{
-            font-size:13px;
-            font-weight:700;
-            color:#6E5E53;
-            letter-spacing:.4px;
+            font-size:12px;
+            font-weight:600;
+            color:#5A4E46;
+            letter-spacing:.3px;
             text-transform:uppercase;
         }
 
@@ -309,65 +347,63 @@ export default function SupportSettingsManagement() {
         .input-group input[type="number"],
         .input-group select,
         .input-group textarea{
-            background:#FCF8F3;
-            border:2px solid transparent;
-            border-radius:16px;
-            padding:16px;
-            font-size:15px;
-            transition:.25s;
+            background:white;
+            border:1px solid #ECE8E3;
+            border-radius:10px;
+            padding:12px 14px;
+            font-size:14px;
+            transition:.2s;
             outline:none;
-            color:#2C221E;
+            color:#1A1614;
             font-family:inherit;
         }
 
         .input-group textarea{
-            min-height:110px;
+            min-height:90px;
             resize:vertical;
         }
 
         .input-group input:hover,
         .input-group select:hover,
         .input-group textarea:hover{
-            background:white;
-            border-color:#E8DED2;
+            border-color:#C8BFC5;
         }
 
         .input-group input:focus,
         .input-group select:focus,
         .input-group textarea:focus{
-            background:white;
-            border-color:#C4956A;
-            box-shadow:0 0 0 5px rgba(196,149,106,.15);
+            border-color:#1A1614;
+            box-shadow:0 0 0 3px rgba(26,22,20,.08);
         }
 
         .checkbox-label{
             display:flex;
             align-items:center;
-            gap:12px;
-            font-weight:600;
-            color:#2C221E;
+            gap:10px;
+            font-weight:500;
+            color:#1A1614;
             cursor:pointer;
-            font-size:15px;
+            font-size:14px;
         }
 
         .checkbox-label input[type="checkbox"]{
-            width:20px;
-            height:20px;
-            accent-color:#C4956A;
+            width:16px;
+            height:16px;
+            accent-color:#1A1614;
             cursor:pointer;
         }
 
         .checkbox-grid{
             display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-            gap:16px;
+            grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+            gap:12px;
         }
 
         .field-error{
-            margin-top:6px;
+            margin-top:4px;
             color:#DC2626;
-            font-size:13px;
-            font-weight:600;
+            font-size:12px;
+            font-weight:500;
         }
 
         /* ===========================
@@ -377,74 +413,100 @@ export default function SupportSettingsManagement() {
         .test-buttons{
             display:flex;
             flex-wrap:wrap;
-            gap:16px;
-            margin-top:20px;
+            gap:12px;
+            margin-top:16px;
         }
 
         .test-buttons button{
-            background:#FAF6F0;
-            border:1px solid #E8DED2;
-            border-radius:14px;
-            padding:14px 22px;
+            background:white;
+            border:1px solid #ECE8E3;
+            border-radius:10px;
+            padding:10px 16px;
             cursor:pointer;
-            font-weight:600;
-            transition:.25s;
-            color:#2C221E;
+            font-weight:500;
+            font-size:13px;
+            transition:.2s;
+            color:#1A1614;
         }
 
         .test-buttons button:hover:not(:disabled){
-            background:#C4956A;
-            color:white;
-            border-color:#C4956A;
+            background:#FAF8F6;
+            border-color:#1A1614;
         }
 
         .test-buttons button:disabled{
-            opacity:.45;
+            opacity:.4;
             cursor:not-allowed;
         }
 
         /* ===========================
-           TOGGLES
+           SWITCH TOGGLES (iOS Style)
         =========================== */
 
         .toggle-list{
             display:flex;
             flex-direction:column;
-            gap:16px;
+            gap:12px;
         }
 
         .toggle-row{
             display:flex;
             justify-content:space-between;
             align-items:center;
-            padding:18px 20px;
-            background:#FAF6F0;
-            border-radius:16px;
+            padding:14px 16px;
+            background:#FAF8F6;
+            border-radius:10px;
+            border:1px solid #ECE8E3;
         }
 
         .toggle-row span{
-            font-weight:600;
-            color:#2C221E;
+            font-weight:500;
+            color:#1A1614;
+            font-size:14px;
         }
 
-        .toggle{
-            border:none;
-            background:#E5E7EB;
-            color:#444;
-            padding:10px 18px;
-            border-radius:999px;
-            cursor:pointer;
-            font-weight:700;
-            transition:.25s;
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            cursor: pointer;
         }
 
-        .toggle.active{
-            background:#22C55E;
-            color:white;
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
         }
 
-        .toggle:hover{
-            transform:translateY(-2px);
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #D6CEC7;
+            transition: .2s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .2s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+
+        input:checked + .slider {
+            background-color: #1A1614;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
         }
 
         /* ===========================
@@ -453,21 +515,22 @@ export default function SupportSettingsManagement() {
 
         .action-bar{
             position:sticky;
-            bottom:20px;
+            bottom:16px;
             background:white;
-            border-radius:22px;
-            padding:20px 24px;
+            border-radius:14px;
+            padding:16px 20px;
             display:flex;
             justify-content:space-between;
             align-items:center;
-            margin-top:30px;
-            box-shadow:0 10px 35px rgba(44,34,30,.08);
+            margin-top:24px;
+            border:1px solid #ECE8E3;
+            box-shadow:0 4px 20px rgba(0,0,0,.06);
             z-index: 10;
         }
 
         .actions{
             display:flex;
-            gap:14px;
+            gap:10px;
         }
 
         /* ===========================
@@ -475,46 +538,45 @@ export default function SupportSettingsManagement() {
         =========================== */
 
         .save-btn{
-            background:#C4956A;
+            background:#1A1614;
             color:white;
             border:none;
-            padding:14px 24px;
-            border-radius:14px;
+            padding:10px 18px;
+            border-radius:10px;
             cursor:pointer;
-            font-size:15px;
-            font-weight:700;
-            transition:.25s;
+            font-size:14px;
+            font-weight:500;
+            transition:.2s;
         }
 
         .save-btn:hover:not(:disabled){
-            background:#B7865E;
-            transform:translateY(-2px);
+            background:#332C28;
         }
 
         .save-btn:disabled{
-            background:#D9C6B4;
+            background:#D6CEC7;
             cursor:not-allowed;
-            transform:none;
         }
 
         .reset-btn{
             background:white;
-            border:2px solid #E8DED2;
-            padding:14px 22px;
-            border-radius:14px;
+            border:1px solid #ECE8E3;
+            padding:10px 16px;
+            border-radius:10px;
             cursor:pointer;
-            font-weight:600;
-            color:#2C221E;
-            transition:.25s;
+            font-weight:500;
+            color:#1A1614;
+            transition:.2s;
+            font-size: 14px;
         }
 
         .reset-btn:hover:not(:disabled){
-            background:#FAF6F0;
-            border-color:#C4956A;
+            background:#FAF8F6;
+            border-color:#1A1614;
         }
 
         .reset-btn:disabled{
-            opacity:0.5;
+            opacity:0.4;
             cursor:not-allowed;
         }
 
@@ -523,42 +585,45 @@ export default function SupportSettingsManagement() {
         =========================== */
 
         .unsaved{
-            color:#D97706;
-            font-weight:700;
+            color:#9A6B00;
+            font-weight:500;
+            font-size: 13px;
             display:flex;
             align-items:center;
-            gap:8px;
+            gap:6px;
         }
 
         .success-banner{
-            background:#EAF8EF;
-            border-left:5px solid #4CAF50;
-            padding:18px;
-            border-radius:14px;
-            margin-bottom:20px;
-            color:#2E7D32;
-            font-weight:600;
+            background:#F0FDF4;
+            border:1px solid #DCFCE7;
+            padding:14px;
+            border-radius:10px;
+            margin-bottom:16px;
+            color:#166534;
+            font-weight:500;
+            font-size: 14px;
         }
 
         .error-banner{
-            background:#FFF2F2;
-            border-left:5px solid #E53935;
-            padding:18px;
-            border-radius:14px;
-            margin-bottom:20px;
-            color:#C62828;
-            font-weight:600;
+            background:#FEF2F2;
+            border:1px solid #FEE2E2;
+            padding:14px;
+            border-radius:10px;
+            margin-bottom:16px;
+            color:#991B1B;
+            font-weight:500;
+            font-size: 14px;
         }
 
         .loading-card{
             background:white;
-            padding:60px;
+            padding:40px;
             text-align:center;
-            border-radius:22px;
-            box-shadow:0 8px 30px rgba(44,34,30,.05);
-            color:#8B7B70;
+            border-radius:14px;
+            border:1px solid #ECE8E3;
+            color:#7A6E65;
             font-weight:500;
-            font-size:16px;
+            font-size:14px;
         }
 
         /* ===========================
@@ -569,7 +634,7 @@ export default function SupportSettingsManagement() {
             .page-header{
                 flex-direction:column;
                 align-items:flex-start;
-                gap:20px;
+                gap:14px;
             }
 
             .settings-grid{
@@ -578,7 +643,7 @@ export default function SupportSettingsManagement() {
 
             .action-bar{
                 flex-direction:column;
-                gap:16px;
+                gap:12px;
                 align-items:stretch;
             }
 
@@ -596,86 +661,89 @@ export default function SupportSettingsManagement() {
       <div className="support-settings-page">
         <div className="page-header">
           <div>
-            <h2>⚙️ Support Settings</h2>
-            <p>
-              Manage contact information and business hours shown in the customer Help Centre.
-            </p>
+            <h2>Support Settings</h2>
+            <p>Configure customer support channels.</p>
           </div>
         </div>
 
         {success && (
           <div className="success-banner">
-            ✅ Support settings updated successfully.
+            Support settings updated successfully.
           </div>
         )}
 
         {error && (
           <div className="error-banner">
-            ❌ {error}
+            {error}
           </div>
         )}
 
-        {/* Support Availability */}
+        {/* Card 1: Support • Availability • Visibility */}
         <div className="settings-card">
-          <h3>🟢 Support Availability</h3>
-          <p>
-            Enable or disable support channels without deleting their information.
-          </p>
-          <div className="toggle-list">
+          <h3>Support Availability & Visibility</h3>
+          <p>Control system availability, communication channels, and frontend visibility.</p>
+          
+          <div className="toggle-list" style={{ marginBottom: "20px" }}>
             <div className="toggle-row">
               <span>Support System</span>
-              <button
-                className={settings.supportEnabled ? "toggle active" : "toggle"}
-                onClick={() => toggleSetting("supportEnabled")}
-              >
-                {settings.supportEnabled ? "Enabled" : "Disabled"}
-              </button>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={settings.supportEnabled}
+                  onChange={() => toggleSetting("supportEnabled")}
+                />
+                <span className="slider"></span>
+              </label>
             </div>
             <div className="toggle-row">
-              <span>Phone</span>
-              <button
-                className={settings.phoneEnabled ? "toggle active" : "toggle"}
-                onClick={() => toggleSetting("phoneEnabled")}
-              >
-                {settings.phoneEnabled ? "Enabled" : "Disabled"}
-              </button>
+              <span>Phone Channel</span>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={settings.phoneEnabled}
+                  onChange={() => toggleSetting("phoneEnabled")}
+                />
+                <span className="slider"></span>
+              </label>
             </div>
             <div className="toggle-row">
-              <span>Email</span>
-              <button
-                className={settings.emailEnabled ? "toggle active" : "toggle"}
-                onClick={() => toggleSetting("emailEnabled")}
-              >
-                {settings.emailEnabled ? "Enabled" : "Disabled"}
-              </button>
+              <span>Email Channel</span>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={settings.emailEnabled}
+                  onChange={() => toggleSetting("emailEnabled")}
+                />
+                <span className="slider"></span>
+              </label>
             </div>
             <div className="toggle-row">
-              <span>WhatsApp</span>
-              <button
-                className={settings.whatsappEnabled ? "toggle active" : "toggle"}
-                onClick={() => toggleSetting("whatsappEnabled")}
-              >
-                {settings.whatsappEnabled ? "Enabled" : "Disabled"}
-              </button>
+              <span>WhatsApp Channel</span>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={settings.whatsappEnabled}
+                  onChange={() => toggleSetting("whatsappEnabled")}
+                />
+                <span className="slider"></span>
+              </label>
             </div>
             <div className="toggle-row">
-              <span>Instagram</span>
-              <button
-                className={settings.instagramEnabled ? "toggle active" : "toggle"}
-                onClick={() => toggleSetting("instagramEnabled")}
-              >
-                {settings.instagramEnabled ? "Enabled" : "Disabled"}
-              </button>
+              <span>Instagram Channel</span>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={settings.instagramEnabled}
+                  onChange={() => toggleSetting("instagramEnabled")}
+                />
+                <span className="slider"></span>
+              </label>
             </div>
           </div>
-        </div>
 
-        {/* Support Channels Visibility */}
-        <div className="settings-card">
-          <h3>👁️ Support Channels Visibility</h3>
-          <p>
-            Control which contact methods and sections customers actually see in the Help Centre.
-          </p>
+          <div style={{ fontSize: "13px", fontWeight: 600, color: "#5A4E46", marginBottom: "12px", textTransform: "uppercase", letterSpacing: ".3px" }}>
+            Channel Visibility Toggles
+          </div>
           <div className="checkbox-grid">
             <label className="checkbox-label">
               <input
@@ -725,12 +793,10 @@ export default function SupportSettingsManagement() {
           </div>
         </div>
 
-        {/* Contact Information */}
+        {/* Card 2: Contact Information */}
         <div className="settings-card">
-          <h3>📞 Contact Information</h3>
-          <p>
-            These details are shown in the customer Help Centre.
-          </p>
+          <h3>Contact Information</h3>
+          <p>Provide contact credentials exposed across customer support touchpoints.</p>
 
           <div className="settings-grid">
             <div className="input-group">
@@ -766,7 +832,7 @@ export default function SupportSettingsManagement() {
             </div>
 
             <div className="input-group">
-              <label>WhatsApp</label>
+              <label>WhatsApp Number</label>
               <input
                 type="text"
                 name="whatsapp"
@@ -782,7 +848,7 @@ export default function SupportSettingsManagement() {
             </div>
 
             <div className="input-group">
-              <label>Instagram</label>
+              <label>Instagram Handle</label>
               <input
                 type="text"
                 name="instagram"
@@ -797,26 +863,19 @@ export default function SupportSettingsManagement() {
               )}
             </div>
           </div>
-        </div>
 
-        {/* Test Contact Actions */}
-        <div className="settings-card">
-          <h3>🧪 Test Contact Actions</h3>
-          <p>
-            Quickly verify that your support contact information works correctly.
-          </p>
           <div className="test-buttons">
             <button
               onClick={() => window.open(`tel:${settings.phone}`)}
               disabled={!settings.phone}
             >
-              📞 Test Call
+              Test Call
             </button>
             <button
               onClick={() => window.open(`mailto:${settings.email}`)}
               disabled={!settings.email}
             >
-              ✉️ Test Email
+              Test Email
             </button>
             <button
               onClick={() =>
@@ -826,7 +885,7 @@ export default function SupportSettingsManagement() {
               }
               disabled={!settings.whatsapp}
             >
-              💬 Test WhatsApp
+              Test WhatsApp
             </button>
             <button
               onClick={() =>
@@ -836,116 +895,86 @@ export default function SupportSettingsManagement() {
               }
               disabled={!settings.instagram}
             >
-              📷 Test Instagram
+              Test Instagram
             </button>
           </div>
         </div>
 
-        {/* Contact Descriptions */}
+        {/* Card 3: Customer Experience */}
         <div className="settings-card">
-          <h3>💬 Contact Descriptions</h3>
-          <p>
-            Customize the helper text shown below each contact option in the customer Help Centre.
-          </p>
+          <h3>Customer Experience</h3>
+          <p>Configure helper copy, automated acknowledgements, and response timelines.</p>
 
-          <div className="input-group">
-            <label>Call Description</label>
-            <textarea
-              name="callDescription"
-              value={settings.callDescription}
-              onChange={handleChange}
-              rows={3}
-              placeholder="Available during business hours."
-            />
+          <div className="settings-grid" style={{ marginBottom: "16px" }}>
+            <div className="input-group">
+              <label>Call Description</label>
+              <textarea
+                name="callDescription"
+                value={settings.callDescription}
+                onChange={handleChange}
+                rows={2}
+                placeholder="Available during business hours."
+              />
+            </div>
+            <div className="input-group">
+              <label>Email Description</label>
+              <textarea
+                name="emailDescription"
+                value={settings.emailDescription}
+                onChange={handleChange}
+                rows={2}
+                placeholder="Usually replies within 24 hours."
+              />
+            </div>
+            <div className="input-group">
+              <label>WhatsApp Description</label>
+              <textarea
+                name="whatsappDescription"
+                value={settings.whatsappDescription}
+                onChange={handleChange}
+                rows={2}
+                placeholder="Fastest way to get help."
+              />
+            </div>
+            <div className="input-group">
+              <label>Instagram Description</label>
+              <textarea
+                name="instagramDescription"
+                value={settings.instagramDescription}
+                onChange={handleChange}
+                rows={2}
+                placeholder="Send us a DM anytime."
+              />
+            </div>
           </div>
 
-          <div className="input-group">
-            <label>Email Description</label>
-            <textarea
-              name="emailDescription"
-              value={settings.emailDescription}
-              onChange={handleChange}
-              rows={3}
-              placeholder="Usually replies within 24 hours."
-            />
-          </div>
-
-          <div className="input-group">
-            <label>WhatsApp Description</label>
-            <textarea
-              name="whatsappDescription"
-              value={settings.whatsappDescription}
-              onChange={handleChange}
-              rows={3}
-              placeholder="Fastest way to get help."
-            />
-          </div>
-
-          <div className="input-group">
-            <label>Instagram Description</label>
-            <textarea
-              name="instagramDescription"
-              value={settings.instagramDescription}
-              onChange={handleChange}
-              rows={3}
-              placeholder="Send us a DM anytime."
-            />
-          </div>
-        </div>
-
-        {/* Auto Response Settings */}
-        <div className="settings-card">
-          <h3>🤖 Automatic Reply</h3>
-          <p>
-            Configure automated acknowledgement messages sent to customers upon ticket submission.
-          </p>
-
-          <div className="input-group" style={{ marginBottom: "24px" }}>
-            <label className="checkbox-label">
+          <div className="toggle-row" style={{ marginBottom: "16px" }}>
+            <span>Automatic Acknowledgement Email</span>
+            <label className="switch">
               <input
                 type="checkbox"
                 name="autoReplyEnabled"
                 checked={settings.autoReplyEnabled}
                 onChange={handleChange}
               />
-              Enable automatic acknowledgement
+              <span className="slider"></span>
             </label>
           </div>
 
-          <div className="input-group">
-            <label>Estimated Response Time</label>
-            <select
-              name="estimatedResponseTime"
-              value={settings.estimatedResponseTime}
-              onChange={handleChange}
-            >
-              <option value="Within 1 hour">Within 1 hour</option>
-              <option value="Within 2 hours">Within 2 hours</option>
-              <option value="Within 4 hours">Within 4 hours</option>
-              <option value="Within 24 hours">Within 24 hours</option>
-            </select>
-          </div>
-
-          <div className="input-group">
-            <label>Message Template</label>
-            <textarea
-              name="autoReplyMessage"
-              value={settings.autoReplyMessage}
-              onChange={handleChange}
-              rows={4}
-              placeholder="Thanks for contacting Brewed Support!..."
-            />
-          </div>
-        </div>
-
-        {/* SLA & Response Targets */}
-        <div className="settings-card">
-          <h3>⏰ SLA & Response Targets</h3>
-          <p>
-            Set expected response timeframes and escalation windows for your team.
-          </p>
-
-          <div className="settings-grid">
+          <div className="settings-grid" style={{ marginBottom: "16px" }}>
+            <div className="input-group">
+              <label>Estimated Response Time</label>
+              <select
+                name="estimatedResponseTime"
+                value={settings.estimatedResponseTime}
+                onChange={handleChange}
+              >
+                <option value="Within 1 hour">Within 1 hour</option>
+                <option value="Within 2 hours">Within 2 hours</option>
+                <option value="Within 4 hours">Within 4 hours</option>
+                <option value="Within 24 hours">Within 24 hours</option>
+              </select>
+            </div>
             <div className="input-group">
               <label>Expected First Response (Hours)</label>
               <input
@@ -954,99 +983,47 @@ export default function SupportSettingsManagement() {
                 value={settings.responseTargetHours}
                 onChange={handleChange}
                 min={1}
-                placeholder="24"
               />
             </div>
-
-            <div className="input-group">
-              <label>Escalation Threshold (Hours)</label>
-              <input
-                type="number"
-                name="escalationHours"
-                value={settings.escalationHours}
-                onChange={handleChange}
-                min={1}
-                placeholder="48"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Customer Preview */}
-        <div className="preview-card">
-          <h3>👀 Customer Preview</h3>
-          <p>
-            This is how your contact information and SLA targets will appear in the customer Help Centre.
-          </p>
-          <div style={{ marginBottom: "16px", fontSize: "14px", fontWeight: "600", color: "#C4956A" }}>
-            Average response {settings.estimatedResponseTime ? settings.estimatedResponseTime.toLowerCase() : "within 2 hours"}
-          </div>
-          {!settings.supportEnabled ? (
-            <div className="preview-item" style={{ gridColumn: "1 / -1", textAlign: "center", padding: "30px" }}>
-              <p style={{ fontWeight: 600, color: "#D97706" }}>Support is currently unavailable.</p>
-            </div>
-          ) : (
-            <div className="preview-grid">
-              {settings.showPhone && settings.phoneEnabled && (
-                <div className="preview-item">
-                  <h4>📞 Call Us</h4>
-                  <strong>{settings.phone || "Not configured"}</strong>
-                  <p>{settings.callDescription || "No description provided."}</p>
-                </div>
-              )}
-              {settings.showEmail && settings.emailEnabled && (
-                <div className="preview-item">
-                  <h4>✉️ Email</h4>
-                  <strong>{settings.email || "Not configured"}</strong>
-                  <p>{settings.emailDescription || "No description provided."}</p>
-                </div>
-              )}
-              {settings.showWhatsapp && settings.whatsappEnabled && (
-                <div className="preview-item">
-                  <h4>💬 WhatsApp</h4>
-                  <strong>{settings.whatsapp || "Not configured"}</strong>
-                  <p>{settings.whatsappDescription || "No description provided."}</p>
-                </div>
-              )}
-              {settings.showInstagram && settings.instagramEnabled && (
-                <div className="preview-item">
-                  <h4>📷 Instagram</h4>
-                  <strong>{settings.instagram || "Not configured"}</strong>
-                  <p>{settings.instagramDescription || "No description provided."}</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Business Hours */}
-        {settings.showBusinessHours && (
-          <div className="settings-card">
-            <h3>🕒 Business Hours</h3>
-            <p>
-              Manage the support hours displayed in the customer Help Centre.
-            </p>
-
-            <div className="input-group">
-              <label>Section Title</label>
-              <input
-                type="text"
-                name="businessHoursTitle"
-                value={settings.businessHoursTitle}
-                onChange={handleChange}
-                placeholder="Customer Support Hours"
-              />
-            </div>
-
-            <div className="input-group">
-              <label>Section Description</label>
+            <div className="input-group" style={{ gridColumn: "1 / -1" }}>
+              <label>Auto-Reply Message Template</label>
               <textarea
-                name="businessHoursDescription"
-                value={settings.businessHoursDescription}
+                name="autoReplyMessage"
+                value={settings.autoReplyMessage}
                 onChange={handleChange}
                 rows={3}
-                placeholder="We're here to help every day."
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Business Hours */}
+        {settings.showBusinessHours && (
+          <div className="settings-card">
+            <h3>Business Hours</h3>
+            <p>Set team availability and schedule schedules.</p>
+
+            <div className="settings-grid" style={{ marginBottom: "16px" }}>
+              <div className="input-group">
+                <label>Section Title</label>
+                <input
+                  type="text"
+                  name="businessHoursTitle"
+                  value={settings.businessHoursTitle}
+                  onChange={handleChange}
+                  placeholder="Customer Support Hours"
+                />
+              </div>
+              <div className="input-group">
+                <label>Section Description</label>
+                <input
+                  type="text"
+                  name="businessHoursDescription"
+                  value={settings.businessHoursDescription}
+                  onChange={handleChange}
+                  placeholder="We're here to help every day."
+                />
+              </div>
             </div>
 
             <div className="settings-grid">
@@ -1060,7 +1037,6 @@ export default function SupportSettingsManagement() {
                   placeholder="9:00 AM – 10:00 PM"
                 />
               </div>
-
               <div className="input-group">
                 <label>Saturday</label>
                 <input
@@ -1071,7 +1047,6 @@ export default function SupportSettingsManagement() {
                   placeholder="9:00 AM – 11:00 PM"
                 />
               </div>
-
               <div className="input-group">
                 <label>Sunday</label>
                 <input
@@ -1085,6 +1060,66 @@ export default function SupportSettingsManagement() {
             </div>
           </div>
         )}
+
+        {/* Card 5: Live Preview */}
+        <div className="preview-card">
+          <h3>Customer Preview</h3>
+          <p>Real-time emulation of the customer Help Centre view.</p>
+
+          <div className="help-centre-mock">
+            <div className="mock-header">
+              <h4>Need help?</h4>
+              <div className="mock-response-badge">
+                Average response {settings.estimatedResponseTime ? settings.estimatedResponseTime.toLowerCase() : "within 2 hours"}
+              </div>
+            </div>
+
+            {!settings.supportEnabled ? (
+              <div style={{ textAlign: "center", padding: "20px", color: "#7A6E65", fontSize: "14px" }}>
+                Support is currently unavailable.
+              </div>
+            ) : (
+              <div className="mock-channels-list">
+                {settings.showPhone && settings.phoneEnabled && (
+                  <div className="mock-channel-row">
+                    <div className="mock-channel-info">
+                      <strong>Phone Support</strong>
+                      <span>{settings.phone || "Not configured"} • {settings.callDescription || "Available during business hours."}</span>
+                    </div>
+                    <div className="mock-channel-action">Call</div>
+                  </div>
+                )}
+                {settings.showEmail && settings.emailEnabled && (
+                  <div className="mock-channel-row">
+                    <div className="mock-channel-info">
+                      <strong>Email Support</strong>
+                      <span>{settings.email || "Not configured"} • {settings.emailDescription || "Replies within 24 hours"}</span>
+                    </div>
+                    <div className="mock-channel-action">Email</div>
+                  </div>
+                )}
+                {settings.showWhatsapp && settings.whatsappEnabled && (
+                  <div className="mock-channel-row">
+                    <div className="mock-channel-info">
+                      <strong>WhatsApp</strong>
+                      <span>{settings.whatsapp || "Not configured"} • {settings.whatsappDescription || "Fastest way to get help."}</span>
+                    </div>
+                    <div className="mock-channel-action">Chat</div>
+                  </div>
+                )}
+                {settings.showInstagram && settings.instagramEnabled && (
+                  <div className="mock-channel-row">
+                    <div className="mock-channel-info">
+                      <strong>Instagram</strong>
+                      <span>{settings.instagram || "Not configured"} • {settings.instagramDescription || "Send us a DM anytime."}</span>
+                    </div>
+                    <div className="mock-channel-action">DM</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Action Bar */}
         <div className="action-bar">
@@ -1106,7 +1141,7 @@ export default function SupportSettingsManagement() {
               onClick={saveSettings}
               disabled={!hasChanges || saving}
             >
-              {saving ? "Saving..." : "💾 Save Changes"}
+              {saving ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </div>
@@ -1114,3 +1149,4 @@ export default function SupportSettingsManagement() {
     </>
   );
 }
+
