@@ -380,21 +380,24 @@ export default function SupportManagement({ setPage, setActivePage }) {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Segmented Control Container for Tabs */}
       <div
         style={{
           display: "flex",
           gap: "8px",
-          marginBottom: "28px",
-          borderBottom: "1px solid #EFE8DF",
-          paddingBottom: "12px"
+          padding: "8px",
+          background: "#F4EFE8",
+          border: "1px solid #E9DFD3",
+          borderRadius: "18px",
+          width: "fit-content",
+          marginBottom: "28px"
         }}
       >
         {[
           { id: "tickets", label: "Tickets" },
           { id: "supportfaq", label: "FAQs" },
           { id: "supportpolicies", label: "Policies" },
-          { id: "supportsettings", label: "Contact Settings" },
+          { id: "supportsettings", label: "Contact" },
           { id: "supporthelpdesk", label: "Help Desk" },
           { id: "supportanalytics", label: "Analytics" }
         ].map((tab) => {
@@ -403,19 +406,57 @@ export default function SupportManagement({ setPage, setActivePage }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              style={{
-                padding: "10px 20px",
-                borderRadius: "12px",
-                border: "none",
-                cursor: "pointer",
-                background: isActive ? "#F5EFE7" : "transparent",
-                color: "#2C221E",
-                fontWeight: isActive ? 700 : 500,
-                fontSize: "14px",
-                transition: "all 0.2s ease"
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = "#FAF8F5";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }
               }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.transform = "translateY(0px)";
+                }
+              }}
+              style={
+                isActive
+                  ? {
+                      padding: "12px 22px",
+                      borderRadius: "14px",
+                      border: "1px solid #DCCBB9",
+                      background: "linear-gradient(180deg,#FFFFFF,#F8F3EC)",
+                      color: "#2C221E",
+                      fontWeight: 700,
+                      fontSize: "14px",
+                      boxShadow: "0 6px 18px rgba(196,149,106,.18), inset 0 1px 0 rgba(255,255,255,.9)",
+                      cursor: "pointer",
+                      transition: "background .25s ease, box-shadow .25s ease, transform .2s ease, color .2s ease"
+                    }
+                  : {
+                      padding: "12px 22px",
+                      borderRadius: "14px",
+                      border: "1px solid transparent",
+                      background: "transparent",
+                      color: "#7A6E65",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      cursor: "pointer",
+                      transition: "background .25s ease, box-shadow .25s ease, transform .2s ease, color .2s ease"
+                    }
+              }
             >
               {tab.label}
+              {isActive && (
+                <div
+                  style={{
+                    height: "3px",
+                    width: "28px",
+                    borderRadius: "999px",
+                    background: "#C4956A",
+                    margin: "8px auto 0"
+                  }}
+                />
+              )}
             </button>
           );
         })}
