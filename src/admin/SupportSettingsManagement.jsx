@@ -5,7 +5,7 @@ import {
   Phone, 
   Mail, 
   MessageCircle, 
-  Camera,
+  Camera, 
   Clock, 
   Bot, 
   Eye, 
@@ -156,7 +156,6 @@ export default function SupportSettingsManagement() {
 
   const hasChanges = JSON.stringify(settings) !== JSON.stringify(originalSettings);
 
-  // Derived stats for the hero metrics
   const activeChannelsCount = [
     settings.phoneEnabled, 
     settings.emailEnabled, 
@@ -196,6 +195,7 @@ export default function SupportSettingsManagement() {
           font-family: inherit;
           color: #1A1614;
           box-sizing: border-box;
+          position: relative;
         }
 
         /* HERO HEADER & STAT CARDS */
@@ -206,7 +206,7 @@ export default function SupportSettingsManagement() {
         .hero-top-row {
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
+          align-items: center;
           margin-bottom: 24px;
           background: white;
           padding: 24px 28px;
@@ -287,25 +287,26 @@ export default function SupportSettingsManagement() {
           letter-spacing: -0.01em;
         }
 
-        /* BANNERS */
-        .success-banner {
-          background: #F0FDF4;
-          border: 1px solid #DCFCE7;
-          padding: 16px 20px;
+        /* TOAST NOTIFICATION */
+        .success-toast {
+          background: #EEF5EF;
+          border: 1px solid #D8E6D8;
+          padding: 14px 20px;
           border-radius: 14px;
           margin-bottom: 24px;
-          color: #166534;
+          color: #36543A;
           font-weight: 500;
           font-size: 14px;
           display: flex;
           align-items: center;
           gap: 10px;
+          animation: slideDown 0.3s ease;
         }
 
         .error-banner {
           background: #FEF2F2;
           border: 1px solid #FEE2E2;
-          padding: 16px 20px;
+          padding: 14px 20px;
           border-radius: 14px;
           margin-bottom: 24px;
           color: #991B1B;
@@ -314,6 +315,30 @@ export default function SupportSettingsManagement() {
           display: flex;
           align-items: center;
           gap: 10px;
+        }
+
+        /* UNSAVED CHANGES PILL & BANNER */
+        .unsaved-pill-banner {
+          background: #F8F3E8;
+          border: 1px solid #E7D9B5;
+          color: #8B6A2B;
+          border-radius: 999px;
+          padding: 8px 16px;
+          font-weight: 600;
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 2px 8px rgba(139, 106, 43, 0.05);
+        }
+
+        .saved-status-text {
+          color: #7A6E65;
+          font-size: 13px;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 6px;
         }
 
         /* DASHBOARD CARDS */
@@ -521,7 +546,7 @@ export default function SupportSettingsManagement() {
           font-size: 13px;
         }
 
-        /* SWITCH TOGGLE (iOS Style) */
+        /* SWITCH TOGGLE */
         .switch {
           position: relative;
           display: inline-block;
@@ -597,7 +622,7 @@ export default function SupportSettingsManagement() {
           cursor: not-allowed;
         }
 
-        /* PREMIUM PHONE MOCKUP PREVIEW */
+        /* PHONE MOCKUP PREVIEW */
         .preview-container {
           display: flex;
           justify-content: center;
@@ -702,27 +727,15 @@ export default function SupportSettingsManagement() {
           flex-shrink: 0;
         }
 
-        /* FLOATING ACTION BAR */
-        .action-bar {
-          position: sticky;
-          bottom: 24px;
-          background: rgba(255, 255, 255, 0.85);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          border-radius: 20px;
-          padding: 16px 24px;
+        /* SECTION FOOTER ACTIONS */
+        .section-footer-actions {
           display: flex;
-          justify-content: space-between;
+          justify-content: flex-end;
           align-items: center;
-          margin-top: 32px;
-          border: 1px solid #ECE8E3;
-          box-shadow: 0 10px 30px rgba(44,34,30,0.08);
-          z-index: 100;
-        }
-
-        .actions {
-          display: flex;
           gap: 12px;
+          margin-top: 32px;
+          padding-top: 24px;
+          border-top: 1px solid #ECE8E3;
         }
 
         .save-btn {
@@ -768,19 +781,6 @@ export default function SupportSettingsManagement() {
           cursor: not-allowed;
         }
 
-        .unsaved {
-          color: #9A6B00;
-          font-weight: 500;
-          font-size: 13px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: #FEF9E7;
-          padding: 6px 12px;
-          border-radius: 20px;
-          border: 1px solid #FDE68A;
-        }
-
         .loading-card {
           background: white;
           padding: 60px;
@@ -809,6 +809,11 @@ export default function SupportSettingsManagement() {
           to { transform: rotate(360deg); }
         }
 
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
         /* RESPONSIVE */
         @media(max-width: 768px) {
           .admin-page {
@@ -820,14 +825,13 @@ export default function SupportSettingsManagement() {
             gap: 16px;
             padding: 20px;
           }
-          .action-bar {
-            flex-direction: column;
-            gap: 12px;
-            align-items: stretch;
-            bottom: 16px;
-          }
-          .actions {
+          .hero-action-slot {
             width: 100%;
+            justify-content: space-between;
+          }
+          .section-footer-actions {
+            flex-direction: column-reverse;
+            align-items: stretch;
           }
           .save-btn, .reset-btn {
             width: 100%;
@@ -844,7 +848,33 @@ export default function SupportSettingsManagement() {
               <p>Configure your customer support experience and channels.</p>
             </div>
             <div className="hero-action-slot">
-              {hasChanges && <span className="unsaved">● Unsaved Changes</span>}
+              {hasChanges ? (
+                <div className="unsaved-pill-banner">
+                  ● You have unsaved changes
+                </div>
+              ) : (
+                <div className="saved-status-text">
+                  <CheckCircle2 size={16} color="#36543A" /> All changes saved
+                </div>
+              )}
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  className="reset-btn"
+                  onClick={resetChanges}
+                  disabled={!hasChanges || saving}
+                  style={{ padding: "10px 16px", height: "46px" }}
+                >
+                  Reset
+                </button>
+                <button
+                  className="save-btn"
+                  onClick={saveSettings}
+                  disabled={!hasChanges || saving}
+                  style={{ padding: "10px 20px", height: "46px" }}
+                >
+                  {saving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -892,8 +922,8 @@ export default function SupportSettingsManagement() {
         </div>
 
         {success && (
-          <div className="success-banner">
-            <CheckCircle2 size={18} />
+          <div className="success-toast">
+            <CheckCircle2 size={18} color="#36543A" />
             Support settings updated successfully.
           </div>
         )}
@@ -1453,30 +1483,30 @@ export default function SupportSettingsManagement() {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Sticky Action Bar */}
-        <div className="action-bar">
-          {hasChanges ? (
-            <span className="unsaved">● Unsaved changes</span>
-          ) : (
-            <span />
-          )}
-          <div className="actions">
-            <button
-              className="reset-btn"
-              onClick={resetChanges}
-              disabled={!hasChanges || saving}
-            >
-              Reset
-            </button>
-            <button
-              className="save-btn"
-              onClick={saveSettings}
-              disabled={!hasChanges || saving}
-            >
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
+          {/* Section Footer Actions */}
+          <div className="section-footer-actions">
+            {hasChanges && (
+              <div className="unsaved-pill-banner" style={{ marginRight: "auto" }}>
+                ● You have unsaved changes
+              </div>
+            )}
+            <div style={{ display: "flex", gap: "12px", width: "auto" }}>
+              <button
+                className="reset-btn"
+                onClick={resetChanges}
+                disabled={!hasChanges || saving}
+              >
+                Reset
+              </button>
+              <button
+                className="save-btn"
+                onClick={saveSettings}
+                disabled={!hasChanges || saving}
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
