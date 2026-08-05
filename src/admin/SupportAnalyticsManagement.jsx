@@ -13,11 +13,26 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  LineChart, 
-  Line,
   AreaChart,
   Area
 } from "recharts";
+import { 
+  Ticket, 
+  FolderOpen, 
+  Clock, 
+  CheckCircle2, 
+  TrendingUp, 
+  Users, 
+  Briefcase, 
+  Download, 
+  BarChart3,
+  AlertCircle,
+  Activity,
+  Star,
+  ChevronDown,
+  Layers,
+  Flame
+} from "lucide-react";
 
 // Custom hook for smooth spring-like animated counting numbers
 function useCountUp(end, duration = 1200) {
@@ -49,7 +64,6 @@ export default function SupportAnalyticsManagement() {
   const [dateFilter, setDateFilter] = useState("7days");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
-  const [lastUpdatedTime, setLastUpdatedTime] = useState(new Date());
   const [exportOpen, setExportOpen] = useState(false);
 
   // Listen to live updates from Firestore
@@ -63,7 +77,6 @@ export default function SupportAnalyticsManagement() {
             ...doc.data(),
           }))
         );
-        setLastUpdatedTime(new Date());
       }
     );
     return unsubscribe;
@@ -97,7 +110,7 @@ export default function SupportAnalyticsManagement() {
     });
   }, [tickets, dateFilter, customStart, customEnd]);
 
-  // Calculate live statistics
+  // Calculate statistics
   const totalTickets = filteredTickets.length;
   const openTickets = filteredTickets.filter((t) => t.status === "Open").length;
   const pendingTickets = filteredTickets.filter((t) => t.status === "Pending").length;
@@ -113,7 +126,6 @@ export default function SupportAnalyticsManagement() {
   // Animated values
   const animatedTotal = useCountUp(totalTickets);
   const animatedOpen = useCountUp(openTickets);
-  const animatedPending = useCountUp(pendingTickets);
   const animatedResolved = useCountUp(totalResolvedAndClosed);
   const animatedRate = useCountUp(resolutionRate);
 
@@ -129,7 +141,7 @@ export default function SupportAnalyticsManagement() {
       .sort((a, b) => b.value - a.value);
   }, [filteredTickets]);
 
-  const mostCommonCategory = categoryData.length > 0 ? categoryData[0].name : "--";
+  const mostCommonCategory = categoryData.length > 0 ? categoryData[0].name : "General";
 
   // Priority Analytics
   const highPriority = filteredTickets.filter(t => (t.priority || "").toLowerCase() === "high").length;
@@ -148,7 +160,7 @@ export default function SupportAnalyticsManagement() {
 
   const averageResponse = responseTimes.length ? (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length).toFixed(1) : "7";
 
-  // Daily Trend Data & Mini Sparkline Data
+  // Daily Trend Data & Sparklines
   const { trendData, miniSparklineData } = useMemo(() => {
     const dailyData = {};
     filteredTickets.forEach(ticket => {
@@ -165,20 +177,22 @@ export default function SupportAnalyticsManagement() {
     return { trendData: trend, miniSparklineData: spark };
   }, [filteredTickets]);
 
-  // Chart Status Data
+  // Status Distribution Data
   const statusData = [
     { name: "Open", value: openTickets },
     { name: "Pending", value: pendingTickets },
     { name: "Resolved / Closed", value: totalResolvedAndClosed }
   ];
 
-  // Brewed Theme Palette Colors
-  const BREWED_COLORS = {
-    open: "#E7B46A",
-    pending: "#7FA8D9",
-    resolved: "#6CBF84",
-    closed: "#2C221E",
-    high: "#D9534F"
+  // Muted Color Palette
+  const PALETTE = {
+    coffee: "#C4956A",
+    forest: "#7E9B87",
+    slate: "#64748B",
+    stone: "#E8DED2",
+    dark: "#2C221E",
+    mutedText: "#8B7B70",
+    red: "#D9534F"
   };
 
   // Staff Performance
@@ -207,7 +221,7 @@ export default function SupportAnalyticsManagement() {
     return entries.sort((a, b) => b[1].closed - a[1].closed)[0];
   }, [staffStats]);
 
-  // Heatmap dataset simulation
+  // Heatmap simulation
   const heatmapCells = useMemo(() => {
     return Array.from({ length: 28 }).map((_, i) => {
       const count = Math.floor(Math.abs(Math.sin(i * 1.5)) * 8) + (i % 3 === 0 ? 3 : 0);
@@ -240,7 +254,7 @@ export default function SupportAnalyticsManagement() {
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(report);
     XLSX.utils.book_append_sheet(workbook, worksheet, "Support Report");
-    XLSX.writeFile(workbook, `Brewed_Support_Report.xlsx`);
+    XLSX.writeFile(workbook, `Support_Analytics_Report.xlsx`);
     setExportOpen(false);
   };
 
@@ -249,7 +263,7 @@ export default function SupportAnalyticsManagement() {
     const headers = ["ID", "Subject", "Customer", "Category", "Priority", "Status", "AssignedTo"];
     const rows = filteredTickets.map(t => [t.id, `"${t.subject || ''}"`, `"${t.customerName || ''}"`, t.category, t.priority, t.status, t.assignedTo || 'Unassigned']);
     const csvContent = [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-    downloadFile(csvContent, "Brewed_Support_Report.csv", "text/csv;charset=utf-8;");
+    downloadFile(csvContent, "Support_Analytics_Report.csv", "text/csv;charset=utf-8;");
     setExportOpen(false);
   };
 
@@ -279,12 +293,12 @@ export default function SupportAnalyticsManagement() {
           right: -100px;
           width: 550px;
           height: 550px;
-          background: radial-gradient(circle, rgba(196,149,106,0.22) 0%, rgba(217,119,6,0.06) 70%);
+          background: radial-gradient(circle, rgba(196,149,106,0.18) 0%, rgba(217,119,6,0.04) 70%);
           filter: blur(90px);
           border-radius: 50%;
           z-index: 0;
           pointer-events: none;
-          animation: floatBlob 12s ease-in-out infinite;
+          animation: floatBlob 14s ease-in-out infinite;
         }
         .support-analytics-container::after {
           content: '';
@@ -293,61 +307,63 @@ export default function SupportAnalyticsManagement() {
           left: -120px;
           width: 600px;
           height: 600px;
-          background: radial-gradient(circle, rgba(127,168,217,0.15) 0%, rgba(196,149,106,0.1) 70%);
+          background: radial-gradient(circle, rgba(126,155,135,0.12) 0%, rgba(196,149,106,0.08) 70%);
           filter: blur(100px);
           border-radius: 50%;
           z-index: 0;
           pointer-events: none;
-          animation: floatBlob 16s ease-in-out infinite reverse;
+          animation: floatBlob 18s ease-in-out infinite reverse;
         }
         .support-analytics-page {
           position: relative;
-          max-width: 1280px;
+          max-width: 1320px;
           margin: auto;
-          padding: 36px 28px;
+          padding: 48px 32px;
           z-index: 1;
         }
+
+        /* Hero Banner */
         .hero-banner {
-          background: linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.45) 100%);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255,255,255,0.8);
-          border-radius: 28px;
-          padding: 36px 40px;
-          margin-bottom: 32px;
-          box-shadow: 0 30px 60px rgba(44,34,30,0.06), inset 0 1px 0 rgba(255,255,255,0.9);
+          background: rgba(255, 255, 255, 0.72);
+          backdrop-filter: blur(24px);
+          border: 1px solid rgba(255, 255, 255, 0.65);
+          border-radius: 32px;
+          padding: 40px 48px;
+          margin-bottom: 48px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
           display: flex;
           justify-content: space-between;
           align-items: center;
           flex-wrap: wrap;
-          gap: 24px;
+          gap: 28px;
         }
         .hero-title-area h1 {
           margin: 0;
-          font-size: 34px;
+          font-size: 38px;
           font-weight: 800;
           color: #2C221E;
-          letter-spacing: -0.6px;
+          letter-spacing: -1px;
         }
         .hero-title-area p {
           margin: 8px 0 0;
           color: #8B7B70;
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 500;
         }
         .hero-stats-pills {
           display: flex;
-          gap: 14px;
+          gap: 16px;
           flex-wrap: wrap;
         }
         .hero-pill {
           background: rgba(255, 255, 255, 0.85);
           border: 1px solid rgba(232,222,210,0.8);
-          padding: 12px 18px;
-          border-radius: 16px;
+          padding: 14px 20px;
+          border-radius: 18px;
           font-weight: 700;
           font-size: 13px;
           color: #2C221E;
-          box-shadow: 0 4px 12px rgba(44,34,30,0.03);
+          box-shadow: 0 4px 16px rgba(44,34,30,0.02);
           display: flex;
           flex-direction: column;
           gap: 2px;
@@ -357,29 +373,31 @@ export default function SupportAnalyticsManagement() {
           font-weight: 500;
           color: #8B7B70;
         }
+
+        /* Analytics Chips & Controls Bar */
         .analytics-chips-bar {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 28px;
+          margin-bottom: 32px;
           flex-wrap: wrap;
           gap: 16px;
         }
         .chips-group {
           display: flex;
-          background: rgba(255, 255, 255, 0.65);
-          backdrop-filter: blur(12px);
+          background: rgba(255, 255, 255, 0.72);
+          backdrop-filter: blur(16px);
           padding: 6px;
-          border-radius: 18px;
+          border-radius: 20px;
           border: 1px solid rgba(255, 255, 255, 0.8);
-          box-shadow: 0 8px 24px rgba(44,34,30,0.03);
+          box-shadow: 0 10px 30px rgba(44,34,30,0.03);
           gap: 4px;
         }
         .chip-btn {
           background: transparent;
           border: none;
           padding: 10px 20px;
-          border-radius: 12px;
+          border-radius: 14px;
           font-size: 13px;
           font-weight: 700;
           color: #8B7B70;
@@ -393,7 +411,7 @@ export default function SupportAnalyticsManagement() {
         }
         .chip-btn:hover:not(.active) {
           color: #2C221E;
-          background: rgba(255,255,255,0.8);
+          background: rgba(255,255,255,0.9);
         }
         .custom-date-inputs {
           display: flex;
@@ -402,13 +420,15 @@ export default function SupportAnalyticsManagement() {
         }
         .custom-date-inputs input {
           padding: 10px 14px;
-          border-radius: 12px;
+          border-radius: 14px;
           border: 1px solid rgba(232,222,210,0.8);
           background: rgba(255,255,255,0.85);
           font-size: 13px;
           font-weight: 600;
           color: #2C221E;
         }
+
+        /* Export Button Dropdown */
         .export-dropdown-container {
           position: relative;
         }
@@ -416,31 +436,32 @@ export default function SupportAnalyticsManagement() {
           background: #2C221E;
           color: white;
           border: none;
-          padding: 12px 22px;
-          border-radius: 16px;
+          padding: 12px 24px;
+          border-radius: 18px;
           cursor: pointer;
           font-weight: 700;
           font-size: 14px;
           display: flex;
           align-items: center;
-          gap: 8px;
-          box-shadow: 0 4px 16px rgba(44,34,30,0.2);
-          transition: all 0.25s ease;
+          gap: 10px;
+          box-shadow: 0 10px 25px rgba(44,34,30,0.15);
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .export-main-btn:hover {
           background: #1E1714;
           transform: translateY(-2px);
+          box-shadow: 0 15px 30px rgba(44,34,30,0.2);
         }
         .export-menu {
           position: absolute;
           right: 0;
-          top: calc(100% + 8px);
+          top: calc(100 + 8px);
           background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(16px);
-          border: 1px solid rgba(255,255,255,0.9);
-          border-radius: 16px;
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.9);
+          border-radius: 18px;
           box-shadow: 0 20px 40px rgba(44,34,30,0.12);
-          width: 160px;
+          width: 180px;
           overflow: hidden;
           z-index: 10;
         }
@@ -449,7 +470,7 @@ export default function SupportAnalyticsManagement() {
           text-align: left;
           background: transparent;
           border: none;
-          padding: 12px 16px;
+          padding: 12px 18px;
           font-size: 13px;
           font-weight: 600;
           color: #2C221E;
@@ -459,74 +480,77 @@ export default function SupportAnalyticsManagement() {
         .export-menu button:hover {
           background: #F2ECE5;
         }
+
+        /* KPI Cards Grid */
         .kpi-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-          gap: 22px;
-          margin-bottom: 36px;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 24px;
+          margin-bottom: 48px;
         }
         .kpi-card {
-          background: linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.55) 100%);
-          backdrop-filter: blur(16px);
-          border-radius: 24px;
-          padding: 26px;
-          border: 1px solid rgba(255,255,255,0.9);
-          box-shadow: 0 15px 35px rgba(44,34,30,0.04);
+          background: rgba(255, 255, 255, 0.72);
+          backdrop-filter: blur(24px);
+          border-radius: 28px;
+          padding: 32px;
+          border: 1px solid rgba(255, 255, 255, 0.65);
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
           transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
           position: relative;
           overflow: hidden;
         }
         .kpi-card:hover {
-          transform: translateY(-8px) scale(1.02);
-          box-shadow: 0 25px 50px rgba(44,34,30,0.09);
+          transform: translateY(-6px) scale(1.01);
+          box-shadow: 0 30px 70px rgba(0, 0, 0, 0.08);
           border-color: rgba(196,149,106,0.4);
         }
         .kpi-top-row {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 14px;
+          margin-bottom: 16px;
         }
         .kpi-icon-title {
           display: flex;
           align-items: center;
           gap: 10px;
-          font-size: 15px;
-          font-weight: 700;
+          font-size: 14px;
+          font-weight: 600;
           color: #8B7B70;
         }
         .kpi-badge-growth {
           font-size: 12px;
-          font-weight: 800;
-          color: #10B981;
-          background: rgba(16, 185, 129, 0.1);
-          padding: 4px 8px;
-          border-radius: 8px;
+          font-weight: 700;
+          color: #7E9B87;
+          background: rgba(126, 155, 135, 0.12);
+          padding: 4px 10px;
+          border-radius: 10px;
         }
         .kpi-main-value {
-          font-size: 38px;
+          font-size: 42px;
           font-weight: 800;
           color: #2C221E;
-          letter-spacing: -0.5px;
-          margin-bottom: 12px;
+          letter-spacing: -1px;
+          margin-bottom: 16px;
         }
-        .kpi-live-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: 11px;
+        .kpi-label-meta {
+          font-size: 14px;
           font-weight: 600;
-          color: #A39385;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: #8B7B70;
           margin-bottom: 8px;
         }
+
+        /* Top Insights Panel */
         .insights-panel {
-          background: linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(250,246,240,0.8) 100%);
-          backdrop-filter: blur(18px);
+          background: rgba(255, 255, 255, 0.72);
+          backdrop-filter: blur(24px);
           border: 1px solid rgba(196,149,106,0.3);
-          border-radius: 26px;
-          padding: 26px 32px;
-          margin-bottom: 36px;
-          box-shadow: 0 20px 45px rgba(44,34,30,0.05);
+          border-radius: 28px;
+          padding: 32px 36px;
+          margin-bottom: 48px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
         }
         .insights-header {
           display: flex;
@@ -535,39 +559,53 @@ export default function SupportAnalyticsManagement() {
           font-size: 18px;
           font-weight: 800;
           color: #2C221E;
-          margin-bottom: 16px;
+          margin-bottom: 20px;
         }
         .insights-list {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 14px;
+          gap: 16px;
         }
         .insight-item {
           display: flex;
           align-items: flex-start;
-          gap: 10px;
+          gap: 12px;
           font-size: 14px;
           color: #5D4F46;
           font-weight: 600;
           background: rgba(255,255,255,0.6);
-          padding: 12px 16px;
-          border-radius: 14px;
+          padding: 16px 20px;
+          border-radius: 16px;
           border: 1px solid rgba(232,222,210,0.6);
         }
+
+        /* Section Headers (Stripe/Linear Style) */
         .analytics-section {
-          margin-top: 40px;
+          margin-top: 64px;
         }
-        .section-title {
-          font-size: 20px;
-          font-weight: 800;
+        .section-header-group {
+          margin-bottom: 24px;
+        }
+        .section-tiny-label {
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          color: #8B7B70;
+          margin-bottom: 6px;
+        }
+        .section-large-title {
+          font-size: 24px;
+          font-weight: 700;
           color: #2C221E;
-          margin-bottom: 20px;
-          letter-spacing: -0.3px;
+          letter-spacing: -0.5px;
+          margin: 0;
         }
+
         .chart-grid-2col {
           display: grid;
           grid-template-columns: 2fr 1fr;
-          gap: 26px;
+          gap: 28px;
         }
         @media(max-width: 950px) {
           .chart-grid-2col {
@@ -575,17 +613,17 @@ export default function SupportAnalyticsManagement() {
           }
         }
         .glass-chart-card {
-          background: rgba(255, 255, 255, 0.55);
-          backdrop-filter: blur(18px);
-          border: 1px solid rgba(255, 255, 255, 0.7);
-          border-radius: 28px;
-          padding: 30px;
-          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.05);
+          background: rgba(255, 255, 255, 0.72);
+          backdrop-filter: blur(24px);
+          border: 1px solid rgba(255, 255, 255, 0.65);
+          border-radius: 32px;
+          padding: 36px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
           transition: all 0.35s ease;
         }
         .glass-chart-card:hover {
           transform: translateY(-4px);
-          box-shadow: 0 35px 70px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 30px 70px rgba(0, 0, 0, 0.08);
           border-color: rgba(196,149,106,0.3);
         }
         .chart-card-header h3 {
@@ -595,11 +633,13 @@ export default function SupportAnalyticsManagement() {
           color: #2C221E;
         }
         .chart-card-header p {
-          margin: 4px 0 20px;
+          margin: 4px 0 24px;
           font-size: 13px;
           color: #8B7B70;
           font-weight: 500;
         }
+
+        /* Donut Center Label */
         .donut-container {
           position: relative;
           width: 100%;
@@ -615,7 +655,7 @@ export default function SupportAnalyticsManagement() {
         }
         .donut-center-label h2 {
           margin: 0;
-          font-size: 28px;
+          font-size: 30px;
           font-weight: 800;
           color: #2C221E;
         }
@@ -624,46 +664,50 @@ export default function SupportAnalyticsManagement() {
           font-size: 12px;
           font-weight: 700;
           color: #8B7B70;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
+
+        /* Staff Cards */
         .staff-grid-modern {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 22px;
+          gap: 24px;
         }
         .staff-card-modern {
-          background: rgba(255, 255, 255, 0.65);
-          backdrop-filter: blur(16px);
-          border: 1px solid rgba(255, 255, 255, 0.8);
-          border-radius: 24px;
-          padding: 26px;
-          box-shadow: 0 20px 40px rgba(44,34,30,0.04);
+          background: rgba(255, 255, 255, 0.72);
+          backdrop-filter: blur(24px);
+          border: 1px solid rgba(255, 255, 255, 0.65);
+          border-radius: 28px;
+          padding: 30px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
           transition: all 0.3s ease;
         }
         .staff-card-modern:hover {
           transform: translateY(-6px);
-          box-shadow: 0 28px 55px rgba(44,34,30,0.08);
+          box-shadow: 0 25px 65px rgba(0, 0, 0, 0.08);
           border-color: rgba(196,149,106,0.3);
         }
         .staff-header-row {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 14px;
+          margin-bottom: 16px;
         }
         .staff-name-role {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 14px;
         }
         .staff-avatar {
-          width: 48px;
-          height: 48px;
+          width: 50px;
+          height: 50px;
           background: linear-gradient(135deg, #FAF6F0 0%, #E8DED2 100%);
-          border-radius: 16px;
+          border-radius: 18px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 700;
           color: #2C221E;
         }
@@ -674,26 +718,28 @@ export default function SupportAnalyticsManagement() {
           color: #2C221E;
         }
         .staff-stars {
-          font-size: 12px;
-          color: #F59E0B;
-          margin-top: 2px;
+          display: flex;
+          gap: 2px;
+          color: #C4956A;
+          margin-top: 3px;
         }
         .staff-efficiency-badge {
-          background: rgba(107, 191, 132, 0.12);
-          color: #2E7D32;
+          background: rgba(126, 155, 135, 0.12);
+          color: #7E9B87;
           font-size: 13px;
-          font-weight: 800;
-          padding: 6px 12px;
-          border-radius: 12px;
+          font-weight: 700;
+          padding: 6px 14px;
+          border-radius: 14px;
         }
-        .staff-progress-bar {
-          height: 10px;
-          background: #F2ECE5;
+        /* Minimal Rounded Progress Bars (6px height) */
+        .minimal-progress-track {
+          height: 6px;
+          background: #E8DED2;
           border-radius: 999px;
           overflow: hidden;
-          margin: 16px 0;
+          margin: 20px 0 16px;
         }
-        .staff-progress-fill {
+        .minimal-progress-fill {
           height: 100%;
           background: #C4956A;
           border-radius: 999px;
@@ -702,61 +748,68 @@ export default function SupportAnalyticsManagement() {
           display: flex;
           justify-content: space-between;
           font-size: 13px;
-          font-weight: 700;
-          color: #5D4F46;
+          font-weight: 600;
+          color: #8B7B70;
         }
+
+        /* Heatmap Card */
         .heatmap-card {
-          background: rgba(255, 255, 255, 0.65);
-          backdrop-filter: blur(16px);
-          border: 1px solid rgba(255, 255, 255, 0.8);
-          border-radius: 24px;
-          padding: 28px;
-          box-shadow: 0 20px 40px rgba(44,34,30,0.04);
+          background: rgba(255, 255, 255, 0.72);
+          backdrop-filter: blur(24px);
+          border: 1px solid rgba(255, 255, 255, 0.65);
+          border-radius: 32px;
+          padding: 36px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
         }
         .heatmap-grid {
           display: grid;
           grid-template-columns: repeat(7, 1fr);
-          gap: 8px;
-          max-width: 450px;
-          margin-top: 14px;
+          gap: 10px;
+          max-width: 480px;
+          margin-top: 20px;
         }
         .heatmap-box {
-          height: 36px;
-          border-radius: 10px;
+          height: 38px;
+          border-radius: 12px;
           transition: transform 0.15s;
         }
         .heatmap-box:hover {
           transform: scale(1.15);
         }
+
+        /* Category Pill Cards */
         .category-pill-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 18px;
+          gap: 20px;
         }
         .category-pill-card {
-          background: rgba(255, 255, 255, 0.65);
-          backdrop-filter: blur(16px);
-          border: 1px solid rgba(255, 255, 255, 0.8);
-          border-radius: 20px;
-          padding: 22px;
-          box-shadow: 0 10px 30px rgba(44,34,30,0.03);
+          background: rgba(255, 255, 255, 0.72);
+          backdrop-filter: blur(24px);
+          border: 1px solid rgba(255, 255, 255, 0.65);
+          border-radius: 24px;
+          padding: 24px;
+          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.03);
         }
         .category-pill-info {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 10px;
+          margin-bottom: 12px;
           font-weight: 700;
           color: #2C221E;
+          font-size: 14px;
         }
+
+        /* Empty State */
         .empty-state-card {
           background: rgba(255, 255, 255, 0.75);
-          backdrop-filter: blur(16px);
+          backdrop-filter: blur(24px);
           border: 1px solid rgba(255, 255, 255, 0.9);
-          border-radius: 28px;
+          border-radius: 32px;
           padding: 60px 20px;
           text-align: center;
-          box-shadow: 0 20px 40px rgba(44,34,30,0.04);
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
         }
         .empty-state-card h3 {
           margin: 16px 0 6px;
@@ -778,21 +831,21 @@ export default function SupportAnalyticsManagement() {
           {/* Hero Analytics Banner */}
           <div className="hero-banner">
             <div className="hero-title-area">
-              <h1>☕ Brewed Support Intelligence</h1>
-              <p>Real-time support operations dashboard engineered for scale.</p>
+              <h1>Support Intelligence</h1>
+              <p>Operational insights and performance metrics.</p>
             </div>
             <div className="hero-stats-pills">
               <div className="hero-pill">
                 <span>{openTickets} Active</span>
-                <span>Support Queue</span>
+                <span>Queue</span>
               </div>
               <div className="hero-pill">
                 <span>{resolutionRate}%</span>
-                <span>Resolution Rate</span>
+                <span>Resolution</span>
               </div>
               <div className="hero-pill">
                 <span>{averageResponse} min</span>
-                <span>Avg Response</span>
+                <span>Response</span>
               </div>
               <div className="hero-pill">
                 <span>98.4%</span>
@@ -822,7 +875,9 @@ export default function SupportAnalyticsManagement() {
 
             <div className="export-dropdown-container">
               <button className="export-main-btn" onClick={() => setExportOpen(!exportOpen)}>
-                ⬇ Export Report ▾
+                <Download size={18} strokeWidth={2} />
+                Download Report
+                <ChevronDown size={16} strokeWidth={2} />
               </button>
               {exportOpen && (
                 <div className="export-menu">
@@ -837,48 +892,52 @@ export default function SupportAnalyticsManagement() {
           {/* Top Insights Panel */}
           <div className="insights-panel">
             <div className="insights-header">
-              <span>💡</span> Top Executive Insights
+              <TrendingUp size={20} strokeWidth={2} color={PALETTE.coffee} />
+              Executive Insights
             </div>
             <div className="insights-list">
               <div className="insight-item">
-                <span>🚀</span> Resolution rate increased by 12% compared to last period.
+                <Activity size={16} color={PALETTE.forest} />
+                Resolution rate increased by 12% compared to last period.
               </div>
               <div className="insight-item">
-                <span>📊</span> <strong>{mostCommonCategory}</strong> category generates {Math.round((categoryData[0]?.value || 0) / (totalTickets || 1) * 100)}% of total tickets.
+                <BarChart3 size={16} color={PALETTE.coffee} />
+                <strong>{mostCommonCategory}</strong> category generates {Math.round((categoryData[0]?.value || 0) / (totalTickets || 1) * 100)}% of total tickets.
               </div>
               <div className="insight-item">
-                <span>⭐</span> Top performer <strong>{topStaff ? topStaff[0] : 'Olivia'}</strong> closed {topStaff ? topStaff[1].closed : 0} high-priority tickets.
+                <Star size={16} color={PALETTE.coffee} />
+                Top performer <strong>{topStaff ? topStaff[0] : 'Olivia'}</strong> closed {topStaff ? topStaff[1].closed : 0} tickets.
               </div>
               <div className="insight-item">
-                <span>⏱</span> Average response time improved down to {averageResponse} minutes.
+                <Clock size={16} color={PALETTE.slate} />
+                Average response time improved down to {averageResponse} minutes.
               </div>
             </div>
           </div>
 
-          {/* KPI Cards */}
+          {/* KPI Cards Grid */}
           <div className="kpi-grid">
+            
             <div className="kpi-card">
               <div className="kpi-top-row">
                 <div className="kpi-icon-title">
-                  <span>🎫</span> Total Tickets
+                  <Ticket size={18} strokeWidth={2} color={PALETTE.mutedText} />
+                  <span>Total Tickets</span>
                 </div>
-                <div className="kpi-badge-growth">▲ +12%</div>
+                <div className="kpi-badge-growth">+8%</div>
               </div>
+              <div className="kpi-label-meta">Volume</div>
               <div className="kpi-main-value">{animatedTotal}</div>
-              <div className="kpi-live-footer">
-                <span>Live • Updated now</span>
-                <span>Trend</span>
-              </div>
-              <div style={{ height: "40px", width: "100%" }}>
-                <ResponsiveContainer width="100%" height={40}>
+              <div style={{ height: "45px", width: "100%", marginTop: "10px" }}>
+                <ResponsiveContainer width="100%" height={45}>
                   <AreaChart data={miniSparklineData}>
                     <defs>
                       <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#C4956A" stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor="#C4956A" stopOpacity={0}/>
+                        <stop offset="5%" stopColor={PALETTE.coffee} stopOpacity={0.35}/>
+                        <stop offset="95%" stopColor={PALETTE.coffee} stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <Area type="monotone" dataKey="value" stroke="#C4956A" strokeWidth={2} fillOpacity={1} fill="url(#colorTotal)" />
+                    <Area type="monotone" dataKey="value" stroke={PALETTE.coffee} strokeWidth={2} fillOpacity={1} fill="url(#colorTotal)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -887,25 +946,23 @@ export default function SupportAnalyticsManagement() {
             <div className="kpi-card">
               <div className="kpi-top-row">
                 <div className="kpi-icon-title">
-                  <span>📂</span> Active Queue
+                  <FolderOpen size={18} strokeWidth={2} color={PALETTE.mutedText} />
+                  <span>Active Queue</span>
                 </div>
-                <div className="kpi-badge-growth" style={{ background: 'rgba(231, 180, 106, 0.15)', color: '#D97706' }}>Active</div>
+                <div className="kpi-badge-growth" style={{ color: '#D97706', background: 'rgba(217, 119, 6, 0.1)' }}>Live</div>
               </div>
+              <div className="kpi-label-meta">Pending Review</div>
               <div className="kpi-main-value">{animatedOpen}</div>
-              <div className="kpi-live-footer">
-                <span>Requires attention</span>
-                <span>Volume</span>
-              </div>
-              <div style={{ height: "40px", width: "100%" }}>
-                <ResponsiveContainer width="100%" height={40}>
+              <div style={{ height: "45px", width: "100%", marginTop: "10px" }}>
+                <ResponsiveContainer width="100%" height={45}>
                   <AreaChart data={miniSparklineData}>
                     <defs>
                       <linearGradient id="colorOpen" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#E7B46A" stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor="#E7B46A" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#D97706" stopOpacity={0.35}/>
+                        <stop offset="95%" stopColor="#D97706" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <Area type="monotone" dataKey="value" stroke="#E7B46A" strokeWidth={2} fillOpacity={1} fill="url(#colorOpen)" />
+                    <Area type="monotone" dataKey="value" stroke="#D97706" strokeWidth={2} fillOpacity={1} fill="url(#colorOpen)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -914,25 +971,23 @@ export default function SupportAnalyticsManagement() {
             <div className="kpi-card">
               <div className="kpi-top-row">
                 <div className="kpi-icon-title">
-                  <span>✅</span> Resolved
+                  <CheckCircle2 size={18} strokeWidth={2} color={PALETTE.mutedText} />
+                  <span>Resolved</span>
                 </div>
-                <div className="kpi-badge-growth">▲ +8%</div>
+                <div className="kpi-badge-growth">+12%</div>
               </div>
+              <div className="kpi-label-meta">Completed</div>
               <div className="kpi-main-value">{animatedResolved}</div>
-              <div className="kpi-live-footer">
-                <span>Successfully closed</span>
-                <span>Output</span>
-              </div>
-              <div style={{ height: "40px", width: "100%" }}>
-                <ResponsiveContainer width="100%" height={40}>
+              <div style={{ height: "45px", width: "100%", marginTop: "10px" }}>
+                <ResponsiveContainer width="100%" height={45}>
                   <AreaChart data={miniSparklineData}>
                     <defs>
                       <linearGradient id="colorRes" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6CBF84" stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor="#6CBF84" stopOpacity={0}/>
+                        <stop offset="5%" stopColor={PALETTE.forest} stopOpacity={0.35}/>
+                        <stop offset="95%" stopColor={PALETTE.forest} stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <Area type="monotone" dataKey="value" stroke="#6CBF84" strokeWidth={2} fillOpacity={1} fill="url(#colorRes)" />
+                    <Area type="monotone" dataKey="value" stroke={PALETTE.forest} strokeWidth={2} fillOpacity={1} fill="url(#colorRes)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -941,45 +996,52 @@ export default function SupportAnalyticsManagement() {
             <div className="kpi-card">
               <div className="kpi-top-row">
                 <div className="kpi-icon-title">
-                  <span>🎯</span> Resolution Rate
+                  <TrendingUp size={18} strokeWidth={2} color={PALETTE.mutedText} />
+                  <span>Resolution Rate</span>
                 </div>
                 <div className="kpi-badge-growth">Optimal</div>
               </div>
+              <div className="kpi-label-meta">Efficiency Score</div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
                 <div>
                   <div className="kpi-main-value" style={{ marginBottom: "0" }}>{animatedRate}%</div>
-                  <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#8B7B70", fontWeight: "700" }}>Efficiency Score</p>
                 </div>
                 <div style={{ width: "70px", height: "70px", position: "relative" }}>
                   <svg width="70" height="70" style={{ transform: "rotate(-90deg)" }}>
-                    <circle cx="35" cy="35" r="28" stroke="#E8DED2" strokeWidth="6" fill="transparent" />
+                    <circle cx="35" cy="35" r="28" stroke={PALETTE.stone} strokeWidth="5" fill="transparent" />
                     <circle 
                       cx="35" 
                       cy="35" 
                       r="28" 
-                      stroke="#6CBF84" 
-                      strokeWidth="6" 
+                      stroke={PALETTE.forest} 
+                      strokeWidth="5" 
                       fill="transparent" 
                       strokeDasharray={2 * Math.PI * 28}
                       strokeDashoffset={2 * Math.PI * 28 * (1 - resolutionRate / 100)}
                       strokeLinecap="round"
                     />
                   </svg>
-                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: "800" }}>
+                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: "700" }}>
                     {animatedRate}%
                   </div>
                 </div>
               </div>
             </div>
+
           </div>
 
-          {/* Charts Section */}
+          {/* Operational Analytics Section */}
           <div className="analytics-section">
-            <h2 className="section-title">📊 Operational Analytics</h2>
+            <div className="section-header-group">
+              <div className="section-tiny-label">Metrics</div>
+              <h2 className="section-large-title">Operational Analytics</h2>
+            </div>
+            
             <div className="chart-grid-2col">
+              
               <div className="glass-chart-card">
                 <div className="chart-card-header">
-                  <h3>Daily Ticket Volume Trend</h3>
+                  <h3>Daily Volume Trend</h3>
                   <p>Inflow performance across selected period</p>
                 </div>
                 {trendData.length === 0 ? (
@@ -987,19 +1049,19 @@ export default function SupportAnalyticsManagement() {
                     <p>No timeline history available.</p>
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height={320}>
+                  <ResponsiveContainer width="100%" height={300}>
                     <AreaChart data={trendData}>
                       <defs>
                         <linearGradient id="colorMainTrend" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#C4956A" stopOpacity={0.6}/>
-                          <stop offset="95%" stopColor="#C4956A" stopOpacity={0.0}/>
+                          <stop offset="5%" stopColor={PALETTE.coffee} stopOpacity={0.5}/>
+                          <stop offset="95%" stopColor={PALETTE.coffee} stopOpacity={0.0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" />
-                      <XAxis dataKey="day" tick={{ fill: '#8B7B70', fontSize: 12 }} />
-                      <YAxis tick={{ fill: '#8B7B70', fontSize: 12 }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.03)" vertical={false} />
+                      <XAxis dataKey="day" tick={{ fill: PALETTE.mutedText, fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fill: PALETTE.mutedText, fontSize: 12 }} axisLine={false} tickLine={false} />
                       <Tooltip />
-                      <Area type="monotone" dataKey="total" stroke="#C4956A" strokeWidth={3} fillOpacity={1} fill="url(#colorMainTrend)" />
+                      <Area type="monotone" dataKey="total" stroke={PALETTE.coffee} strokeWidth={2} fillOpacity={1} fill="url(#colorMainTrend)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 )}
@@ -1007,7 +1069,7 @@ export default function SupportAnalyticsManagement() {
 
               <div className="glass-chart-card">
                 <div className="chart-card-header">
-                  <h3>Ticket Status Distribution</h3>
+                  <h3>Status Distribution</h3>
                   <p>Workload breakdown</p>
                 </div>
                 {totalTickets === 0 ? (
@@ -1022,10 +1084,10 @@ export default function SupportAnalyticsManagement() {
                     </div>
                     <ResponsiveContainer width="100%" height={260}>
                       <PieChart>
-                        <Pie data={statusData} dataKey="value" nameKey="name" innerRadius={70} outerRadius={105} paddingAngle={6}>
-                          <Cell fill={BREWED_COLORS.open} />
-                          <Cell fill={BREWED_COLORS.pending} />
-                          <Cell fill={BREWED_COLORS.resolved} />
+                        <Pie data={statusData} dataKey="value" nameKey="name" innerRadius={75} outerRadius={105} paddingAngle={6}>
+                          <Cell fill={PALETTE.coffee} />
+                          <Cell fill={PALETTE.slate} />
+                          <Cell fill={PALETTE.forest} />
                         </Pie>
                         <Tooltip />
                       </PieChart>
@@ -1033,16 +1095,20 @@ export default function SupportAnalyticsManagement() {
                   </div>
                 )}
               </div>
+
             </div>
           </div>
 
           {/* Categories Section */}
           <div className="analytics-section">
-            <h2 className="section-title">📁 Category Workloads</h2>
+            <div className="section-header-group">
+              <div className="section-tiny-label">Taxonomy</div>
+              <h2 className="section-large-title">Category Workloads</h2>
+            </div>
             <div className="category-pill-grid">
               {categoryData.length === 0 ? (
                 <div className="empty-state-card" style={{ gridColumn: "1/-1" }}>
-                  <span style={{ fontSize: "32px" }}>📭</span>
+                  <Layers size={32} color={PALETTE.mutedText} />
                   <h3>No support activity yet</h3>
                   <p>Support tickets will appear here automatically.</p>
                 </div>
@@ -1052,11 +1118,11 @@ export default function SupportAnalyticsManagement() {
                   return (
                     <div key={item.name} className="category-pill-card">
                       <div className="category-pill-info">
-                        <span>🍔 {item.name}</span>
+                        <span>{item.name}</span>
                         <span>{item.value} ({pct}%)</span>
                       </div>
-                      <div className="staff-progress-bar" style={{ margin: "10px 0 0" }}>
-                        <div className="staff-progress-fill" style={{ width: `${pct}%`, background: "#C4956A" }} />
+                      <div className="minimal-progress-track">
+                        <div className="minimal-progress-fill" style={{ width: `${pct}%`, background: PALETTE.coffee }} />
                       </div>
                     </div>
                   );
@@ -1068,17 +1134,18 @@ export default function SupportAnalyticsManagement() {
           {/* Heatmap & Priority Section */}
           <div className="analytics-section">
             <div className="chart-grid-2col">
+              
               <div className="heatmap-card">
                 <div className="chart-card-header">
-                  <h3>🔥 Activity Heatmap</h3>
+                  <h3>Activity Heatmap</h3>
                   <p>Daily ticket distribution pattern</p>
                 </div>
                 <div className="heatmap-grid">
                   {heatmapCells.map((cell) => {
-                    let bg = "#F2ECE5";
-                    if (cell.level === 1) bg = "#EEDCC5";
-                    if (cell.level === 2) bg = "#D6B492";
-                    if (cell.level >= 3) bg = "#C4956A";
+                    let bg = PALETTE.stone;
+                    if (cell.level === 1) bg = "#E5D7C8";
+                    if (cell.level === 2) bg = "#D4B89A";
+                    if (cell.level >= 3) bg = PALETTE.coffee;
                     return (
                       <div 
                         key={cell.id} 
@@ -1093,7 +1160,7 @@ export default function SupportAnalyticsManagement() {
 
               <div className="glass-chart-card">
                 <div className="chart-card-header">
-                  <h3>🚨 Priority Levels</h3>
+                  <h3>Priority Levels</h3>
                   <p>Urgent vs normal distribution</p>
                 </div>
                 <ResponsiveContainer width="100%" height={220}>
@@ -1102,24 +1169,28 @@ export default function SupportAnalyticsManagement() {
                     { name: "Normal", count: normalPriority },
                     { name: "Low", count: lowPriority }
                   ]}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" />
-                    <XAxis dataKey="name" tick={{ fill: '#8B7B70', fontSize: 12 }} />
-                    <YAxis tick={{ fill: '#8B7B70', fontSize: 12 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.03)" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fill: PALETTE.mutedText, fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: PALETTE.mutedText, fontSize: 12 }} axisLine={false} tickLine={false} />
                     <Tooltip />
                     <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-                      <Cell fill="#D9534F" />
-                      <Cell fill="#E7B46A" />
-                      <Cell fill="#6CBF84" />
+                      <Cell fill={PALETTE.red} />
+                      <Cell fill={PALETTE.coffee} />
+                      <Cell fill={PALETTE.forest} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+
             </div>
           </div>
 
-          {/* Staff Cards Section */}
+          {/* Staff Performance Section */}
           <div className="analytics-section">
-            <h2 className="section-title">👩‍💼 Support Team Performance</h2>
+            <div className="section-header-group">
+              <div className="section-tiny-label">Personnel</div>
+              <h2 className="section-large-title">Support Team Performance</h2>
+            </div>
             <div className="staff-grid-modern">
               {Object.entries(staffStats).length === 0 ? (
                 <div className="empty-state-card" style={{ gridColumn: "1/-1" }}>
@@ -1135,18 +1206,24 @@ export default function SupportAnalyticsManagement() {
                           <div className="staff-avatar">{staff.charAt(0).toUpperCase()}</div>
                           <div>
                             <h4>{staff}</h4>
-                            <div className="staff-stars">⭐⭐⭐⭐⭐</div>
+                            <div className="staff-stars">
+                              <Star size={12} fill={PALETTE.coffee} />
+                              <Star size={12} fill={PALETTE.coffee} />
+                              <Star size={12} fill={PALETTE.coffee} />
+                              <Star size={12} fill={PALETTE.coffee} />
+                              <Star size={12} fill={PALETTE.coffee} />
+                            </div>
                           </div>
                         </div>
-                        <div className="staff-efficiency-badge">{efficiency}% Efficiency</div>
+                        <div className="staff-efficiency-badge">{efficiency}%</div>
                       </div>
-                      <div className="staff-progress-bar">
-                        <div className="staff-progress-fill" style={{ width: `${efficiency}%` }} />
+                      <div className="minimal-progress-track">
+                        <div className="minimal-progress-fill" style={{ width: `${efficiency}%`, background: PALETTE.forest }} />
                       </div>
                       <div className="staff-counts-row">
-                        <span>✅ {data.closed} Closed</span>
-                        <span>⏳ {data.pending} Pending</span>
-                        <span>📂 {data.open} Open</span>
+                        <span>Closed: {data.closed}</span>
+                        <span>Pending: {data.pending}</span>
+                        <span>Open: {data.open}</span>
                       </div>
                     </div>
                   );
@@ -1160,4 +1237,3 @@ export default function SupportAnalyticsManagement() {
     </>
   );
 }
-
