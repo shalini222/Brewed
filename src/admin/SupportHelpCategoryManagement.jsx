@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { db } from "../firebase";
 import { 
   collection, 
@@ -8,7 +8,8 @@ import {
   deleteDoc, 
   doc, 
   query, 
-  orderBy 
+  orderBy,
+  serverTimestamp 
 } from "firebase/firestore";
 import { 
   Truck,
@@ -26,11 +27,133 @@ import {
   Mail,
   Pencil,
   Trash2,
-  ArrowUp,
-  ArrowDown,
   Eye,
-  EyeOff
+  EyeOff,
+  GripVertical,
+  Plus,
+  Copy,
+  MoreVertical,
+  ChevronDown,
+  ChevronUp,
+  Check,
+  Search,
+  Activity
 } from "lucide-react";
+import { 
+  DndContext, 
+  closestCenter, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors 
+} from "@dnd-kit/core";
+import { 
+  arrayMove, 
+  SortableContext, 
+  sortableKeyboardCoordinates, 
+  verticalListSortingStrategy, 
+  useSortable 
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+function SortableCategoryItem({ category, index, categories, toggleStatus, openEdit, setDeleteTarget, duplicateCategory, expandCard, expandedId, iconMap }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: category.id });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+  };
+
+  const Icon = iconMap[category.icon] || HelpCircle;
+  const isActive = category.active !== false;
+  const isExpanded = expandedId === category.id;
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`category-item ${isExpanded ? "expanded" : ""}`}
+    >
+      <div className="category-main-row">
+        <div className="category-left">
+          <div {...attributes} {...listeners} className="drag-handle" title="Drag to reorder">
+            <GripVertical size={18} strokeWidth={1.8} />
+          </div>
+          <div className="icon-box">
+            <Icon size={24} strokeWidth={1.7} color="#C4956A" />
+          </div>
+          <div>
+            <div className="category-title">
+              {category.title}
+              {category.updatedAt && (
+                <span className="recent-badge">Edited recently</span>
+              )}
+            </div>
+            <div className="category-desc">{category.description}</div>
+          </div>
+        </div>
+
+        <div className="category-right-actions">
+          <span className={`status-badge ${isActive ? 'status-active' : 'status-disabled'}`}>
+            {isActive ? "Live" : "Hidden"}
+          </span>
+
+          <div className="dropdown-container">
+            <button 
+              className="action-btn"
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              <MoreVertical size={16} strokeWidth={1.7} />
+            </button>
+
+            {menuOpen && (
+              <div className="action-dropdown">
+                <button onClick={() => { setMenuOpen(false); openEdit(category); }}>
+                  <Pencil size={14} /> Edit
+                </button>
+                <button onClick={() => { setMenuOpen(false); toggleStatus(category); }}>
+                  {isActive ? <EyeOff size={14} /> : <Eye size={14} />}
+                  {isActive ? "Hide" : "Show"}
+                </button>
+                <button onClick={() => { setMenuOpen(false); duplicateCategory(category); }}>
+                  <Copy size={14} /> Duplicate
+                </button>
+                <button className="danger-text" onClick={() => { setMenuOpen(false); setDeleteTarget(category); }}>
+                  <Trash2 size={14} /> Delete
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button 
+            className="action-btn"
+            onClick={() => expandCard(category.id)}
+          >
+            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="category-expanded-details">
+          <div className="detail-grid">
+            <div><span>Icon:</span> <strong>{category.icon}</strong></div>
+            <div><span>Status:</span> <strong>{isActive ? "Live" : "Hidden"}</strong></div>
+            <div><span>Sort Order:</span> <strong>{category.sortOrder || index + 1}</strong></div>
+            <div><span>Created:</span> <strong>{category.createdAt?.toDate ? category.createdAt.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "Just now"}</strong></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SupportHelpCategoryManagement() {
   const [categories, setCategories] = useState([]);
@@ -38,37 +161,52 @@ export default function SupportHelpCategoryManagement() {
   const [description, setDescription] = useState("");
   const [icon, setIcon] = useState("Truck");
   const [editingId, setEditingId] = useState(null);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
+  const [toast, setToast] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [dirty, setDirty] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState(null);
+  const [previewTab, setPreviewTab] = useState("preview"); // 'editor' or 'preview'
+  const [saveState, setSaveState] = useState("idle"); // 'idle', 'saving', 'saved'
+  const [lastSynced, setLastSynced] = useState("Just now");
+  const [recentActivities, setRecentActivities] = useState([
+    { id: 1, text: "Olivia created Coffee", time: "2 mins ago" },
+    { id: 2, text: "Manager disabled Payments", time: "5 mins ago" }
+  ]);
+
+  const formRef = useRef(null);
+  const titleInputRef = useRef(null);
 
   const icons = [
-    "Truck",
-    "CreditCard",
-    "Gift",
-    "ShieldCheck",
-    "HelpCircle",
-    "Coffee",
-    "CircleDollarSign",
-    "User",
-    "ShoppingBag",
-    "Clock",
-    "MessageCircle",
-    "Phone",
-    "Mail"
+    "Truck", "CreditCard", "Gift", "ShieldCheck", "HelpCircle", 
+    "Coffee", "CircleDollarSign", "User", "ShoppingBag", "Clock", 
+    "MessageCircle", "Phone", "Mail"
   ];
 
   const iconMap = {
-    Truck,
-    CreditCard,
-    Gift,
-    ShieldCheck,
-    HelpCircle,
-    Coffee,
-    CircleDollarSign,
-    User,
-    ShoppingBag,
-    Clock,
-    MessageCircle,
-    Phone,
-    Mail
+    Truck, CreditCard, Gift, ShieldCheck, HelpCircle, 
+    Coffee, CircleDollarSign, User, ShoppingBag, Clock, 
+    MessageCircle, Phone, Mail
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const showToast = (message, type = 'success') => { 
+    setToast({ message, type }); 
+    setTimeout(() => { 
+      setToast(null); 
+    }, 3000); 
   };
 
   useEffect(() => {
@@ -83,18 +221,35 @@ export default function SupportHelpCategoryManagement() {
           ...doc.data()
         }))
       );
+      setLoading(false);
+      setLastSynced(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     });
     return unsubscribe;
   }, []);
 
+  // Keyboard shortcut Ctrl + S
+  useEffect(() => {
+    const key = e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        saveCategory();
+      }
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [title, description, icon, editingId, categories]);
+
   const saveCategory = async () => {
     if (!title.trim()) return;
     
+    setSaveState("saving");
+
     const data = {
       title,
       description,
       icon,
       active: true,
+      updatedAt: serverTimestamp(),
       sortOrder: editingId 
         ? categories.find(c => c.id === editingId)?.sortOrder || categories.length + 1 
         : categories.length + 1
@@ -103,338 +258,356 @@ export default function SupportHelpCategoryManagement() {
     if (editingId) {
       await updateDoc(doc(db, "supportHelpCategories", editingId), data);
     } else {
-      await addDoc(collection(db, "supportHelpCategories"), data);
+      await addDoc(collection(db, "supportHelpCategories"), {
+        ...data,
+        createdAt: serverTimestamp()
+      });
+      setRecentActivities(prev => [{ id: Date.now(), text: `You created ${title}`, time: "Just now" }, ...prev]);
     }
     
+    setSaveState("saved");
+    setTimeout(() => setSaveState("idle"), 1200);
+    showToast(editingId ? "Category updated" : "Category created");
+
     setEditingId(null);
     setTitle("");
     setDescription("");
     setIcon("Truck");
+    setDirty(false);
+  };
+
+  const duplicateCategory = async (cat) => {
+    const newTitle = `${cat.title} Copy`;
+    await addDoc(collection(db, "supportHelpCategories"), {
+      title: newTitle,
+      description: cat.description,
+      icon: cat.icon,
+      active: cat.active,
+      sortOrder: categories.length + 1,
+      createdAt: serverTimestamp()
+    });
+    setRecentActivities(prev => [{ id: Date.now(), text: `You duplicated ${cat.title}`, time: "Just now" }, ...prev]);
+    showToast("Category duplicated");
   };
 
   const toggleStatus = async (category) => {
+    const newActiveState = category.active === false;
     await updateDoc(
       doc(db, "supportHelpCategories", category.id),
       {
-        active: !category.active
+        active: newActiveState
       }
     );
+    showToast(category.active ? "Category hidden" : "Category is now live");
   };
 
-  const moveCategory = async (index, direction) => {
-    const swapIndex = index + direction;
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-    if (swapIndex < 0 || swapIndex >= categories.length) return;
+    const oldIndex = categories.findIndex(c => c.id === active.id);
+    const newIndex = categories.findIndex(c => c.id === over.id);
 
-    const current = categories[index];
-    const target = categories[swapIndex];
+    const newItems = arrayMove(categories, oldIndex, newIndex);
+    setCategories(newItems);
 
-    await updateDoc(
-      doc(db, "supportHelpCategories", current.id),
-      {
-        sortOrder: target.sortOrder
-      }
-    );
-
-    await updateDoc(
-      doc(db, "supportHelpCategories", target.id),
-      {
-        sortOrder: current.sortOrder
-      }
-    );
+    // Update sortOrder in Firestore
+    for (let i = 0; i < newItems.length; i++) {
+      await updateDoc(doc(db, "supportHelpCategories", newItems[i].id), {
+        sortOrder: i + 1
+      });
+    }
+    showToast("Order updated");
   };
+
+  const confirmDelete = async () => { 
+    if (!deleteTarget) return; 
+    await deleteDoc(doc(db, "supportHelpCategories", deleteTarget.id)); 
+    showToast("Category deleted"); 
+    setDeleteTarget(null); 
+  };
+
+  const isDuplicateTitle = categories.some(
+    c => c.title.toLowerCase() === title.trim().toLowerCase() && c.id !== editingId
+  );
+
+  const filteredCategories = categories.filter(c => {
+    const matchesSearch = c.title.toLowerCase().includes(search.toLowerCase()) || 
+                          c.description.toLowerCase().includes(search.toLowerCase());
+    const matchesFilter = filter === "All" || 
+                          (filter === "Active" && c.active !== false) || 
+                          (filter === "Hidden" && c.active === false);
+    return matchesSearch && matchesFilter;
+  });
 
   return (
     <>
       <style>{`
-        /* ===========================
-           HELP CATEGORIES PAGE
-        =========================== */
-
         .help-page{
             max-width:1280px;
             margin:auto;
             padding:40px;
             min-height:100vh;
             background: radial-gradient(circle at top right, rgba(196,149,106,.08), transparent 32%), radial-gradient(circle at bottom left, rgba(44,34,30,.05), transparent 35%), #F8F6F2;
+            font-family: inherit;
         }
-
-        /* Header */
+        .toast{
+            position:fixed; top:24px; right:24px; z-index:9999;
+            display:flex; align-items:center; gap:12px; padding:16px 18px;
+            border-radius:18px; background:rgba(36,28,24,.96); color:white;
+            font-size:14px; font-weight:600; backdrop-filter:blur(16px);
+            box-shadow:0 18px 40px rgba(0,0,0,.18); animation:toastIn .28s ease;
+        }
+        .toast-dot{ width:8px; height:8px; border-radius:999px; background:#C4956A; }
+        @keyframes toastIn{
+            from{ opacity:0; transform:translateY(-10px) scale(.98); }
+            to{ opacity:1; transform:translateY(0) scale(1); }
+        }
+        .modal-overlay{
+            position:fixed; inset:0; background:rgba(18,14,12,.45);
+            backdrop-filter:blur(8px); display:flex; align-items:center;
+            justify-content:center; z-index:9998; animation:fadeIn .22s ease;
+        }
+        .modal-card{
+            width:min(420px,92vw); background:white; border-radius:28px;
+            padding:28px; border:1px solid #EEE6DD; box-shadow:0 24px 64px rgba(0,0,0,.16);
+            animation:modalIn .24s ease;
+        }
+        .modal-icon{
+            width:52px; height:52px; border-radius:16px; background:#FAF3F2;
+            border:1px solid #F1D8D5; display:flex; align-items:center;
+            justify-content:center; color:#A15B55; margin-bottom:18px;
+        }
+        .modal-card h3{ margin:0 0 10px; font-size:22px; color:#221A16; }
+        .modal-card p{ margin:0; color:#6E5E53; line-height:1.7; font-size:14px; }
+        .modal-actions{ display:flex; justify-content:flex-end; gap:12px; margin-top:26px; }
+        .danger-btn{
+            background:#241C18; color:white; border:none; border-radius:16px;
+            padding:13px 18px; font-weight:700; cursor:pointer; transition:.25s;
+        }
+        .danger-btn:hover{ transform:translateY(-1px); box-shadow:0 12px 24px rgba(36,28,24,.18); }
+        @keyframes fadeIn{ from{opacity:0} to{opacity:1} }
+        @keyframes modalIn{ from{ opacity:0; transform:translateY(8px) scale(.98); } to{ opacity:1; transform:translateY(0) scale(1); } }
 
         .help-header{
-            display:flex;
-            justify-content:space-between;
-            align-items:flex-end;
-            margin-bottom:40px;
+            display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:40px;
         }
+        .help-header h2{ margin:0; font-size:34px; font-weight:800; letter-spacing:-1px; color:#221A16; }
+        .help-header p{ margin-top:10px; color:#8C7C72; font-size:15px; line-height:1.7; }
+        .sync-info{ font-size:13px; color:#9B8C82; font-weight:500; }
 
-        .help-header h2{
-            margin:0;
-            font-size:34px;
-            font-weight:800;
-            letter-spacing:-1px;
-            color:#221A16;
+        .help-stats{
+            display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:22px; margin-bottom:34px;
         }
-
-        .help-header p{
-            margin-top:10px;
-            color:#8C7C72;
-            font-size:15px;
-            line-height:1.7;
+        .stat-card{
+            background:rgba(255,255,255,.82); backdrop-filter:blur(18px);
+            border:1px solid rgba(255,255,255,.75); border-radius:24px; padding:24px;
+            transition:.3s; box-shadow:0 8px 28px rgba(30,22,18,.05);
         }
+        .stat-card:hover{ transform:translateY(-4px); box-shadow:0 18px 40px rgba(30,22,18,.08); }
+        .stat-card span{ display:block; font-size:13px; font-weight:600; color:#8B7C72; margin-bottom:8px; }
+        .stat-card h2{ margin:0; font-size:34px; color:#241C18; font-weight:800; letter-spacing:-1px; }
 
-        /* Cards */
+        .dashboard-grid{ display:grid; grid-template-columns: 1fr 300px; gap: 32px; align-items: start; }
+        @media(max-width: 1024px){ .dashboard-grid{ grid-template-columns: 1fr; } }
 
         .help-card{
-            background:rgba(255,255,255,.82);
-            backdrop-filter:blur(18px);
-            border-radius:28px;
-            padding:34px;
-            margin-bottom:32px;
-            border:1px solid rgba(255,255,255,.8);
-            box-shadow: 
-                0 12px 40px rgba(30,22,18,.05), 
-                inset 0 1px rgba(255,255,255,.9);
-            transition:.35s;
+            background:rgba(255,255,255,.82); backdrop-filter:blur(18px);
+            border-radius:28px; padding:34px; margin-bottom:32px;
+            border:1px solid rgba(255,255,255,.8); box-shadow: 0 12px 40px rgba(30,22,18,.05);
         }
 
-        .help-card:hover{
-            transform:translateY(-4px);
-            box-shadow: 0 20px 60px rgba(30,22,18,.08);
+        .help-form{ display:grid; grid-template-columns:1fr; gap:22px; }
+        .help-form input, .help-form textarea{
+            width:100%; background:white; border:1px solid #ECE6DE;
+            border-radius:18px; padding:16px 18px; font-size:15px; transition:.25s; outline:none;
         }
-
-        /* Form */
-
-        .help-form{
-            display:grid;
-            grid-template-columns:1fr 1fr;
-            gap:22px;
+        .help-form input:focus, .help-form textarea:focus{
+            border-color:#C4956A; box-shadow: 0 0 0 4px rgba(196,149,106,.12);
         }
+        .form-subtitle{ margin-top:6px; margin-bottom:24px; font-size:14px; color:#8C7C72; line-height:1.6; }
 
-        .help-form textarea{
-            grid-column:1/-1;
+        .icon-picker{ display:grid; grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); gap:14px; }
+        .icon-option{
+            background:white; border:1px solid #ECE6DE; border-radius:18px;
+            padding:18px 10px; cursor:pointer; transition:.28s; display:flex;
+            flex-direction:column; align-items:center; gap:10px; color:#6E5E53;
         }
+        .icon-option:hover{ transform:translateY(-3px); border-color:#C4956A; box-shadow:0 12px 24px rgba(0,0,0,.05); }
+        .icon-option.active{ background:#241C18; color:white; border-color:#241C18; box-shadow:0 18px 40px rgba(36,28,24,.18); }
+        .icon-option span{ font-size:13px; font-weight:600; }
 
-        .help-form input,
-        .help-form textarea,
-        .help-form select{
-            width:100%;
-            background:white;
-            border:1px solid #ECE6DE;
-            border-radius:18px;
-            padding:16px 18px;
-            font-size:15px;
-            transition:.25s;
-            outline:none;
+        .field-counter{ margin-top:8px; font-size:12px; color:#9B8C82; text-align:right; }
+        .unsaved-banner{
+            margin-bottom:20px; padding:14px 18px; background:#FFF9F1;
+            border:1px solid #F2DEC1; border-radius:16px; color:#9A6A2C; font-size:14px; font-weight:600;
         }
+        .warning-text{ color:#C25E38; font-size:13px; margin-top:6px; font-weight:600; }
 
-        .help-form input:hover,
-        .help-form textarea:hover,
-        .help-form select:hover{
-            border-color:#D3B08B;
+        .preview-live{
+            margin-top:32px; padding:24px; border-radius:24px; background:#FCFBF8; border:1px solid #ECE3DA;
         }
+        .preview-live h4{ margin:0 0 20px; font-size:17px; color:#221A16; }
+        .preview-item{ display:flex; gap:18px; align-items:flex-start; transition: transform .3s ease; }
+        .preview-item:hover{ transform: translateY(-2px); }
+        .preview-item h5{ margin:0 0 6px; color:#221A16; font-size:16px; font-weight:700; }
+        .preview-item p{ margin:0; color:#8A7A70; line-height:1.7; font-size:14px; }
 
-        .help-form input:focus,
-        .help-form textarea:focus,
-        .help-form select:focus{
-            border-color:#C4956A;
-            box-shadow: 0 0 0 4px rgba(196,149,106,.12);
+        .search-input{
+            width:100%; padding:16px 20px; border-radius:18px; border:1px solid #E8DED2;
+            background:white; font-size:15px; margin-bottom:20px; transition:.25s;
         }
+        .search-input:focus{ outline:none; border-color:#C4956A; box-shadow:0 0 0 4px rgba(196,149,106,.12); }
 
-        /* Buttons */
+        .filter-row{ display:flex; gap:12px; margin-bottom:24px; }
+        .filter-btn, .filter-active{
+            padding:11px 20px; border-radius:999px; font-size:14px; font-weight:600; cursor:pointer; transition:.25s;
+        }
+        .filter-btn{ background:white; border:1px solid #E7DED5; color:#6E5E53; }
+        .filter-btn:hover{ border-color:#C4956A; }
+        .filter-active{ background:#241C18; color:white; border:1px solid #241C18; box-shadow:0 10px 24px rgba(36,28,24,.18); }
 
         .primary-btn{
-            background:#241C18;
-            color:white;
-            border:none;
-            border-radius:16px;
-            padding:15px 26px;
-            font-weight:700;
-            cursor:pointer;
-            transition:.3s;
+            background:#241C18; color:white; border:none; border-radius:16px;
+            padding:15px 26px; font-weight:700; cursor:pointer; transition:.3s; display:flex; align-items:center; gap:8px; justify-content:center;
         }
-
-        .primary-btn:hover{
-            transform:translateY(-2px);
-            background:#17120F;
-            box-shadow: 0 12px 24px rgba(0,0,0,.15);
-        }
-
+        .primary-btn:hover{ transform:translateY(-2px); background:#17120F; box-shadow: 0 12px 24px rgba(0,0,0,.15); }
         .secondary-btn{
-            background:white;
-            border:1px solid #E7DED5;
-            border-radius:16px;
-            padding:14px 22px;
-            font-weight:600;
-            cursor:pointer;
-            transition:.25s;
+            background:white; border:1px solid #E7DED5; border-radius:16px;
+            padding:14px 22px; font-weight:600; cursor:pointer; transition:.25s;
         }
+        .secondary-btn:hover{ border-color:#C4956A; background:#FAF8F5; }
 
-        .secondary-btn:hover{
-            border-color:#C4956A;
-            background:#FAF8F5;
-        }
+        .section-header{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:24px; }
+        .section-header h3{ margin:0; font-size:24px; font-weight:700; color:#221A16; }
+        .section-header p{ margin-top:8px; color:#8C7C72; font-size:14px; }
+        .section-count{ background:#F5EFE8; padding:10px 16px; border-radius:999px; font-weight:600; font-size:13px; color:#6E5E53; }
 
-        /* Category List */
-
-        .category-grid{
-            display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(350px,1fr));
-            gap:28px;
-        }
-
+        /* Category Item Card */
+        .category-grid{ display:flex; flex-direction:column; gap:16px; }
         .category-item{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            background:rgba(255,255,255,.88);
-            backdrop-filter:blur(14px);
-            border-radius:22px;
-            border:1px solid rgba(255,255,255,.8);
-            padding:24px;
-            transition:.3s;
+            background:rgba(255,255,255,.92); backdrop-filter:blur(14px);
+            border-radius:22px; border:1px solid rgba(255,255,255,.8);
+            padding:20px 24px; transition: transform .25s, box-shadow .25s, border-color .25s;
         }
-
         .category-item:hover{
-            transform:translateY(-5px);
-            border-color:#D3B08B;
-            box-shadow: 0 18px 38px rgba(0,0,0,.06);
+            transform: translateY(-6px) scale(1.01);
+            border-color:#D3B08B; box-shadow: 0 18px 38px rgba(0,0,0,.06);
         }
-
-        .category-left{
-            display:flex;
-            align-items:center;
-            gap:18px;
-        }
+        .category-main-row{ display:flex; justify-content:space-between; align-items:center; }
+        .category-left{ display:flex; align-items:center; gap:18px; }
+        .drag-handle{ cursor:grab; color:#B5A89E; padding:4px; }
+        .drag-handle:active{ cursor:grabbing; }
 
         .icon-box{
-            width:62px;
-            height:62px;
-            border-radius:18px;
+            width:52px; height:52px; border-radius:16px;
             background: linear-gradient(180deg, #FBF9F6, #F2ECE5);
-            border:1px solid #ECE3DA;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            flex-shrink:0;
+            border:1px solid #ECE3DA; display:flex; justify-content:center; align-items:center; flex-shrink:0;
         }
+        .category-title{ font-size:17px; font-weight:700; color:#221A16; margin-bottom:4px; display:flex; align-items:center; gap:10px; }
+        .category-desc{ color:#8A7A70; font-size:14px; line-height:1.6; }
+        .recent-badge{ font-size:11px; background:#F2E8DC; color:#8C6A48; padding:2px 8px; border-radius:99px; font-weight:600; }
 
-        .category-title{
-            font-size:18px;
-            font-weight:700;
-            letter-spacing:-.3px;
-            color:#221A16;
-            margin-bottom:6px;
-        }
-
-        .category-desc{
-            color:#8A7A70;
-            font-size:14px;
-            line-height:1.7;
-        }
-
-        /* Badge */
-
-        .status-badge{
-            padding:6px 12px;
-            border-radius:999px;
-            font-size:12px;
-            font-weight:700;
-        }
-
-        .status-active{
-            background:#F3F7F4;
-            color:#50755E;
-        }
-
-        .status-disabled{
-            background:#FAF4F3;
-            color:#A56D6D;
-        }
-
-        /* Action Buttons */
-
-        .category-actions{
-            display:flex;
-            flex-wrap:wrap;
-            gap:8px;
-            justify-content:flex-end;
-        }
+        .category-right-actions{ display:flex; align-items:center; gap:12px; }
+        .status-badge{ padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700; }
+        .status-active{ background:#F4F7F5; color:#4F6B5B; border:1px solid #DCE8E0; }
+        .status-disabled{ background:#FAF7F5; color:#8B7C72; border:1px solid #ECE4DD; }
 
         .action-btn{
-            width:42px;
-            height:42px;
-            border-radius:14px;
-            background:#FAF8F5;
-            border:1px solid #EEE6DD;
-            cursor:pointer;
-            transition:.25s;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            color:#554840;
+            width:38px; height:38px; border-radius:12px; background:#FAF8F5;
+            border:1px solid #EEE6DD; cursor:pointer; transition:.25s;
+            display:flex; align-items:center; justify-content:center; color:#554840;
         }
+        .action-btn:hover{ background:#241C18; color:white; border-color:#241C18; }
 
-        .action-btn:hover{
-            background:#241C18;
-            color:white;
-            border-color:#241C18;
+        /* Dropdown Actions */
+        .dropdown-container{ position:relative; }
+        .action-dropdown{
+            position:absolute; right:0; top:44px; background:white; border-radius:16px;
+            border:1px solid #ECE3DA; box-shadow:0 12px 32px rgba(0,0,0,.1); padding:8px; z-index:10; min-width:140px;
         }
-
-        /* Live Preview */
-
-        .preview-grid{
-            display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
-            gap:28px;
+        .action-dropdown button{
+            width:100%; text-align:left; background:none; border:none; padding:10px 12px;
+            font-size:13px; font-weight:600; color:#443830; border-radius:10px; cursor:pointer;
+            display:flex; align-items:center; gap:8px;
         }
+        .action-dropdown button:hover{ background:#F8F5F0; }
+        .action-dropdown button.danger-text{ color:#A15B55; }
+        .action-dropdown button.danger-text:hover{ background:#FAF3F2; }
 
-        .preview-card{
-            background:white;
-            border-radius:22px;
-            border:1px solid #EEE6DD;
-            padding:26px;
-            transition:.3s;
+        .category-expanded-details{
+            margin-top:16px; padding-top:16px; border-top:1px solid #F0EAE2;
         }
+        .detail-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; font-size:13px; color:#7E6E63; }
 
-        .preview-card:hover{
-            transform:translateY(-5px);
-            border-color:#C4956A;
-            box-shadow: 0 18px 38px rgba(0,0,0,.06);
+        /* Customer Preview Real Style */
+        .customer-preview-box{
+            background:#1C1613; color:white; border-radius:24px; padding:28px; box-shadow:0 20px 50px rgba(0,0,0,.2);
         }
-
-        .preview-card h4{
-            margin:16px 0 8px;
-            color:#221A16;
-            font-size:16px;
-            font-weight:700;
+        .customer-preview-header{ font-size:13px; text-transform:uppercase; letter-spacing:1px; color:#C4956A; margin-bottom:16px; font-weight:700; }
+        .real-preview-card{
+            background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+            border-radius:18px; padding:20px; display:flex; gap:16px; align-items:flex-start; margin-bottom:12px;
         }
+        .real-preview-card h5{ margin:0 0 6px; font-size:16px; font-weight:600; color:white; }
+        .real-preview-card p{ margin:0; font-size:13px; color:#BDAFA6; line-height:1.6; }
 
-        .preview-card p{
-            color:#8A7A70;
-            line-height:1.7;
-            font-size:14px;
+        /* Skeleton */
+        .skeleton-loader{ display:flex; flex-direction:column; gap:16px; }
+        .skeleton-item{
+            height:80px; background:linear-gradient(90deg, #F0EAE2 25%, #E4DDD5 50%, #F0EAE2 75%);
+            background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:22px;
         }
+        @keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
-        /* Responsive */
-
-        @media(max-width:768px){
-          .help-form{
-            grid-template-columns:1fr;
-          }
-
-          .category-item{
-            flex-direction:column;
-            align-items:flex-start;
-            gap:20px;
-          }
-
-          .category-actions{
-            width:100%;
-            justify-content:flex-start;
-          }
+        /* Floating Action Button */
+        .fab{
+            position:fixed; bottom:34px; right:34px; background:#241C18; color:white;
+            border:none; border-radius:99px; padding:16px 24px; font-weight:700;
+            cursor:pointer; box-shadow:0 12px 32px rgba(36,28,24,.3); display:flex;
+            align-items:center; gap:10px; z-index:99; transition:.3s;
         }
+        .fab:hover{ transform:translateY(-3px); background:#17120F; }
+
+        /* Sidebar activity card */
+        .activity-card{
+            background:white; border-radius:24px; padding:22px; border:1px solid #ECE3DA;
+        }
+        .activity-card h4{ margin:0 0 14px; font-size:15px; color:#221A16; display:flex; align-items:center; gap:8px; }
+        .activity-item{ display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:1px solid #F4EFEA; }
+        .activity-item:last-child{ border-bottom:none; }
+        .activity-text{ color:#554840; font-weight:500; }
+        .activity-time{ color:#A19288; font-size:12px; }
+
+        .empty-search{ text-align:center; padding:40px; background:white; border-radius:22px; border:1px solid #ECE3DA; }
+        .empty-search h4{ margin:0 0 6px; color:#221A16; font-size:16px; }
+        .empty-search p{ margin:0 0 16px; color:#8A7A70; font-size:14px; }
       `}</style>
+
+      {toast && (
+        <div className={`toast ${toast.type}`}>
+          <div className="toast-dot" />
+          {toast.message}
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-icon">
+              <Trash2 size={22} strokeWidth={1.8} />
+            </div>
+            <h3>Delete category</h3>
+            <p>
+              <strong>{deleteTarget.title}</strong> will be permanently removed from the Help Centre.
+            </p>
+            <div className="modal-actions">
+              <button className="secondary-btn" onClick={() => setDeleteTarget(null)}>Cancel</button>
+              <button className="danger-btn" onClick={confirmDelete}>Delete Category</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="help-page">
         <div className="help-header">
@@ -442,243 +615,290 @@ export default function SupportHelpCategoryManagement() {
             <h2>Support Help Categories</h2>
             <p>Manage help topics and customer support routing.</p>
           </div>
-        </div>
-
-        {/* Add / Edit Form */}
-        <div className="help-card">
-          <h3 style={{ margin: "0 0 18px", color: "#221A16", fontSize: "20px", fontWeight: "700" }}>
-            {editingId ? "Edit Category" : "New Category"}
-          </h3>
-
-          <div className="help-form">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Category title"
-            />
-
-            <select
-              value={icon}
-              onChange={(e) => setIcon(e.target.value)}
-            >
-              {icons.map(i => (
-                <option key={i} value={i}>
-                  {i}
-                </option>
-              ))}
-            </select>
-
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Description"
-              rows="3"
-            />
-
-            <div style={{ display: "flex", gap: "10px", gridColumn: "1/-1" }}>
-              <button 
-                className="primary-btn"
-                onClick={saveCategory}
-              >
-                {editingId ? "Update Category" : "Add Category"}
-              </button>
-              {editingId && (
-                <button 
-                  className="secondary-btn"
-                  onClick={() => {
-                    setEditingId(null);
-                    setTitle("");
-                    setDescription("");
-                    setIcon("Truck");
-                  }}
-                >
-                  Cancel
-                </button>
-              )}
-            </div>
+          <div className="sync-info">
+            Last synced {lastSynced}
           </div>
         </div>
 
-        {/* Customer Preview Section */}
-        <div className="help-card">
-          <h3 style={{ margin: "0 0 6px", color: "#221A16", fontSize: "20px", fontWeight: "700" }}>Customer Preview</h3>
-          <p style={{ color: "#8C7C72", marginBottom: "18px", fontSize: "14px" }}>
-            This is how categories will appear in the Help Centre.
-          </p>
-
-          <div
-            style={{
-              marginBottom: "18px",
-              fontWeight: 600,
-              color: "#6E5E53",
-              fontSize: "14px"
-            }}
-          >
-            Showing {categories.filter(c => c.active).length} categories
+        {/* Analytics Cards */}
+        <div className="help-stats">
+          <div className="stat-card">
+            <span>Total Categories</span>
+            <h2>{categories.length}</h2>
           </div>
+          <div className="stat-card">
+            <span>Active</span>
+            <h2>{categories.filter(c => c.active !== false).length}</h2>
+          </div>
+          <div className="stat-card">
+            <span>Hidden</span>
+            <h2>{categories.filter(c => c.active === false).length}</h2>
+          </div>
+          <div className="stat-card">
+            <span>Icons Used</span>
+            <h2>{new Set(categories.map(c => c.icon)).size}</h2>
+          </div>
+        </div>
 
-          <div className="preview-grid">
-            {categories
-              .filter(category => category.active)
-              .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-              .map(category => {
-                const Icon = iconMap[category.icon] || HelpCircle;
-
-                return (
-                  <div
-                    key={category.id}
-                    className="preview-card"
+        <div className="dashboard-grid">
+          <div>
+            {/* Add / Edit Form */}
+            <div className="help-card" ref={formRef}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h3>{editingId ? "Edit Help Category" : "Create Help Category"}</h3>
+                  <p className="form-subtitle">Configure how customers navigate the Brewed Help Centre.</p>
+                </div>
+                <div style={{ display: "flex", gap: "8px", background: "#F5EFE8", padding: "4px", borderRadius: "12px" }}>
+                  <button 
+                    style={{ background: previewTab === "editor" ? "white" : "transparent", border: "none", padding: "6px 12px", borderRadius: "8px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}
+                    onClick={() => setPreviewTab("editor")}
                   >
-                    <div className="icon-box">
-                      <Icon
-                        size={24}
-                        strokeWidth={1.7}
-                        color="#C4956A"
-                      />
-                    </div>
+                    Editor
+                  </button>
+                  <button 
+                    style={{ background: previewTab === "preview" ? "white" : "transparent", border: "none", padding: "6px 12px", borderRadius: "8px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}
+                    onClick={() => setPreviewTab("preview")}
+                  >
+                    Preview
+                  </button>
+                </div>
+              </div>
 
-                    <h4>
-                      {category.title}
-                    </h4>
+              {dirty && (
+                <div className="unsaved-banner">
+                  You have unsaved changes. (Press Ctrl + S to save quickly)
+                </div>
+              )}
 
-                    <p>
-                      {category.description}
-                    </p>
+              {previewTab === "editor" ? (
+                <div className="help-form">
+                  <div>
+                    <input
+                      ref={titleInputRef}
+                      value={title}
+                      maxLength={40}
+                      onChange={(e) => {
+                        setTitle(e.target.value);
+                        setDirty(true);
+                      }}
+                      placeholder="Category title"
+                    />
+                    <div className="field-counter">{title.length}/40</div>
+                    {isDuplicateTitle && (
+                      <div className="warning-text">Category already exists.</div>
+                    )}
                   </div>
-                );
-              })}
-          </div>
 
-          {categories.filter(c => c.active).length === 0 && (
-            <div
-              style={{
-                padding: "40px",
-                textAlign: "center",
-                color: "#8A7A70",
-                fontSize: "14px"
-              }}
-            >
-              No active help categories.
-            </div>
-          )}
-        </div>
-
-        {/* Category List */}
-        <div>
-          <h3 style={{ margin: "0 0 18px", color: "#221A16", fontSize: "20px", fontWeight: "700" }}>Manage Categories</h3>
-          
-          <div className="category-grid">
-            {categories.map((category, index) => {
-              const Icon = iconMap[category.icon] || HelpCircle;
-              const isActive = category.active !== false;
-
-              return (
-                <div
-                  key={category.id}
-                  className="category-item"
-                  style={{ opacity: isActive ? 1 : 0.6 }}
-                >
-                  <div className="category-left">
-                    <div className="icon-box">
-                      <Icon size={24} strokeWidth={1.7} color="#C4956A" />
-                    </div>
-
-                    <div>
-                      <div className="category-title">{category.title}</div>
-                      <div className="category-desc">{category.description}</div>
-                      
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "10px",
-                          marginTop: "10px",
-                          alignItems: "center"
-                        }}
-                      >
-                        <span style={{ fontSize: "13px", color: "#8A7A70" }}>
-                          {category.icon}
-                        </span>
-
-                        <span
-                          className={`status-badge ${isActive ? 'status-active' : 'status-disabled'}`}
+                  <div className="icon-picker">
+                    {icons.map(name => {
+                      const Icon = iconMap[name];
+                      return (
+                        <button
+                          key={name}
+                          type="button"
+                          onClick={() => {
+                            setIcon(name);
+                            setDirty(true);
+                          }}
+                          className={icon === name ? "icon-option active" : "icon-option"}
                         >
-                          {isActive ? "Active" : "Disabled"}
-                        </span>
-                      </div>
-                    </div>
+                          <Icon size={22} strokeWidth={1.8} />
+                          <span>{name}</span>
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  <div className="category-actions">
-                    {/* Move Up Button */}
-                    <button
-                      disabled={index === 0}
-                      onClick={() => moveCategory(index, -1)}
-                      className="action-btn"
-                      style={{ opacity: index === 0 ? 0.4 : 1, cursor: index === 0 ? "not-allowed" : "pointer" }}
-                      title="Move Up"
-                    >
-                      <ArrowUp size={16} strokeWidth={1.7} />
-                    </button>
+                  <div>
+                    <textarea
+                      value={description}
+                      maxLength={120}
+                      onChange={(e) => {
+                        setDescription(e.target.value);
+                        setDirty(true);
+                      }}
+                      placeholder="Description"
+                      rows="3"
+                    />
+                    <div className="field-counter">{description.length}/120</div>
+                  </div>
 
-                    {/* Move Down Button */}
-                    <button
-                      disabled={index === categories.length - 1}
-                      onClick={() => moveCategory(index, 1)}
-                      className="action-btn"
-                      style={{ opacity: index === categories.length - 1 ? 0.4 : 1, cursor: index === categories.length - 1 ? "not-allowed" : "pointer" }}
-                      title="Move Down"
+                  <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+                    <button 
+                      className="primary-btn"
+                      onClick={saveCategory}
                     >
-                      <ArrowDown size={16} strokeWidth={1.7} />
+                      {saveState === "saving" ? "Saving..." : saveState === "saved" ? <><Check size={16} /> Saved</> : editingId ? "Update Category" : "Add Category"}
                     </button>
-
-                    {/* Enable/Disable Toggle */}
-                    <button
-                      onClick={() => toggleStatus(category)}
-                      className="action-btn"
-                      title={isActive ? "Disable" : "Enable"}
-                    >
-                      {isActive ? <Eye size={16} strokeWidth={1.7} /> : <EyeOff size={16} strokeWidth={1.7} />}
-                    </button>
-
-                    {/* Edit Button */}
-                    <button
+                    <button 
+                      className="secondary-btn"
                       onClick={() => {
-                        setEditingId(category.id);
-                        setTitle(category.title);
-                        setDescription(category.description);
-                        setIcon(category.icon);
+                        setTitle("");
+                        setDescription("");
+                        setIcon("Truck");
+                        setEditingId(null);
+                        setDirty(false);
                       }}
-                      className="action-btn"
-                      title="Edit"
                     >
-                      <Pencil size={16} strokeWidth={1.7} />
-                    </button>
-
-                    {/* Delete Button */}
-                    <button
-                      onClick={async () => {
-                        if (window.confirm("Delete this category?")) {
-                          await deleteDoc(
-                            doc(
-                              db,
-                              "supportHelpCategories",
-                              category.id
-                            )
-                          );
-                        }
-                      }}
-                      className="action-btn"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} strokeWidth={1.7} />
+                      Clear
                     </button>
                   </div>
                 </div>
-              );
-            })}
+              ) : (
+                <div className="preview-live">
+                  <h4>Live Preview</h4>
+                  <div className="preview-item">
+                    <div className="icon-box">
+                      {(() => {
+                        const Icon = iconMap[icon] || HelpCircle;
+                        return <Icon size={24} strokeWidth={1.8} color="#C4956A" />;
+                      })()}
+                    </div>
+                    <div>
+                      <h5>{title || "Category Title"}</h5>
+                      <p>{description || "Category description will appear here."}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Customer Preview Real Style */}
+            <div className="help-card">
+              <h3 style={{ margin: "0 0 6px", color: "#221A16", fontSize: "20px", fontWeight: "700" }}>Customer Preview</h3>
+              <p style={{ color: "#8C7C72", marginBottom: "20px", fontSize: "14px" }}>
+                Exact view rendered inside the consumer Help Centre application.
+              </p>
+
+              <div className="customer-preview-box">
+                <div className="customer-preview-header">Support Centre</div>
+                {categories.filter(c => c.active !== false).map(category => {
+                  const Icon = iconMap[category.icon] || HelpCircle;
+                  return (
+                    <div key={category.id} className="real-preview-card">
+                      <div className="icon-box" style={{ background: "rgba(255,255,255,0.08)", border: "none" }}>
+                        <Icon size={24} strokeWidth={1.7} color="#C4956A" />
+                      </div>
+                      <div>
+                        <h5>{category.title}</h5>
+                        <p>{category.description}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Category List with Drag & Drop */}
+            <div>
+              <div className="section-header">
+                <div>
+                  <h3>Manage Categories</h3>
+                  <p>Organise how support topics appear. Drag items to reorder.</p>
+                </div>
+                <div className="section-count">
+                  {categories.length} Categories
+                </div>
+              </div>
+
+              <input 
+                className="search-input" 
+                placeholder="Search categories..." 
+                value={search} 
+                onChange={(e) => setSearch(e.target.value)} 
+              />
+
+              <div className="filter-row">
+                <button className={filter === "All" ? "filter-active" : "filter-btn"} onClick={() => setFilter("All")}>All</button>
+                <button className={filter === "Active" ? "filter-active" : "filter-btn"} onClick={() => setFilter("Active")}>Active</button>
+                <button className={filter === "Hidden" ? "filter-active" : "filter-btn"} onClick={() => setFilter("Hidden")}>Hidden</button>
+              </div>
+
+              {loading ? (
+                <div className="skeleton-loader">
+                  <div className="skeleton-item" />
+                  <div className="skeleton-item" />
+                  <div className="skeleton-item" />
+                </div>
+              ) : filteredCategories.length === 0 ? (
+                <div className="empty-search">
+                  <h4>No matching categories</h4>
+                  <p>Try another keyword or search query.</p>
+                  <button className="secondary-btn" onClick={() => setSearch("")}>Clear Search</button>
+                </div>
+              ) : (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={filteredCategories.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                    <div className="category-grid">
+                      {filteredCategories.map((category, index) => (
+                        <SortableCategoryItem
+                          key={category.id}
+                          category={category}
+                          index={index}
+                          categories={categories}
+                          toggleStatus={toggleStatus}
+                          openEdit={(cat) => {
+                            setEditingId(cat.id);
+                            setTitle(cat.title);
+                            setDescription(cat.description);
+                            setIcon(cat.icon);
+                            setDirty(false);
+                            if (formRef.current) {
+                              formRef.current.scrollIntoView({ behavior: "smooth" });
+                            }
+                            if (titleInputRef.current) {
+                              titleInputRef.current.focus();
+                            }
+                          }}
+                          setDeleteTarget={setDeleteTarget}
+                          duplicateCategory={duplicateCategory}
+                          expandCard={(id) => setExpandedId(expandedId === id ? null : id)}
+                          expandedId={expandedId}
+                          iconMap={iconMap}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              )}
+            </div>
+          </div>
+
+          {/* Sidebar Recent Activity */}
+          <div>
+            <div className="activity-card">
+              <h4>
+                <Activity size={16} color="#C4956A" /> Recent Activity
+              </h4>
+              <div>
+                {recentActivities.map(act => (
+                  <div key={act.id} className="activity-item">
+                    <span className="activity-text">{act.text}</span>
+                    <span className="activity-time">{act.time}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Floating Action Button */}
+      <button 
+        className="fab"
+        onClick={() => {
+          if (formRef.current) {
+            formRef.current.scrollIntoView({ behavior: "smooth" });
+          }
+          if (titleInputRef.current) {
+            titleInputRef.current.focus();
+          }
+        }}
+      >
+        <Plus size={18} strokeWidth={2.2} /> New Category
+      </button>
     </>
   );
 }
+
