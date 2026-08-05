@@ -1,9 +1,28 @@
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
 import { collection, onSnapshot } from "firebase/firestore";
+import * as XLSX from "xlsx";
+import { 
+  PieChart, 
+  Pie, 
+  Cell, 
+  Tooltip, 
+  ResponsiveContainer, 
+  Legend, 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  LineChart, 
+  Line 
+} from "recharts";
 
 export default function SupportAnalyticsManagement() {
   const [tickets, setTickets] = useState([]);
+  const [dateFilter, setDateFilter] = useState("7days");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
 
   // Listen to live updates from Firestore
   useEffect(() => {
@@ -21,12 +40,35 @@ export default function SupportAnalyticsManagement() {
     return unsubscribe;
   }, []);
 
-  // Calculate live statistics
-  const totalTickets = tickets.length;
-  const openTickets = tickets.filter((t) => t.status === "Open").length;
-  const pendingTickets = tickets.filter((t) => t.status === "Pending").length;
-  const closedTickets = tickets.filter((t) => t.status === "Closed").length;
-  const resolvedTickets = tickets.filter((t) => t.status === "Resolved").length;
+  // Filter Tickets by Date Range
+  const filteredTickets = tickets.filter(ticket => {
+    if (!ticket.createdAt?.toDate) return false;
+    const created = ticket.createdAt.toDate();
+    const now = new Date();
+    switch (dateFilter) {
+      case "today":
+        return created.toDateString() === now.toDateString();
+      case "7days":
+        return created >= new Date(now - 7 * 24 * 60 * 60 * 1000);
+      case "30days":
+        return created >= new Date(now - 30 * 24 * 60 * 60 * 1000);
+      case "custom":
+        if (!customStart || !customEnd) return true;
+        const start = new Date(customStart);
+        const end = new Date(customEnd);
+        end.setHours(23, 59, 59, 999);
+        return created >= start && created <= end;
+      default:
+        return true;
+    }
+  });
+
+  // Calculate live statistics using filteredTickets
+  const totalTickets = filteredTickets.length;
+  const openTickets = filteredTickets.filter((t) => t.status === "Open").length;
+  const pendingTickets = filteredTickets.filter((t) => t.status === "Pending").length;
+  const closedTickets = filteredTickets.filter((t) => t.status === "Closed").length;
+  const resolvedTickets = filteredTickets.filter((t) => t.status === "Resolved").length;
   
   const resolutionRate =
     totalTickets === 0
@@ -40,18 +82,155 @@ export default function SupportAnalyticsManagement() {
 
   // Calculate Category Analytics
   const categoryCounts = {};
-  tickets.forEach((ticket) => {
+  filteredTickets.forEach((ticket) => {
     const category = ticket.category || "Other";
     categoryCounts[category] = (categoryCounts[category] || 0) + 1;
   });
-  const categoryData = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]);
-  const mostCommonCategory = categoryData.length > 0 ? categoryData[0][0] : "--";
+  const categoryData = Object.entries(categoryCounts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  const mostCommonCategory = categoryData.length > 0 ? categoryData[0].name : "--";
 
   // Calculate Priority Analytics
-  const highPriority = tickets.filter(t => (t.priority || "").toLowerCase() === "high").length;
-  const normalPriority = tickets.filter(t => (t.priority || "").toLowerCase() === "normal").length;
-  const lowPriority = tickets.filter(t => (t.priority || "").toLowerCase() === "low").length;
+  const highPriority = filteredTickets.filter(t => (t.priority || "").toLowerCase() === "high").length;
+  const normalPriority = filteredTickets.filter(t => (t.priority || "").toLowerCase() === "normal").length;
+  const lowPriority = filteredTickets.filter(t => (t.priority || "").toLowerCase() === "low").length;
   const urgentPercent = totalTickets === 0 ? 0 : Math.round((highPriority / totalTickets) * 100);
+
+  const priorityStats = {
+    High: highPriority,
+    Normal: normalPriority,
+    Low: lowPriority
+  };
+  const priorityData = Object.entries(priorityStats).map(([name, value]) => ({ name, value }));
+
+  // Calculate Response Time Analytics
+  const respondedTickets = filteredTickets.filter(t => t.createdAt && t.firstResponseAt);
+  const responseTimes = respondedTickets.map(ticket => {
+    const created = ticket.createdAt.toDate();
+    const replied = ticket.firstResponseAt.toDate();
+    return (replied - created) / 60000;
+  });
+
+  const averageResponse = responseTimes.length ? (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length).toFixed(1) : "--";
+  const fastestResponse = responseTimes.length ? Math.min(...responseTimes).toFixed(1) : "--";
+  const slowestResponse = responseTimes.length ? Math.max(...responseTimes).toFixed(1) : "--";
+
+  // Calculate Daily Ticket Trend (Using ISO date keys for robust sorting)
+  const dailyData = {};
+  filteredTickets.forEach(ticket => {
+    if (!ticket.createdAt) return;
+    const key = ticket.createdAt.toDate().toISOString().split("T")[0];
+    dailyData[key] = (dailyData[key] || 0) + 1;
+  });
+  const sortedDailyEntries = Object.entries(dailyData).sort((a, b) => new Date(a[0]) - new Date(b[0]));
+  const trendData = sortedDailyEntries.map(([dateKey, total]) => ({
+    day: new Date(dateKey).toLocaleDateString(),
+    total
+  }));
+
+  // Chart Status Data
+  const statusData = [
+    { name: "Open", value: openTickets },
+    { name: "Pending", value: pendingTickets },
+    { name: "Resolved/Closed", value: resolvedTickets + closedTickets }
+  ];
+
+  // Colors for Charts
+  const COLORS = ["#C4956A", "#8B5E3C", "#E8DED2", "#2C221E", "#D97706"];
+
+  // Calculate Customer Analytics
+  const customerCounts = {};
+  filteredTickets.forEach(ticket => {
+    const name = ticket.customerName || ticket.customerEmail || "Unknown";
+    customerCounts[name] = (customerCounts[name] || 0) + 1;
+  });
+  const topCustomers = Object.entries(customerCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+  const repeatCustomers = Object.values(customerCounts)
+    .filter(count => count > 1)
+    .length;
+
+  // Calculate Staff Performance
+  const staffStats = {};
+  filteredTickets.forEach(ticket => {
+    const staff = ticket.assignedTo || "Unassigned";
+    if (!staffStats[staff]) {
+      staffStats[staff] = { total: 0, open: 0, closed: 0 };
+    }
+    staffStats[staff].total++;
+    if (ticket.status === "Closed" || ticket.status === "Resolved") {
+      staffStats[staff].closed++;
+    } else {
+      staffStats[staff].open++;
+    }
+  });
+
+  // Top Agent based on effectiveness (closed/resolved count) rather than sheer volume
+  const topStaff = Object.entries(staffStats).sort((a, b) => b[1].closed - a[1].closed)[0];
+
+  // Export to Excel Function
+  const exportToExcel = () => {
+    const report = filteredTickets.map(ticket => ({
+      TicketID: ticket.id,
+      Subject: ticket.subject,
+      Customer: ticket.customerName,
+      Email: ticket.customerEmail,
+      Category: ticket.category,
+      Priority: ticket.priority,
+      Status: ticket.status,
+      AssignedTo: ticket.assignedTo || "Unassigned",
+      Created: ticket.createdAt?.toDate().toLocaleString(),
+      Updated: ticket.updatedAt?.toDate().toLocaleString(),
+      LastReplyBy: ticket.lastReplyBy,
+      SupportUnread: ticket.supportUnread,
+      CustomerUnread: ticket.customerUnread
+    }));
+
+    const summary = [
+      { Metric: "Total Tickets", Value: filteredTickets.length },
+      { Metric: "Open", Value: openTickets },
+      { Metric: "Closed", Value: closedTickets },
+      { Metric: "Average Response (min)", Value: averageResponse },
+      { Metric: "Repeat Customers", Value: repeatCustomers }
+    ];
+
+    const workbook = XLSX.utils.book_new();
+
+    const summarySheet = XLSX.utils.json_to_sheet(summary);
+    XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
+
+    const worksheet = XLSX.utils.json_to_sheet(report);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Support Report");
+
+    const catSheetData = categoryData.map(item => ({ Category: item.name, Tickets: item.value }));
+    const categorySheet = XLSX.utils.json_to_sheet(catSheetData);
+    XLSX.utils.book_append_sheet(workbook, categorySheet, "Categories");
+
+    const staffSheetData = Object.entries(staffStats).map(([staff, data]) => ({
+      Staff: staff,
+      Total: data.total,
+      Open: data.open,
+      Closed: data.closed
+    }));
+    const staffSheet = XLSX.utils.json_to_sheet(staffSheetData);
+    XLSX.utils.book_append_sheet(workbook, staffSheet, "Staff Performance");
+
+    const customerSheetData = Object.entries(customerCounts).map(([customer, count]) => ({
+      Customer: customer,
+      Tickets: count
+    }));
+    const customerSheet = XLSX.utils.json_to_sheet(customerSheetData);
+    XLSX.utils.book_append_sheet(workbook, customerSheet, "Customer Analytics");
+
+    const trendSheet = XLSX.utils.json_to_sheet(trendData);
+    XLSX.utils.book_append_sheet(workbook, trendSheet, "Daily Trend");
+
+    const dateStr = new Date().toISOString().split("T")[0];
+    XLSX.writeFile(
+      workbook,
+      `Support_Report_${dateStr}.xlsx`
+    );
+  };
 
   return (
     <>
@@ -63,6 +242,11 @@ export default function SupportAnalyticsManagement() {
         }
         .analytics-header {
           margin-bottom: 30px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 20px;
         }
         .analytics-header h2 {
           margin: 0;
@@ -72,6 +256,40 @@ export default function SupportAnalyticsManagement() {
         .analytics-header p {
           margin-top: 8px;
           color: #8B7B70;
+        }
+        .export-btn {
+          background: #2C221E;
+          color: white;
+          border: none;
+          padding: 14px 22px;
+          border-radius: 14px;
+          cursor: pointer;
+          font-weight: 700;
+          transition: .25s;
+        }
+        .export-btn:hover {
+          background: #1E1714;
+          transform: translateY(-2px);
+        }
+        .filter-bar {
+          display: flex;
+          gap: 14px;
+          align-items: center;
+          margin-bottom: 24px;
+          flex-wrap: wrap;
+        }
+        .filter-bar select, .filter-bar input {
+          padding: 12px 16px;
+          border-radius: 12px;
+          border: 1px solid #E8DED2;
+          background: white;
+          font-size: 14px;
+          color: #2C221E;
+        }
+        .filter-bar select:focus, .filter-bar input:focus {
+          outline: none;
+          border-color: #C4956A;
+          box-shadow: 0 0 0 3px rgba(196,149,106,.15);
         }
         .analytics-grid {
           display: grid;
@@ -118,6 +336,22 @@ export default function SupportAnalyticsManagement() {
           margin-bottom: 20px;
           color: #2C221E;
           font-size: 22px;
+        }
+        .chart-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+          gap: 24px;
+        }
+        .chart-card {
+          background: white;
+          padding: 24px;
+          border-radius: 22px;
+          box-shadow: 0 8px 24px rgba(44,34,30,.05);
+          border: 1px solid #EFE5DA;
+        }
+        .chart-card h3 {
+          margin-bottom: 20px;
+          color: #2C221E;
         }
         .status-card {
           background: white;
@@ -241,6 +475,133 @@ export default function SupportAnalyticsManagement() {
           margin: 0;
           color: #7C2D12;
         }
+        .response-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 20px;
+        }
+        .response-card {
+          background: white;
+          padding: 28px;
+          border-radius: 20px;
+          text-align: center;
+          box-shadow: 0 8px 22px rgba(44,34,30,.05);
+          border: 1px solid #EFE5DA;
+        }
+        .response-card h2 {
+          margin: 0;
+          font-size: 42px;
+          color: #C4956A;
+        }
+        .response-card p {
+          margin-top: 10px;
+          color: #8B7B70;
+          font-weight: 600;
+        }
+        .trend-card {
+          background: white;
+          padding: 28px;
+          border-radius: 22px;
+          box-shadow: 0 8px 22px rgba(44,34,30,.05);
+          border: 1px solid #EFE5DA;
+        }
+        .trend-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 14px 0;
+          border-bottom: 1px solid #F2ECE5;
+          color: #2C221E;
+        }
+        .trend-row:last-child {
+          border-bottom: none;
+        }
+        .trend-right {
+          display: flex;
+          align-items: center;
+          gap: 18px;
+        }
+        .trend-bar {
+          height: 12px;
+          background: #C4956A;
+          border-radius: 999px;
+          transition: .3s;
+        }
+        .customer-card {
+          background: white;
+          padding: 28px;
+          border-radius: 22px;
+          box-shadow: 0 8px 22px rgba(44,34,30,.05);
+          border: 1px solid #EFE5DA;
+        }
+        .customer-summary {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-bottom: 30px;
+        }
+        .customer-summary div {
+          background: #FAF6F0;
+          padding: 20px;
+          border-radius: 18px;
+          text-align: center;
+        }
+        .customer-summary h2 {
+          margin: 0;
+          font-size: 36px;
+          color: #C4956A;
+        }
+        .customer-summary p {
+          margin-top: 8px;
+          color: #8B7B70;
+        }
+        .customer-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 14px 0;
+          border-bottom: 1px solid #F2ECE5;
+          color: #2C221E;
+        }
+        .customer-row:last-child {
+          border-bottom: none;
+        }
+        .staff-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 22px;
+        }
+        .staff-card {
+          background: white;
+          padding: 28px;
+          border-radius: 22px;
+          box-shadow: 0 8px 22px rgba(44,34,30,.05);
+          transition: .25s;
+          border: 1px solid #EFE5DA;
+        }
+        .staff-card:hover {
+          transform: translateY(-4px);
+        }
+        .staff-card h4 {
+          margin: 0;
+          font-size: 20px;
+          color: #2C221E;
+        }
+        .staff-card p {
+          margin: 10px 0;
+          color: #8B7B70;
+        }
+        .staff-card h2 {
+          margin: 0;
+          font-size: 42px;
+          color: #C4956A;
+        }
+        .staff-footer {
+          margin-top: 20px;
+          display: flex;
+          justify-content: space-between;
+          font-weight: 600;
+          color: #2C221E;
+        }
       `}</style>
 
       <div className="support-analytics-page">
@@ -249,6 +610,25 @@ export default function SupportAnalyticsManagement() {
             <h2>📊 Support Analytics</h2>
             <p>Monitor support performance and customer service metrics.</p>
           </div>
+          <button className="export-btn" onClick={exportToExcel}>
+            📄 Export Excel
+          </button>
+        </div>
+
+        <div className="filter-bar">
+          <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}>
+            <option value="today">Today</option>
+            <option value="7days">Last 7 Days</option>
+            <option value="30days">Last 30 Days</option>
+            <option value="custom">Custom Range</option>
+            <option value="all">All Time</option>
+          </select>
+          {dateFilter === "custom" && (
+            <>
+              <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} />
+              <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} />
+            </>
+          )}
         </div>
 
         <div className="analytics-grid">
@@ -278,9 +658,67 @@ export default function SupportAnalyticsManagement() {
             <p>Resolution Rate</p>
           </div>
           <div className="analytics-card">
-            <span className="analytics-icon">👥</span>
-            <h3>--</h3>
-            <p>Support Staff</p>
+            <span className="analytics-icon">🏆</span>
+            <h3>{topStaff ? topStaff[1].closed : 0}</h3>
+            <p>Top Agent: {topStaff ? topStaff[0] : "--"}</p>
+          </div>
+        </div>
+
+        <div className="analytics-section">
+          <h3>📊 Interactive Visualizations</h3>
+          <div className="chart-grid">
+            <div className="chart-card">
+              <h3>Ticket Status</h3>
+              {statusData.every(item => item.value === 0) ? (
+                <p style={{ color: "#8B7B70", textAlign: "center", padding: "40px 0" }}>No analytics available.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={320}>
+                  <PieChart>
+                    <Pie data={statusData} dataKey="value" nameKey="name" outerRadius={110} label>
+                      {statusData.map((entry, index) => (
+                        <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            <div className="chart-card">
+              <h3>Tickets by Category</h3>
+              {categoryData.every(item => item.value === 0) ? (
+                <p style={{ color: "#8B7B70", textAlign: "center", padding: "40px 0" }}>No analytics available.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart data={categoryData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="value" fill="#C4956A" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            <div className="chart-card">
+              <h3>Daily Ticket Trend</h3>
+              {trendData.every(item => item.total === 0) ? (
+                <p style={{ color: "#8B7B70", textAlign: "center", padding: "40px 0" }}>No analytics available.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={320}>
+                  <LineChart data={trendData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="day" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="total" stroke="#C4956A" strokeWidth={3} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
         </div>
 
@@ -323,10 +761,10 @@ export default function SupportAnalyticsManagement() {
             {categoryData.length === 0 ? (
               <p className="text-gray-500">No categories found</p>
             ) : (
-              categoryData.map(([category, count]) => (
-                <div key={category} className="category-row">
-                  <span>{category}</span>
-                  <strong>{count}</strong>
+              categoryData.map((item) => (
+                <div key={item.name} className="category-row">
+                  <span>{item.name}</span>
+                  <strong>{item.value}</strong>
                 </div>
               ))
             )}
@@ -353,6 +791,91 @@ export default function SupportAnalyticsManagement() {
             <h4>🚨 Urgent Ticket Ratio</h4>
             <h2>{urgentPercent}%</h2>
             <p>of all support tickets are marked as High Priority.</p>
+          </div>
+        </div>
+
+        <div className="analytics-section">
+          <h3>⏱ Response Performance</h3>
+          <div className="response-grid">
+            <div className="response-card">
+              <h2>{averageResponse}</h2>
+              <p>Average Minutes</p>
+            </div>
+            <div className="response-card">
+              <h2>{fastestResponse}</h2>
+              <p>Fastest Reply</p>
+            </div>
+            <div className="response-card">
+              <h2>{slowestResponse}</h2>
+              <p>Slowest Reply</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="analytics-section">
+          <h3>📈 Daily Ticket Trend List</h3>
+          <div className="trend-card">
+            {trendData.length === 0 ? (
+              <p className="text-gray-500">No ticket history.</p>
+            ) : (
+              trendData.map((item) => (
+                <div key={item.day} className="trend-row">
+                  <span>{item.day}</span>
+                  <div className="trend-right">
+                    <strong>{item.total}</strong>
+                    <div className="trend-bar" style={{ width: `${item.total * 20}px` }} />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="analytics-section">
+          <h3>👥 Customer Analytics</h3>
+          <div className="customer-card">
+            <div className="customer-summary">
+              <div>
+                <h2>{repeatCustomers}</h2>
+                <p>Repeat Customers</p>
+              </div>
+              <div>
+                <h2>{Object.keys(customerCounts).length}</h2>
+                <p>Total Customers</p>
+              </div>
+            </div>
+            <h4 style={{ marginTop: "30px", color: "#2C221E" }}>🏆 Top Support Users</h4>
+            {topCustomers.length === 0 ? (
+              <p className="text-gray-500">No customer records found</p>
+            ) : (
+              topCustomers.map(([customer, count]) => (
+                <div key={customer} className="customer-row">
+                  <span>{customer}</span>
+                  <strong>{count} tickets</strong>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="analytics-section">
+          <h3>👨‍💼 Staff Performance</h3>
+          <div className="staff-grid">
+            {Object.entries(staffStats).length === 0 ? (
+              <p className="text-gray-500">No staff assignment data found.</p>
+            ) : (
+              Object.entries(staffStats).map(([staff, data]) => (
+                <div key={staff} className="staff-card">
+                  <h4>{staff}</h4>
+                  <p>Total Tickets</p>
+                  <h2>{data.total}</h2>
+                  <div className="staff-footer">
+                    <span>🟢 {data.open}</span>
+                    <span>✅ {data.closed}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
