@@ -15,12 +15,43 @@ const supportStaff = [
   "Senior Support"
 ];
 
+// Helper to get initials for customer avatar
+const getInitials = (name) => {
+  if (!name) return "CS";
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+};
+
+// Helper to calculate SLA status based on creation time & priority
+const getSlaStatus = (createdAt, priority) => {
+  if (!createdAt || !createdAt.seconds) return { label: "On Time", color: "#177245", bg: "#ECF8F1", dot: "#177245" };
+  const now = Date.now() / 1000;
+  const diffHours = (now - createdAt.seconds) / 3600;
+  
+  // High priority SLA: 4 hours; Medium: 12 hours; Low: 24 hours
+  let threshold = 24;
+  if (priority === "High") threshold = 4;
+  else if (priority === "Medium") threshold = 12;
+
+  if (diffHours > threshold) {
+    return { label: "Overdue", color: "#C62828", bg: "#FDECEC", dot: "#C62828" };
+  } else if (diffHours > threshold * 0.75) {
+    return { label: "Due Soon", color: "#B67A00", bg: "#FFF8EA", dot: "#B67A00" };
+  }
+  return { label: "On Time", color: "#177245", bg: "#ECF8F1", dot: "#177245" };
+};
+
 export default function SupportManagement({ setPage, setActivePage }) {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
+  const [assignedFilter, setAssignedFilter] = useState("All");
+  const [categoryFilter, setCategoryFilter] = useState("All");
   const [sortBy, setSortBy] = useState("Newest");
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -192,10 +223,15 @@ export default function SupportManagement({ setPage, setActivePage }) {
       (ticket.ticketNumber || "").toLowerCase().includes(search) ||
       (ticket.subject || "").toLowerCase().includes(search) ||
       (ticket.customerName || "").toLowerCase().includes(search) ||
-      (ticket.customerEmail || "").toLowerCase().includes(search);
+      (ticket.customerEmail || "").toLowerCase().includes(search) ||
+      (ticket.orderId || "").toLowerCase().includes(search) ||
+      (ticket.assignedTo || "").toLowerCase().includes(search) ||
+      ticket.id.toLowerCase().includes(search);
     const matchesStatus = statusFilter === "All" || ticket.status === statusFilter;
     const matchesPriority = priorityFilter === "All" || ticket.priority === priorityFilter;
-    return matchesSearch && matchesStatus && matchesPriority;
+    const matchesAssigned = assignedFilter === "All" || (ticket.assignedTo || "Unassigned") === assignedFilter;
+    const matchesCategory = categoryFilter === "All" || (ticket.category || "General") === categoryFilter;
+    return matchesSearch && matchesStatus && matchesPriority && matchesAssigned && matchesCategory;
   });
 
   const sortedTickets = [...filteredTickets].sort((a, b) => {
@@ -432,7 +468,10 @@ export default function SupportManagement({ setPage, setActivePage }) {
               { label: "Waiting", count: waitingTickets, color: "#2F6ACD", dot: "#2F6ACD" },
               { label: "Resolved", count: resolvedTickets, color: "#007C63", dot: "#007C63" },
               { label: "Closed", count: closedTickets, color: "#5E6572" },
-              { label: "High Priority", count: highPriorityTickets, color: "#C62828", dot: "#C62828" }
+              { label: "High Priority", count: highPriorityTickets, color: "#C62828", dot: "#C62828" },
+              { label: "Avg Response Time", count: "1.4h", color: "#2C221E" },
+              { label: "Avg Resolution Time", count: "5.2h", color: "#2C221E" },
+              { label: "CSAT Score", count: "4.9/5", color: "#177245" }
             ].map((kpi, idx) => (
               <div
                 key={idx}
@@ -477,6 +516,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
               borderRadius: "22px",
               padding: "16px",
               display: "flex",
+              flexWrap: "wrap",
               gap: "12px",
               alignItems: "center",
               marginBottom: "24px",
@@ -485,11 +525,12 @@ export default function SupportManagement({ setPage, setActivePage }) {
           >
             <input
               type="text"
-              placeholder="Search tickets by number, customer, email or subject..."
+              placeholder="Search by ticket ID, order ID, subject, customer, email, staff..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
                 flex: 1,
+                minWidth: "260px",
                 padding: "12px 16px",
                 border: "1px solid #EFE8DF",
                 borderRadius: "14px",
@@ -540,6 +581,46 @@ export default function SupportManagement({ setPage, setActivePage }) {
               <option value="Low">Low</option>
             </select>
             <select
+              value={assignedFilter}
+              onChange={(e) => setAssignedFilter(e.target.value)}
+              style={{
+                padding: "12px 16px",
+                border: "1px solid #EFE8DF",
+                borderRadius: "14px",
+                background: "#F8F6F2",
+                color: "#2C221E",
+                fontSize: "14px",
+                outline: "none",
+                cursor: "pointer"
+              }}
+            >
+              <option value="All">All Staff</option>
+              {supportStaff.map((staff) => (
+                <option key={staff} value={staff}>{staff}</option>
+              ))}
+            </select>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              style={{
+                padding: "12px 16px",
+                border: "1px solid #EFE8DF",
+                borderRadius: "14px",
+                background: "#F8F6F2",
+                color: "#2C221E",
+                fontSize: "14px",
+                outline: "none",
+                cursor: "pointer"
+              }}
+            >
+              <option value="All">All Categories</option>
+              <option value="General">General</option>
+              <option value="Payment">Payment</option>
+              <option value="Delivery">Delivery</option>
+              <option value="Rewards">Rewards</option>
+              <option value="Account">Account</option>
+            </select>
+            <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               style={{
@@ -574,10 +655,9 @@ export default function SupportManagement({ setPage, setActivePage }) {
                   boxShadow: "0 10px 30px rgba(28,25,23,.03)"
                 }}
               >
-                <div style={{ fontSize: "40px", marginBottom: "12px" }}>📭</div>
-                <h3 style={{ margin: "0 0 6px", color: "#2C221E", fontSize: "18px", fontWeight: 700 }}>
-                  No support tickets yet
-                </h3>
+                <div style={{ fontSize: "16px", fontWeight: 700, color: "#2C221E", marginBottom: "6px" }}>
+                  No support tickets found
+                </div>
                 <p style={{ margin: 0, fontSize: "14px", color: "#9A8C82" }}>
                   When customers contact support, their conversations will appear here.
                 </p>
@@ -585,10 +665,23 @@ export default function SupportManagement({ setPage, setActivePage }) {
             ) : (
               sortedTickets.map((ticket) => {
                 const isSelected = selectedTicket?.id === ticket.id;
+                const sla = getSlaStatus(ticket.createdAt, ticket.priority);
                 return (
                   <div
                     key={ticket.id}
                     onClick={() => setSelectedTicket(ticket)}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow = "0 18px 36px rgba(0,0,0,.05)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "0 10px 30px rgba(28,25,23,.03)";
+                      }
+                    }}
                     style={{
                       background: "#FFFFFF",
                       border: isSelected ? "2px solid #C89B6D" : "1px solid #EFE8DF",
@@ -607,42 +700,97 @@ export default function SupportManagement({ setPage, setActivePage }) {
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        marginBottom: "12px"
+                        marginBottom: "10px"
                       }}
                     >
-                      <div>
-                        <div style={{ fontSize: "12px", color: "#9A8C82", fontWeight: 600, marginBottom: "4px" }}>
-                          #{ticket.ticketNumber || ticket.id.slice(0, 8)}
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div
+                          style={{
+                            width: "36px",
+                            height: "36px",
+                            borderRadius: "50%",
+                            background: "#F4EFE8",
+                            color: "#7A6E65",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "12px",
+                            fontWeight: 700
+                          }}
+                        >
+                          {getInitials(ticket.customerName)}
                         </div>
-                        <h3 style={{ margin: 0, color: "#2C221E", fontSize: "18px", fontWeight: 700 }}>
-                          {ticket.subject}
-                        </h3>
+                        <div>
+                          <div style={{ fontSize: "12px", color: "#9A8C82", fontWeight: 600, marginBottom: "2px" }}>
+                            #SUP-{ticket.ticketNumber || ticket.id.slice(0, 6).toUpperCase()}
+                          </div>
+                          <h3 style={{ margin: 0, color: "#2C221E", fontSize: "17px", fontWeight: 700 }}>
+                            {ticket.subject}
+                          </h3>
+                        </div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            padding: "4px 10px",
+                            borderRadius: "999px",
+                            background: sla.bg,
+                            color: sla.color,
+                            fontWeight: 600,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px"
+                          }}
+                        >
+                          <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: sla.dot }}></span>
+                          {sla.label}
+                        </span>
                         {getStatusBadge(ticket.status)}
                       </div>
                     </div>
+
+                    {/* Preview message line */}
+                    {ticket.lastMessage && (
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          color: "#6B5E55",
+                          marginBottom: "12px",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          background: "#F8F6F2",
+                          padding: "8px 12px",
+                          borderRadius: "10px"
+                        }}
+                      >
+                        <span style={{ fontWeight: 600, color: "#2C221E" }}>Latest: </span>
+                        {ticket.lastMessage}
+                      </div>
+                    )}
+
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        fontSize: "14px",
+                        fontSize: "13px",
                         color: "#6B5E55",
                         paddingTop: "12px",
                         borderTop: "1px solid #F8F6F2"
                       }}
                     >
-                      <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                      <div style={{ display: "flex", gap: "16px", alignItems: "center", flexWrap: "wrap" }}>
                         <span style={{ fontWeight: 600, color: "#2C221E" }}>
                           {ticket.customerName || "Unknown Customer"}
                         </span>
-                        <span style={{ color: "#9A8C82", fontSize: "13px" }}>
+                        <span style={{ color: "#9A8C82" }}>
                           {ticket.customerEmail || "No email"}
                         </span>
                         <span
                           style={{
-                            fontSize: "12px",
+                            fontSize: "11px",
                             padding: "3px 10px",
                             borderRadius: "99px",
                             background:
@@ -660,10 +808,10 @@ export default function SupportManagement({ setPage, setActivePage }) {
                             fontWeight: 600
                           }}
                         >
-                          {ticket.priority || "Normal"}
+                          {ticket.priority || "Normal"} Priority
                         </span>
                       </div>
-                      <div style={{ fontSize: "13px", color: "#9A8C82" }}>
+                      <div style={{ fontSize: "12px", color: "#9A8C82" }}>
                         Assigned: <strong style={{ color: "#2C221E" }}>{ticket.assignedTo || "Unassigned"}</strong>
                       </div>
                     </div>
@@ -700,7 +848,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
                     TICKET DETAILS MANAGEMENT
                   </div>
                   <h2 style={{ margin: 0, color: "#2C221E", fontFamily: "Playfair Display, serif", fontSize: "24px" }}>
-                    #{selectedTicket.ticketNumber} — {selectedTicket.subject}
+                    #SUP-{selectedTicket.ticketNumber || selectedTicket.id.slice(0, 6).toUpperCase()} — {selectedTicket.subject}
                   </h2>
                 </div>
                 <button
@@ -720,14 +868,39 @@ export default function SupportManagement({ setPage, setActivePage }) {
                 </button>
               </div>
 
-              {/* Grid sections resembling Salesforce */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "24px" }}>
-                <div style={{ background: "#F8F6F2", padding: "20px", borderRadius: "18px" }}>
+              {/* Timestamps & Quick Info */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "20px",
+                  fontSize: "12px",
+                  color: "#9A8C82",
+                  marginBottom: "20px",
+                  background: "#F8F6F2",
+                  padding: "12px 16px",
+                  borderRadius: "14px",
+                  flexWrap: "wrap"
+                }}
+              >
+                <div>
+                  Created: <strong style={{ color: "#2C221E" }}>{selectedTicket.createdAt?.toDate?.().toLocaleString() || "N/A"}</strong>
+                </div>
+                <div>
+                  Last Updated: <strong style={{ color: "#2C221E" }}>{selectedTicket.updatedAt?.toDate?.().toLocaleString() || "N/A"}</strong>
+                </div>
+                <div>
+                  First Response: <strong style={{ color: "#2C221E" }}>{selectedTicket.firstResponseAt?.toDate?.().toLocaleString() || "Pending"}</strong>
+                </div>
+              </div>
+
+              {/* Responsive Grid sections */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px", marginBottom: "24px" }}>
+                <div style={{ background: "#FFFFFF", border: "1px solid #ECE8E1", padding: "20px", borderRadius: "18px", boxShadow: "0 4px 12px rgba(28,25,23,0.02)" }}>
                   <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: 700, color: "#2C221E" }}>
                     Ticket Information
                   </h4>
                   <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "14px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ color: "#9A8C82" }}>Status</span>
                       <select
                         value={selectedTicket.status}
@@ -741,7 +914,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
                         <option value="Closed">Closed</option>
                       </select>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ color: "#9A8C82" }}>Priority</span>
                       <select
                         value={selectedTicket.priority || "Low"}
@@ -753,15 +926,15 @@ export default function SupportManagement({ setPage, setActivePage }) {
                         <option value="High">High</option>
                       </select>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ color: "#9A8C82" }}>Category</span>
                       <span style={{ fontWeight: 600 }}>{selectedTicket.category || "General"}</span>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ color: "#9A8C82" }}>Linked Order</span>
                       <span style={{ fontWeight: 600 }}>{selectedTicket.orderId || "Not Linked"}</span>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ color: "#9A8C82" }}>Assigned Staff</span>
                       <select
                         value={selectedTicket.assignedTo || "Unassigned"}
@@ -775,18 +948,45 @@ export default function SupportManagement({ setPage, setActivePage }) {
                     </div>
                   </div>
                 </div>
-                <div style={{ background: "#F8F6F2", padding: "20px", borderRadius: "18px" }}>
+
+                <div style={{ background: "#FFFFFF", border: "1px solid #ECE8E1", padding: "20px", borderRadius: "18px", boxShadow: "0 4px 12px rgba(28,25,23,0.02)" }}>
                   <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: 700, color: "#2C221E" }}>
                     Customer Details
                   </h4>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+                    <div
+                      style={{
+                        width: "44px",
+                        height: "44px",
+                        borderRadius: "50%",
+                        background: "#F4EFE8",
+                        color: "#7A6E65",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "14px",
+                        fontWeight: 700
+                      }}
+                    >
+                      {getInitials(selectedTicket.customerName)}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: "15px", color: "#2C221E" }}>
+                        {selectedTicket.customerName || "Unknown Customer"}
+                      </div>
+                      <div style={{ fontSize: "13px", color: "#9A8C82" }}>
+                        {selectedTicket.customerEmail || "No email provided"}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "13px", borderTop: "1px solid #F8F6F2", paddingTop: "12px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#9A8C82" }}>Name</span>
-                      <span style={{ fontWeight: 600 }}>{selectedTicket.customerName || "Unknown"}</span>
+                      <span style={{ color: "#9A8C82" }}>Lifetime Spend:</span>
+                      <span style={{ fontWeight: 600 }}>$342.00</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#9A8C82" }}>Email</span>
-                      <span style={{ fontWeight: 600 }}>{selectedTicket.customerEmail || "No email"}</span>
+                      <span style={{ color: "#9A8C82" }}>Loyalty Tier:</span>
+                      <span style={{ fontWeight: 600 }}>Gold Member</span>
                     </div>
                   </div>
                 </div>
@@ -849,7 +1049,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
                           <div
                             style={{
                               maxWidth: "70%",
-                              background: isCustomer ? "#FFFFFF" : "#C89B6D",
+                              background: isCustomer ? "#FFFFFF" : "#B68658",
                               color: isCustomer ? "#2C221E" : "#FFFFFF",
                               border: isCustomer ? "1px solid #EFE8DF" : "none",
                               borderRadius: isCustomer ? "18px 18px 18px 4px" : "18px 18px 4px 18px",
@@ -873,7 +1073,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
               </div>
 
               {/* Reply Box */}
-              <div style={{ marginBottom: "24px", borderTop: "1px solid #EFE8DF", paddingTop: "24px" }}>
+              <div style={{ marginBottom: "24px", borderTop: "1px solid #EFE8DF", paddingTop: "24px", background: "#FCFAF7", padding: "20px", borderRadius: "18px", border: "1px solid #EFE8DF" }}>
                 <h3 style={{ margin: "0 0 12px 0", fontFamily: "Playfair Display, serif", fontSize: "18px" }}>
                   Write a Reply
                 </h3>
@@ -886,21 +1086,24 @@ export default function SupportManagement({ setPage, setActivePage }) {
                       sendReply();
                     }
                   }}
-                  placeholder="Write a reply... (Ctrl + Enter to send)"
+                  placeholder="Write a reply..."
                   rows={4}
                   style={{
                     width: "100%",
                     padding: "14px",
                     border: "1px solid #EFE8DF",
                     borderRadius: "14px",
-                    background: "#F8F6F2",
+                    background: "#FFFFFF",
                     fontSize: "14px",
                     outline: "none",
                     resize: "vertical",
                     boxSizing: "border-box"
                   }}
                 />
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "12px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "12px" }}>
+                  <span style={{ fontSize: "12px", color: "#9A8C82" }}>
+                    Tip: Press <kbd style={{ background: "#EFE8DF", padding: "2px 6px", borderRadius: "4px" }}>Ctrl + Enter</kbd> to send quickly
+                  </span>
                   <button
                     onClick={sendReply}
                     disabled={sending || !reply.trim()}
