@@ -82,22 +82,20 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
       className={`category-item ${isExpanded ? "expanded" : ""}`}
     >
       <div className="category-main-row">
-        <div className="category-left">
-          <div {...attributes} {...listeners} className="drag-handle" title="Drag to reorder">
-            <GripVertical size={18} strokeWidth={1.8} />
+        <div {...attributes} {...listeners} className="drag-handle" title="Drag to reorder">
+          <GripVertical size={18} strokeWidth={1.8} />
+        </div>
+        <div className="icon-box">
+          <Icon size={24} strokeWidth={1.7} color="#C4956A" />
+        </div>
+        <div className="category-info-area">
+          <div className="category-title">
+            {category.title}
+            {category.updatedAt && (
+              <span className="recent-badge">Edited recently</span>
+            )}
           </div>
-          <div className="icon-box">
-            <Icon size={24} strokeWidth={1.7} color="#C4956A" />
-          </div>
-          <div>
-            <div className="category-title">
-              {category.title}
-              {category.updatedAt && (
-                <span className="recent-badge">Edited recently</span>
-              )}
-            </div>
-            <div className="category-desc">{category.description}</div>
-          </div>
+          <div className="category-desc">{category.description}</div>
         </div>
 
         <div className="category-right-actions">
@@ -311,7 +309,6 @@ export default function SupportHelpCategoryManagement() {
     const newItems = arrayMove(categories, oldIndex, newIndex);
     setCategories(newItems);
 
-    // Update sortOrder in Firestore
     for (let i = 0; i < newItems.length; i++) {
       await updateDoc(doc(db, "supportHelpCategories", newItems[i].id), {
         sortOrder: i + 1
@@ -397,23 +394,28 @@ export default function SupportHelpCategoryManagement() {
         .sync-info{ font-size:13px; color:#9B8C82; font-weight:500; }
 
         .help-stats{
-            display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:22px; margin-bottom:34px;
+            display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-bottom:34px;
         }
+        @media(max-width: 900px){ .help-stats{ grid-template-columns:repeat(2,1fr); } }
         .stat-card{
             background:rgba(255,255,255,.82); backdrop-filter:blur(18px);
             border:1px solid rgba(255,255,255,.75); border-radius:24px; padding:24px;
             transition:.3s; box-shadow:0 8px 28px rgba(30,22,18,.05);
+            min-height:120px; display:flex; flex-direction:column; justify-content:center;
         }
         .stat-card:hover{ transform:translateY(-4px); box-shadow:0 18px 40px rgba(30,22,18,.08); }
         .stat-card span{ display:block; font-size:13px; font-weight:600; color:#8B7C72; margin-bottom:8px; }
         .stat-card h2{ margin:0; font-size:34px; color:#241C18; font-weight:800; letter-spacing:-1px; }
 
-        .dashboard-grid{ display:grid; grid-template-columns: 1fr 300px; gap: 32px; align-items: start; }
+        .dashboard-grid{ display:grid; grid-template-columns: minmax(0,2.3fr) minmax(280px,.9fr); gap:30px; align-items:start; }
         @media(max-width: 1024px){ .dashboard-grid{ grid-template-columns: 1fr; } }
+
+        .top-grid{ display:grid; grid-template-columns:1.2fr .8fr; gap:28px; margin-bottom:36px; }
+        @media(max-width:1000px){ .top-grid{ grid-template-columns:1fr; } }
 
         .help-card{
             background:rgba(255,255,255,.82); backdrop-filter:blur(18px);
-            border-radius:28px; padding:34px; margin-bottom:32px;
+            border-radius:28px; padding:34px; margin-bottom:36px;
             border:1px solid rgba(255,255,255,.8); box-shadow: 0 12px 40px rgba(30,22,18,.05);
         }
 
@@ -427,15 +429,15 @@ export default function SupportHelpCategoryManagement() {
         }
         .form-subtitle{ margin-top:6px; margin-bottom:24px; font-size:14px; color:#8C7C72; line-height:1.6; }
 
-        .icon-picker{ display:grid; grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); gap:14px; }
+        .icon-picker{ display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:10px; max-height: 220px; overflow-y: auto; padding-right: 4px; }
         .icon-option{
-            background:white; border:1px solid #ECE6DE; border-radius:18px;
-            padding:18px 10px; cursor:pointer; transition:.28s; display:flex;
-            flex-direction:column; align-items:center; gap:10px; color:#6E5E53;
+            background:white; border:1px solid #ECE6DE; border-radius:16px;
+            padding:14px 8px; cursor:pointer; transition:.28s; display:flex;
+            flex-direction:column; align-items:center; gap:8px; color:#6E5E53;
         }
         .icon-option:hover{ transform:translateY(-3px); border-color:#C4956A; box-shadow:0 12px 24px rgba(0,0,0,.05); }
         .icon-option.active{ background:#241C18; color:white; border-color:#241C18; box-shadow:0 18px 40px rgba(36,28,24,.18); }
-        .icon-option span{ font-size:13px; font-weight:600; }
+        .icon-option span{ font-size:12px; font-weight:600; }
 
         .field-counter{ margin-top:8px; font-size:12px; color:#9B8C82; text-align:right; }
         .unsaved-banner{
@@ -445,7 +447,7 @@ export default function SupportHelpCategoryManagement() {
         .warning-text{ color:#C25E38; font-size:13px; margin-top:6px; font-weight:600; }
 
         .preview-live{
-            margin-top:32px; padding:24px; border-radius:24px; background:#FCFBF8; border:1px solid #ECE3DA;
+            margin-top:20px; padding:24px; border-radius:24px; background:#FCFBF8; border:1px solid #ECE3DA;
         }
         .preview-live h4{ margin:0 0 20px; font-size:17px; color:#221A16; }
         .preview-item{ display:flex; gap:18px; align-items:flex-start; transition: transform .3s ease; }
@@ -478,24 +480,30 @@ export default function SupportHelpCategoryManagement() {
         }
         .secondary-btn:hover{ border-color:#C4956A; background:#FAF8F5; }
 
-        .section-header{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:24px; }
+        .section-header{ 
+            display:flex; justify-content:space-between; align-items:flex-end; 
+            margin-bottom:24px; padding-bottom:18px; border-bottom:1px solid #EEE6DD; 
+        }
         .section-header h3{ margin:0; font-size:24px; font-weight:700; color:#221A16; }
         .section-header p{ margin-top:8px; color:#8C7C72; font-size:14px; }
         .section-count{ background:#F5EFE8; padding:10px 16px; border-radius:999px; font-weight:600; font-size:13px; color:#6E5E53; }
 
         /* Category Item Card */
-        .category-grid{ display:flex; flex-direction:column; gap:16px; }
+        .category-grid{ display:flex; flex-direction:column; gap:18px; }
         .category-item{
             background:rgba(255,255,255,.92); backdrop-filter:blur(14px);
             border-radius:22px; border:1px solid rgba(255,255,255,.8);
-            padding:20px 24px; transition: transform .25s, box-shadow .25s, border-color .25s;
+            padding:18px 22px; transition: transform .25s, box-shadow .25s, border-color .25s;
+            position:relative; overflow:visible; z-index:1;
         }
         .category-item:hover{
-            transform: translateY(-6px) scale(1.01);
+            transform: translateY(-4px) scale(1.005);
             border-color:#D3B08B; box-shadow: 0 18px 38px rgba(0,0,0,.06);
+            z-index:50;
         }
-        .category-main-row{ display:flex; justify-content:space-between; align-items:center; }
-        .category-left{ display:flex; align-items:center; gap:18px; }
+        .category-main-row{ 
+            display:grid; grid-template-columns: auto auto 1fr auto; align-items:center; gap:18px; 
+        }
         .drag-handle{ cursor:grab; color:#B5A89E; padding:4px; }
         .drag-handle:active{ cursor:grabbing; }
 
@@ -504,8 +512,9 @@ export default function SupportHelpCategoryManagement() {
             background: linear-gradient(180deg, #FBF9F6, #F2ECE5);
             border:1px solid #ECE3DA; display:flex; justify-content:center; align-items:center; flex-shrink:0;
         }
+        .category-info-area{ min-width: 0; }
         .category-title{ font-size:17px; font-weight:700; color:#221A16; margin-bottom:4px; display:flex; align-items:center; gap:10px; }
-        .category-desc{ color:#8A7A70; font-size:14px; line-height:1.6; }
+        .category-desc{ color:#8A7A70; font-size:14px; line-height:1.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .recent-badge{ font-size:11px; background:#F2E8DC; color:#8C6A48; padding:2px 8px; border-radius:99px; font-weight:600; }
 
         .category-right-actions{ display:flex; align-items:center; gap:12px; }
@@ -523,8 +532,8 @@ export default function SupportHelpCategoryManagement() {
         /* Dropdown Actions */
         .dropdown-container{ position:relative; }
         .action-dropdown{
-            position:absolute; right:0; top:44px; background:white; border-radius:16px;
-            border:1px solid #ECE3DA; box-shadow:0 12px 32px rgba(0,0,0,.1); padding:8px; z-index:10; min-width:140px;
+            position:absolute; right:0; top:46px; background:white; border-radius:16px;
+            border:1px solid #ECE3DA; box-shadow:0 12px 32px rgba(0,0,0,.15); padding:8px; z-index:9999; min-width:140px;
         }
         .action-dropdown button{
             width:100%; text-align:left; background:none; border:none; padding:10px 12px;
@@ -542,12 +551,12 @@ export default function SupportHelpCategoryManagement() {
 
         /* Customer Preview Real Style */
         .customer-preview-box{
-            background:#1C1613; color:white; border-radius:24px; padding:28px; box-shadow:0 20px 50px rgba(0,0,0,.2);
+            background:#1C1613; color:white; border-radius:24px; padding:24px; box-shadow:0 20px 50px rgba(0,0,0,.2);
         }
         .customer-preview-header{ font-size:13px; text-transform:uppercase; letter-spacing:1px; color:#C4956A; margin-bottom:16px; font-weight:700; }
         .real-preview-card{
             background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
-            border-radius:18px; padding:20px; display:flex; gap:16px; align-items:flex-start; margin-bottom:12px;
+            border-radius:18px; padding:18px; display:flex; gap:16px; align-items:flex-start; margin-bottom:12px;
         }
         .real-preview-card h5{ margin:0 0 6px; font-size:16px; font-weight:600; color:white; }
         .real-preview-card p{ margin:0; font-size:13px; color:#BDAFA6; line-height:1.6; }
@@ -572,6 +581,7 @@ export default function SupportHelpCategoryManagement() {
         /* Sidebar activity card */
         .activity-card{
             background:white; border-radius:24px; padding:22px; border:1px solid #ECE3DA;
+            position:sticky; top:30px;
         }
         .activity-card h4{ margin:0 0 14px; font-size:15px; color:#221A16; display:flex; align-items:center; gap:8px; }
         .activity-item{ display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:1px solid #F4EFEA; }
@@ -642,36 +652,23 @@ export default function SupportHelpCategoryManagement() {
 
         <div className="dashboard-grid">
           <div>
-            {/* Add / Edit Form */}
-            <div className="help-card" ref={formRef}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <h3>{editingId ? "Edit Help Category" : "Create Help Category"}</h3>
-                  <p className="form-subtitle">Configure how customers navigate the Brewed Help Centre.</p>
+            {/* Top Grid: Editor Form & Live Preview Side-by-Side */}
+            <div className="top-grid">
+              {/* Add / Edit Form */}
+              <div className="help-card" ref={formRef} style={{ marginBottom: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: "22px" }}>{editingId ? "Edit Category" : "New Category"}</h3>
+                    <p className="form-subtitle" style={{ margin: "4px 0 0" }}>Configure navigation routing.</p>
+                  </div>
                 </div>
-                <div style={{ display: "flex", gap: "8px", background: "#F5EFE8", padding: "4px", borderRadius: "12px" }}>
-                  <button 
-                    style={{ background: previewTab === "editor" ? "white" : "transparent", border: "none", padding: "6px 12px", borderRadius: "8px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}
-                    onClick={() => setPreviewTab("editor")}
-                  >
-                    Editor
-                  </button>
-                  <button 
-                    style={{ background: previewTab === "preview" ? "white" : "transparent", border: "none", padding: "6px 12px", borderRadius: "8px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}
-                    onClick={() => setPreviewTab("preview")}
-                  >
-                    Preview
-                  </button>
-                </div>
-              </div>
 
-              {dirty && (
-                <div className="unsaved-banner">
-                  You have unsaved changes. (Press Ctrl + S to save quickly)
-                </div>
-              )}
+                {dirty && (
+                  <div className="unsaved-banner">
+                    You have unsaved changes. (Ctrl + S)
+                  </div>
+                )}
 
-              {previewTab === "editor" ? (
                 <div className="help-form">
                   <div>
                     <input
@@ -703,7 +700,7 @@ export default function SupportHelpCategoryManagement() {
                           }}
                           className={icon === name ? "icon-option active" : "icon-option"}
                         >
-                          <Icon size={22} strokeWidth={1.8} />
+                          <Icon size={20} strokeWidth={1.8} />
                           <span>{name}</span>
                         </button>
                       );
@@ -719,17 +716,17 @@ export default function SupportHelpCategoryManagement() {
                         setDirty(true);
                       }}
                       placeholder="Description"
-                      rows="3"
+                      rows="2"
                     />
                     <div className="field-counter">{description.length}/120</div>
                   </div>
 
-                  <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+                  <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
                     <button 
                       className="primary-btn"
                       onClick={saveCategory}
                     >
-                      {saveState === "saving" ? "Saving..." : saveState === "saved" ? <><Check size={16} /> Saved</> : editingId ? "Update Category" : "Add Category"}
+                      {saveState === "saving" ? "Saving..." : saveState === "saved" ? <><Check size={16} /> Saved</> : editingId ? "Update" : "Create"}
                     </button>
                     <button 
                       className="secondary-btn"
@@ -745,53 +742,37 @@ export default function SupportHelpCategoryManagement() {
                     </button>
                   </div>
                 </div>
-              ) : (
-                <div className="preview-live">
-                  <h4>Live Preview</h4>
-                  <div className="preview-item">
-                    <div className="icon-box">
-                      {(() => {
-                        const Icon = iconMap[icon] || HelpCircle;
-                        return <Icon size={24} strokeWidth={1.8} color="#C4956A" />;
-                      })()}
-                    </div>
-                    <div>
-                      <h5>{title || "Category Title"}</h5>
-                      <p>{description || "Category description will appear here."}</p>
-                    </div>
-                  </div>
+              </div>
+
+              {/* Customer Preview Real Style */}
+              <div className="help-card" style={{ marginBottom: 0 }}>
+                <h3 style={{ margin: "0 0 6px", color: "#221A16", fontSize: "20px", fontWeight: "700" }}>Customer Preview</h3>
+                <p style={{ color: "#8C7C72", marginBottom: "20px", fontSize: "14px" }}>
+                  Live rendering inside consumer Help Centre.
+                </p>
+
+                <div className="customer-preview-box">
+                  <div className="customer-preview-header">Support Centre</div>
+                  {categories.filter(c => c.active !== false).slice(0, 3).map(category => {
+                    const Icon = iconMap[category.icon] || HelpCircle;
+                    return (
+                      <div key={category.id} className="real-preview-card">
+                        <div className="icon-box" style={{ background: "rgba(255,255,255,0.08)", border: "none" }}>
+                          <Icon size={20} strokeWidth={1.7} color="#C4956A" />
+                        </div>
+                        <div>
+                          <h5>{category.title}</h5>
+                          <p>{category.description}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-
-            {/* Customer Preview Real Style */}
-            <div className="help-card">
-              <h3 style={{ margin: "0 0 6px", color: "#221A16", fontSize: "20px", fontWeight: "700" }}>Customer Preview</h3>
-              <p style={{ color: "#8C7C72", marginBottom: "20px", fontSize: "14px" }}>
-                Exact view rendered inside the consumer Help Centre application.
-              </p>
-
-              <div className="customer-preview-box">
-                <div className="customer-preview-header">Support Centre</div>
-                {categories.filter(c => c.active !== false).map(category => {
-                  const Icon = iconMap[category.icon] || HelpCircle;
-                  return (
-                    <div key={category.id} className="real-preview-card">
-                      <div className="icon-box" style={{ background: "rgba(255,255,255,0.08)", border: "none" }}>
-                        <Icon size={24} strokeWidth={1.7} color="#C4956A" />
-                      </div>
-                      <div>
-                        <h5>{category.title}</h5>
-                        <p>{category.description}</p>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </div>
 
             {/* Category List with Drag & Drop */}
-            <div>
+            <div className="help-card" style={{ marginBottom: 0 }}>
               <div className="section-header">
                 <div>
                   <h3>Manage Categories</h3>
@@ -901,4 +882,3 @@ export default function SupportHelpCategoryManagement() {
     </>
   );
 }
-
