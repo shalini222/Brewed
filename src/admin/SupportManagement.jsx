@@ -18,8 +18,7 @@ import SupportSettingsManagement from "./SupportSettingsManagement";
 import SupportHelpCategoryManagement from "./SupportHelpCategoryManagement";
 import SupportAnalyticsManagement from "./SupportAnalyticsManagement";
 
-  
-  const supportStaff = [
+const supportStaff = [
   "Unassigned",
   "Olivia",
   "Support Team",
@@ -33,6 +32,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [priorityFilter, setPriorityFilter] = useState("All");
   const [sortBy, setSortBy] = useState("Newest");
 
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -61,7 +61,6 @@ export default function SupportManagement({ setPage, setActivePage }) {
             ...doc.data()
           }))
         );
-
         setLoading(false);
       },
       (err) => {
@@ -75,11 +74,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
 
   useEffect(() => {
     if (!selectedTicket) return;
-
-    const updated = tickets.find(
-      (t) => t.id === selectedTicket.id
-    );
-
+    const updated = tickets.find((t) => t.id === selectedTicket.id);
     if (updated) {
       setSelectedTicket(updated);
     }
@@ -123,23 +118,17 @@ export default function SupportManagement({ setPage, setActivePage }) {
       setInternalNotes("");
       return;
     }
-
     setInternalNotes(selectedTicket.internalNotes || "");
   }, [selectedTicket]);
 
   const updatePriority = async (newPriority) => {
     if (!selectedTicket) return;
-
     try {
       await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
         priority: newPriority,
         updatedAt: serverTimestamp()
       });
-
-      setSelectedTicket((prev) => ({
-        ...prev,
-        priority: newPriority
-      }));
+      setSelectedTicket((prev) => ({ ...prev, priority: newPriority }));
     } catch (err) {
       console.log("Error updating priority:", err);
     }
@@ -147,20 +136,12 @@ export default function SupportManagement({ setPage, setActivePage }) {
 
   const assignStaff = async (staff) => {
     if (!selectedTicket) return;
-
     try {
-      await updateDoc(
-        doc(db, "supportTickets", selectedTicket.id),
-        {
-          assignedTo: staff,
-          updatedAt: serverTimestamp()
-        }
-      );
-
-      setSelectedTicket((prev) => ({
-        ...prev,
-        assignedTo: staff
-      }));
+      await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
+        assignedTo: staff,
+        updatedAt: serverTimestamp()
+      });
+      setSelectedTicket((prev) => ({ ...prev, assignedTo: staff }));
     } catch (err) {
       console.log("Error assigning staff:", err);
     }
@@ -168,11 +149,8 @@ export default function SupportManagement({ setPage, setActivePage }) {
 
   const sendReply = async () => {
     if (!reply.trim() || !selectedTicket || sending) return;
-
     try {
       setSending(true);
-
-      // Add message to conversation
       await addDoc(
         collection(db, "supportTickets", selectedTicket.id, "messages"),
         {
@@ -183,7 +161,6 @@ export default function SupportManagement({ setPage, setActivePage }) {
         }
       );
 
-      // Update parent ticket
       await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
         updatedAt: serverTimestamp(),
         customerUnread: increment(1),
@@ -202,20 +179,12 @@ export default function SupportManagement({ setPage, setActivePage }) {
 
   const updateTicketStatus = async (newStatus) => {
     if (!selectedTicket) return;
-
     try {
-      await updateDoc(
-        doc(db, "supportTickets", selectedTicket.id),
-        {
-          status: newStatus,
-          updatedAt: serverTimestamp()
-        }
-      );
-
-      setSelectedTicket((prev) => ({
-        ...prev,
-        status: newStatus
-      }));
+      await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
+        status: newStatus,
+        updatedAt: serverTimestamp()
+      });
+      setSelectedTicket((prev) => ({ ...prev, status: newStatus }));
     } catch (err) {
       console.log("Error updating status:", err);
     }
@@ -223,22 +192,13 @@ export default function SupportManagement({ setPage, setActivePage }) {
 
   const saveInternalNotes = async () => {
     if (!selectedTicket) return;
-
     try {
       setSavingNotes(true);
-
-      await updateDoc(
-        doc(db, "supportTickets", selectedTicket.id),
-        {
-          internalNotes,
-          updatedAt: serverTimestamp()
-        }
-      );
-
-      setSelectedTicket((prev) => ({
-        ...prev,
-        internalNotes
-      }));
+      await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
+        internalNotes,
+        updatedAt: serverTimestamp()
+      });
+      setSelectedTicket((prev) => ({ ...prev, internalNotes }));
     } catch (err) {
       console.log("Error saving notes:", err);
     } finally {
@@ -247,78 +207,81 @@ export default function SupportManagement({ setPage, setActivePage }) {
   };
 
   const totalTickets = tickets.length;
-
-  const openTickets = tickets.filter(
-    (ticket) => ticket.status === "Open"
-  ).length;
-
-  const inProgressTickets = tickets.filter(
-    (ticket) => ticket.status === "In Progress"
-  ).length;
-
-  const waitingTickets = tickets.filter(
-    (ticket) => ticket.status === "Waiting for Customer"
-  ).length;
-
-  const resolvedTickets = tickets.filter(
-    (ticket) => ticket.status === "Resolved"
-  ).length;
-
-  const closedTickets = tickets.filter(
-    (ticket) => ticket.status === "Closed"
-  ).length;
-
-  const highPriorityTickets = tickets.filter(
-    (ticket) => ticket.priority === "High"
-  ).length;
+  const openTickets = tickets.filter((t) => t.status === "Open").length;
+  const inProgressTickets = tickets.filter((t) => t.status === "In Progress").length;
+  const waitingTickets = tickets.filter((t) => t.status === "Waiting for Customer").length;
+  const resolvedTickets = tickets.filter((t) => t.status === "Resolved").length;
+  const closedTickets = tickets.filter((t) => t.status === "Closed").length;
+  const highPriorityTickets = tickets.filter((t) => t.priority === "High").length;
 
   const filteredTickets = tickets.filter((ticket) => {
     const search = searchTerm.toLowerCase().trim();
-
     const matchesSearch =
       (ticket.ticketNumber || "").toLowerCase().includes(search) ||
       (ticket.subject || "").toLowerCase().includes(search) ||
       (ticket.customerName || "").toLowerCase().includes(search) ||
       (ticket.customerEmail || "").toLowerCase().includes(search);
 
-    const matchesStatus =
-      statusFilter === "All" || ticket.status === statusFilter;
+    const matchesStatus = statusFilter === "All" || ticket.status === statusFilter;
+    const matchesPriority = priorityFilter === "All" || ticket.priority === priorityFilter;
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesPriority;
   });
 
   const sortedTickets = [...filteredTickets].sort((a, b) => {
     switch (sortBy) {
       case "Oldest":
         return (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
-
       case "Priority": {
-        const priorityOrder = {
-          High: 3,
-          Medium: 2,
-          Low: 1
-        };
-
-        return (
-          (priorityOrder[b.priority] || 0) -
-          (priorityOrder[a.priority] || 0)
-        );
+        const priorityOrder = { High: 3, Medium: 2, Low: 1 };
+        return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
       }
-
       case "Recently Updated":
-        return (
-          (b.updatedAt?.seconds || 0) -
-          (a.updatedAt?.seconds || 0)
-        );
-
+        return (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0);
       case "Newest":
       default:
-        return (
-          (b.createdAt?.seconds || 0) -
-          (a.createdAt?.seconds || 0)
-        );
+        return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
     }
   });
+
+  const getStatusBadge = (status) => {
+    let bg = "#F3F4F6";
+    let color = "#5E6572";
+    if (status === "Open") {
+      bg = "#ECF8F1";
+      color = "#177245";
+    } else if (status === "In Progress") {
+      bg = "#FFF8EA";
+      color = "#B67A00";
+    } else if (status === "Waiting for Customer") {
+      bg = "#EEF5FF";
+      color = "#2F6ACD";
+    } else if (status === "Resolved") {
+      bg = "#E9F9F4";
+      color = "#007C63";
+    } else if (status === "Closed") {
+      bg = "#F3F4F6";
+      color = "#5E6572";
+    }
+    return (
+      <span
+        style={{
+          fontSize: "12px",
+          padding: "6px 12px",
+          borderRadius: "999px",
+          background: bg,
+          color: color,
+          fontWeight: 600,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "6px"
+        }}
+      >
+        <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: color }}></span>
+        {status}
+      </span>
+    );
+  };
 
   if (loading) {
     return (
@@ -328,8 +291,9 @@ export default function SupportManagement({ setPage, setActivePage }) {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          background: "#FDFAF5",
+          background: "#F8F6F2",
           color: "#6B5E55",
+          fontFamily: "Inter, sans-serif",
           fontWeight: 600
         }}
       >
@@ -342,724 +306,414 @@ export default function SupportManagement({ setPage, setActivePage }) {
     <div
       style={{
         minHeight: "100vh",
-        background: "#FDFAF5",
-        padding: "24px"
+        background: "#F8F6F2",
+        padding: "32px",
+        fontFamily: "Inter, sans-serif",
+        color: "#2C221E"
       }}
     >
-      <h1
-        style={{
-          color: "#2C221E",
-          fontFamily: "Playfair Display, serif",
-          marginBottom: "8px"
-        }}
-      >
-        Support Management 
-      </h1>
-
-      <p
-        style={{
-          color: "#6B5E55",
-          marginBottom: "24px"
-        }}
-      >
-        Manage customer support tickets.
-      </p>
-
+      {/* Header */}
       <div
         style={{
           display: "flex",
-          gap: "12px",
-          marginBottom: "24px"
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: "28px"
         }}
       >
-        <button
-          onClick={() => setActiveTab("tickets")}
-          style={{
-            padding: "10px 18px",
-            borderRadius: "12px",
-            border: "none",
-            cursor: "pointer",
-            background: activeTab === "tickets" ? "#C4956A" : "#fff",
-            color: activeTab === "tickets" ? "#fff" : "#2C221E"
-          }}
-        >
-          🎫 Tickets
-        </button>
+        <div>
+          <h1
+            style={{
+              fontFamily: "Playfair Display, serif",
+              fontSize: "32px",
+              fontWeight: 700,
+              color: "#2C221E",
+              margin: "0 0 6px 0"
+            }}
+          >
+            Support Operations
+          </h1>
+          <p
+            style={{
+              color: "#6B5E55",
+              fontSize: "15px",
+              margin: 0
+            }}
+          >
+            Customer Support Center — Manage tickets, conversations, help articles and support performance.
+          </p>
+        </div>
 
-        <button
-          onClick={() => setActiveTab("supportfaq")}
-          style={{
-            padding: "10px 18px",
-            borderRadius: "12px",
-            border: "none",
-            cursor: "pointer",
-            background: activeTab === "supportfaq" ? "#C4956A" : "#fff",
-            color: activeTab === "supportfaq" ? "#fff" : "#2C221E"
-          }}
-        >
-          ❓ FAQs
-        </button>
+        <div style={{ display: "flex", gap: "12px" }}>
+          <button
+            onClick={() => setActiveTab("supportfaq")}
+            style={{
+              background: "#FFFFFF",
+              border: "1px solid #EFE8DF",
+              padding: "10px 18px",
+              borderRadius: "14px",
+              fontSize: "14px",
+              fontWeight: 600,
+              color: "#2C221E",
+              cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(28,25,23,0.02)"
+            }}
+          >
+            + New FAQ
+          </button>
+          <button
+            onClick={() => setActiveTab("supportanalytics")}
+            style={{
+              background: "linear-gradient(135deg, #C89B6D, #B68658)",
+              border: "none",
+              padding: "10px 18px",
+              borderRadius: "14px",
+              fontSize: "14px",
+              fontWeight: 600,
+              color: "#FFFFFF",
+              cursor: "pointer",
+              boxShadow: "0 10px 24px rgba(196,149,106,.28)"
+            }}
+          >
+            Support Analytics
+          </button>
+        </div>
+      </div>
 
-        <button
-          onClick={() => setActiveTab("supportpolicies")}
-          style={{
-            padding: "10px 18px",
-            borderRadius: "12px",
-            border: "none",
-            cursor: "pointer",
-            background: activeTab === "supportpolicies" ? "#C4956A" : "#fff",
-            color: activeTab === "supportpolicies" ? "#fff" : "#2C221E"
-          }}
-        >
-          📜 Policies
-        </button>
-         <button
-          onClick={() => setActiveTab("supportsettings")}
-          style={{
-            padding: "10px 18px",
-            borderRadius: "12px",
-            border: "none",
-            cursor: "pointer",
-            background: activeTab === "supportsettings" ? "#C4956A" : "#fff",
-            color: activeTab === "supportsettings" ? "#fff" : "#2C221E"
-          }}
-        >
-         📞 Contact Settings
-        </button>
-
-         <button
-          onClick={() => setActiveTab("supporthelpdesk")}
-          style={{
-            padding: "10px 18px",
-            borderRadius: "12px",
-            border: "none",
-            cursor: "pointer",
-            background: activeTab === "supporthelpdesk" ? "#C4956A" : "#fff",
-            color: activeTab === "supporthelpdesk" ? "#fff" : "#2C221E"
-          }}
-        >
-         🚛 Help Desk 
-        </button>
-         <button
-          onClick={() => setActiveTab("supportanalytics")}
-          style={{
-            padding: "10px 18px",
-            borderRadius: "12px",
-            border: "none",
-            cursor: "pointer",
-            background: activeTab === "supportanalytics" ? "#C4956A" : "#fff",
-            color: activeTab === "supportanalytics" ? "#fff" : "#2C221E"
-          }}
-        >
-         📊 Analytics 
-        </button>
+      {/* Tabs */}
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          marginBottom: "28px",
+          borderBottom: "1px solid #EFE8DF",
+          paddingBottom: "12px"
+        }}
+      >
+        {[
+          { id: "tickets", label: "Tickets" },
+          { id: "supportfaq", label: "FAQs" },
+          { id: "supportpolicies", label: "Policies" },
+          { id: "supportsettings", label: "Contact Settings" },
+          { id: "supporthelpdesk", label: "Help Desk" },
+          { id: "supportanalytics", label: "Analytics" }
+        ].map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                padding: "10px 20px",
+                borderRadius: "12px",
+                border: "none",
+                cursor: "pointer",
+                background: isActive ? "#F5EFE7" : "transparent",
+                color: "#2C221E",
+                fontWeight: isActive ? 700 : 500,
+                fontSize: "14px",
+                transition: "all 0.2s ease"
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {activeTab === "tickets" && (
         <>
+          {/* KPI Cards */}
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
               gap: "16px",
-              marginBottom: "24px"
+              marginBottom: "28px"
             }}
           >
-            <div
-              style={{
-                background: "#FFFFFF",
-                border: "1px solid #E8DED2",
-                borderRadius: "18px",
-                padding: "20px",
-                boxShadow: "0 2px 10px rgba(44,34,30,0.03)"
-              }}
-            >
+            {[
+              { label: "Total Tickets", count: totalTickets, color: "#2C221E" },
+              { label: "Open Tickets", count: openTickets, color: "#177245", dot: "#177245" },
+              { label: "In Progress", count: inProgressTickets, color: "#B67A00", dot: "#B67A00" },
+              { label: "Waiting", count: waitingTickets, color: "#2F6ACD", dot: "#2F6ACD" },
+              { label: "Resolved", count: resolvedTickets, color: "#007C63", dot: "#007C63" },
+              { label: "Closed", count: closedTickets, color: "#5E6572" },
+              { label: "High Priority", count: highPriorityTickets, color: "#C62828", dot: "#C62828" }
+            ].map((kpi, idx) => (
               <div
+                key={idx}
                 style={{
-                  fontSize: "13px",
-                  color: "#9A8C82",
-                  marginBottom: "8px",
-                  fontWeight: 600
+                  background: "#FFFFFF",
+                  border: "1px solid #EFE8DF",
+                  borderRadius: "22px",
+                  padding: "20px",
+                  boxShadow: "0 10px 30px rgba(28,25,23,.03)"
                 }}
               >
-                Total Tickets
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#9A8C82",
+                    marginBottom: "8px",
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px"
+                  }}
+                >
+                  {kpi.dot && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: kpi.dot }}></span>}
+                  {kpi.label}
+                </div>
+                <div
+                  style={{
+                    fontSize: "28px",
+                    fontWeight: 700,
+                    color: kpi.color
+                  }}
+                >
+                  {kpi.count}
+                </div>
               </div>
-
-              <div
-                style={{
-                  fontSize: "32px",
-                  fontWeight: 700,
-                  color: "#2C221E"
-                }}
-              >
-                {totalTickets}
-              </div>
-            </div>
-
-            <div
-              style={{
-                background: "#FFFFFF",
-                border: "1px solid #E8DED2",
-                borderRadius: "18px",
-                padding: "20px",
-                boxShadow: "0 2px 10px rgba(44,34,30,0.03)"
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "13px",
-                  color: "#9A8C82",
-                  marginBottom: "8px",
-                  fontWeight: 600
-                }}
-              >
-                Open Tickets
-              </div>
-
-              <div
-                style={{
-                  fontSize: "32px",
-                  fontWeight: 700,
-                  color: "#2E7D32"
-                }}
-              >
-                {openTickets}
-              </div>
-            </div>
-
-            <div
-              style={{
-                background: "#FFFFFF",
-                border: "1px solid #E8DED2",
-                borderRadius: "18px",
-                padding: "20px",
-                boxShadow: "0 2px 10px rgba(44,34,30,0.03)"
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "13px",
-                  color: "#9A8C82",
-                  marginBottom: "8px",
-                  fontWeight: 600
-                }}
-              >
-                In Progress
-              </div>
-
-              <div
-                style={{
-                  fontSize: "32px",
-                  fontWeight: 700,
-                  color: "#F57F17"
-                }}
-              >
-                {inProgressTickets}
-              </div>
-            </div>
-
-            <div
-              style={{
-                background: "#FFFFFF",
-                border: "1px solid #E8DED2",
-                borderRadius: "18px",
-                padding: "20px",
-                boxShadow: "0 2px 10px rgba(44,34,30,0.03)"
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "13px",
-                  color: "#9A8C82",
-                  marginBottom: "8px",
-                  fontWeight: 600
-                }}
-              >
-                Waiting for Customer
-              </div>
-
-              <div
-                style={{
-                  fontSize: "32px",
-                  fontWeight: 700,
-                  color: "#1565C0"
-                }}
-              >
-                {waitingTickets}
-              </div>
-            </div>
-
-            <div
-              style={{
-                background: "#FFFFFF",
-                border: "1px solid #E8DED2",
-                borderRadius: "18px",
-                padding: "20px",
-                boxShadow: "0 2px 10px rgba(44,34,30,0.03)"
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "13px",
-                  color: "#9A8C82",
-                  marginBottom: "8px",
-                  fontWeight: 600
-                }}
-              >
-                Resolved
-              </div>
-
-              <div
-                style={{
-                  fontSize: "32px",
-                  fontWeight: 700,
-                  color: "#00695C"
-                }}
-              >
-                {resolvedTickets}
-              </div>
-            </div>
-
-            <div
-              style={{
-                background: "#FFFFFF",
-                border: "1px solid #E8DED2",
-                borderRadius: "18px",
-                padding: "20px",
-                boxShadow: "0 2px 10px rgba(44,34,30,0.03)"
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "13px",
-                  color: "#9A8C82",
-                  marginBottom: "8px",
-                  fontWeight: 600
-                }}
-              >
-                Closed
-              </div>
-
-              <div
-                style={{
-                  fontSize: "32px",
-                  fontWeight: 700,
-                  color: "#37474F"
-                }}
-              >
-                {closedTickets}
-              </div>
-            </div>
-
-            <div
-              style={{
-                background: "#FFFFFF",
-                border: "1px solid #E8DED2",
-                borderRadius: "18px",
-                padding: "20px",
-                boxShadow: "0 2px 10px rgba(44,34,30,0.03)"
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "13px",
-                  color: "#9A8C82",
-                  marginBottom: "8px",
-                  fontWeight: 600
-                }}
-              >
-                High Priority
-              </div>
-
-              <div
-                style={{
-                  fontSize: "32px",
-                  fontWeight: 700,
-                  color: "#C62828"
-                }}
-              >
-                {highPriorityTickets}
-              </div>
-            </div>
+            ))}
           </div>
 
-          <div style={{ marginTop: "32px" }}>
-            <h2
-              style={{
-                fontSize: "24px",
-                fontWeight: 700,
-                color: "#2C221E",
-                marginBottom: "8px",
-                fontFamily: "Playfair Display, serif"
-              }}
-            >
-              Support Tickets
-            </h2>
-
-            <p
-              style={{
-                color: "#6B5E55",
-                fontSize: "14px",
-                marginBottom: "20px"
-              }}
-            >
-              {filteredTickets.length} ticket{filteredTickets.length !== 1 ? "s" : ""} found
-            </p>
-          </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{
-              padding: "12px 14px",
-              border: "1px solid #E8DED2",
-              borderRadius: "12px",
-              background: "#FFFFFF",
-              color: "#2C221E",
-              fontSize: "14px",
-              outline: "none",
-              marginBottom: "16px"
-            }}
-          >
-            <option value="All">All Statuses</option>
-            <option value="Open">Open</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Waiting for Customer">Waiting for Customer</option>
-            <option value="Resolved">Resolved</option>
-            <option value="Closed">Closed</option>
-          </select>
-
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              padding: "12px 14px",
-              border: "1px solid #E8DED2",
-              borderRadius: "12px",
-              background: "#FFFFFF",
-              color: "#2C221E",
-              fontSize: "14px",
-              outline: "none",
-              marginBottom: "16px",
-              marginLeft: "12px"
-            }}
-          >
-            <option value="Newest">Newest</option>
-            <option value="Oldest">Oldest</option>
-            <option value="Priority">Priority</option>
-            <option value="Recently Updated">Recently Updated</option>
-          </select>
-
+          {/* Search + Filters Toolbar */}
           <div
             style={{
-              marginBottom: "20px"
+              background: "#FFFFFF",
+              border: "1px solid #EFE8DF",
+              borderRadius: "22px",
+              padding: "16px",
+              display: "flex",
+              gap: "12px",
+              alignItems: "center",
+              marginBottom: "24px",
+              boxShadow: "0 10px 30px rgba(28,25,23,.03)"
             }}
           >
             <input
               type="text"
-              placeholder="Search by ticket number, customer, email or subject..."
+              placeholder="Search tickets by number, customer, email or subject..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
-                width: "100%",
-                padding: "14px 16px",
-                border: "1px solid #E8DED2",
+                flex: 1,
+                padding: "12px 16px",
+                border: "1px solid #EFE8DF",
                 borderRadius: "14px",
-                background: "#FFFFFF",
+                background: "#F8F6F2",
+                color: "#2C221E",
+                fontSize: "14px",
+                outline: "none"
+              }}
+            />
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                padding: "12px 16px",
+                border: "1px solid #EFE8DF",
+                borderRadius: "14px",
+                background: "#F8F6F2",
                 color: "#2C221E",
                 fontSize: "14px",
                 outline: "none",
-                boxSizing: "border-box"
+                cursor: "pointer"
               }}
-            />
+            >
+              <option value="All">All Statuses</option>
+              <option value="Open">Open</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Waiting for Customer">Waiting for Customer</option>
+              <option value="Resolved">Resolved</option>
+              <option value="Closed">Closed</option>
+            </select>
+
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              style={{
+                padding: "12px 16px",
+                border: "1px solid #EFE8DF",
+                borderRadius: "14px",
+                background: "#F8F6F2",
+                color: "#2C221E",
+                fontSize: "14px",
+                outline: "none",
+                cursor: "pointer"
+              }}
+            >
+              <option value="All">All Priorities</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              style={{
+                padding: "12px 16px",
+                border: "1px solid #EFE8DF",
+                borderRadius: "14px",
+                background: "#F8F6F2",
+                color: "#2C221E",
+                fontSize: "14px",
+                outline: "none",
+                cursor: "pointer"
+              }}
+            >
+              <option value="Newest">Newest</option>
+              <option value="Oldest">Oldest</option>
+              <option value="Priority">Priority</option>
+              <option value="Recently Updated">Recently Updated</option>
+            </select>
           </div>
 
+          {/* Ticket List */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {sortedTickets.length === 0 ? (
               <div
                 style={{
                   background: "#FFFFFF",
-                  border: "1px solid #E8DED2",
-                  borderRadius: "18px",
-                  padding: "40px",
+                  border: "1px solid #EFE8DF",
+                  borderRadius: "22px",
+                  padding: "60px 20px",
                   textAlign: "center",
-                  color: "#6B5E55"
+                  color: "#6B5E55",
+                  boxShadow: "0 10px 30px rgba(28,25,23,.03)"
                 }}
               >
-                <div style={{ fontSize: "36px", marginBottom: "12px" }}>🎫</div>
-                <h3 style={{ margin: "0 0 8px", color: "#2C221E" }}>No Support Tickets Found</h3>
-                <p style={{ margin: 0, fontSize: "14px" }}>Customer support tickets will appear here once they are created.</p>
+                <div style={{ fontSize: "40px", marginBottom: "12px" }}>📭</div>
+                <h3 style={{ margin: "0 0 6px", color: "#2C221E", fontSize: "18px", fontWeight: 700 }}>
+                  No support tickets yet
+                </h3>
+                <p style={{ margin: 0, fontSize: "14px", color: "#9A8C82" }}>
+                  When customers contact support, their conversations will appear here.
+                </p>
               </div>
             ) : (
-              sortedTickets.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  onClick={() => setSelectedTicket(ticket)}
-                  style={{
-                    background: "#FFFFFF",
-                    border:
-                      selectedTicket?.id === ticket.id
-                        ? "2px solid #C4956A"
-                        : "1px solid #E8DED2",
-                    borderRadius: "18px",
-                    padding: "20px",
-                    boxShadow: "0 2px 10px rgba(44,34,30,0.03)",
-                    cursor: "pointer",
-                    transition: "all .2s ease"
-                  }}
-                >
+              sortedTickets.map((ticket) => {
+                const isSelected = selectedTicket?.id === ticket.id;
+                return (
                   <div
+                    key={ticket.id}
+                    onClick={() => setSelectedTicket(ticket)}
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center"
+                      background: "#FFFFFF",
+                      border: isSelected ? "2px solid #C89B6D" : "1px solid #EFE8DF",
+                      borderRadius: "22px",
+                      padding: "22px",
+                      boxShadow: isSelected
+                        ? "0 18px 40px rgba(0,0,0,.08)"
+                        : "0 10px 30px rgba(28,25,23,.03)",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      transform: isSelected ? "translateY(-3px)" : "none"
                     }}
                   >
-                    <div>
-                      <div
-                        style={{
-                          fontSize: "12px",
-                          color: "#9A8C82",
-                          fontWeight: 600
-                        }}
-                      >
-                        Ticket #{ticket.ticketNumber || ticket.id.slice(0, 8)}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "12px"
+                      }}
+                    >
+                      <div>
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            color: "#9A8C82",
+                            fontWeight: 600,
+                            marginBottom: "4px"
+                          }}
+                        >
+                          #{ticket.ticketNumber || ticket.id.slice(0, 8)}
+                        </div>
+                        <h3
+                          style={{
+                            margin: 0,
+                            color: "#2C221E",
+                            fontSize: "18px",
+                            fontWeight: 700
+                          }}
+                        >
+                          {ticket.subject}
+                        </h3>
                       </div>
 
-                      <h3
-                        style={{
-                          margin: "6px 0 0",
-                          color: "#2C221E",
-                          fontSize: "18px",
-                          fontWeight: 700
-                        }}
-                      >
-                        {ticket.subject}
-                      </h3>
-
-                      <div
-                        style={{
-                          marginTop: "10px",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          padding: "4px 10px",
-                          borderRadius: "999px",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          background:
-                            ticket.priority === "High"
-                              ? "#FDECEC"
-                              : ticket.priority === "Medium"
-                              ? "#FFF8E1"
-                              : "#F5F5F5",
-                          color:
-                            ticket.priority === "High"
-                              ? "#C62828"
-                              : ticket.priority === "Medium"
-                              ? "#F57F17"
-                              : "#616161"
-                        }}
-                      >
-                        {ticket.priority || "Normal"} Priority
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        {getStatusBadge(ticket.status)}
                       </div>
                     </div>
 
                     <div
                       style={{
                         display: "flex",
+                        justifyContent: "space-between",
                         alignItems: "center",
-                        gap: "10px"
-                      }}
-                    >
-                      <span
-                        style={{
-                          padding: "6px 12px",
-                          borderRadius: "999px",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                          background:
-                            ticket.status === "Open"
-                              ? "#E8F5E9"
-                              : ticket.status === "In Progress"
-                              ? "#FFF8E1"
-                              : ticket.status === "Waiting for Customer"
-                              ? "#E3F2FD"
-                              : ticket.status === "Resolved"
-                              ? "#E0F2F1"
-                              : "#ECEFF1",
-                          color:
-                            ticket.status === "Open"
-                              ? "#2E7D32"
-                              : ticket.status === "In Progress"
-                              ? "#F57F17"
-                              : ticket.status === "Waiting for Customer"
-                              ? "#1565C0"
-                              : ticket.status === "Resolved"
-                              ? "#00695C"
-                              : "#37474F"
-                        }}
-                      >
-                        {ticket.status}
-                      </span>
-
-                      <div
-                        style={{
-                          fontSize: "13px",
-                          color: "#9A8C82"
-                        }}
-                      >
-                        {ticket.createdAt?.toDate?.().toLocaleDateString() || "N/A"}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: "14px",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "4px"
-                    }}
-                  >
-                    <span
-                      style={{
                         fontSize: "14px",
-                        fontWeight: 600,
-                        color: "#2C221E"
+                        color: "#6B5E55",
+                        paddingTop: "12px",
+                        borderTop: "1px solid #F8F6F2"
                       }}
                     >
-                      👤 {ticket.customerName || "Unknown Customer"}
-                    </span>
-
-                    <span
-                      style={{
-                        fontSize: "13px",
-                        color: "#6B5E55"
-                      }}
-                    >
-                      {ticket.customerEmail || "No email"}
-                    </span>
-
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: "#C4956A",
-                        fontWeight: 600,
-                        marginTop: "2px"
-                      }}
-                    >
-                      Assigned: {ticket.assignedTo || "Unassigned"}
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginTop: "16px",
-                      paddingTop: "16px",
-                      borderTop: "1px solid #F4EFE6"
-                    }}
-                  >
-                    <div>
-                      <div
-                        style={{
-                          fontSize: "11px",
-                          color: "#9A8C82",
-                          textTransform: "uppercase",
-                          fontWeight: 600
-                        }}
-                      >
-                        Category
+                      <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                        <span style={{ fontWeight: 600, color: "#2C221E" }}>
+                          {ticket.customerName || "Unknown Customer"}
+                        </span>
+                        <span style={{ color: "#9A8C82", fontSize: "13px" }}>
+                          {ticket.customerEmail || "No email"}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            padding: "3px 10px",
+                            borderRadius: "99px",
+                            background:
+                              ticket.priority === "High"
+                                ? "#FDECEC"
+                                : ticket.priority === "Medium"
+                                ? "#FFF8EA"
+                                : "#F3F4F6",
+                            color:
+                              ticket.priority === "High"
+                                ? "#C62828"
+                                : ticket.priority === "Medium"
+                                ? "#B67A00"
+                                : "#5E6572",
+                            fontWeight: 600
+                          }}
+                        >
+                          {ticket.priority || "Normal"}
+                        </span>
                       </div>
 
-                      <div
-                        style={{
-                          fontSize: "14px",
-                          color: "#2C221E",
-                          fontWeight: 600,
-                          marginTop: "2px"
-                        }}
-                      >
-                        {ticket.category || "General"}
-                      </div>
-                    </div>
-
-                    <div style={{ textAlign: "right" }}>
-                      <div
-                        style={{
-                          fontSize: "11px",
-                          color: "#9A8C82",
-                          textTransform: "uppercase",
-                          fontWeight: 600
-                        }}
-                      >
-                        Order
-                      </div>
-
-                      <div
-                        style={{
-                          fontSize: "14px",
-                          color: "#2C221E",
-                          fontWeight: 600,
-                          marginTop: "2px"
-                        }}
-                      >
-                        {ticket.orderId || "Not Linked"}
+                      <div style={{ fontSize: "13px", color: "#9A8C82" }}>
+                        Assigned: <strong style={{ color: "#2C221E" }}>{ticket.assignedTo || "Unassigned"}</strong>
                       </div>
                     </div>
                   </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginTop: "16px",
-                      paddingTop: "16px",
-                      borderTop: "1px solid #F4EFE6"
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: "#9A8C82"
-                      }}
-                    >
-                      Last updated:{" "}
-                      {ticket.updatedAt?.toDate?.().toLocaleString() || "N/A"}
-                    </div>
-
-                    {ticket.supportUnread > 0 && (
-                      <div
-                        style={{
-                          background: "#D32F2F",
-                          color: "white",
-                          padding: "4px 10px",
-                          borderRadius: "999px",
-                          fontSize: "12px",
-                          fontWeight: 600
-                        }}
-                      >
-                        {ticket.supportUnread} New
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
+          {/* Ticket Details Panel */}
           {selectedTicket && (
             <div
               style={{
-                marginTop: "24px",
+                marginTop: "32px",
                 background: "#FFFFFF",
-                border: "1px solid #E8DED2",
-                borderRadius: "18px",
-                padding: "24px",
-                boxShadow: "0 2px 10px rgba(44,34,30,0.03)"
+                border: "1px solid #EFE8DF",
+                borderRadius: "22px",
+                padding: "28px",
+                boxShadow: "0 10px 30px rgba(28,25,23,.03)"
               }}
             >
               <div
@@ -1067,26 +721,34 @@ export default function SupportManagement({ setPage, setActivePage }) {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  marginBottom: "16px"
+                  marginBottom: "24px",
+                  borderBottom: "1px solid #F8F6F2",
+                  paddingBottom: "16px"
                 }}
               >
-                <h2
-                  style={{
-                    margin: 0,
-                    color: "#2C221E",
-                    fontFamily: "Playfair Display, serif"
-                  }}
-                >
-                  Ticket Details
-                </h2>
+                <div>
+                  <div style={{ fontSize: "12px", color: "#9A8C82", fontWeight: 600, marginBottom: "4px" }}>
+                    TICKET DETAILS MANAGEMENT
+                  </div>
+                  <h2
+                    style={{
+                      margin: 0,
+                      color: "#2C221E",
+                      fontFamily: "Playfair Display, serif",
+                      fontSize: "24px"
+                    }}
+                  >
+                    #{selectedTicket.ticketNumber} — {selectedTicket.subject}
+                  </h2>
+                </div>
 
                 <button
                   onClick={() => setSelectedTicket(null)}
                   style={{
-                    background: "#FAF6F0",
-                    border: "1px solid #E8DED2",
-                    borderRadius: "10px",
-                    padding: "8px 14px",
+                    background: "#F8F6F2",
+                    border: "1px solid #EFE8DF",
+                    borderRadius: "12px",
+                    padding: "8px 16px",
                     cursor: "pointer",
                     fontWeight: 600,
                     color: "#6B5E55",
@@ -1097,132 +759,108 @@ export default function SupportManagement({ setPage, setActivePage }) {
                 </button>
               </div>
 
-              <p><strong>Ticket:</strong> {selectedTicket.ticketNumber}</p>
-              <p><strong>Subject:</strong> {selectedTicket.subject}</p>
-              <p><strong>Customer:</strong> {selectedTicket.customerName}</p>
-              <p><strong>Email:</strong> {selectedTicket.customerEmail}</p>
-              
-              <div style={{ marginBottom: "16px" }}>
-                <strong>Status</strong>
-
-                <select
-                  value={selectedTicket.status}
-                  onChange={(e) => updateTicketStatus(e.target.value)}
-                  style={{
-                    display: "block",
-                    marginTop: "8px",
-                    padding: "10px 12px",
-                    border: "1px solid #E8DED2",
-                    borderRadius: "10px",
-                    background: "#FFFFFF",
-                    fontSize: "14px"
-                  }}
-                >
-                  <option value="Open">Open</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Waiting for Customer">Waiting for Customer</option>
-                  <option value="Resolved">Resolved</option>
-                  <option value="Closed">Closed</option>
-                </select>
-              </div>
-
-              <div style={{ marginBottom: "16px" }}>
-                <strong>Priority:</strong>
-
-                <select
-                  value={selectedTicket.priority || "Low"}
-                  onChange={(e) => updatePriority(e.target.value)}
-                  style={{
-                    marginLeft: "10px",
-                    padding: "8px 12px",
-                    borderRadius: "10px",
-                    border: "1px solid #E8DED2",
-                    background: "#FFFFFF"
-                  }}
-                >
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                </select>
-              </div>
-
-              <div style={{ marginTop: "18px" }}>
-                <div
-                  style={{
-                    fontSize: "13px",
-                    color: "#9A8C82",
-                    marginBottom: "8px",
-                    fontWeight: 600
-                  }}
-                >
-                  Assigned Staff
+              {/* Grid sections resembling Salesforce */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "24px" }}>
+                <div style={{ background: "#F8F6F2", padding: "20px", borderRadius: "18px" }}>
+                  <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: 700, color: "#2C221E" }}>
+                    Ticket Information
+                  </h4>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "14px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#9A8C82" }}>Status</span>
+                      <select
+                        value={selectedTicket.status}
+                        onChange={(e) => updateTicketStatus(e.target.value)}
+                        style={{ padding: "4px 8px", borderRadius: "8px", border: "1px solid #EFE8DF", background: "#FFFFFF" }}
+                      >
+                        <option value="Open">Open</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Waiting for Customer">Waiting for Customer</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Closed">Closed</option>
+                      </select>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#9A8C82" }}>Priority</span>
+                      <select
+                        value={selectedTicket.priority || "Low"}
+                        onChange={(e) => updatePriority(e.target.value)}
+                        style={{ padding: "4px 8px", borderRadius: "8px", border: "1px solid #EFE8DF", background: "#FFFFFF" }}
+                      >
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                      </select>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#9A8C82" }}>Category</span>
+                      <span style={{ fontWeight: 600 }}>{selectedTicket.category || "General"}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#9A8C82" }}>Linked Order</span>
+                      <span style={{ fontWeight: 600 }}>{selectedTicket.orderId || "Not Linked"}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#9A8C82" }}>Assigned Staff</span>
+                      <select
+                        value={selectedTicket.assignedTo || "Unassigned"}
+                        onChange={(e) => assignStaff(e.target.value)}
+                        style={{ padding: "4px 8px", borderRadius: "8px", border: "1px solid #EFE8DF", background: "#FFFFFF" }}
+                      >
+                        {supportStaff.map((staff) => (
+                          <option key={staff} value={staff}>{staff}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
                 </div>
 
-                <select
-                  value={selectedTicket.assignedTo || "Unassigned"}
-                  onChange={(e) => assignStaff(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    border: "1px solid #E8DED2",
-                    borderRadius: "12px",
-                    background: "#FFFFFF",
-                    fontSize: "14px"
-                  }}
-                >
-                  {supportStaff.map((staff) => (
-                    <option key={staff} value={staff}>
-                      {staff}
-                    </option>
-                  ))}
-                </select>
+                <div style={{ background: "#F8F6F2", padding: "20px", borderRadius: "18px" }}>
+                  <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: 700, color: "#2C221E" }}>
+                    Customer Details
+                  </h4>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "14px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#9A8C82" }}>Name</span>
+                      <span style={{ fontWeight: 600 }}>{selectedTicket.customerName || "Unknown"}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#9A8C82" }}>Email</span>
+                      <span style={{ fontWeight: 600 }}>{selectedTicket.customerEmail || "No email"}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <p style={{ marginTop: "16px" }}><strong>Category:</strong> {selectedTicket.category}</p>
-              <p><strong>Order:</strong> {selectedTicket.orderId || "Not Linked"}</p>
-              <p><strong>Description:</strong></p>
-
-              <div
-                style={{
-                  background: "#FAF6F0",
-                  padding: "16px",
-                  borderRadius: "12px",
-                  marginTop: "8px"
-                }}
-              >
-                {selectedTicket.description}
+              {/* Description Container */}
+              <div style={{ background: "#F8F6F2", padding: "20px", borderRadius: "18px", marginBottom: "24px" }}>
+                <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: 700, color: "#2C221E" }}>
+                  Initial Description
+                </h4>
+                <p style={{ margin: 0, fontSize: "14px", lineHeight: 1.6, color: "#6B5E55" }}>
+                  {selectedTicket.description}
+                </p>
               </div>
 
-              {/* Conversation */}
-              <div
-                style={{
-                  marginTop: "24px",
-                  borderTop: "1px solid #E8DED2",
-                  paddingTop: "24px"
-                }}
-              >
-                <h3
-                  style={{
-                    marginBottom: "18px",
-                    color: "#2C221E",
-                    fontFamily: "Playfair Display, serif"
-                  }}
-                >
+              {/* Chat Conversation UI */}
+              <div style={{ marginBottom: "24px", borderTop: "1px solid #EFE8DF", paddingTop: "24px" }}>
+                <h3 style={{ margin: "0 0 16px 0", fontFamily: "Playfair Display, serif", fontSize: "20px" }}>
                   Conversation
                 </h3>
 
                 {messages.length === 0 ? (
                   <div
                     style={{
-                      background: "#FAF6F0",
-                      border: "1px dashed #E8DED2",
+                      background: "#F8F6F2",
+                      border: "1px dashed #EFE8DF",
                       borderRadius: "14px",
                       padding: "20px",
                       textAlign: "center",
-                      color: "#9A8C82"
+                      color: "#9A8C82",
+                      fontSize: "14px"
                     }}
                   >
-                    No conversation yet.
+                    No messages in this conversation yet.
                   </div>
                 ) : (
                   <div
@@ -1230,13 +868,13 @@ export default function SupportManagement({ setPage, setActivePage }) {
                       display: "flex",
                       flexDirection: "column",
                       gap: "16px",
-                      maxHeight: "500px",
-                      overflowY: "auto"
+                      maxHeight: "450px",
+                      overflowY: "auto",
+                      paddingRight: "8px"
                     }}
                   >
                     {messages.map((msg) => {
                       const isCustomer = msg.sender === "customer";
-
                       return (
                         <div
                           key={msg.id}
@@ -1250,41 +888,35 @@ export default function SupportManagement({ setPage, setActivePage }) {
                             style={{
                               fontSize: "12px",
                               color: "#9A8C82",
-                              marginBottom: "6px",
+                              marginBottom: "4px",
                               fontWeight: 600
                             }}
                           >
-                            {isCustomer
-                              ? msg.senderName || "Customer"
-                              : "☕ Support Team"}
+                            {isCustomer ? msg.senderName || "Customer" : "Support Team"}
                           </div>
-
                           <div
                             style={{
-                              maxWidth: "75%",
-                              background: isCustomer ? "#FFFFFF" : "#C4956A",
+                              maxWidth: "70%",
+                              background: isCustomer ? "#FFFFFF" : "#C89B6D",
                               color: isCustomer ? "#2C221E" : "#FFFFFF",
-                              border: isCustomer
-                                ? "1px solid #E8DED2"
-                                : "none",
-                              borderRadius: isCustomer
-                                ? "18px 18px 18px 4px"
-                                : "18px 18px 4px 18px",
+                              border: isCustomer ? "1px solid #EFE8DF" : "none",
+                              borderRadius: isCustomer ? "18px 18px 18px 4px" : "18px 18px 4px 18px",
                               padding: "14px 18px",
-                              lineHeight: 1.5
+                              lineHeight: 1.5,
+                              fontSize: "14px",
+                              boxShadow: "0 4px 12px rgba(28,25,23,0.02)"
                             }}
                           >
                             <div>{msg.message}</div>
-
                             <div
                               style={{
-                                marginTop: "8px",
+                                marginTop: "6px",
                                 fontSize: "11px",
-                                opacity: 0.75
+                                opacity: 0.75,
+                                textAlign: "right"
                               }}
                             >
-                              {msg.createdAt?.toDate?.().toLocaleString() ||
-                                "Sending..."}
+                              {msg.createdAt?.toDate?.().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || "Sending..."}
                             </div>
                           </div>
                         </div>
@@ -1296,23 +928,10 @@ export default function SupportManagement({ setPage, setActivePage }) {
               </div>
 
               {/* Reply Box */}
-              <div
-                style={{
-                  marginTop: "24px",
-                  borderTop: "1px solid #E8DED2",
-                  paddingTop: "24px"
-                }}
-              >
-                <h3
-                  style={{
-                    marginBottom: "16px",
-                    color: "#2C221E",
-                    fontFamily: "Playfair Display, serif"
-                  }}
-                >
-                  Reply to Customer
+              <div style={{ marginBottom: "24px", borderTop: "1px solid #EFE8DF", paddingTop: "24px" }}>
+                <h3 style={{ margin: "0 0 12px 0", fontFamily: "Playfair Display, serif", fontSize: "18px" }}>
+                  Write a Reply
                 </h3>
-
                 <textarea
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
@@ -1322,43 +941,37 @@ export default function SupportManagement({ setPage, setActivePage }) {
                       sendReply();
                     }
                   }}
-                  placeholder="Type your reply... (Ctrl + Enter to send)"
-                  rows={5}
+                  placeholder="Write a reply... (Ctrl + Enter to send)"
+                  rows={4}
                   style={{
                     width: "100%",
                     padding: "14px",
-                    border: "1px solid #E8DED2",
+                    border: "1px solid #EFE8DF",
                     borderRadius: "14px",
-                    background: "#FFFFFF",
+                    background: "#F8F6F2",
                     fontSize: "14px",
                     outline: "none",
                     resize: "vertical",
                     boxSizing: "border-box"
                   }}
                 />
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    marginTop: "16px"
-                  }}
-                >
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "12px" }}>
                   <button
                     onClick={sendReply}
                     disabled={sending || !reply.trim()}
                     style={{
-                      background: "#C4956A",
+                      background: "linear-gradient(135deg, #C89B6D, #B68658)",
                       color: "#FFFFFF",
                       border: "none",
                       borderRadius: "12px",
-                      padding: "12px 22px",
+                      padding: "12px 24px",
                       fontWeight: 600,
                       cursor: sending ? "not-allowed" : "pointer",
-                      opacity: sending ? 0.7 : 1
+                      opacity: sending ? 0.7 : 1,
+                      boxShadow: "0 10px 24px rgba(196,149,106,.28)"
                     }}
                   >
-                    {sending ? "Sending..." : "Send Reply"}
+                    {sending ? "Sending..." : "Send Reply →"}
                   </button>
                 </div>
               </div>
@@ -1366,55 +979,47 @@ export default function SupportManagement({ setPage, setActivePage }) {
               {/* Internal Notes */}
               <div
                 style={{
-                  marginTop: "24px",
-                  background: "#FFFFFF",
-                  border: "1px solid #E8DED2",
-                  borderRadius: "16px",
+                  background: "#FFF9EE",
+                  border: "1px solid #F3EAD3",
+                  borderRadius: "18px",
                   padding: "20px"
                 }}
               >
-                <h3
-                  style={{
-                    margin: "0 0 16px",
-                    color: "#2C221E",
-                    fontFamily: "Playfair Display, serif"
-                  }}
-                >
+                <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: 700, color: "#2C221E" }}>
                   Internal Notes
                 </h3>
-
+                <p style={{ margin: "0 0 12px 0", fontSize: "13px", color: "#9A8C82" }}>
+                  Only visible to support staff.
+                </p>
                 <textarea
                   value={internalNotes}
                   onChange={(e) => setInternalNotes(e.target.value)}
-                  placeholder="Only admins can see these notes..."
-                  rows={5}
+                  placeholder="Add internal notes..."
+                  rows={3}
                   style={{
                     width: "100%",
-                    padding: "14px",
-                    border: "1px solid #E8DED2",
+                    padding: "12px",
+                    border: "1px solid #EFE8DF",
                     borderRadius: "12px",
+                    background: "#FFFFFF",
+                    fontSize: "14px",
+                    outline: "none",
                     resize: "vertical",
-                    boxSizing: "border-box",
-                    outline: "none"
+                    boxSizing: "border-box"
                   }}
                 />
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    marginTop: "16px"
-                  }}
-                >
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "12px" }}>
                   <button
                     onClick={saveInternalNotes}
                     disabled={savingNotes}
                     style={{
-                      background: "#C4956A",
-                      color: "#fff",
+                      background: "#2C221E",
+                      color: "#FFFFFF",
                       border: "none",
-                      borderRadius: "12px",
-                      padding: "10px 20px",
+                      borderRadius: "10px",
+                      padding: "10px 18px",
+                      fontWeight: 600,
+                      fontSize: "13px",
                       cursor: "pointer"
                     }}
                   >
@@ -1428,9 +1033,9 @@ export default function SupportManagement({ setPage, setActivePage }) {
       )}
 
       {activeTab === "supportfaq" && <SupportFAQManagement />}
-    {activeTab === "supportsettings" && <SupportSettingsManagement />}
-        {activeTab === "supporthelpdesk" && <SupportHelpCategoryManagement  />}
-       {activeTab === "supportanalytics" && <  SupportAnalyticsManagement/>}
+      {activeTab === "supportsettings" && <SupportSettingsManagement />}
+      {activeTab === "supporthelpdesk" && <SupportHelpCategoryManagement />}
+      {activeTab === "supportanalytics" && <SupportAnalyticsManagement />}
       {activeTab === "supportpolicies" && <SupportPolicyManagement />}
     </div>
   );
