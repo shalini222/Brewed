@@ -925,7 +925,7 @@ export default function SupportFaqManagement() {
           <div className="hero-top-row">
             <div className="hero-title-area">
               <h2>Support & FAQ Management</h2>
-              <p>Configure your customer support experience, contact channels, and frequently asked questions.</p>
+              <p>Manage support settings, contact channels, and FAQs./p>
             </div>
             <div className="hero-action-slot">
               {hasChanges ? (
