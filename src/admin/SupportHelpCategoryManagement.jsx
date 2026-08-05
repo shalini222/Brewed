@@ -56,7 +56,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-function SortableCategoryItem({ category, index, categories, toggleStatus, openEdit, setDeleteTarget, duplicateCategory, expandCard, expandedId, iconMap }) {
+function SortableCategoryItem({ category, index, categories, toggleStatus, openEdit, setDeleteTarget, duplicateCategory, expandCard, expandedId, iconMap, openMenuId, setOpenMenuId }) {
   const {
     attributes,
     listeners,
@@ -73,7 +73,7 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
   const Icon = iconMap[category.icon] || HelpCircle;
   const isActive = category.active !== false;
   const isExpanded = expandedId === category.id;
-  const [menuOpen, setMenuOpen] = useState(false);
+  const menuOpen = openMenuId === category.id;
 
   return (
     <div
@@ -108,24 +108,27 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
           <div className="dropdown-container">
             <button 
               className="action-btn"
-              onClick={() => setMenuOpen(!menuOpen)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenMenuId(menuOpen ? null : category.id);
+              }}
             >
               <MoreVertical size={16} strokeWidth={1.7} />
             </button>
 
             {menuOpen && (
-              <div className="action-dropdown">
-                <button onClick={() => { setMenuOpen(false); openEdit(category); }}>
+              <div className="action-dropdown" onClick={(e) => e.stopPropagation()}>
+                <button onClick={() => { setOpenMenuId(null); openEdit(category); }}>
                   <Pencil size={14} /> Edit
                 </button>
-                <button onClick={() => { setMenuOpen(false); toggleStatus(category); }}>
+                <button onClick={() => { setOpenMenuId(null); toggleStatus(category); }}>
                   {isActive ? <EyeOff size={14} /> : <Eye size={14} />}
                   {isActive ? "Hide" : "Show"}
                 </button>
-                <button onClick={() => { setMenuOpen(false); duplicateCategory(category); }}>
+                <button onClick={() => { setOpenMenuId(null); duplicateCategory(category); }}>
                   <Copy size={14} /> Duplicate
                 </button>
-                <button className="danger-text" onClick={() => { setMenuOpen(false); setDeleteTarget(category); }}>
+                <button className="danger-text" onClick={() => { setOpenMenuId(null); setDeleteTarget(category); }}>
                   <Trash2 size={14} /> Delete
                 </button>
               </div>
@@ -170,13 +173,23 @@ export default function SupportHelpCategoryManagement() {
   const [expandedId, setExpandedId] = useState(null);
   const [saveState, setSaveState] = useState("idle");
   const [lastSynced, setLastSynced] = useState("Just now");
+  const [openMenuId, setOpenMenuId] = useState(null);
+  
+  // Icon dropdown accordion state
+  const [iconDropdownOpen, setIconDropdownOpen] = useState(false);
+
   const [recentActivities, setRecentActivities] = useState([
     { id: 1, text: "Olivia created Coffee", time: "2 mins ago" },
-    { id: 2, text: "Manager disabled Payments", time: "5 mins ago" }
+    { id: 2, text: "Manager disabled Payments", time: "5 mins ago" },
+    { id: 3, text: "System sync completed", time: "10 mins ago" },
+    { id: 4, text: "Admin updated support hours", time: "25 mins ago" },
+    { id: 5, text: "New device connected", time: "1 hour ago" },
+    { id: 6, text: "Backup verified successfully", time: "2 hours ago" }
   ]);
 
   const formRef = useRef(null);
   const titleInputRef = useRef(null);
+  const iconDropdownRef = useRef(null);
 
   const icons = [
     "Truck", "CreditCard", "Gift", "ShieldCheck", "HelpCircle", 
@@ -207,6 +220,19 @@ export default function SupportHelpCategoryManagement() {
       setToast(null); 
     }, 3000); 
   };
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (openMenuId && !e.target.closest(".action-dropdown") && !e.target.closest(".action-btn")) {
+        setOpenMenuId(null);
+      }
+      if (iconDropdownOpen && iconDropdownRef.current && !iconDropdownRef.current.contains(e.target)) {
+        setIconDropdownOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [openMenuId, iconDropdownOpen]);
 
   useEffect(() => {
     const q = query(
@@ -337,6 +363,8 @@ export default function SupportHelpCategoryManagement() {
     return matchesSearch && matchesFilter;
   });
 
+  const SelectedIconComponent = iconMap[icon] || HelpCircle;
+
   return (
     <>
       <style>{`
@@ -349,7 +377,7 @@ export default function SupportHelpCategoryManagement() {
             font-family: inherit;
         }
         .toast{
-            position:fixed; top:24px; right:24px; z-index:9999;
+            position:fixed; top:24px; right:24px; z-index:99999;
             display:flex; align-items:center; gap:12px; padding:16px 18px;
             border-radius:18px; background:rgba(36,28,24,.96); color:white;
             font-size:14px; font-weight:600; backdrop-filter:blur(16px);
@@ -363,7 +391,7 @@ export default function SupportHelpCategoryManagement() {
         .modal-overlay{
             position:fixed; inset:0; background:rgba(18,14,12,.45);
             backdrop-filter:blur(8px); display:flex; align-items:center;
-            justify-content:center; z-index:9998; animation:fadeIn .22s ease;
+            justify-content:center; z-index:99999; animation:fadeIn .22s ease;
         }
         .modal-card{
             width:min(420px,92vw); background:white; border-radius:28px;
@@ -425,13 +453,26 @@ export default function SupportHelpCategoryManagement() {
         }
         .form-subtitle{ margin-top:6px; margin-bottom:24px; font-size:14px; color:#8C7C72; line-height:1.6; }
 
+        /* Icon Picker Dropdown Accordion */
+        .icon-dropdown-container{ position:relative; }
+        .icon-dropdown-toggle{
+            width:100%; background:white; border:1px solid #ECE6DE; border-radius:18px;
+            padding:14px 18px; display:flex; align-items:center; justify-content:space-between;
+            cursor:pointer; transition:.25s; font-size:15px; color:#221A16; font-weight:600;
+        }
+        .icon-dropdown-toggle:hover{ border-color:#C4956A; }
+        .icon-dropdown-menu{
+            position:absolute; top:calc(100% + 8px); left:0; right:0; background:white;
+            border:1px solid #ECE6DE; border-radius:18px; box-shadow:0 18px 40px rgba(0,0,0,.1);
+            padding:16px; z-index:50;
+        }
         .icon-picker{ 
             display:grid; 
             grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); 
             gap:12px; 
             max-height:220px; 
             overflow-y:auto; 
-            padding-right:8px; 
+            padding-right:4px; 
         }
         .icon-option{
             background:white; border:1px solid #ECE6DE; border-radius:14px;
@@ -526,11 +567,11 @@ export default function SupportHelpCategoryManagement() {
         }
         .action-btn:hover{ background:#241C18; color:white; border-color:#241C18; }
 
-        /* Dropdown Actions */
+        /* Dropdown Actions - FIXED TO RENDER ON TOP */
         .dropdown-container{ position:relative; }
         .action-dropdown{
-            position:absolute; top:46px; right:0; z-index:9999; min-width:180px; 
-            background:white; border-radius:16px; box-shadow:0 18px 45px rgba(0,0,0,.12); 
+            position:absolute; top:46px; right:0; z-index:99999; min-width:180px; 
+            background:white; border-radius:16px; box-shadow:0 18px 45px rgba(0,0,0,.15); 
             border:1px solid #ECE3DA; padding:8px;
         }
         .action-dropdown button{
@@ -547,18 +588,19 @@ export default function SupportHelpCategoryManagement() {
         }
         .detail-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; font-size:13px; color:#7E6E63; }
 
-        /* Customer Preview Real Style */
+        /* Customer Preview Lighter Version */
         .customer-preview-box{
-            background:#1C1613; color:white; border-radius:24px; padding:20px; box-shadow:0 20px 50px rgba(0,0,0,.2);
+            background:#FAF8F5; color:#221A16; border-radius:24px; padding:20px; border:1px solid #E8DED2; box-shadow:0 10px 30px rgba(0,0,0,.04);
             max-height:430px; overflow-y:auto;
         }
-        .customer-preview-header{ font-size:13px; text-transform:uppercase; letter-spacing:1px; color:#C4956A; margin-bottom:16px; font-weight:700; }
+        .customer-preview-header{ font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#8C7C72; margin-bottom:16px; font-weight:700; }
         .real-preview-card{
-            background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+            background:white; border:1px solid #EAE2D8;
             border-radius:18px; padding:16px; display:flex; gap:16px; align-items:flex-start; margin-bottom:12px;
+            box-shadow:0 4px 14px rgba(0,0,0,.02);
         }
-        .real-preview-card h5{ margin:0 0 6px; font-size:15px; font-weight:600; color:white; }
-        .real-preview-card p{ margin:0; font-size:13px; color:#BDAFA6; line-height:1.6; }
+        .real-preview-card h5{ margin:0 0 6px; font-size:15px; font-weight:600; color:#221A16; }
+        .real-preview-card p{ margin:0; font-size:13px; color:#7A6A60; line-height:1.6; }
 
         /* Skeleton */
         .skeleton-loader{ display:flex; flex-direction:column; gap:16px; }
@@ -568,8 +610,8 @@ export default function SupportHelpCategoryManagement() {
         }
         @keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
-        /* Recent Activity section */
-        .activity-list{ display:flex; flex-direction:column; gap:8px; }
+        /* Recent Activity section - scrollable list up to 5 items */
+        .activity-list{ display:flex; flex-direction:column; gap:8px; max-height:230px; overflow-y:auto; padding-right:4px; }
         .activity-item{ display:flex; justify-content:space-between; font-size:13px; padding:10px 0; border-bottom:1px solid #F4EFEA; }
         .activity-item:last-child{ border-bottom:none; }
         .activity-text{ color:#554840; font-weight:500; }
@@ -637,6 +679,24 @@ export default function SupportHelpCategoryManagement() {
         </div>
 
         <div className="dashboard-grid">
+          {/* Recent Activity Section (Moved before Create Category) */}
+          <div className="help-card">
+            <div className="section-header" style={{ marginBottom: "16px" }}>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "20px" }}>
+                <Activity size={18} color="#C4956A" /> Recent Activity
+              </h3>
+              <div className="section-count">Latest {Math.min(recentActivities.length, 5)}</div>
+            </div>
+            <div className="activity-list">
+              {recentActivities.slice(0, 5).map(act => (
+                <div key={act.id} className="activity-item">
+                  <span className="activity-text">{act.text}</span>
+                  <span className="activity-time">{act.time}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Add / Edit Form (Full Width) */}
           <div className="help-card" ref={formRef}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -670,24 +730,43 @@ export default function SupportHelpCategoryManagement() {
                 )}
               </div>
 
-              <div className="icon-picker">
-                {icons.map(name => {
-                  const Icon = iconMap[name];
-                  return (
-                    <button
-                      key={name}
-                      type="button"
-                      onClick={() => {
-                        setIcon(name);
-                        setDirty(true);
-                      }}
-                      className={icon === name ? "icon-option active" : "icon-option"}
-                    >
-                      <Icon size={20} strokeWidth={1.8} />
-                      <span>{name}</span>
-                    </button>
-                  );
-                })}
+              {/* Icon Picker Accordion Dropdown */}
+              <div className="icon-dropdown-container" ref={iconDropdownRef}>
+                <div 
+                  className="icon-dropdown-toggle"
+                  onClick={() => setIconDropdownOpen(!iconDropdownOpen)}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <SelectedIconComponent size={20} color="#C4956A" />
+                    <span>{icon}</span>
+                  </div>
+                  <ChevronDown size={16} color="#8C7C72" />
+                </div>
+
+                {iconDropdownOpen && (
+                  <div className="icon-dropdown-menu">
+                    <div className="icon-picker">
+                      {icons.map(name => {
+                        const Icon = iconMap[name];
+                        return (
+                          <button
+                            key={name}
+                            type="button"
+                            onClick={() => {
+                              setIcon(name);
+                              setDirty(true);
+                              setIconDropdownOpen(false);
+                            }}
+                            className={icon === name ? "icon-option active" : "icon-option"}
+                          >
+                            <Icon size={20} strokeWidth={1.8} />
+                            <span>{name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -793,6 +872,8 @@ export default function SupportHelpCategoryManagement() {
                         expandCard={(id) => setExpandedId(expandedId === id ? null : id)}
                         expandedId={expandedId}
                         iconMap={iconMap}
+                        openMenuId={openMenuId}
+                        setOpenMenuId={setOpenMenuId}
                       />
                     ))}
                   </div>
@@ -801,8 +882,8 @@ export default function SupportHelpCategoryManagement() {
             )}
           </div>
 
-          {/* Customer Preview Real Style */}
-          <div className="help-card">
+          {/* Customer Preview Lighter Version */}
+          <div className="help-card" style={{ marginBottom: 0 }}>
             <h3 style={{ margin: "0 0 6px", color: "#221A16", fontSize: "20px", fontWeight: "700" }}>Customer Preview</h3>
             <p style={{ color: "#8C7C72", marginBottom: "20px", fontSize: "14px" }}>
               Live rendering inside the consumer Help Centre.
@@ -814,7 +895,7 @@ export default function SupportHelpCategoryManagement() {
                 const Icon = iconMap[category.icon] || HelpCircle;
                 return (
                   <div key={category.id} className="real-preview-card">
-                    <div className="icon-box" style={{ background: "rgba(255,255,255,0.08)", border: "none" }}>
+                    <div className="icon-box" style={{ background: "#FAF3EE", border: "1px solid #F1E5DB" }}>
                       <Icon size={20} strokeWidth={1.7} color="#C4956A" />
                     </div>
                     <div>
@@ -824,23 +905,6 @@ export default function SupportHelpCategoryManagement() {
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-          {/* Recent Activity Full Section */}
-          <div className="help-card" style={{ marginBottom: 0 }}>
-            <div className="section-header" style={{ marginBottom: "16px" }}>
-              <h3 style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "20px" }}>
-                <Activity size={18} color="#C4956A" /> Recent Activity
-              </h3>
-            </div>
-            <div className="activity-list">
-              {recentActivities.map(act => (
-                <div key={act.id} className="activity-item">
-                  <span className="activity-text">{act.text}</span>
-                  <span className="activity-time">{act.time}</span>
-                </div>
-              ))}
             </div>
           </div>
         </div>
