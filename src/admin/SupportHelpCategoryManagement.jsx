@@ -40,7 +40,8 @@ import {
   Activity,
   Layers,
   Settings,
-  CheckCircle2
+  CheckCircle2,
+  FileText
 } from "lucide-react";
 import { 
   DndContext, 
