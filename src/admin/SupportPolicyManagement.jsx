@@ -14,7 +14,12 @@ import {
   Upload,
   Search as SearchIcon,
   Plus,
-  X
+  X,
+  CheckCircle2,
+  ShieldCheck,
+  Layers,
+  AlertCircle,
+  Settings
 } from "lucide-react";
 
 import {
@@ -291,10 +296,7 @@ export default function SupportPolicyManagement() {
   };
 
   const deletePolicy = async (id) => {
-    const confirmed = window.confirm(
-      "Delete this policy?"
-    );
-
+    const confirmed = window.confirm("Delete this policy?");
     if (!confirmed) return;
 
     try {
@@ -307,21 +309,14 @@ export default function SupportPolicyManagement() {
 
   const toggleSelection = (id) => {
     if (selectedPolicies.includes(id)) {
-      setSelectedPolicies(
-        selectedPolicies.filter(item => item !== id)
-      );
+      setSelectedPolicies(selectedPolicies.filter(item => item !== id));
     } else {
-      setSelectedPolicies([
-        ...selectedPolicies,
-        id
-      ]);
+      setSelectedPolicies([...selectedPolicies, id]);
     }
   };
 
   const selectAll = () => {
-    setSelectedPolicies(
-      sortedPolicies.map(policy => policy.id)
-    );
+    setSelectedPolicies(sortedPolicies.map(policy => policy.id));
   };
 
   const clearSelection = () => {
@@ -330,7 +325,6 @@ export default function SupportPolicyManagement() {
 
   const bulkPublish = async () => {
     const adminName = getCurrentAdminName();
-
     for (const id of selectedPolicies) {
       await updateDoc(doc(db, "supportPolicies", id), {
         status: "Published",
@@ -339,14 +333,12 @@ export default function SupportPolicyManagement() {
         updatedBy: adminName
       });
     }
-
     showToast(`${selectedPolicies.length} policies published.`);
     setSelectedPolicies([]);
   };
 
   const bulkDraft = async () => {
     const adminName = getCurrentAdminName();
-
     for (const id of selectedPolicies) {
       await updateDoc(doc(db, "supportPolicies", id), {
         status: "Draft",
@@ -355,27 +347,21 @@ export default function SupportPolicyManagement() {
         updatedBy: adminName
       });
     }
-
     showToast(`${selectedPolicies.length} policies moved to Draft.`);
     setSelectedPolicies([]);
   };
 
   const bulkDelete = async () => {
-    if (!window.confirm(
-      `Delete ${selectedPolicies.length} policies?`
-    )) return;
-
+    if (!window.confirm(`Delete ${selectedPolicies.length} policies?`)) return;
     for (const id of selectedPolicies) {
       await deleteDoc(doc(db, "supportPolicies", id));
     }
-
     showToast(`${selectedPolicies.length} policies deleted.`);
     setSelectedPolicies([]);
   };
 
   const bulkPin = async (value) => {
     const adminName = getCurrentAdminName();
-
     for (const id of selectedPolicies) {
       await updateDoc(doc(db, "supportPolicies", id), {
         pinned: value,
@@ -383,13 +369,7 @@ export default function SupportPolicyManagement() {
         updatedBy: adminName
       });
     }
-
-    showToast(
-      value
-        ? "Policies pinned."
-        : "Policies unpinned."
-    );
-
+    showToast(value ? "Policies pinned." : "Policies unpinned.");
     setSelectedPolicies([]);
   };
 
@@ -420,75 +400,52 @@ export default function SupportPolicyManagement() {
       })
     );
 
-    const data =
-      "data:text/json;charset=utf-8," +
-      encodeURIComponent(
-        JSON.stringify(cleanPolicies, null, 2)
-      );
-
+    const data = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cleanPolicies, null, 2));
     const link = document.createElement("a");
-
     link.href = data;
     link.download = "support-policies.json";
-
     document.body.appendChild(link);
-
     link.click();
-
     link.remove();
-
     showToast("Policies exported successfully.");
   };
 
   const importPolicies = (e) => {
     const reader = new FileReader();
-
     if (!e.target.files[0]) return;
-
     reader.readAsText(e.target.files[0]);
 
     reader.onload = async (event) => {
       try {
         const imported = JSON.parse(event.target.result);
-
         if (!Array.isArray(imported)) return;
-
         const admin = getCurrentAdminName();
-
         let index = 0;
 
         for (const item of imported) {
           const exists = policies.some(
-            p =>
-              p.title.trim().toLowerCase() ===
-              item.title.trim().toLowerCase()
+            p => p.title.trim().toLowerCase() === item.title.trim().toLowerCase()
           );
 
           if (!exists) {
-            await addDoc(
-              collection(db, "supportPolicies"),
-              {
-                title: item.title,
-                content: item.content,
-                category: item.category || "General",
-                status: item.status || "Draft",
-                pinned: item.pinned || false,
-                sortOrder:
-                  policies.length + index + 1,
-                visibility: item.visibility || "Customer",
-                required: item.required || false,
-                effectiveDate: item.effectiveDate || null,
-                expiryDate: item.expiryDate || null,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                updatedBy: admin
-              }
-            );
-
+            await addDoc(collection(db, "supportPolicies"), {
+              title: item.title,
+              content: item.content,
+              category: item.category || "General",
+              status: item.status || "Draft",
+              pinned: item.pinned || false,
+              sortOrder: policies.length + index + 1,
+              visibility: item.visibility || "Customer",
+              required: item.required || false,
+              effectiveDate: item.effectiveDate || null,
+              expiryDate: item.expiryDate || null,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+              updatedBy: admin
+            });
             index++;
           }
         }
-
         showToast("Policies imported successfully.");
       } catch (err) {
         console.log(err);
@@ -498,18 +455,9 @@ export default function SupportPolicyManagement() {
   };
 
   const totalPolicies = policies.length;
-
-  const publishedPolicies = policies.filter(
-    p => p.status === "Published"
-  ).length;
-
-  const draftPolicies = policies.filter(
-    p => p.status === "Draft"
-  ).length;
-
-  const totalCategories = [
-    ...new Set(policies.map(p => p.category))
-  ].length;
+  const publishedPolicies = policies.filter(p => p.status === "Published").length;
+  const draftPolicies = policies.filter(p => p.status === "Draft").length;
+  const totalCategories = [...new Set(policies.map(p => p.category))].length;
 
   const filteredPolicies = policies.filter(policy => {
     const matchesSearch =
@@ -517,18 +465,12 @@ export default function SupportPolicyManagement() {
       policy.content.toLowerCase().includes(search.toLowerCase());
 
     const matchesCategory =
-      categoryFilter === "All" ||
-      policy.category === categoryFilter;
+      categoryFilter === "All" || policy.category === categoryFilter;
 
     const matchesStatus =
-      statusFilter === "All" ||
-      policy.status === statusFilter;
+      statusFilter === "All" || policy.status === statusFilter;
 
-    return (
-      matchesSearch &&
-      matchesCategory &&
-      matchesStatus
-    );
+    return matchesSearch && matchesCategory && matchesStatus;
   });
 
   const sortedPolicies = [...filteredPolicies].sort((a, b) => {
@@ -539,264 +481,304 @@ export default function SupportPolicyManagement() {
   });
 
   const moveUp = async (policy) => {
-    const index = sortedPolicies.findIndex(
-      p => p.id === policy.id
-    );
+    const index = sortedPolicies.findIndex(p => p.id === policy.id);
     if (index === 0) return;
     const current = sortedPolicies[index];
     const previous = sortedPolicies[index - 1];
-    await updateDoc(doc(db, "supportPolicies", current.id), {
-      sortOrder: previous.sortOrder
-    });
-    await updateDoc(doc(db, "supportPolicies", previous.id), {
-      sortOrder: current.sortOrder
-    });
+    await updateDoc(doc(db, "supportPolicies", current.id), { sortOrder: previous.sortOrder });
+    await updateDoc(doc(db, "supportPolicies", previous.id), { sortOrder: current.sortOrder });
   };
 
   const moveDown = async (policy) => {
-    const index = sortedPolicies.findIndex(
-      p => p.id === policy.id
-    );
+    const index = sortedPolicies.findIndex(p => p.id === policy.id);
     if (index === sortedPolicies.length - 1) return;
     const current = sortedPolicies[index];
     const next = sortedPolicies[index + 1];
-    await updateDoc(doc(db, "supportPolicies", current.id), {
-      sortOrder: next.sortOrder
-    });
-    await updateDoc(doc(db, "supportPolicies", next.id), {
-      sortOrder: current.sortOrder
-    });
+    await updateDoc(doc(db, "supportPolicies", current.id), { sortOrder: next.sortOrder });
+    await updateDoc(doc(db, "supportPolicies", next.id), { sortOrder: current.sortOrder });
   };
 
   return (
     <div className="admin-page">
       <style>{`
-        /* ===== Page ===== */
+        /* ===========================
+           BREWED LUXURY ADMIN V1 DESIGN SYSTEM
+        =========================== */
+
         .admin-page {
-          max-width: 1240px;
-          margin: auto;
-          padding: 40px 24px;
-          position: relative;
-          background: #FCFAF7;
+          padding: 32px;
+          background: #F8F6F2;
           min-height: 100vh;
-          font-family: 'Inter', sans-serif;
-          color: #241C17;
+          font-family: inherit;
+          color: #1A1614;
+          box-sizing: border-box;
+          position: relative;
+          max-width: 1240px;
+          margin: 0 auto;
         }
 
-        .admin-title {
-          font-family: "Playfair Display", serif;
-          color: #241C17;
-          font-size: 38px;
+        /* HERO HEADER & STAT CARDS */
+        .admin-hero {
+          margin-bottom: 28px;
+        }
+
+        .hero-top-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+          background: white;
+          padding: 24px 28px;
+          border-radius: 20px;
+          border: 1px solid #ECE8E3;
+          box-shadow: 0 4px 20px rgba(44,34,30,0.02);
+        }
+
+        .hero-title-area h1 {
+          margin: 0;
+          font-size: 26px;
+          color: #1A1614;
           font-weight: 600;
-          margin-bottom: 8px;
-          margin-top: 0;
-          letter-spacing: -0.01em;
+          letter-spacing: -0.02em;
         }
 
-        .admin-subtitle {
-          color: #8A8B81;
-          margin-bottom: 36px;
-          margin-top: 0;
+        .hero-title-area p {
+          margin: 6px 0 0;
+          color: #7A6E65;
           font-size: 15px;
         }
 
-        /* ===== Cards ===== */
-        .admin-card {
-          background: #FFFFFF;
-          border: 1px solid #EFE7DD;
-          border-radius: 24px;
-          padding: 32px;
-          margin-bottom: 28px;
-          box-shadow: 0 8px 24px rgba(25,20,15,.04), 0 24px 60px rgba(25,20,15,.05);
-          transition: .3s;
+        .hero-action-slot {
+          display: flex;
+          gap: 12px;
+          align-items: center;
         }
 
-        .admin-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 12px 30px rgba(25,20,15,.06), 0 30px 70px rgba(25,20,15,.07);
-        }
-
-        /* ===== Stats ===== */
-        .stats-grid {
+        .hero-stats-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 24px;
-          margin-bottom: 36px;
+          gap: 16px;
         }
 
         .stat-card {
           background: white;
-          border-radius: 22px;
-          border: 1px solid #EFE6DB;
-          padding: 26px;
-          transition: .3s;
-          box-shadow: 0 4px 20px rgba(25,20,15,.02);
+          border-radius: 18px;
+          padding: 20px 24px;
+          border: 1px solid #ECE8E3;
+          box-shadow: 0 4px 20px rgba(44,34,30,0.02);
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          transition: transform 0.2s ease, border-color 0.2s ease;
         }
 
         .stat-card:hover {
-          border-color: #D8C4B3;
-          transform: translateY(-3px);
-          box-shadow: 0 8px 25px rgba(25,20,15,.04);
+          border-color: #D8D0C7;
+          transform: translateY(-2px);
         }
 
-        .stat-title {
+        .stat-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          background: #FAF8F6;
+          border: 1px solid #ECE8E3;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #1A1614;
+          flex-shrink: 0;
+        }
+
+        .stat-content .stat-label {
           font-size: 12px;
-          letter-spacing: .14em;
-          text-transform: uppercase;
-          color: #9A8B81;
           font-weight: 600;
+          color: #7A6E65;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          margin-bottom: 4px;
         }
 
-        .stat-value {
-          font-size: 42px;
-          font-weight: 700;
-          color: #241C17;
-          margin-top: 8px;
-          font-family: 'Inter', sans-serif;
+        .stat-content .stat-value {
+          font-size: 24px;
+          font-weight: 600;
+          color: #1A1614;
+          letter-spacing: -0.01em;
         }
 
-        /* ===== Inputs ===== */
+        /* TOAST NOTIFICATION */
+        .success-toast {
+          position: fixed;
+          bottom: 24px;
+          right: 24px;
+          background: #EEF5EF;
+          border: 1px solid #D8E6D8;
+          padding: 14px 20px;
+          border-radius: 14px;
+          color: #36543A;
+          font-weight: 500;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+          z-index: 1000;
+          animation: slideDown 0.3s ease;
+        }
+
+        /* DASHBOARD CARDS & FORM */
+        .dashboard-card {
+          background: white;
+          border-radius: 20px;
+          padding: 28px;
+          margin-bottom: 24px;
+          border: 1px solid #ECE8E3;
+          box-shadow: 0 4px 24px rgba(44,34,30,0.03);
+          transition: border-color 0.2s ease;
+        }
+
+        .dashboard-card:hover {
+          border-color: #D8D0C7;
+        }
+
+        .dashboard-card h2 {
+          margin: 0 0 20px 0;
+          color: #1A1614;
+          font-size: 19px;
+          font-weight: 600;
+          letter-spacing: -0.01em;
+        }
+
+        /* INPUTS & SELECTS */
         .admin-input,
         .admin-select,
         .admin-textarea {
-          width: 100%;
-          padding: 15px 18px;
-          border-radius: 16px;
-          border: 1px solid #ECE2D8;
+          background: #FCFBF8;
+          border: 1px solid #ECE8E3;
+          border-radius: 14px;
+          height: 48px;
+          padding: 0 16px;
           font-size: 14px;
-          margin-bottom: 16px;
-          transition: .2s;
+          transition: all 0.2s ease;
+          outline: none;
+          color: #1A1614;
+          font-family: inherit;
           box-sizing: border-box;
-          background: #FCFAF8;
-          color: #241C17;
-          font-family: 'Inter', sans-serif;
+          width: 100%;
+          margin-bottom: 16px;
         }
 
-        .admin-input {
-          height: 52px;
+        .admin-textarea {
+          height: auto;
+          min-height: 130px;
+          padding: 14px 16px;
+          resize: vertical;
+        }
+
+        .admin-input:hover,
+        .admin-select:hover,
+        .admin-textarea:hover {
+          border-color: #C8BFC5;
+          background: white;
         }
 
         .admin-input:focus,
         .admin-select:focus,
         .admin-textarea:focus {
-          outline: none;
-          border-color: #C4956A;
-          box-shadow: 0 0 0 5px rgba(196,149,106,.12);
-          background: #FFFFFF;
+          border-color: #1A1614;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(26,22,20,0.06);
         }
 
-        /* ===== Buttons ===== */
+        /* BUTTONS */
         .btn {
-          padding: 13px 22px;
-          border-radius: 14px;
+          padding: 10px 18px;
+          border-radius: 12px;
           border: none;
           cursor: pointer;
-          font-weight: 600;
-          font-size: 14px;
-          transition: .2s;
+          font-weight: 500;
+          font-size: 13px;
+          transition: all 0.2s ease;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
-          font-family: 'Inter', sans-serif;
+          text-decoration: none;
         }
 
         .btn-primary {
-          background: #C4956A;
+          background: #1A1614;
           color: white;
         }
 
         .btn-primary:hover {
-          background: #B7865E;
-          transform: translateY(-2px);
+          background: #332C28;
         }
 
         .btn-secondary {
-          background: white;
-          border: 1px solid #E8DED2;
-          color: #54463C;
+          background: #FAF8F6;
+          border: 1px solid #ECE8E3;
+          color: #1A1614;
         }
 
         .btn-secondary:hover {
-          background: #FAF7F3;
-          border-color: #D8C4B3;
+          background: white;
+          border-color: #1A1614;
         }
 
         .btn-danger {
-          background: #FAECEB;
-          color: #B55656;
-          border: 1px solid #F5C2C2;
+          background: #FEF2F2;
+          color: #991B1B;
+          border: 1px solid #FEE2E2;
         }
 
         .btn-danger:hover {
-          background: #F8D7D6;
+          background: #FEE2E2;
         }
 
-        /* ===== Table/List ===== */
+        /* LIST & ITEMS */
         .admin-list {
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 16px;
         }
 
         .list-item {
           background: white;
-          border: 1px solid #EEE4DA;
-          border-radius: 24px;
-          padding: 28px;
-          transition: .25s;
-          box-shadow: 0 4px 20px rgba(25,20,15,.02);
+          border: 1px solid #ECE8E3;
+          border-radius: 18px;
+          padding: 24px;
+          transition: border-color 0.2s ease, transform 0.2s ease;
+          box-shadow: 0 4px 16px rgba(44,34,30,0.02);
         }
 
         .list-item:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 14px 40px rgba(0,0,0,.05);
-          border-color: #D8C4B3;
+          border-color: #D8D0C7;
+          transform: translateY(-2px);
         }
 
-        /* ===== Chips / Badges ===== */
+        /* BADGES */
         .badge {
           display: inline-flex;
           align-items: center;
-          padding: 6px 14px;
+          padding: 5px 12px;
           border-radius: 999px;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 600;
+          letter-spacing: 0.02em;
         }
 
-        .badge-green {
-          background: #EEF6EF;
-          color: #5D7B64;
-        }
+        .badge-green { background: #EEF5EF; color: #36543A; border: 1px solid #D8E6D8; }
+        .badge-red { background: #FEF2F2; color: #991B1B; border: 1px solid #FEE2E2; }
+        .badge-orange { background: #F8F3E8; color: #8B6A2B; border: 1px solid #E7D9B5; }
+        .badge-blue { background: #F0F4F8; color: #3B5998; border: 1px solid #D9E2EC; }
+        .badge-pinned { background: #FAF8F6; color: #1A1614; border: 1px solid #ECE8E3; }
 
-        .badge-red {
-          background: #FAECEB;
-          color: #B55656;
-        }
-
-        .badge-orange {
-          background: #F7F2EA;
-          color: #8A735A;
-        }
-
-        .badge-blue {
-          background: #F0F4F8;
-          color: #4A607A;
-        }
-
-        .badge-pinned {
-          background: #F6F1EA;
-          color: #7B624C;
-        }
-
-        /* ===== Modal ===== */
+        /* MODALS */
         .modal-overlay {
           position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(36, 28, 23, 0.4);
+          top: 0; left: 0; width: 100%; height: 100%;
+          background: rgba(26, 22, 20, 0.5);
           backdrop-filter: blur(4px);
           display: flex;
           justify-content: center;
@@ -807,139 +789,103 @@ export default function SupportPolicyManagement() {
         }
 
         .modal-card {
-          background: #fff;
-          border: 1px solid #EEE5DB;
-          border-radius: 26px;
-          padding: 32px;
+          background: white;
+          border: 1px solid #ECE8E3;
+          border-radius: 20px;
+          padding: 28px;
           max-width: 640px;
           width: 100%;
           max-height: 85vh;
           overflow-y: auto;
-          box-shadow: 0 25px 80px rgba(0,0,0,.18);
+          box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
 
-        /* ===== Analytics / History Cards ===== */
-        .analytics-card {
-          background: #FCFAF7;
-          border: 1px solid #EFE6DB;
-          border-radius: 18px;
-          padding: 20px;
-        }
-
-        /* ===== Empty State ===== */
         .empty-state {
           text-align: center;
-          padding: 60px 20px;
-          border: 2px dashed #EAE0D5;
-          border-radius: 24px;
-          color: #8A8B81;
-          background: #FFFDFB;
+          padding: 48px 20px;
+          border: 2px dashed #ECE8E3;
+          border-radius: 18px;
+          color: #7A6E65;
+          background: white;
         }
 
-        /* ===== Responsive ===== */
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
         @media(max-width: 768px) {
-          .admin-page {
-            padding: 20px 16px;
-          }
-          .admin-title {
-            font-size: 30px;
-          }
-          .stats-grid {
-            grid-template-columns: 1fr;
+          .admin-page { padding: 16px; }
+          .hero-top-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 20px;
           }
         }
       `}</style>
 
       {toastMessage && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 24,
-            right: 24,
-            background: "#FFFFFF",
-            color: "#241C17",
-            border: "1px solid #E8DED2",
-            padding: "14px 22px",
-            borderRadius: "16px",
-            fontWeight: 600,
-            fontSize: "14px",
-            boxShadow: "0 20px 40px rgba(0,0,0,.08)",
-            zIndex: 1000,
-          }}
-        >
+        <div className="success-toast">
+          <CheckCircle2 size={16} />
           {toastMessage}
         </div>
       )}
 
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-          gap: "20px",
-        }}
-      >
-        <div>
-          <h1 className="admin-title" style={{ fontFamily: "Playfair Display, serif" }}>Support Policy Management</h1>
-          <p className="admin-subtitle">Manage all customer support policies with precision.</p>
+      {/* Hero Header */}
+      <div className="admin-hero">
+        <div className="hero-top-row">
+          <div className="hero-title-area">
+            <h1>Support Policy Management</h1>
+            <p>Create, manage, and publish customer support policies seamlessly.</p>
+          </div>
+          <div className="hero-action-slot">
+            <button className="btn btn-secondary" onClick={exportPolicies} style={{ height: "42px" }}>
+              <Download size={15} /> Export
+            </button>
+            <label className="btn btn-secondary" style={{ cursor: "pointer", height: "42px", display: "inline-flex", alignItems: "center" }}>
+              <Upload size={15} /> Import
+              <input type="file" accept=".json" onChange={importPolicies} hidden />
+            </label>
+          </div>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 12
-          }}
-        >
-          <button
-            className="btn btn-secondary"
-            onClick={exportPolicies}
-          >
-            <Download size={16} /> Export
-          </button>
-
-          <label className="btn btn-secondary" style={{ cursor: "pointer" }}>
-            <Upload size={16} /> Import
-            <input
-              type="file"
-              accept=".json"
-              onChange={importPolicies}
-              hidden
-            />
-          </label>
-        </div>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-title">Total Policies</div>
-          <div className="stat-value">{totalPolicies}</div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-title">Published</div>
-          <div className="stat-value">{publishedPolicies}</div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-title">Drafts</div>
-          <div className="stat-value">{draftPolicies}</div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-title">Categories</div>
-          <div className="stat-value">{totalCategories}</div>
+        {/* Stats Grid */}
+        <div className="hero-stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon"><ShieldCheck size={22} /></div>
+            <div className="stat-content">
+              <div className="stat-label">Total Policies</div>
+              <div className="stat-value">{totalPolicies}</div>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon"><Layers size={22} /></div>
+            <div className="stat-content">
+              <div className="stat-label">Published</div>
+              <div className="stat-value">{publishedPolicies}</div>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon"><FileText size={22} /></div>
+            <div className="stat-content">
+              <div className="stat-label">Drafts</div>
+              <div className="stat-value">{draftPolicies}</div>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon"><Settings size={22} /></div>
+            <div className="stat-content">
+              <div className="stat-label">Categories</div>
+              <div className="stat-value">{totalCategories}</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Form */}
-      <div className="admin-card">
-        <h2 style={{ marginTop: 0, marginBottom: 24, color: "#241C17", fontFamily: "Playfair Display, serif", fontSize: "24px" }}>
-          {editingId ? "Edit Policy" : "Add Policy"}
-        </h2>
+      {/* Form Card */}
+      <div className="dashboard-card">
+        <h2>{editingId ? "Edit Policy" : "Add New Policy"}</h2>
 
         <input
           className="admin-input"
@@ -948,18 +894,8 @@ export default function SupportPolicyManagement() {
           onChange={(e) => setTitle(e.target.value)}
         />
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 140px",
-            gap: "16px",
-          }}
-        >
-          <select
-            className="admin-select"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 140px", gap: "16px" }}>
+          <select className="admin-select" value={category} onChange={(e) => setCategory(e.target.value)}>
             <option>General</option>
             <option>Delivery</option>
             <option>Refunds</option>
@@ -969,11 +905,7 @@ export default function SupportPolicyManagement() {
             <option>Rewards</option>
           </select>
 
-          <select
-            className="admin-select"
-            value={visibility}
-            onChange={(e) => setVisibility(e.target.value)}
-          >
+          <select className="admin-select" value={visibility} onChange={(e) => setVisibility(e.target.value)}>
             <option>Customer</option>
             <option>Employee</option>
             <option>Rider</option>
@@ -985,132 +917,88 @@ export default function SupportPolicyManagement() {
             className="admin-input"
             value={version}
             onChange={(e) => setVersion(e.target.value)}
-            placeholder="1.0"
+            placeholder="Version (1.0)"
           />
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "16px",
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
           <div>
-            <label style={{ fontSize: 13, color: "#8A8B81", display: "block", marginBottom: 6, fontWeight: 500 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#7A6E65', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: 6 }}>
               Effective Date
             </label>
-            <input
-              type="date"
-              className="admin-input"
-              value={effectiveDate}
-              onChange={(e) => setEffectiveDate(e.target.value)}
-            />
+            <input type="date" className="admin-input" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} />
           </div>
-
           <div>
-            <label style={{ fontSize: 13, color: "#8A8B81", display: "block", marginBottom: 6, fontWeight: 500 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#7A6E65', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: 6 }}>
               Expiry Date (Optional)
             </label>
-            <input
-              type="date"
-              className="admin-input"
-              value={expiryDate}
-              onChange={(e) => setExpiryDate(e.target.value)}
-            />
+            <input type="date" className="admin-input" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
           </div>
         </div>
 
         <textarea
           className="admin-textarea"
-          rows={10}
           placeholder="Write policy content..."
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          style={{ resize: "vertical", padding: "16px 18px" }}
         />
 
-        <div style={{ display: "flex", gap: "28px", alignItems: "center", margin: "8px 0 24px 0" }}>
-          <label style={{ display: "flex", gap: 10, alignItems: "center", cursor: "pointer", fontSize: "14px", fontWeight: 500 }}>
+        <div style={{ display: "flex", gap: "24px", alignItems: "center", margin: "4px 0 20px 0" }}>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", cursor: "pointer", fontSize: "14px", fontWeight: 500, color: '#5A4E46' }}>
             <input
               type="checkbox"
               checked={published}
               onChange={(e) => setPublished(e.target.checked)}
-              style={{ width: 16, height: 16, accentColor: "#C4956A" }}
+              style={{ width: 16, height: 16, accentColor: "#1A1614" }}
             />
             Published
           </label>
 
-          <label
-            style={{
-              display: "flex",
-              gap: 10,
-              alignItems: "center",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: 500
-            }}
-          >
+          <label style={{ display: "flex", gap: 8, alignItems: "center", cursor: "pointer", fontSize: "14px", fontWeight: 500, color: '#5A4E46' }}>
             <input
               type="checkbox"
               checked={required}
-              onChange={(e) =>
-                setRequired(e.target.checked)
-              }
-              style={{ width: 16, height: 16, accentColor: "#C4956A" }}
+              onChange={(e) => setRequired(e.target.checked)}
+              style={{ width: 16, height: 16, accentColor: "#1A1614" }}
             />
             Required Policy
           </label>
         </div>
 
         <div style={{ display: "flex", gap: "12px" }}>
-          <button
-            className="btn btn-primary"
-            onClick={savePolicy}
-          >
+          <button className="btn btn-primary" onClick={savePolicy} style={{ padding: "12px 24px" }}>
             <Plus size={16} /> {editingId ? "Update Policy" : "Create Policy"}
           </button>
-
           {editingId && (
-            <button className="btn btn-secondary" onClick={resetForm}>
+            <button className="btn btn-secondary" onClick={resetForm} style={{ padding: "12px 20px" }}>
               Cancel
             </button>
           )}
         </div>
       </div>
 
-      {/* Search & Filters */}
-      <div
-        style={{
-          display: "flex",
-          gap: 16,
-          flexWrap: "wrap",
-          marginBottom: 28
-        }}
-      >
+      {/* Filters & Search Toolbar */}
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 20 }}>
         <div style={{ flex: 1, position: "relative", minWidth: "260px" }}>
           <input
             className="admin-input"
             placeholder="Search policies..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ marginBottom: 0, paddingLeft: "46px" }}
+            style={{ marginBottom: 0, paddingLeft: "42px" }}
           />
-          <SearchIcon size={18} style={{ position: "absolute", left: 16, top: 17, color: "#8A8B81" }} />
+          <SearchIcon size={16} style={{ position: "absolute", left: 15, top: 16, color: "#7A6E65" }} />
         </div>
 
         <select
           className="admin-select"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          style={{ width: 180, marginBottom: 0, height: 52 }}
+          style={{ width: 180, marginBottom: 0 }}
         >
           <option value="All">All Categories</option>
-
           {[...new Set(policies.map(p => p.category))].map(cat => (
-            <option key={cat}>
-              {cat}
-            </option>
+            <option key={cat}>{cat}</option>
           ))}
         </select>
 
@@ -1118,7 +1006,7 @@ export default function SupportPolicyManagement() {
           className="admin-select"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          style={{ width: 170, marginBottom: 0, height: 52 }}
+          style={{ width: 160, marginBottom: 0 }}
         >
           <option value="All">All Status</option>
           <option value="Published">Published</option>
@@ -1126,275 +1014,97 @@ export default function SupportPolicyManagement() {
         </select>
       </div>
 
-      {/* Bulk Actions Toolbar */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 24,
-          flexWrap: "wrap",
-          gap: 12
-        }}
-      >
-        <div>
-          <button
-            className="btn btn-secondary"
-            onClick={selectAll}
-          >
-            Select All
-          </button>
-
-          <button
-            className="btn btn-secondary"
-            onClick={clearSelection}
-            style={{ marginLeft: 8 }}
-          >
-            Clear
-          </button>
+      {/* Bulk Actions */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn btn-secondary" onClick={selectAll}>Select All</button>
+          <button className="btn btn-secondary" onClick={clearSelection}>Clear</button>
         </div>
 
         {selectedPolicies.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap"
-            }}
-          >
-            <button
-              className="btn btn-primary"
-              onClick={bulkPublish}
-            >
-              Publish
-            </button>
-
-            <button
-              className="btn btn-secondary"
-              onClick={bulkDraft}
-            >
-              Draft
-            </button>
-
-            <button
-              className="btn btn-secondary"
-              onClick={() => bulkPin(true)}
-            >
-              Pin
-            </button>
-
-            <button
-              className="btn btn-secondary"
-              onClick={() => bulkPin(false)}
-            >
-              Unpin
-            </button>
-
-            <button
-              className="btn btn-danger"
-              onClick={bulkDelete}
-            >
-              Delete
-            </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button className="btn btn-primary" onClick={bulkPublish}>Publish</button>
+            <button className="btn btn-secondary" onClick={bulkDraft}>Draft</button>
+            <button className="btn btn-secondary" onClick={() => bulkPin(true)}>Pin</button>
+            <button className="btn btn-secondary" onClick={() => bulkPin(false)}>Unpin</button>
+            <button className="btn btn-danger" onClick={bulkDelete}>Delete</button>
           </div>
         )}
       </div>
 
-      {/* Policies List Display */}
+      {/* Policies List */}
       <div className="admin-list">
         {loading ? (
           <div className="empty-state">Loading policies...</div>
         ) : sortedPolicies.length === 0 ? (
           <div className="empty-state">
-            <h3 style={{ fontFamily: "Playfair Display, serif", fontSize: "20px", marginTop: 0 }}>No Policies Yet</h3>
-            <p>Create your first support policy above.</p>
+            <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#1A1614" }}>No Policies Found</h3>
+            <p style={{ margin: 0, fontSize: "14px" }}>Create your first support policy above or adjust filters.</p>
           </div>
         ) : (
           sortedPolicies.map((policy) => (
-            <div
-              key={policy.id}
-              className="list-item"
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  gap: 20,
-                  flexWrap: "wrap"
-                }}
-              >
+            <div key={policy.id} className="list-item">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20, flexWrap: "wrap" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", paddingTop: 4 }}>
                   <input
                     type="checkbox"
                     checked={selectedPolicies.includes(policy.id)}
                     onChange={() => toggleSelection(policy.id)}
-                    style={{ width: 16, height: 16, accentColor: "#C4956A", cursor: "pointer" }}
+                    style={{ width: 16, height: 16, accentColor: "#1A1614", cursor: "pointer" }}
                   />
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <h3
-                    style={{
-                      margin: 0,
-                      color: "#241C17",
-                      fontFamily: "Playfair Display, serif",
-                      fontSize: "20px"
-                    }}
-                  >
+                  <h3 style={{ margin: 0, color: "#1A1614", fontSize: "18px", fontWeight: 600 }}>
                     {policy.title}
                   </h3>
 
-                  <div
-                    style={{
-                      marginTop: 12,
-                      display: "flex",
-                      gap: 8,
-                      flexWrap: "wrap"
-                    }}
-                  >
-                    <span className="badge badge-blue">
-                      {policy.category}
-                    </span>
-
-                    <span className="badge badge-blue">
-                      {policy.visibility}
-                    </span>
-
-                    <span
-                      className={`badge ${
-                        policy.status === "Published"
-                          ? "badge-green"
-                          : "badge-orange"
-                      }`}
-                    >
+                  <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <span className="badge badge-blue">{policy.category}</span>
+                    <span className="badge badge-blue">{policy.visibility}</span>
+                    <span className={`badge ${policy.status === "Published" ? "badge-green" : "badge-orange"}`}>
                       {policy.status}
                     </span>
-
-                    {policy.required && (
-                      <span className="badge badge-red">
-                        Required
-                      </span>
-                    )}
-
-                    {policy.pinned && (
-                      <span className="badge badge-pinned">
-                        Pinned
-                      </span>
-                    )}
-
-                    {policy.expiryDate && (
-                      <span className="badge badge-orange">
-                        Expires {policy.expiryDate}
-                      </span>
-                    )}
+                    {policy.required && <span className="badge badge-red">Required</span>}
+                    {policy.pinned && <span className="badge badge-pinned">Pinned</span>}
+                    {policy.expiryDate && <span className="badge badge-orange">Expires {policy.expiryDate}</span>}
                   </div>
 
-                  <p
-                    style={{
-                      marginTop: 16,
-                      color: "#6B5E55",
-                      whiteSpace: "pre-wrap",
-                      lineHeight: "1.6",
-                      fontSize: "14px"
-                    }}
-                  >
-                    {policy.content.length > 220
-                      ? policy.content.substring(0, 220) + "..."
-                      : policy.content}
+                  <p style={{ marginTop: 14, color: "#7A6E65", whiteSpace: "pre-wrap", lineHeight: "1.5", fontSize: "14px" }}>
+                    {policy.content.length > 200 ? policy.content.substring(0, 200) + "..." : policy.content}
                   </p>
 
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "#9A8B81",
-                      marginTop: 16
-                    }}
-                  >
-                    Last Updated{" "}
-                    {policy.updatedAt?.toDate?.().toLocaleDateString() ||
-                      "Recently"}
+                  <div style={{ fontSize: "12px", color: "#9E9085", marginTop: 12 }}>
+                    Last Updated {policy.updatedAt?.toDate?.().toLocaleDateString() || "Recently"}
                   </div>
                 </div>
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "10px",
-                  justifyContent: "flex-end",
-                  alignItems: "center",
-                  marginTop: "20px",
-                  paddingTop: "16px",
-                  borderTop: "1px solid #F4EBE2"
-                }}
-              >
-                <button
-                  className="btn btn-secondary"
-                  style={{ padding: "8px 14px", fontSize: "13px" }}
-                  onClick={() => moveUp(policy)}
-                  title="Move Up"
-                >
-                  <ArrowUp size={14} /> Up
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "flex-end", alignItems: "center", marginTop: "16px", paddingTop: "14px", borderTop: "1px solid #ECE8E3" }}>
+                <button className="btn btn-secondary" onClick={() => moveUp(policy)} title="Move Up">
+                  <ArrowUp size={13} /> Up
                 </button>
-
-                <button
-                  className="btn btn-secondary"
-                  style={{ padding: "8px 14px", fontSize: "13px" }}
-                  onClick={() => moveDown(policy)}
-                  title="Move Down"
-                >
-                  <ArrowDown size={14} /> Down
+                <button className="btn btn-secondary" onClick={() => moveDown(policy)} title="Move Down">
+                  <ArrowDown size={13} /> Down
                 </button>
-
-                <button
-                  className="btn btn-secondary"
-                  style={{ padding: "8px 14px", fontSize: "13px" }}
-                  onClick={() => togglePinned(policy)}
-                >
-                  <Pin size={14} /> {policy.pinned ? "Unpin" : "Pin"}
+                <button className="btn btn-secondary" onClick={() => togglePinned(policy)}>
+                  <Pin size={13} /> {policy.pinned ? "Unpin" : "Pin"}
                 </button>
-
-                <button
-                  className="btn btn-secondary"
-                  style={{ padding: "8px 14px", fontSize: "13px" }}
-                  onClick={() => setPreviewPolicy(policy)}
-                >
-                  <Eye size={14} /> Preview
+                <button className="btn btn-secondary" onClick={() => setPreviewPolicy(policy)}>
+                  <Eye size={13} /> Preview
                 </button>
-
-                <button
-                  className="btn btn-secondary"
-                  style={{ padding: "8px 14px", fontSize: "13px" }}
-                  onClick={() => openHistory(policy)}
-                >
-                  <Clock size={14} /> History
+                <button className="btn btn-secondary" onClick={() => openHistory(policy)}>
+                  <Clock size={13} /> History
                 </button>
-
-                <button
-                  className="btn btn-secondary"
-                  style={{ padding: "8px 14px", fontSize: "13px" }}
-                  onClick={() => editPolicy(policy)}
-                >
-                  <Edit3 size={14} /> Edit
+                <button className="btn btn-secondary" onClick={() => editPolicy(policy)}>
+                  <Edit3 size={13} /> Edit
                 </button>
-
-                <button
-                  className="btn btn-secondary"
-                  style={{ padding: "8px 14px", fontSize: "13px" }}
-                  onClick={() => toggleStatus(policy)}
-                >
-                  {policy.status === "Published" ? <FileText size={14} /> : <Rocket size={14} />}
+                <button className="btn btn-secondary" onClick={() => toggleStatus(policy)}>
+                  {policy.status === "Published" ? <FileText size={13} /> : <Rocket size={13} />}
                   {policy.status === "Published" ? "Draft" : "Publish"}
                 </button>
-
-                <button
-                  className="btn btn-danger"
-                  style={{ padding: "8px 14px", fontSize: "13px" }}
-                  onClick={() => deletePolicy(policy.id)}
-                >
-                  <Trash2 size={14} /> Delete
+                <button className="btn btn-danger" onClick={() => deletePolicy(policy.id)}>
+                  <Trash2 size={13} /> Delete
                 </button>
               </div>
             </div>
@@ -1406,86 +1116,30 @@ export default function SupportPolicyManagement() {
       {previewPolicy && (
         <div className="modal-overlay">
           <div className="modal-card">
-
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h2 style={{ margin: 0, fontFamily: "Playfair Display, serif", fontSize: "24px", color: "#241C17" }}>{previewPolicy.title}</h2>
-              <button onClick={() => setPreviewPolicy(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#8A8B81" }}>
-                <X size={20} />
+              <h2 style={{ margin: 0, fontSize: "20px", color: "#1A1614" }}>{previewPolicy.title}</h2>
+              <button onClick={() => setPreviewPolicy(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#7A6E65" }}>
+                <X size={18} />
               </button>
             </div>
 
-            <div
-              style={{
-                marginBottom: 20,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap"
-              }}
-            >
-              <span className="badge badge-blue">
-                {previewPolicy.category}
-              </span>
-
-              <span className="badge badge-blue">
-                {previewPolicy.visibility}
-              </span>
-
-              <span
-                className={`badge ${
-                  previewPolicy.status === "Published"
-                    ? "badge-green"
-                    : "badge-orange"
-                }`}
-              >
+            <div style={{ marginBottom: 16, display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <span className="badge badge-blue">{previewPolicy.category}</span>
+              <span className="badge badge-blue">{previewPolicy.visibility}</span>
+              <span className={`badge ${previewPolicy.status === "Published" ? "badge-green" : "badge-orange"}`}>
                 {previewPolicy.status}
               </span>
-
-              {previewPolicy.required && (
-                <span className="badge badge-red">
-                  Required
-                </span>
-              )}
-
-              {previewPolicy.pinned && (
-                <span className="badge badge-pinned">
-                  Pinned
-                </span>
-              )}
-
-              {previewPolicy.expiryDate && (
-                <span className="badge badge-orange">
-                  Expires {previewPolicy.expiryDate}
-                </span>
-              )}
+              {previewPolicy.required && <span className="badge badge-red">Required</span>}
+              {previewPolicy.pinned && <span className="badge badge-pinned">Pinned</span>}
             </div>
 
-            <div
-              style={{
-                whiteSpace: "pre-wrap",
-                lineHeight: 1.7,
-                color: "#54463C",
-                maxHeight: "55vh",
-                overflowY: "auto",
-                fontSize: "14px"
-              }}
-            >
+            <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.6, color: "#5A4E46", maxHeight: "50vh", overflowY: "auto", fontSize: "14px" }}>
               {previewPolicy.content}
             </div>
 
-            <div
-              style={{
-                marginTop: 25,
-                textAlign: "right"
-              }}
-            >
-              <button
-                className="btn btn-primary"
-                onClick={() => setPreviewPolicy(null)}
-              >
-                Close
-              </button>
+            <div style={{ marginTop: 24, textAlign: "right" }}>
+              <button className="btn btn-primary" onClick={() => setPreviewPolicy(null)}>Close</button>
             </div>
-
           </div>
         </div>
       )}
@@ -1494,38 +1148,27 @@ export default function SupportPolicyManagement() {
       {historyModal && (
         <div className="modal-overlay">
           <div className="modal-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h2 style={{ margin: 0, fontFamily: "Playfair Display, serif", fontSize: "24px", color: "#241C17" }}>Policy History</h2>
-              <button onClick={() => setHistoryModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#8A8B81" }}>
-                <X size={20} />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h2 style={{ margin: 0, fontSize: "20px", color: "#1A1614" }}>Policy History</h2>
+              <button onClick={() => setHistoryModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#7A6E65" }}>
+                <X size={18} />
               </button>
             </div>
 
             {policyHistory.length === 0 ? (
-              <p style={{ color: "#8A8B81" }}>No version history available for this policy yet.</p>
+              <p style={{ color: "#7A6E65", fontSize: "14px" }}>No version history available for this policy yet.</p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: "55vh", overflowY: "auto", marginBottom: 20 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: "50vh", overflowY: "auto", marginBottom: 20 }}>
                 {policyHistory.map(item => (
-                  <div
-                    key={item.id}
-                    className="analytics-card"
-                    style={{ marginBottom: 0, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 15 }}
-                  >
+                  <div key={item.id} style={{ background: "#FAF8F6", border: "1px solid #ECE8E3", borderRadius: "14px", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                     <div>
-                      <strong style={{ color: "#241C17", fontSize: "14px" }}>{item.action}</strong>
-                      <p style={{ margin: "4px 0", color: "#6B5E55", fontSize: "13px" }}>{item.title}</p>
-                      <small style={{ color: "#9A8B81", fontSize: "12px" }}>
-                        {item.editedBy}
-                        {" • "}
-                        {item.editedAt?.toDate?.()?.toLocaleString() || "Recently"}
+                      <strong style={{ color: "#1A1614", fontSize: "13px" }}>{item.action}</strong>
+                      <p style={{ margin: "4px 0", color: "#7A6E65", fontSize: "13px" }}>{item.title}</p>
+                      <small style={{ color: "#9E9085", fontSize: "11px" }}>
+                        {item.editedBy} • {item.editedAt?.toDate?.()?.toLocaleString() || "Recently"}
                       </small>
                     </div>
-
-                    <button
-                      className="btn btn-secondary"
-                      style={{ padding: "8px 14px", fontSize: "13px" }}
-                      onClick={() => restoreVersion(item)}
-                    >
+                    <button className="btn btn-secondary" onClick={() => restoreVersion(item)}>
                       Restore
                     </button>
                   </div>
@@ -1534,12 +1177,7 @@ export default function SupportPolicyManagement() {
             )}
 
             <div style={{ textAlign: "right" }}>
-              <button
-                className="btn btn-primary"
-                onClick={() => setHistoryModal(false)}
-              >
-                Close
-              </button>
+              <button className="btn btn-primary" onClick={() => setHistoryModal(false)}>Close</button>
             </div>
           </div>
         </div>
