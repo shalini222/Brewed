@@ -32,11 +32,19 @@ import {
   ShieldCheck,
   Truck,
   Gift,
-  CreditCard
+  CreditCard,
+  Package,
+  HelpCircle,
+  FileText,
+  Clock3,
+  ExternalLink,
+  MessageSquare,
+  AlertCircle,
+  CheckCircle2
 } from "lucide-react";
 
 // Map icon names from Firestore to Lucide components
-const iconMap = { Truck, CreditCard, Gift, ShieldCheck };
+const iconMap = { Truck, CreditCard, Gift, ShieldCheck, Package, HelpCircle };
 
 export default function SupportPage({ setPage }) {
   const { currentUser } = useAuth();
@@ -96,8 +104,6 @@ export default function SupportPage({ setPage }) {
 
   // Support Policies state
   const [policies, setPolicies] = useState([]);
-  const [selectedPolicy, setSelectedPolicy] = useState(null);
-  const [showPolicyModal, setShowPolicyModal] = useState(false);
   const [openPolicy, setOpenPolicy] = useState(null);
   const [selectedPolicyCategory, setSelectedPolicyCategory] = useState("All");
   const [policySearch, setPolicySearch] = useState("");
@@ -423,6 +429,24 @@ export default function SupportPage({ setPage }) {
     return `${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} • ${timeString}`;
   };
 
+  const getRelativeTime = (timestamp) => {
+    if (!timestamp?.toDate) return "Recently";
+    const date = timestamp.toDate();
+    const seconds = Math.floor((new Date() - date) / 1000);
+    
+    let interval = seconds / 31536000;
+    if (interval > 1) return `${Math.floor(interval)}y ago`;
+    interval = seconds / 2592000;
+    if (interval > 1) return `${Math.floor(interval)}mo ago`;
+    interval = seconds / 86400;
+    if (interval > 1) return `${Math.floor(interval)}d ago`;
+    interval = seconds / 3600;
+    if (interval > 1) return `${Math.floor(interval)}h ago`;
+    interval = seconds / 60;
+    if (interval > 1) return `${Math.floor(interval)}m ago`;
+    return "Just now";
+  };
+
   const openFAQ = async (faq, index) => {
     if (openFaq === index) {
       setOpenFaq(null);
@@ -459,6 +483,9 @@ export default function SupportPage({ setPage }) {
 
   const isClosed = selectedTicket?.status === "Closed";
 
+  const openTicketsCount = tickets.filter(t => t.status !== "Closed" && t.status !== "Resolved").length;
+  const closedTicketsCount = tickets.filter(t => t.status === "Closed" || t.status === "Resolved").length;
+
   const recentTickets = [...tickets]
     .sort((a, b) => {
       const aTime = a.updatedAt?.seconds || 0;
@@ -467,38 +494,105 @@ export default function SupportPage({ setPage }) {
     })
     .slice(0, 3);
 
+  // Dynamic Open/Closed business check
+  const checkIsBusinessOpen = () => {
+    const now = new Date();
+    const day = now.getDay(); // 0 is Sunday, 6 is Saturday
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const currentTimeVal = hours * 60 + minutes;
+
+    // Helper to parse time string like "09:00 AM - 06:00 PM"
+    const parseTimeRange = (rangeStr) => {
+      if (!rangeStr || rangeStr.toLowerCase().includes("closed")) return null;
+      try {
+        const parts = rangeStr.split("-");
+        if (parts.length !== 2) return null;
+        
+        const parse12h = (str) => {
+          const [time, modifier] = str.trim().split(" ");
+          let [h, m] = time.split(":").map(Number);
+          if (modifier?.toUpperCase() === "PM" && h < 12) h += 12;
+          if (modifier?.toUpperCase() === "AM" && h === 12) h = 0;
+          return h * 60 + (m || 0);
+        };
+
+        return { start: parse12h(parts[0]), end: parse12h(parts[1]) };
+      } catch {
+        return null;
+      }
+    };
+
+    let todayRangeStr = "";
+    if (day >= 1 && day <= 5) todayRangeStr = supportSettings.mondayFriday;
+    else if (day === 6) todayRangeStr = supportSettings.saturday;
+    else todayRangeStr = supportSettings.sunday;
+
+    const range = parseTimeRange(todayRangeStr);
+    if (!range) return false;
+    return currentTimeVal >= range.start && currentTimeVal <= range.end;
+  };
+
+  const isBusinessOpen = checkIsBusinessOpen();
+
+  const getStatusBadgeClass = (status) => {
+    switch(status) {
+      case "Open": return "badge-open";
+      case "In Progress": return "badge-progress";
+      case "Waiting for Customer": return "badge-waiting";
+      case "Resolved": return "badge-resolved";
+      case "Closed": return "badge-closed";
+      default: return "badge-open";
+    }
+  };
+
   return (
-    <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto", fontFamily: "inherit" }}>
+    <div style={{ padding: "20px", maxWidth: "840px", margin: "0 auto", fontFamily: "inherit" }}>
       <style>{`
-        .support-container { display: flex; flex-direction: column; gap: 16px; }
-        .support-card { background: white; border: 1px solid #E8DED2; border-radius: 14px; padding: 24px; box-shadow: 0 2px 10px rgba(44,34,30,0.02); margin-bottom: 12px; }
-        .support-btn { background: #C4956A; color: white; border: none; border-radius: 12px; padding: 10px 18px; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background .2s; }
+        .support-container { display: flex; flex-direction: column; gap: 20px; }
+        .support-card { background: white; border: 1px solid #E8DED2; border-radius: 16px; padding: 24px; box-shadow: 0 4px 20px rgba(44,34,30,0.03); margin-bottom: 16px; transition: all 0.2s ease; }
+        .support-hero-card { background: linear-gradient(135deg, #FAF6F0 0%, #F5EBE0 100%); border: 1px solid #E8DED2; border-radius: 20px; padding: 32px; box-shadow: 0 4px 20px rgba(44,34,30,0.04); margin-bottom: 24px; }
+        .support-btn { background: #C4956A; color: white; border: none; border-radius: 12px; padding: 10px 18px; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background .2s, transform 0.1s; }
         .support-btn:hover { background: #b38259; }
+        .support-btn:active { transform: scale(0.98); }
         .support-btn-secondary { background: #FAF6F0; color: #2C221E; border: 1px solid #E8DED2; }
         .support-btn-secondary:hover { background: #E8DED2; }
-        .ticket-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #E8DED2; border-radius: 12px; background: #FDFAF5; cursor: pointer; transition: all .2s; margin-bottom: 10px; }
-        .ticket-item:hover { border-color: #C4956A; background: #FFFFFF; }
-        .badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
-        .badge-open { background: #FEF3C7; color: #D97706; }
-        .badge-closed { background: #F3F4F6; color: #4B5563; }
-        .conversation-box { display: flex; flex-direction: column; gap: 16px; max-height: 400px; overflow-y: auto; padding-right: 4px; }
-        .message-wrapper { display: flex; flex-direction: column; max-width: 75%; }
+        .ticket-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border: 1px solid #E8DED2; border-radius: 14px; background: #FDFAF5; cursor: pointer; transition: all .2s; margin-bottom: 12px; }
+        .ticket-item:hover { border-color: #C4956A; background: #FFFFFF; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(44,34,30,0.04); }
+        
+        .badge { font-size: 11px; padding: 5px 10px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge-open { background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; }
+        .badge-progress { background: #E0F2FE; color: #0284C7; border: 1px solid #BAE6FD; }
+        .badge-waiting { background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; }
+        .badge-resolved { background: #DCFCE7; color: #16A34A; border: 1px solid #BBF7D0; }
+        .badge-closed { background: #F3F4F6; color: #4B5563; border: 1px solid #E5E7EB; }
+
+        .conversation-box { display: flex; flex-direction: column; gap: 16px; max-height: 420px; overflow-y: auto; padding-right: 6px; }
+        .message-wrapper { display: flex; flex-direction: column; max-width: 80%; }
         .customer-message-wrapper { align-self: flex-end; align-items: flex-end; }
         .support-message-wrapper { align-self: flex-start; align-items: flex-start; }
         .message-sender-label { font-size: 12px; color: #9A8C82; margin-bottom: 4px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
-        .avatar-badge { width: 20px; height: 20px; border-radius: 50%; background: #E8DED2; color: #2C221E; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+        .avatar-badge { width: 22px; height: 22px; border-radius: 50%; background: #E8DED2; color: #2C221E; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
         .customer-msg { background: #C4956A; color: white; padding: 14px 18px; border-radius: 18px 18px 4px 18px; font-size: 14px; line-height: 1.5; }
         .support-msg { background: white; border: 1px solid #E8DED2; color: #2C221E; padding: 14px 18px; border-radius: 18px 18px 18px 4px; font-size: 14px; line-height: 1.5; }
-        .support-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-        .help-card { background: white; border: 1px solid #E8DED2; border-radius: 16px; padding: 18px; cursor: pointer; transition: .2s; }
-        .help-card:hover { transform: translateY(-2px); border-color: #C4956A; }
-        .help-card h3 { margin: 12px 0 6px; color: #2C221E; }
+        
+        .support-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+        .help-card { background: white; border: 1px solid #E8DED2; border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.2s ease; }
+        .help-card:hover { transform: translateY(-2px); border-color: #C4956A; box-shadow: 0 6px 16px rgba(44,34,30,0.06); }
+        .help-card h3 { margin: 12px 0 6px; color: #2C221E; font-size: 16px; }
         .help-card p { margin: 0; color: #9A8C82; font-size: 13px; line-height: 1.5; }
-        .support-heading { font-size: 18px; color: #2C221E; margin-bottom: 12px; font-weight: 700; }
-        .faq-card { background: white; border: 1px solid #E8DED2; border-radius: 14px; margin-bottom: 12px; overflow: hidden; }
-        .faq-btn { width: 100%; background: white; border: none; padding: 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 14px; font-weight: 600; color: #2C221E; }
+        
+        .support-heading { font-size: 18px; color: #2C221E; margin-bottom: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .faq-card { background: white; border: 1px solid #E8DED2; border-radius: 14px; margin-bottom: 12px; overflow: hidden; transition: border-color 0.2s; }
+        .faq-card:hover { border-color: #D4B294; }
+        .faq-btn { width: 100%; background: white; border: none; padding: 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 14px; font-weight: 600; color: #2C221E; text-align: left; }
         .faq-btn:hover { background: #FAF6F0; }
         .faq-answer { padding: 0 18px 18px; color: #6E5E53; line-height: 1.6; font-size: 14px; }
+        
+        .contact-card-link { text-decoration: none; color: inherit; display: block; height: 100%; }
+        .empty-state { background: #FAF6F0; border: 1px dashed #E8DED2; border-radius: 16px; padding: 40px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        .empty-state h3 { margin: 0; color: #2C221E; font-size: 16px; font-weight: 650; }
+        .empty-state p { margin: 0; color: #9A8C82; font-size: 13px; max-width: 320px; line-height: 1.5; }
       `}</style>
 
       {/* Navigation Header */}
@@ -513,9 +607,6 @@ export default function SupportPage({ setPage }) {
               <ArrowLeft size={16} /> Back
             </button>
           )}
-          <h2 style={{ margin: 0, color: "#2C221E", fontSize: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
-            <LifeBuoy size={22} color="#C4956A" /> Customer Support
-          </h2>
         </div>
         {activePage === "home" && (
           <div style={{ display: "flex", gap: "10px" }}>
@@ -533,10 +624,38 @@ export default function SupportPage({ setPage }) {
       {activePage === "home" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           
+          {/* HERO HEADER SECTION */}
+          <div className="support-hero-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px" }}>
+              <div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "#EFE2D5", color: "#8C5E3C", padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: "600", marginBottom: "12px" }}>
+                  <LifeBuoy size={14} /> Help Center & Support
+                </div>
+                <h1 style={{ margin: "0 0 8px 0", color: "#2C221E", fontSize: "28px", fontWeight: "750", letterSpacing: "-0.5px" }}>
+                  Customer Support
+                </h1>
+                <p style={{ margin: 0, color: "#7A6A5E", fontSize: "15px", lineHeight: "1.5", maxWidth: "500px" }}>
+                  Find instant answers, contact our support team, or manage your active support requests seamlessly.
+                </p>
+              </div>
+
+              <div style={{ display: "flex", gap: "12px", background: "white", padding: "16px", borderRadius: "16px", border: "1px solid #E8DED2", boxShadow: "0 2px 8px rgba(44,34,30,0.02)" }}>
+                <div style={{ textAlign: "center", paddingRight: "16px", borderRight: "1px solid #F2ECE5" }}>
+                  <div style={{ fontSize: "20px", fontWeight: "750", color: "#C4956A" }}>{openTicketsCount}</div>
+                  <div style={{ fontSize: "11px", color: "#9A8C82", fontWeight: "600", marginTop: "2px" }}>Open Tickets</div>
+                </div>
+                <div style={{ textAlign: "center", paddingLeft: "4px" }}>
+                  <div style={{ fontSize: "20px", fontWeight: "750", color: "#2C221E" }}>{faqs.length}</div>
+                  <div style={{ fontSize: "11px", color: "#9A8C82", fontWeight: "600", marginTop: "2px" }}>FAQs Available</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* SEARCH FAQS SECTION */}
           <section>
             <h2 className="support-heading">
-              🔍 Search FAQs
+              <Search size={20} color="#C4956A" /> Search FAQs
             </h2>
             <div
               style={{
@@ -545,7 +664,8 @@ export default function SupportPage({ setPage }) {
                 background: "white",
                 border: "1px solid #E8DED2",
                 borderRadius: "14px",
-                padding: "12px 16px"
+                padding: "14px 18px",
+                boxShadow: "0 2px 8px rgba(44,34,30,0.02)"
               }}
             >
               <Search
@@ -561,7 +681,7 @@ export default function SupportPage({ setPage }) {
                   border: "none",
                   outline: "none",
                   background: "transparent",
-                  marginLeft: "10px",
+                  marginLeft: "12px",
                   fontSize: "14px",
                   color: "#2C221E"
                 }}
@@ -571,8 +691,10 @@ export default function SupportPage({ setPage }) {
             {search.trim() !== "" && (
               <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
                 {filteredFaqs.length === 0 ? (
-                  <div className="support-card" style={{ padding: "16px", color: "#9A8C82", fontSize: "14px" }}>
-                    No matching FAQs found.
+                  <div className="empty-state" style={{ padding: "24px" }}>
+                    <HelpCircle size={32} color="#C4956A" />
+                    <h3>No matching FAQs found</h3>
+                    <p>Try searching with another keyword or browse our help categories below.</p>
                   </div>
                 ) : (
                   filteredFaqs.map((faq, idx) => (
@@ -596,7 +718,7 @@ export default function SupportPage({ setPage }) {
           {/* BROWSE HELP SECTION */}
           <section>
             <h2 className="support-heading">
-              📦 Browse Help
+              <Package size={20} color="#C4956A" /> Browse Help Categories
             </h2>
             <div className="support-grid">
               {helpCategories.map((item) => {
@@ -618,7 +740,7 @@ export default function SupportPage({ setPage }) {
                     }}
                   >
                     <Icon
-                      size={28}
+                      size={26}
                       color="#C4956A"
                     />
 
@@ -631,18 +753,18 @@ export default function SupportPage({ setPage }) {
             </div>
           </section>
 
-          {/* SUPPORT TICKETS SECTION */}
-          <section style={{ padding: "0px" }}>
+          {/* SUPPORT TICKETS ACTION SECTION */}
+          <section>
             <h2 className="support-heading">
-              Support Tickets
+              <MessageSquare size={20} color="#C4956A" /> Support Tickets
             </h2>
             <div className="support-grid">
               <div
                 className="support-card"
-                style={{ cursor: "pointer", padding: "20px" }}
+                style={{ cursor: "pointer", padding: "22px", marginBottom: 0 }}
                 onClick={() => setActivePage("create")}
               >
-                <PlusCircle size={28} color="#C4956A" />
+                <PlusCircle size={26} color="#C4956A" />
                 <h3 style={{ margin: "12px 0 6px 0", color: "#2C221E", fontSize: "16px" }}>Create New Ticket</h3>
                 <p style={{ margin: 0, color: "#9A8C82", fontSize: "13px", lineHeight: "1.4" }}>
                   Report an issue or ask our support team for help.
@@ -651,10 +773,10 @@ export default function SupportPage({ setPage }) {
 
               <div
                 className="support-card"
-                style={{ cursor: "pointer", padding: "20px" }}
+                style={{ cursor: "pointer", padding: "22px", marginBottom: 0 }}
                 onClick={() => setActivePage("list")}
               >
-                <LifeBuoy size={28} color="#C4956A" />
+                <LifeBuoy size={26} color="#C4956A" />
                 <h3 style={{ margin: "12px 0 6px 0", color: "#2C221E", fontSize: "16px" }}>My Tickets</h3>
                 <p style={{ margin: 0, color: "#9A8C82", fontSize: "13px", lineHeight: "1.4" }}>
                   View your support conversations and ticket status. ({tickets.length})
@@ -664,9 +786,9 @@ export default function SupportPage({ setPage }) {
           </section>
 
           {/* RECENT TICKETS SECTION */}
-          <section style={{ marginTop: "0px" }}>
+          <section>
             <h2 className="support-heading">
-              🕒 Recent Tickets
+              <Clock3 size={20} color="#C4956A" /> Recent Tickets
             </h2>
 
             {loadingTickets ? (
@@ -674,10 +796,13 @@ export default function SupportPage({ setPage }) {
                 Loading recent tickets...
               </div>
             ) : recentTickets.length === 0 ? (
-              <div className="support-card" style={{ padding: "20px" }}>
-                <p style={{ margin: 0, color: "#9A8C82" }}>
-                  No recent tickets.
-                </p>
+              <div className="empty-state">
+                <MessageSquare size={36} color="#C4956A" />
+                <h3>No recent tickets</h3>
+                <p>When you create support requests, they will appear right here for quick tracking.</p>
+                <button onClick={() => setActivePage("create")} className="support-btn" style={{ marginTop: "4px" }}>
+                  <PlusCircle size={16} /> Create Ticket
+                </button>
               </div>
             ) : (
               recentTickets.map((ticket) => (
@@ -689,34 +814,17 @@ export default function SupportPage({ setPage }) {
                     setActivePage("conversation");
                   }}
                 >
-                  <div>
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        color: "#2C221E"
-                      }}
-                    >
-                      ☕ {ticket.subject}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <div style={{ fontWeight: 650, color: "#2C221E", fontSize: "14px" }}>
+                      {ticket.subject}
                     </div>
 
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "#9A8C82",
-                        marginTop: 4
-                      }}
-                    >
-                      {ticket.lastMessage || "No messages yet"}
+                    <div style={{ fontSize: "12px", color: "#9A8C82" }}>
+                      {ticket.lastMessage || "No messages yet"} • Updated {getRelativeTime(ticket.updatedAt)}
                     </div>
                   </div>
 
-                  <span
-                    className={`badge ${
-                      ticket.status === "Closed"
-                        ? "badge-closed"
-                        : "badge-open"
-                    }`}
-                  >
+                  <span className={`badge ${getStatusBadgeClass(ticket.status)}`}>
                     {ticket.status}
                   </span>
                 </div>
@@ -725,79 +833,52 @@ export default function SupportPage({ setPage }) {
           </section>
 
           {/* FREQUENTLY ASKED QUESTIONS SECTION */}
-          <section style={{ marginTop: "24px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <section>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
               <h2 className="support-heading" style={{ margin: 0 }}>
-                ❓ Frequently Asked Questions {selectedCategory !== "All" && `(${selectedCategory})`}
+                <HelpCircle size={20} color="#C4956A" /> Frequently Asked Questions {selectedCategory !== "All" && `(${selectedCategory})`}
               </h2>
               {selectedCategory !== "All" && (
                 <button
                   className="support-btn support-btn-secondary"
                   onClick={() => setSelectedCategory("All")}
-                  style={{ marginBottom: "0px", padding: "6px 12px", fontSize: "12px" }}
+                  style={{ padding: "6px 12px", fontSize: "12px" }}
                 >
                   Show All FAQs
                 </button>
               )}
             </div>
 
-            <div style={{ marginTop: "16px" }}>
+            <div>
               {featuredFaq && search.trim() === "" && selectedCategory === "All" && (
-                <div className="support-card" style={{ background: "#FFF8E8", border: "2px solid #F4D27A", marginBottom: "18px" }}>
-                  <div style={{ color: "#B8860B", fontWeight: 700, marginBottom: "8px" }}>
+                <div className="support-card" style={{ background: "linear-gradient(135deg, #FFFDF9 0%, #FFF8E8 100%)", border: "1px solid #F4D27A", marginBottom: "16px" }}>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#B8860B", fontWeight: 700, fontSize: "12px", marginBottom: "8px", background: "#FEF3C7", padding: "3px 10px", borderRadius: "999px" }}>
                     ⭐ Featured FAQ
                   </div>
-                  <h3 style={{ marginTop: 0, color: "#2C221E" }}>
+                  <h3 style={{ marginTop: 0, color: "#2C221E", fontSize: "16px" }}>
                     {featuredFaq.question}
                   </h3>
-                  <p style={{ color: "#6E5E53", whiteSpace: "pre-wrap" }}>
+                  <p style={{ color: "#6E5E53", whiteSpace: "pre-wrap", fontSize: "14px", margin: 0, lineHeight: "1.6" }}>
                     {featuredFaq.answer}
                   </p>
                 </div>
               )}
 
               {regularFaqs.length === 0 ? (
-                <div className="support-card">
-                  <p
-                    style={{
-                      margin: 0,
-                      color: "#9A8C82"
-                    }}
-                  >
-                    No FAQs found for this category.
-                  </p>
+                <div className="empty-state">
+                  <HelpCircle size={36} color="#C4956A" />
+                  <h3>No FAQs found</h3>
+                  <p>There are no FAQs available matching your current category selection.</p>
                 </div>
               ) : (
                 regularFaqs.map((faq, index) => (
-                  <div
-                    key={index}
-                    className="faq-card"
-                  >
-                    <div
-                      style={{
-                        display: "inline-block",
-                        background: "#FAF6F0",
-                        color: "#C4956A",
-                        padding: "4px 10px",
-                        borderRadius: "999px",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        margin: "12px 18px 0"
-                      }}
-                    >
+                  <div key={index} className="faq-card">
+                    <div style={{ display: "inline-block", background: "#FAF6F0", color: "#C4956A", padding: "3px 10px", borderRadius: "999px", fontSize: "11px", fontWeight: "600", margin: "14px 18px 0" }}>
                       {faq.category || "General"}
                     </div>
-                    <button
-                      className="faq-btn"
-                      onClick={() => openFAQ(faq, index)}
-                    >
+                    <button className="faq-btn" onClick={() => openFAQ(faq, index)}>
                       <span>{faq.question}</span>
-
-                      {openFaq === index ? (
-                        <ChevronUp size={18} />
-                      ) : (
-                        <ChevronDown size={18} />
-                      )}
+                      {openFaq === index ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </button>
 
                     {openFaq === index && (
@@ -806,54 +887,20 @@ export default function SupportPage({ setPage }) {
                           {faq.answer}
                         </div>
 
-                        <div
-                          style={{
-                            marginTop: "18px",
-                            paddingTop: "14px",
-                            borderTop: "1px solid #E8DED2"
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontSize: "13px",
-                              color: "#6E5E53",
-                              marginBottom: "10px"
-                            }}
-                          >
+                        <div style={{ marginTop: "18px", paddingTop: "14px", borderTop: "1px solid #E8DED2" }}>
+                          <div style={{ fontSize: "13px", color: "#6E5E53", marginBottom: "10px" }}>
                             Was this helpful?
                           </div>
-
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "10px"
-                            }}
-                          >
-                            <button
-                              disabled={faqVotes[faq.id]}
-                              onClick={() => voteFAQ(faq.id, "helpful")}
-                              className="support-btn support-btn-secondary"
-                            >
+                          <div style={{ display: "flex", gap: "10px" }}>
+                            <button disabled={faqVotes[faq.id]} onClick={() => voteFAQ(faq.id, "helpful")} className="support-btn support-btn-secondary">
                               👍 Yes
                             </button>
-
-                            <button
-                              disabled={faqVotes[faq.id]}
-                              onClick={() => voteFAQ(faq.id, "notHelpful")}
-                              className="support-btn support-btn-secondary"
-                            >
+                            <button disabled={faqVotes[faq.id]} onClick={() => voteFAQ(faq.id, "notHelpful")} className="support-btn support-btn-secondary">
                               👎 No
                             </button>
                           </div>
-
                           {faqVotes[faq.id] && (
-                            <div
-                              style={{
-                                marginTop: "10px",
-                                fontSize: "12px",
-                                color: "#9A8C82"
-                              }}
-                            >
+                            <div style={{ marginTop: "10px", fontSize: "12px", color: "#9A8C82" }}>
                               Thanks for your feedback!
                             </div>
                           )}
@@ -867,124 +914,132 @@ export default function SupportPage({ setPage }) {
           </section>
 
           {/* CONTACT SUPPORT SECTION */}
-          <section style={{ marginTop: "28px" }}>
-            <h2 className="support-heading">Contact Support</h2>
+          <section>
+            <h2 className="support-heading">
+              <Phone size={20} color="#C4956A" /> Contact Support
+            </h2>
 
             <div className="support-grid">
-              <div className="support-card" style={{ marginBottom: 0 }}>
-                <Phone size={28} color="#C4956A" />
-                <h3 style={{ marginTop: "12px", marginBottom: "6px" }}>Call Us</h3>
-                <p>{supportSettings.phone}</p>
-                <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "8px" }}>
-                  {supportSettings.callDescription}
-                </p>
+              {/* Call Us */}
+              <div className="support-card" style={{ marginBottom: 0, padding: 0 }}>
+                <a href={`tel:${supportSettings.phone}`} className="contact-card-link" style={{ padding: "22px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <Phone size={26} color="#C4956A" />
+                    <ExternalLink size={16} color="#B5A69B" />
+                  </div>
+                  <h3 style={{ marginTop: "14px", marginBottom: "4px", color: "#2C221E", fontSize: "16px" }}>Call Us</h3>
+                  <p style={{ fontWeight: 600, color: "#C4956A", fontSize: "15px" }}>{supportSettings.phone || "Not available"}</p>
+                  <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "6px", lineHeight: "1.4" }}>
+                    {supportSettings.callDescription || "Direct telephone support line."}
+                  </p>
+                </a>
               </div>
 
-              <div className="support-card" style={{ marginBottom: 0 }}>
-                <Mail size={28} color="#C4956A" />
-                <h3 style={{ marginTop: "12px", marginBottom: "6px" }}>Email</h3>
-                <p>{supportSettings.email}</p>
-                <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "8px" }}>
-                  {supportSettings.emailDescription}
-                </p>
+              {/* Email */}
+              <div className="support-card" style={{ marginBottom: 0, padding: 0 }}>
+                <a href={`mailto:${supportSettings.email}`} className="contact-card-link" style={{ padding: "22px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <Mail size={26} color="#C4956A" />
+                    <ExternalLink size={16} color="#B5A69B" />
+                  </div>
+                  <h3 style={{ marginTop: "14px", marginBottom: "4px", color: "#2C221E", fontSize: "16px" }}>Email</h3>
+                  <p style={{ fontWeight: 600, color: "#C4956A", fontSize: "15px", wordBreak: "break-all" }}>{supportSettings.email || "Not available"}</p>
+                  <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "6px", lineHeight: "1.4" }}>
+                    {supportSettings.emailDescription || "Send us an email anytime."}
+                  </p>
+                </a>
               </div>
 
-              <div className="support-card" style={{ marginBottom: 0 }}>
-                <MessageCircle size={28} color="#C4956A" />
-                <h3 style={{ marginTop: "12px", marginBottom: "6px" }}>WhatsApp</h3>
-                <p>{supportSettings.whatsapp}</p>
-                <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "8px" }}>
-                  {supportSettings.whatsappDescription}
-                </p>
+              {/* WhatsApp */}
+              <div className="support-card" style={{ marginBottom: 0, padding: 0 }}>
+                <a href={`https://wa.me/${supportSettings.whatsapp?.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="contact-card-link" style={{ padding: "22px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <MessageCircle size={26} color="#C4956A" />
+                    <ExternalLink size={16} color="#B5A69B" />
+                  </div>
+                  <h3 style={{ marginTop: "14px", marginBottom: "4px", color: "#2C221E", fontSize: "16px" }}>WhatsApp</h3>
+                  <p style={{ fontWeight: 600, color: "#C4956A", fontSize: "15px" }}>{supportSettings.whatsapp || "Not available"}</p>
+                  <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "6px", lineHeight: "1.4" }}>
+                    {supportSettings.whatsappDescription || "Chat instantly via WhatsApp."}
+                  </p>
+                </a>
               </div>
 
-              <div className="support-card" style={{ marginBottom: 0 }}>
-                <Camera size={28} color="#C4956A" />
-                <h3 style={{ marginTop: "12px", marginBottom: "6px" }}>Instagram</h3>
-                <p>{supportSettings.instagram}</p>
-                <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "8px" }}>
-                  {supportSettings.instagramDescription}
-                </p>
+              {/* Instagram */}
+              <div className="support-card" style={{ marginBottom: 0, padding: 0 }}>
+                <a href={`https://instagram.com/${supportSettings.instagram?.replace("@", "")}`} target="_blank" rel="noopener noreferrer" className="contact-card-link" style={{ padding: "22px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <Camera size={26} color="#C4956A" />
+                    <ExternalLink size={16} color="#B5A69B" />
+                  </div>
+                  <h3 style={{ marginTop: "14px", marginBottom: "4px", color: "#2C221E", fontSize: "16px" }}>Instagram</h3>
+                  <p style={{ fontWeight: 600, color: "#C4956A", fontSize: "15px" }}>{supportSettings.instagram || "Not available"}</p>
+                  <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "6px", lineHeight: "1.4" }}>
+                    {supportSettings.instagramDescription || "Follow our profile for updates."}
+                  </p>
+                </a>
               </div>
             </div>
           </section>
 
           {/* BUSINESS HOURS SECTION */}
-          <section style={{ marginTop: "28px" }}>
-            <h2 className="support-heading">Business Hours</h2>
+          <section>
+            <h2 className="support-heading">
+              <Clock size={20} color="#C4956A" /> Business Hours
+            </h2>
 
             <div className="support-card" style={{ marginBottom: 0 }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "14px",
-                  marginBottom: "14px"
-                }}
-              >
-                <Clock size={28} color="#C4956A" />
-                <div>
-                  <h3 style={{ margin: 0, color: "#2C221E" }}>{supportSettings.businessHoursTitle}</h3>
-                  <p style={{ marginTop: "4px", color: "#9A8C82", fontSize: "13px" }}>
-                    {supportSettings.businessHoursDescription}
-                  </p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", paddingBottom: "14px", borderBottom: "1px solid #F2ECE5", flexWrap: "wrap", gap: "10px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <Clock size={24} color="#C4956A" />
+                  <div>
+                    <h3 style={{ margin: 0, color: "#2C221E", fontSize: "16px" }}>{supportSettings.businessHoursTitle || "Operating Hours"}</h3>
+                    <p style={{ margin: "2px 0 0 0", color: "#9A8C82", fontSize: "13px" }}>
+                      {supportSettings.businessHoursDescription || "Our team is available during the hours below."}
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: isBusinessOpen ? "#DCFCE7" : "#FEE2E2", color: isBusinessOpen ? "#16A34A" : "#DC2626", padding: "6px 12px", borderRadius: "999px", fontSize: "12px", fontWeight: "700" }}>
+                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: isBusinessOpen ? "#16A34A" : "#DC2626", display: "inline-block" }}></span>
+                  {isBusinessOpen ? "Open Now" : "Closed Now"}
                 </div>
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "10px",
-                  color: "#2C221E"
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #F2ECE5", paddingBottom: "10px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", color: "#2C221E" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #F2ECE5", paddingBottom: "10px", fontSize: "14px" }}>
                   <span>Monday – Friday</span>
-                  <strong>{supportSettings.mondayFriday}</strong>
+                  <strong>{supportSettings.mondayFriday || "Closed"}</strong>
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #F2ECE5", paddingBottom: "10px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #F2ECE5", paddingBottom: "10px", fontSize: "14px" }}>
                   <span>Saturday</span>
-                  <strong>{supportSettings.saturday}</strong>
+                  <strong>{supportSettings.saturday || "Closed"}</strong>
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px" }}>
                   <span>Sunday</span>
-                  <strong>{supportSettings.sunday}</strong>
+                  <strong>{supportSettings.sunday || "Closed"}</strong>
                 </div>
               </div>
             </div>
           </section>
 
           {/* SUPPORT POLICIES SECTION */}
-          <section style={{ marginTop: "28px" }}>
+          <section>
             <h2 className="support-heading">
-              📜 Support Policies
+              <FileText size={20} color="#C4956A" /> Support Policies
             </h2>
 
-            <div
-              style={{
-                display: "flex",
-                gap: "10px",
-                overflowX: "auto",
-                margin: "16px 0 20px"
-              }}
-            >
+            <div style={{ display: "flex", gap: "8px", overflowX: "auto", margin: "14px 0 16px", paddingBottom: "4px" }}>
               {policyCategories.map((category) => (
                 <button
                   key={category}
                   onClick={() => setSelectedPolicyCategory(category)}
                   className="support-btn support-btn-secondary"
                   style={{
-                    background:
-                      selectedPolicyCategory === category
-                        ? "#C4956A"
-                        : "#FAF6F0",
-                    color:
-                      selectedPolicyCategory === category
-                        ? "#fff"
-                        : "#2C221E",
+                    background: selectedPolicyCategory === category ? "#C4956A" : "#FAF6F0",
+                    color: selectedPolicyCategory === category ? "#fff" : "#2C221E",
                     whiteSpace: "nowrap"
                   }}
                 >
@@ -993,7 +1048,7 @@ export default function SupportPage({ setPage }) {
               ))}
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", background: "#fff", border: "1px solid #E8DED2", borderRadius: "14px", padding: "12px 16px", marginBottom: "20px" }}>
+            <div style={{ display: "flex", alignItems: "center", background: "#fff", border: "1px solid #E8DED2", borderRadius: "14px", padding: "12px 16px", marginBottom: "16px" }}>
               <Search size={18} color="#C4956A" />
               <input
                 type="text"
@@ -1005,181 +1060,67 @@ export default function SupportPage({ setPage }) {
             </div>
 
             {filteredPolicies.length === 0 ? (
-              <div className="support-card" style={{ textAlign: "center", padding: "35px" }}>
-                <ShieldCheck size={42} color="#C4956A" />
-                <h3 style={{ marginTop: "14px", color: "#2C221E" }}>
-                  No policies found
-                </h3>
-                <p style={{ color: "#9A8C82" }}>
-                  Try another keyword or category.
-                </p>
+              <div className="empty-state">
+                <ShieldCheck size={36} color="#C4956A" />
+                <h3>No policies found</h3>
+                <p>Try searching with another keyword or category.</p>
               </div>
             ) : (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "14px"
-                }}
-              >
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {filteredPolicies.map((policy) => {
                   const relatedPolicies = policies
                     .filter((p) => p.id !== policy.id && p.category === policy.category)
                     .slice(0, 3);
 
                   return (
-                    <div
-                      id={`policy-${policy.id}`}
-                      key={policy.id}
-                      className="faq-card"
-                    >
-                      <button
-                        className="faq-btn"
-                        onClick={() =>
-                          setOpenPolicy(
-                            openPolicy === policy.id ? null : policy.id
-                          )
-                        }
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-start",
-                            gap: "6px"
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontWeight: 700,
-                              color: "#2C221E"
-                            }}
-                          >
+                    <div id={`policy-${policy.id}`} key={policy.id} className="faq-card">
+                      <button className="faq-btn" onClick={() => setOpenPolicy(openPolicy === policy.id ? null : policy.id)}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "6px" }}>
+                          <span style={{ fontWeight: 700, color: "#2C221E", fontSize: "15px" }}>
                             {policy.title}
                           </span>
-
-                          <span
-                            style={{
-                              background: "#FAF6F0",
-                              color: "#C4956A",
-                              padding: "3px 10px",
-                              borderRadius: "999px",
-                              fontSize: "11px",
-                              fontWeight: 600
-                            }}
-                          >
+                          <span style={{ background: "#FAF6F0", color: "#C4956A", padding: "2px 8px", borderRadius: "999px", fontSize: "11px", fontWeight: 600 }}>
                             {policy.category}
                           </span>
                         </div>
-
-                        {openPolicy === policy.id ? (
-                          <ChevronUp size={18} />
-                        ) : (
-                          <ChevronDown size={18} />
-                        )}
+                        {openPolicy === policy.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                       </button>
 
                       {openPolicy === policy.id && (
                         <div className="faq-answer">
-
-                          <div
-                            style={{
-                              whiteSpace: "pre-wrap",
-                              lineHeight: "1.8"
-                            }}
-                          >
+                          <div style={{ whiteSpace: "pre-wrap", lineHeight: "1.8" }}>
                             {policy.content}
                           </div>
 
                           {relatedPolicies.length > 0 && (
-                            <div
-                              style={{
-                                marginTop: "24px",
-                                borderTop: "1px solid #E8DED2",
-                                paddingTop: "18px"
-                              }}
-                            >
-                              <div
-                                style={{
-                                  fontWeight: 600,
-                                  color: "#2C221E",
-                                  marginBottom: "12px"
-                                }}
-                              >
+                            <div style={{ marginTop: "20px", borderTop: "1px solid #E8DED2", paddingTop: "16px" }}>
+                              <div style={{ fontWeight: 650, color: "#2C221E", marginBottom: "10px", fontSize: "13px" }}>
                                 Related Policies
                               </div>
-
-                              <div
-                                style={{
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: "10px"
-                                }}
-                              >
+                              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                                 {relatedPolicies.map((related) => (
                                   <button
                                     key={related.id}
                                     onClick={() => {
                                       setOpenPolicy(related.id);
                                       setTimeout(() => {
-                                        document
-                                          .getElementById(`policy-${related.id}`)
-                                          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                        document.getElementById(`policy-${related.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
                                       }, 100);
                                     }}
-                                    style={{
-                                      background: "#FAF6F0",
-                                      border: "1px solid #E8DED2",
-                                      borderRadius: "10px",
-                                      padding: "12px 14px",
-                                      textAlign: "left",
-                                      cursor: "pointer"
-                                    }}
+                                    style={{ background: "#FAF6F0", border: "1px solid #E8DED2", borderRadius: "10px", padding: "10px 14px", textAlign: "left", cursor: "pointer" }}
                                   >
-                                    <div
-                                      style={{
-                                        fontWeight: 600,
-                                        color: "#2C221E"
-                                      }}
-                                    >
-                                      {related.title}
-                                    </div>
-
-                                    <div
-                                      style={{
-                                        fontSize: "12px",
-                                        color: "#9A8C82",
-                                        marginTop: "4px"
-                                      }}
-                                    >
-                                      {related.category}
-                                    </div>
+                                    <div style={{ fontWeight: 600, color: "#2C221E", fontSize: "13px" }}>{related.title}</div>
+                                    <div style={{ fontSize: "11px", color: "#9A8C82", marginTop: "2px" }}>{related.category}</div>
                                   </button>
                                 ))}
                               </div>
                             </div>
                           )}
 
-                          <div
-                            style={{
-                              marginTop: "18px",
-                              paddingTop: "14px",
-                              borderTop: "1px solid #E8DED2",
-                              fontSize: "12px",
-                              color: "#9A8C82",
-                              display: "flex",
-                              justifyContent: "space-between"
-                            }}
-                          >
-                            <span>
-                              Category: {policy.category}
-                            </span>
-
-                            <span>
-                              Updated by {policy.editedBy || "Admin"}
-                            </span>
+                          <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid #E8DED2", fontSize: "12px", color: "#9A8C82", display: "flex", justifyContent: "space-between" }}>
+                            <span>Category: {policy.category}</span>
+                            <span>Updated by {policy.editedBy || "Admin"}</span>
                           </div>
-
                         </div>
                       )}
                     </div>
@@ -1196,7 +1137,7 @@ export default function SupportPage({ setPage }) {
       {activePage === "list" && (
         <div className="support-card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h3 style={{ margin: 0, color: "#2C221E", fontSize: "16px" }}>Your Support Requests</h3>
+            <h3 style={{ margin: 0, color: "#2C221E", fontSize: "18px", fontWeight: "700" }}>Your Support Requests</h3>
             <button onClick={() => setActivePage("create")} className="support-btn" style={{ padding: "6px 12px", fontSize: "13px" }}>
               <PlusCircle size={14} /> New Ticket
             </button>
@@ -1205,8 +1146,13 @@ export default function SupportPage({ setPage }) {
           {loadingTickets ? (
             <div style={{ textAlign: "center", padding: "30px", color: "#9A8C82" }}>Loading your tickets...</div>
           ) : tickets.length === 0 ? (
-            <div style={{ background: "#FAF6F0", border: "1px dashed #E8DED2", borderRadius: "12px", padding: "30px", textAlign: "center", color: "#9A8C82" }}>
-              You haven't created any support tickets yet.
+            <div className="empty-state">
+              <MessageSquare size={36} color="#C4956A" />
+              <h3>No support tickets yet</h3>
+              <p>You haven't created any support tickets. Start a new ticket if you need assistance.</p>
+              <button onClick={() => setActivePage("create")} className="support-btn" style={{ marginTop: "4px" }}>
+                <PlusCircle size={16} /> Create Ticket
+              </button>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -1222,8 +1168,8 @@ export default function SupportPage({ setPage }) {
                 >
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontWeight: "600", color: "#2C221E", fontSize: "14px" }}>{t.subject}</span>
-                      <span style={{ fontSize: "11px", color: "#9A8C82" }}>Ticket #CS{t.id.slice(-6).toUpperCase()}</span>
+                      <span style={{ fontWeight: "650", color: "#2C221E", fontSize: "14px" }}>{t.subject}</span>
+                      <span style={{ fontSize: "11px", color: "#9A8C82" }}>#CS{t.id.slice(-6).toUpperCase()}</span>
                     </div>
                     <span style={{ fontSize: "12px", color: "#6E5E53" }}>{t.lastMessage || "No messages yet"}</span>
                   </div>
@@ -1233,7 +1179,7 @@ export default function SupportPage({ setPage }) {
                         {t.customerUnread} Unread
                       </span>
                     )}
-                    <span className={`badge ${t.status === "Closed" ? "badge-closed" : "badge-open"}`}>
+                    <span className={`badge ${getStatusBadgeClass(t.status)}`}>
                       {t.status}
                     </span>
                   </div>
@@ -1247,14 +1193,14 @@ export default function SupportPage({ setPage }) {
       {/* CREATE TICKET VIEW */}
       {activePage === "create" && (
         <div className="support-card">
-          <h3 style={{ margin: "0 0 16px 0", color: "#2C221E", fontSize: "16px" }}>Create New Support Ticket</h3>
+          <h3 style={{ margin: "0 0 16px 0", color: "#2C221E", fontSize: "18px", fontWeight: "700" }}>Create New Support Ticket</h3>
           <form onSubmit={handleCreateTicket} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               <label style={{ fontSize: "13px", fontWeight: "600", color: "#6E5E53" }}>Category</label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                style={{ padding: "12px", border: "1px solid #E8DED2", borderRadius: "10px", background: "#FDFAF5", color: "#2C221E", outline: "none" }}
+                style={{ padding: "12px", border: "1px solid #E8DED2", borderRadius: "10px", background: "#FDFAF5", color: "#2C221E", outline: "none", fontSize: "14px" }}
               >
                 <option value="General">General Inquiry</option>
                 <option value="Order">Order Issue</option>
@@ -1271,7 +1217,7 @@ export default function SupportPage({ setPage }) {
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="Brief summary of your issue"
                 required
-                style={{ padding: "12px", border: "1px solid #E8DED2", borderRadius: "10px", background: "#FDFAF5", color: "#2C221E", outline: "none" }}
+                style={{ padding: "12px", border: "1px solid #E8DED2", borderRadius: "10px", background: "#FDFAF5", color: "#2C221E", outline: "none", fontSize: "14px" }}
               />
             </div>
 
@@ -1283,7 +1229,7 @@ export default function SupportPage({ setPage }) {
                 placeholder="Describe your issue in detail..."
                 required
                 rows={5}
-                style={{ padding: "12px", border: "1px solid #E8DED2", borderRadius: "10px", background: "#FDFAF5", color: "#2C221E", outline: "none", resize: "vertical" }}
+                style={{ padding: "12px", border: "1px solid #E8DED2", borderRadius: "10px", background: "#FDFAF5", color: "#2C221E", outline: "none", resize: "vertical", fontSize: "14px" }}
               />
             </div>
 
@@ -1297,22 +1243,23 @@ export default function SupportPage({ setPage }) {
       {/* CONVERSATION VIEW */}
       {activePage === "conversation" && selectedTicket && (
         <div className="support-card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", color: "#9A8C82", background: "#FAF6F0", padding: "10px 14px", borderRadius: "10px", border: "1px solid #E8DED2" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", color: "#9A8C82", background: "#FAF6F0", padding: "12px 16px", borderRadius: "12px", border: "1px solid #E8DED2", flexWrap: "wrap", gap: "8px" }}>
             <div>
-              <strong style={{ color: "#2C221E" }}>{selectedTicket.subject}</strong>
+              <strong style={{ color: "#2C221E", fontSize: "14px" }}>{selectedTicket.subject}</strong>
               <div style={{ fontSize: "11px", marginTop: "2px" }}>Ticket #CS{selectedTicket.id.slice(-6).toUpperCase()} • Category: {selectedTicket.category}</div>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <span className={`badge ${isClosed ? "badge-closed" : "badge-open"}`}>{selectedTicket.status}</span>
-              <div style={{ fontSize: "11px", marginTop: "4px" }}>Priority: {selectedTicket.priority || "Normal"}</div>
+            <div style={{ textAlign: "right", display: "flex", alignItems: "center", gap: "8px" }}>
+              <span className={`badge ${getStatusBadgeClass(selectedTicket.status)}`}>{selectedTicket.status}</span>
             </div>
           </div>
 
           {loadingMessages ? (
             <div style={{ textAlign: "center", padding: "40px", color: "#9A8C82" }}>Loading conversation...</div>
           ) : messages.length === 0 ? (
-            <div style={{ background: "#FAF6F0", border: "1px dashed #E8DED2", borderRadius: "12px", padding: "30px", textAlign: "center", color: "#9A8C82" }}>
-              👋 Your conversation with our support team will appear here once messages are sent.
+            <div className="empty-state">
+              <MessageSquare size={36} color="#C4956A" />
+              <h3>No messages yet</h3>
+              <p>Your conversation with our support team will appear here once messages are sent.</p>
               <div ref={messagesEndRef} />
             </div>
           ) : (
@@ -1348,7 +1295,7 @@ export default function SupportPage({ setPage }) {
           )}
 
           {isClosed ? (
-            <div style={{ background: "#FAF6F0", border: "1px solid #E8DED2", borderRadius: "12px", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ background: "#FAF6F0", border: "1px solid #E8DED2", borderRadius: "12px", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#6E5E53", fontSize: "14px" }}>
                 <Lock size={18} />
                 <div>
@@ -1371,7 +1318,7 @@ export default function SupportPage({ setPage }) {
                 rows={3}
                 style={{ width: "100%", padding: "12px", border: "1px solid #E8DED2", borderRadius: "12px", background: "#FDFAF5", outline: "none", color: "#2C221E", fontSize: "14px", resize: "vertical" }}
               />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
                 <span style={{ fontSize: "11px", color: "#9A8C82" }}>Press Enter to send, Shift + Enter for new line</span>
                 <button onClick={sendReply} className="support-btn" disabled={sending}>
                   <Send size={16} /> {sending ? "Sending..." : "Send Reply"}
@@ -1379,36 +1326,6 @@ export default function SupportPage({ setPage }) {
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* POLICY VIEWER MODAL */}
-      {showPolicyModal && selectedPolicy && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 9999, padding: "20px" }}>
-          <div style={{ width: "100%", maxWidth: "700px", maxHeight: "85vh", overflowY: "auto", background: "#fff", borderRadius: "18px", padding: "28px", boxShadow: "0 25px 60px rgba(0,0,0,.2)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <div>
-                <h2 style={{ margin: 0, color: "#2C221E" }}>
-                  📄 {selectedPolicy.title}
-                </h2>
-                <div style={{ color: "#9A8C82", fontSize: "13px", marginTop: "6px" }}>
-                  {selectedPolicy.category}
-                </div>
-              </div>
-              <button className="support-btn support-btn-secondary" onClick={() => { setShowPolicyModal(false); setSelectedPolicy(null); }}>
-                Close
-              </button>
-            </div>
-            <div style={{ whiteSpace: "pre-wrap", lineHeight: "1.8", color: "#4B3B33", fontSize: "15px" }}>
-              {selectedPolicy.content}
-            </div>
-            {selectedPolicy.editedAt && (
-              <div style={{ marginTop: "24px", borderTop: "1px solid #E8DED2", paddingTop: "16px", fontSize: "13px", color: "#9A8C82" }}>
-                Last updated{" "}
-                {selectedPolicy.editedAt.toDate().toLocaleDateString()}
-              </div>
-            )}
-          </div>
         </div>
       )}
     </div>
