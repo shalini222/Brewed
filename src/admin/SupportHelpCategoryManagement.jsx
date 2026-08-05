@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { db } from "../firebase";
+import { db, auth } from "../firebase";
 import { 
   collection, 
   onSnapshot, 
@@ -37,7 +37,10 @@ import {
   ChevronUp,
   Check,
   Search,
-  Activity
+  Activity,
+  Layers,
+  Settings,
+  CheckCircle2
 } from "lucide-react";
 import { 
   DndContext, 
@@ -115,36 +118,44 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
     <div
       ref={setNodeRef}
       style={style}
-      className={`category-item ${isExpanded ? "expanded" : ""}`}
+      className={`list-item ${isExpanded ? "expanded" : ""}`}
     >
-      <div className="category-main-row">
-        <div className="category-left">
-          <div {...attributes} {...listeners} className="drag-handle" title="Drag to reorder">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", paddingTop: 2 }}>
+          <div {...attributes} {...listeners} className="drag-handle" title="Drag to reorder" style={{ cursor: "grab", color: "#9E9085", display: "flex", alignItems: "center", justifyContent: "center", paddingRight: 8 }}>
             <GripVertical size={18} strokeWidth={1.8} />
           </div>
-          <div className="icon-box">
-            <Icon size={24} strokeWidth={1.7} color="#C4956A" />
-          </div>
-          <div>
-            <div className="category-title">
-              {category.title}
-              {category.updatedAt && (
-                <span className="recent-badge">Edited recently</span>
-              )}
-            </div>
-            <div className="category-desc">{category.description}</div>
+          <div className="icon-box" style={{ width: 48, height: 48, borderRadius: 14, background: "#FAF8F6", border: "1px solid #ECE8E3", display: "flex", alignItems: "center", justifyContent: "center", color: "#1A1614", flexShrink: 0 }}>
+            <Icon size={22} strokeWidth={1.7} />
           </div>
         </div>
 
-        <div className="category-right-actions">
-          <span className={`status-badge ${isActive ? 'status-active' : 'status-disabled'}`}>
-            {isActive ? "Live" : "Hidden"}
-          </span>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ margin: 0, color: "#1A1614", fontSize: "18px", fontWeight: 600, display: "flex", alignItems: "center", gap: "10px" }}>
+            {category.title}
+            {category.updatedAt && (
+              <span className="badge badge-pinned" style={{ fontSize: "11px" }}>Edited recently</span>
+            )}
+          </h3>
 
-          <div className="dropdown-container">
+          <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <span className={`badge ${isActive ? 'badge-green' : 'badge-orange'}`}>
+              {isActive ? "Live" : "Hidden"}
+            </span>
+            <span className="badge badge-blue">Icon: {category.icon}</span>
+          </div>
+
+          <p style={{ marginTop: 14, color: "#7A6E65", whiteSpace: "pre-wrap", lineHeight: "1.5", fontSize: "14px" }}>
+            {category.description}
+          </p>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="dropdown-container" style={{ position: "relative" }}>
             <button 
               ref={btnRef}
-              className="action-btn"
+              className="btn btn-secondary"
+              style={{ padding: "8px 12px", height: "38px" }}
               onClick={handleToggleMenu}
             >
               <MoreVertical size={16} strokeWidth={1.7} />
@@ -153,20 +164,43 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
             {menuOpen && createPortal(
               <div 
                 className="action-dropdown" 
-                style={{ top: dropdownPos.top, right: dropdownPos.right }}
+                style={{ 
+                  position: "fixed", 
+                  top: dropdownPos.top, 
+                  right: dropdownPos.right, 
+                  zIndex: 999999, 
+                  minWidth: "180px", 
+                  background: "white", 
+                  borderRadius: "16px", 
+                  boxShadow: "0 18px 45px rgba(0,0,0,.15)", 
+                  border: "1px solid #ECE8E3", 
+                  padding: "8px" 
+                }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <button onClick={() => { setOpenMenuId(null); openEdit(category); }}>
+                <button 
+                  style={{ width: "100%", textAlign: "left", background: "none", border: "none", padding: "10px 12px", fontSize: "13px", fontWeight: 600, color: "#1A1614", borderRadius: "10px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                  onClick={() => { setOpenMenuId(null); openEdit(category); }}
+                >
                   <Pencil size={14} /> Edit
                 </button>
-                <button onClick={() => { setOpenMenuId(null); toggleStatus(category); }}>
+                <button 
+                  style={{ width: "100%", textAlign: "left", background: "none", border: "none", padding: "10px 12px", fontSize: "13px", fontWeight: 600, color: "#1A1614", borderRadius: "10px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                  onClick={() => { setOpenMenuId(null); toggleStatus(category); }}
+                >
                   {isActive ? <EyeOff size={14} /> : <Eye size={14} />}
                   {isActive ? "Hide" : "Show"}
                 </button>
-                <button onClick={() => { setOpenMenuId(null); duplicateCategory(category); }}>
+                <button 
+                  style={{ width: "100%", textAlign: "left", background: "none", border: "none", padding: "10px 12px", fontSize: "13px", fontWeight: 600, color: "#1A1614", borderRadius: "10px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                  onClick={() => { setOpenMenuId(null); duplicateCategory(category); }}
+                >
                   <Copy size={14} /> Duplicate
                 </button>
-                <button className="danger-text" onClick={() => { setOpenMenuId(null); setDeleteTarget(category); }}>
+                <button 
+                  style={{ width: "100%", textAlign: "left", background: "none", border: "none", padding: "10px 12px", fontSize: "13px", fontWeight: 600, color: "#991B1B", borderRadius: "10px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                  onClick={() => { setOpenMenuId(null); setDeleteTarget(category); }}
+                >
                   <Trash2 size={14} /> Delete
                 </button>
               </div>,
@@ -175,7 +209,8 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
           </div>
 
           <button 
-            className="action-btn"
+            className="btn btn-secondary"
+            style={{ padding: "8px 12px", height: "38px" }}
             onClick={() => expandCard(category.id)}
           >
             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -184,12 +219,12 @@ function SortableCategoryItem({ category, index, categories, toggleStatus, openE
       </div>
 
       {isExpanded && (
-        <div className="category-expanded-details">
-          <div className="detail-grid">
-            <div><span>Icon:</span> <strong>{category.icon}</strong></div>
-            <div><span>Status:</span> <strong>{isActive ? "Live" : "Hidden"}</strong></div>
-            <div><span>Sort Order:</span> <strong>{category.sortOrder || index + 1}</strong></div>
-            <div><span>Created:</span> <strong>{category.createdAt?.toDate ? category.createdAt.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "Just now"}</strong></div>
+        <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px solid #ECE8E3" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: "12px", fontSize: "13px", color: "#7A6E65" }}>
+            <div><span>Icon:</span> <strong style={{ color: "#1A1614" }}>{category.icon}</strong></div>
+            <div><span>Status:</span> <strong style={{ color: "#1A1614" }}>{isActive ? "Live" : "Hidden"}</strong></div>
+            <div><span>Sort Order:</span> <strong style={{ color: "#1A1614" }}>{category.sortOrder || index + 1}</strong></div>
+            <div><span>Created:</span> <strong style={{ color: "#1A1614" }}>{category.createdAt?.toDate ? category.createdAt.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "Just now"}</strong></div>
           </div>
         </div>
       )}
@@ -205,7 +240,7 @@ export default function SupportHelpCategoryManagement() {
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
-  const [toast, setToast] = useState(null);
+  const [toastMessage, setToastMessage] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -244,11 +279,11 @@ export default function SupportHelpCategoryManagement() {
     })
   );
 
-  const showToast = (message, type = 'success') => { 
-    setToast({ message, type }); 
-    setTimeout(() => { 
-      setToast(null); 
-    }, 3000); 
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage("");
+    }, 3000);
   };
 
   useEffect(() => {
@@ -400,588 +435,621 @@ export default function SupportHelpCategoryManagement() {
   const SelectedIconComponent = iconMap[icon] || HelpCircle;
 
   return (
-    <>
+    <div className="admin-page">
       <style>{`
-        /* Hide scrollbars globally for webkit, firefox, and IE/Edge while maintaining full scrolling functionality */
-        .activity-list::-webkit-scrollbar,
-        .icon-picker::-webkit-scrollbar,
-        .customer-preview-box::-webkit-scrollbar {
-          display: none;
-        }
-        .activity-list,
-        .icon-picker,
-        .customer-preview-box {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-
-        .support-settings-page{
-            max-width:960px;
-            margin:auto;
-            padding:32px 20px;
-            background:#FAF8F6;
-            font-family: inherit;
-            color: #1A1614;
-        }
-
         /* ===========================
-           HEADER
+           BREWED LUXURY ADMIN V1 DESIGN SYSTEM
         =========================== */
 
-        .page-header{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            margin-bottom:24px;
-            padding:20px 24px;
-            background:white;
-            border-radius:14px;
-            border:1px solid #ECE8E3;
-            box-shadow:0 1px 3px rgba(0,0,0,.02);
+        .admin-page {
+          padding: 32px;
+          background: #F8F6F2;
+          min-height: 100vh;
+          font-family: inherit;
+          color: #1A1614;
+          box-sizing: border-box;
+          position: relative;
+          max-width: 1240px;
+          margin: 0 auto;
         }
 
-        .page-header h2{
-            margin:0;
-            font-size:22px;
-            color:#1A1614;
-            font-weight:600;
-            letter-spacing: -0.01em;
+        /* HERO HEADER & STAT CARDS */
+        .admin-hero {
+          margin-bottom: 28px;
         }
 
-        .page-header p{
-            margin:4px 0 0;
-            color:#7A6E65;
-            font-size:14px;
+        .hero-top-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+          background: white;
+          padding: 24px 28px;
+          border-radius: 20px;
+          border: 1px solid #ECE8E3;
+          box-shadow: 0 4px 20px rgba(44,34,30,0.02);
         }
 
-        .toast{
-            position:fixed; top:24px; right:24px; z-index:999999;
-            display:flex; align-items:center; gap:12px; padding:16px 18px;
-            border-radius:18px; background:rgba(36,28,24,.96); color:white;
-            font-size:14px; font-weight:600; backdrop-filter:blur(16px);
-            box-shadow:0 18px 40px rgba(0,0,0,.18); animation:toastIn .28s ease;
-        }
-        .toast-dot{ width:8px; height:8px; border-radius:999px; background:#C4956A; }
-        @keyframes toastIn{
-            from{ opacity:0; transform:translateY(-10px) scale(.98); }
-            to{ opacity:1; transform:translateY(0) scale(1); }
-        }
-        .modal-overlay{
-            position:fixed; inset:0; background:rgba(18,14,12,.45);
-            backdrop-filter:blur(8px); display:flex; align-items:center;
-            justify-content:center; z-index:999999; animation:fadeIn .22s ease;
-        }
-        .modal-card{
-            width:min(420px,92vw); background:white; border-radius:28px;
-            padding:28px; border:1px solid #EEE6DD; box-shadow:0 24px 64px rgba(0,0,0,.16);
-            animation:modalIn .24s ease;
-        }
-        .modal-icon{
-            width:52px; height:52px; border-radius:16px; background:#FAF3F2;
-            border:1px solid #F1D8D5; display:flex; align-items:center;
-            justify-content:center; color:#A15B55; margin-bottom:18px;
-        }
-        .modal-card h3{ margin:0 0 10px; font-size:22px; color:#221A16; }
-        .modal-card p{ margin:0; color:#6E5E53; line-height:1.7; font-size:14px; }
-        .modal-actions{ display:flex; justify-content:flex-end; gap:12px; margin-top:26px; }
-        .danger-btn{
-            background:#241C18; color:white; border:none; border-radius:16px;
-            padding:13px 18px; font-weight:700; cursor:pointer; transition:.25s;
-        }
-        .danger-btn:hover{ transform:translateY(-1px); box-shadow:0 12px 24px rgba(36,28,24,.18); }
-        @keyframes fadeIn{ from{opacity:0} to{opacity:1} }
-        @keyframes modalIn{ from{ opacity:0; transform:translateY(8px) scale(.98); } to{ opacity:1; transform:translateY(0) scale(1); } }
-
-        .sync-info{ font-size:13px; color:#9B8C82; font-weight:500; }
-
-        .help-stats{
-            display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-bottom:34px;
-        }
-        @media(max-width: 900px){ .help-stats{ grid-template-columns:repeat(2,1fr); } }
-        .stat-card{
-            background:rgba(255,255,255,.82); backdrop-filter:blur(18px);
-            border:1px solid rgba(255,255,255,.75); border-radius:24px; padding:24px;
-            transition:.3s; box-shadow:0 8px 28px rgba(30,22,18,.05);
-            min-height:120px; display:flex; flex-direction:column; justify-content:center;
-        }
-        .stat-card:hover{ transform:translateY(-4px); box-shadow:0 18px 40px rgba(30,22,18,.08); }
-        .stat-card span{ display:block; font-size:13px; font-weight:600; color:#8B7C72; margin-bottom:8px; }
-        .stat-card h2{ margin:0; font-size:34px; color:#241C18; font-weight:800; letter-spacing:-1px; }
-
-        .dashboard-grid{ display:block; }
-
-        .help-card{
-            background:rgba(255,255,255,.82); backdrop-filter:blur(18px);
-            border-radius:24px; padding:28px; margin-bottom:36px;
-            border:1px solid rgba(255,255,255,.8); box-shadow: 0 12px 40px rgba(30,22,18,.05);
+        .hero-title-area h1 {
+          margin: 0;
+          font-size: 26px;
+          color: #1A1614;
+          font-weight: 600;
+          letter-spacing: -0.02em;
         }
 
-        .help-form{ display:flex; flex-direction:column; gap:24px; }
-        .help-form input, .help-form textarea{
-            width:100%; background:white; border:1px solid #ECE6DE;
-            border-radius:18px; padding:16px 18px; font-size:15px; transition:.25s; outline:none;
+        .hero-title-area p {
+          margin: 6px 0 0;
+          color: #7A6E65;
+          font-size: 15px;
         }
-        .help-form input:focus, .help-form textarea:focus{
-            border-color:#C4956A; box-shadow: 0 0 0 4px rgba(196,149,106,.12);
-        }
-        .form-subtitle{ margin-top:6px; margin-bottom:24px; font-size:14px; color:#8C7C72; line-height:1.6; }
 
-        /* Icon Picker Dropdown List Style */
-        .icon-dropdown-container{ position:relative; }
-        .icon-dropdown-toggle{
-            width:100%; background:white; border:1px solid #ECE6DE; border-radius:18px;
-            padding:14px 18px; display:flex; align-items:center; justify-content:space-between;
-            cursor:pointer; transition:.25s; font-size:15px; color:#221A16; font-weight:600;
+        .hero-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
         }
-        .icon-dropdown-toggle:hover{ border-color:#C4956A; }
-        .icon-dropdown-menu{
-            position:absolute; top:calc(100% + 8px); left:0; right:0; background:white;
-            border:1px solid #ECE6DE; border-radius:18px; box-shadow:0 18px 40px rgba(0,0,0,.1);
-            padding:8px; z-index:50;
-        }
-        .icon-picker{ 
-            display:flex;
-            flex-direction:column;
-            gap:4px; 
-            max-height:220px; 
-            overflow-y:auto; 
-        }
-        .icon-option{
-            background:white; border:none; border-radius:12px;
-            padding:10px 14px; cursor:pointer; transition:.2s; display:flex;
-            align-items:center; gap:12px; color:#6E5E53; width:100%; text-align:left;
-        }
-        .icon-option:hover{ background:#F8F5F0; color:#221A16; }
-        .icon-option.active{ background:#241C18; color:white; }
-        .icon-option span{ font-size:14px; font-weight:600; }
 
-        .field-counter{ margin-top:8px; font-size:12px; color:#9B8C82; text-align:right; }
-        .unsaved-banner{
-            margin-bottom:20px; padding:14px 18px; background:#FFF9F1;
-            border:1px solid #F2DEC1; border-radius:16px; color:#9A6A2C; font-size:14px; font-weight:600;
+        .stat-card {
+          background: white;
+          border-radius: 18px;
+          padding: 20px 24px;
+          border: 1px solid #ECE8E3;
+          box-shadow: 0 4px 20px rgba(44,34,30,0.02);
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          transition: transform 0.2s ease, border-color 0.2s ease;
         }
-        .warning-text{ color:#C25E38; font-size:13px; margin-top:6px; font-weight:600; }
 
-        .search-input{
-            width:100%; padding:16px 20px; border-radius:18px; border:1px solid #E8DED2;
-            background:white; font-size:15px; margin-bottom:20px; transition:.25s;
+        .stat-card:hover {
+          border-color: #D8D0C7;
+          transform: translateY(-2px);
         }
-        .search-input:focus{ outline:none; border-color:#C4956A; box-shadow:0 0 0 4px rgba(196,149,106,.12); }
 
-        .filter-row{ display:flex; gap:12px; margin-bottom:24px; }
-        .filter-btn, .filter-active{
-            padding:11px 20px; border-radius:999px; font-size:14px; font-weight:600; cursor:pointer; transition:.25s;
+        .stat-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          background: #FAF8F6;
+          border: 1px solid #ECE8E3;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #1A1614;
+          flex-shrink: 0;
         }
-        .filter-btn{ background:white; border:1px solid #E7DED5; color:#6E5E53; }
-        .filter-btn:hover{ border-color:#C4956A; }
-        .filter-active{ background:#241C18; color:white; border:1px solid #241C18; box-shadow:0 10px 24px rgba(36,28,24,.18); }
 
-        .primary-btn{
-            background:#241C18; color:white; border:none; border-radius:16px;
-            padding:15px 26px; font-weight:700; cursor:pointer; transition:.3s; display:flex; align-items:center; gap:8px; justify-content:center;
+        .stat-content .stat-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: #7A6E65;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          margin-bottom: 4px;
         }
-        .primary-btn:hover{ transform:translateY(-2px); background:#17120F; box-shadow: 0 12px 24px rgba(0,0,0,.15); }
-        .secondary-btn{
-            background:white; border:1px solid #E7DED5; border-radius:16px;
-            padding:14px 22px; font-weight:600; cursor:pointer; transition:.25s;
-        }
-        .secondary-btn:hover{ border-color:#C4956A; background:#FAF8F5; }
 
-        .section-header{ 
-            display:flex; justify-content:space-between; align-items:flex-end; 
-            margin-bottom:24px; padding-bottom:18px; border-bottom:1px solid #EEE6DD; 
+        .stat-content .stat-value {
+          font-size: 24px;
+          font-weight: 600;
+          color: #1A1614;
+          letter-spacing: -0.01em;
         }
-        .section-header h3{ margin:0; font-size:24px; font-weight:700; color:#221A16; }
-        .section-header p{ margin-top:8px; color:#8C7C72; font-size:14px; }
-        .section-count{ background:#F5EFE8; padding:10px 16px; border-radius:999px; font-weight:600; font-size:13px; color:#6E5E53; }
 
-        /* Category Item Card */
-        .category-grid{ display:flex; flex-direction:column; gap:22px; overflow:visible; }
-        .category-item{
-            background:rgba(255,255,255,.92); backdrop-filter:blur(14px);
-            border-radius:22px; border:1px solid rgba(255,255,255,.8);
-            padding:18px 22px; transition: transform .25s, box-shadow .25s, border-color .25s;
-            position:relative; overflow:visible; z-index:1;
+        /* TOAST NOTIFICATION */
+        .success-toast {
+          position: fixed;
+          bottom: 24px;
+          right: 24px;
+          background: #EEF5EF;
+          border: 1px solid #D8E6D8;
+          padding: 14px 20px;
+          border-radius: 14px;
+          color: #36543A;
+          font-weight: 500;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+          z-index: 1000;
+          animation: slideDown 0.3s ease;
         }
-        .category-item:hover{
-            transform: translateY(-4px) scale(1.005);
-            border-color:#D3B08B; box-shadow: 0 18px 38px rgba(0,0,0,.06);
-            z-index:20;
-        }
-        .category-main-row{ display:flex; justify-content:space-between; align-items:center; }
-        .category-left{ 
-            display:grid; 
-            grid-template-columns:28px 56px 1fr; 
-            align-items:center; 
-            gap:18px; 
-        }
-        .drag-handle{ cursor:grab; color:#B5A89E; padding:4px; display:flex; align-items:center; justify-content:center; }
-        .drag-handle:active{ cursor:grabbing; }
 
-        .icon-box{
-            width:48px; height:48px; border-radius:16px;
-            background: linear-gradient(180deg, #FBF9F6, #F2ECE5);
-            border:1px solid #ECE3DA; display:flex; justify-content:center; align-items:center; flex-shrink:0;
+        /* DASHBOARD CARDS & FORM */
+        .dashboard-card {
+          background: white;
+          border-radius: 20px;
+          padding: 28px;
+          margin-bottom: 24px;
+          border: 1px solid #ECE8E3;
+          box-shadow: 0 4px 24px rgba(44,34,30,0.03);
+          transition: border-color 0.2s ease;
         }
-        .category-title{ font-size:17px; font-weight:700; color:#221A16; margin-bottom:4px; display:flex; align-items:center; gap:10px; }
-        .category-desc{ color:#8A7A70; font-size:14px; line-height:1.6; }
-        .recent-badge{ font-size:11px; background:#F2E8DC; color:#8C6A48; padding:2px 8px; border-radius:99px; font-weight:600; }
 
-        .category-right-actions{ display:flex; align-items:center; gap:12px; }
-        .status-badge{ padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700; }
-        .status-active{ background:#F4F7F5; color:#4F6B5B; border:1px solid #DCE8E0; }
-        .status-disabled{ background:#FAF7F5; color:#8B7C72; border:1px solid #ECE4DD; }
-
-        .action-btn{
-            width:38px; height:38px; border-radius:12px; background:#FAF8F5;
-            border:1px solid #EEE6DD; cursor:pointer; transition:.25s;
-            display:flex; align-items:center; justify-content:center; color:#554840;
+        .dashboard-card:hover {
+          border-color: #D8D0C7;
         }
-        .action-btn:hover{ background:#241C18; color:white; border-color:#241C18; }
 
-        .dropdown-container{ position:relative; }
-        .action-dropdown{
-            position:fixed; z-index:999999; min-width:180px; 
-            background:white; border-radius:16px; box-shadow:0 18px 45px rgba(0,0,0,.15); 
-            border:1px solid #ECE3DA; padding:8px;
+        .dashboard-card h2 {
+          margin: 0 0 20px 0;
+          color: #1A1614;
+          font-size: 19px;
+          font-weight: 600;
+          letter-spacing: -0.01em;
         }
-        .action-dropdown button{
-            width:100%; text-align:left; background:none; border:none; padding:10px 12px;
-            font-size:13px; font-weight:600; color:#443830; border-radius:10px; cursor:pointer;
-            display:flex; align-items:center; gap:8px;
-        }
-        .action-dropdown button:hover{ background:#F8F5F0; }
-        .action-dropdown button.danger-text{ color:#A15B55; }
-        .action-dropdown button.danger-text:hover{ background:#FAF3F2; }
 
-        .category-expanded-details{
-            margin-top:16px; padding-top:16px; border-top:1px solid #F0EAE2;
+        /* INPUTS & SELECTS */
+        .admin-input,
+        .admin-select,
+        .admin-textarea {
+          background: #FCFBF8;
+          border: 1px solid #ECE8E3;
+          border-radius: 14px;
+          height: 48px;
+          padding: 0 16px;
+          font-size: 14px;
+          transition: all 0.2s ease;
+          outline: none;
+          color: #1A1614;
+          font-family: inherit;
+          box-sizing: border-box;
+          width: 100%;
+          margin-bottom: 16px;
         }
-        .detail-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; font-size:13px; color:#7E6E63; }
 
-        .customer-preview-box{
-            background:#FAF8F5; color:#221A16; border-radius:24px; padding:20px; border:1px solid #E8DED2; box-shadow:0 10px 30px rgba(0,0,0,.04);
-            max-height:430px; overflow-y:auto;
+        .admin-textarea {
+          height: auto;
+          min-height: 130px;
+          padding: 14px 16px;
+          resize: vertical;
         }
-        .customer-preview-header{ font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#8C7C72; margin-bottom:16px; font-weight:700; }
-        .real-preview-card{
-            background:white; border:1px solid #EAE2D8;
-            border-radius:18px; padding:16px; display:flex; gap:16px; align-items:flex-start; margin-bottom:12px;
-            box-shadow:0 4px 14px rgba(0,0,0,.02);
+
+        .admin-input:hover,
+        .admin-select:hover,
+        .admin-textarea:hover {
+          border-color: #C8BFC5;
+          background: white;
         }
-        .real-preview-card h5{ margin:0 0 6px; font-size:15px; font-weight:600; color:#221A16; }
-        .real-preview-card p{ margin:0; font-size:13px; color:#7A6A60; line-height:1.6; }
 
-        .skeleton-loader{ display:flex; flex-direction:column; gap:16px; }
-        .skeleton-item{
-            height:80px; background:linear-gradient(90deg, #F0EAE2 25%, #E4DDD5 50%, #F0EAE2 75%);
-            background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:22px;
+        .admin-input:focus,
+        .admin-select:focus,
+        .admin-textarea:focus {
+          border-color: #1A1614;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(26,22,20,0.06);
         }
-        @keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
-        .activity-list{ display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto; padding-right:4px; }
-        .activity-item{ display:flex; justify-content:space-between; font-size:13px; padding:10px 0; border-bottom:1px solid #F4EFEA; }
-        .activity-item:last-child{ border-bottom:none; }
-        .activity-text{ color:#554840; font-weight:500; }
-        .activity-time{ color:#A19288; font-size:12px; }
-        .activity-empty{ text-align:center; padding:24px 0; color:#9B8C82; font-size:14px; }
+        /* BUTTONS */
+        .btn {
+          padding: 10px 18px;
+          border-radius: 12px;
+          border: none;
+          cursor: pointer;
+          font-weight: 500;
+          font-size: 13px;
+          transition: all 0.2s ease;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          text-decoration: none;
+        }
 
-        .empty-search{ text-align:center; padding:40px; background:white; border-radius:22px; border:1px solid #ECE3DA; }
-        .empty-search h4{ margin:0 0 6px; color:#221A16; font-size:16px; }
-        .empty-search p{ margin:0 0 16px; color:#8A7A70; font-size:14px; }
+        .btn-primary {
+          background: #1A1614;
+          color: white;
+        }
+
+        .btn-primary:hover {
+          background: #332C28;
+        }
+
+        .btn-secondary {
+          background: #FAF8F6;
+          border: 1px solid #ECE8E3;
+          color: #1A1614;
+        }
+
+        .btn-secondary:hover {
+          background: white;
+          border-color: #1A1614;
+        }
+
+        .btn-danger {
+          background: #FEF2F2;
+          color: #991B1B;
+          border: 1px solid #FEE2E2;
+        }
+
+        .btn-danger:hover {
+          background: #FEE2E2;
+        }
+
+        /* LIST & ITEMS */
+        .admin-list {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .list-item {
+          background: white;
+          border: 1px solid #ECE8E3;
+          border-radius: 18px;
+          padding: 24px;
+          transition: border-color 0.2s ease, transform 0.2s ease;
+          box-shadow: 0 4px 16px rgba(44,34,30,0.02);
+        }
+
+        .list-item:hover {
+          border-color: #D8D0C7;
+          transform: translateY(-2px);
+        }
+
+        /* BADGES */
+        .badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 5px 12px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.02em;
+        }
+
+        .badge-green { background: #EEF5EF; color: #36543A; border: 1px solid #D8E6D8; }
+        .badge-red { background: #FEF2F2; color: #991B1B; border: 1px solid #FEE2E2; }
+        .badge-orange { background: #F8F3E8; color: #8B6A2B; border: 1px solid #E7D9B5; }
+        .badge-blue { background: #F0F4F8; color: #3B5998; border: 1px solid #D9E2EC; }
+        .badge-pinned { background: #FAF8F6; color: #1A1614; border: 1px solid #ECE8E3; }
+
+        /* MODALS */
+        .modal-overlay {
+          position: fixed;
+          top: 0; left: 0; width: 100%; height: 100%;
+          background: rgba(26, 22, 20, 0.5);
+          backdrop-filter: blur(4px);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1001;
+          padding: 20px;
+          box-sizing: border-box;
+        }
+
+        .modal-card {
+          background: white;
+          border: 1px solid #ECE8E3;
+          border-radius: 20px;
+          padding: 28px;
+          max-width: 640px;
+          width: 100%;
+          max-height: 85vh;
+          overflow-y: auto;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .empty-state {
+          text-align: center;
+          padding: 48px 20px;
+          border: 2px dashed #ECE8E3;
+          border-radius: 18px;
+          color: #7A6E65;
+          background: white;
+        }
+
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media(max-width: 768px) {
+          .admin-page { padding: 16px; }
+          .hero-top-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 20px;
+          }
+        }
       `}</style>
 
-      {toast && (
-        <div className={`toast ${toast.type}`}>
-          <div className="toast-dot" />
-          {toast.message}
+      {toastMessage && (
+        <div className="success-toast">
+          <CheckCircle2 size={16} />
+          {toastMessage}
         </div>
       )}
 
       {deleteTarget && createPortal(
-        <div className="modal-overlay" style={{ position: "fixed" }}>
-          <div className="modal-card">
-            <div className="modal-icon">
-              <Trash2 size={22} strokeWidth={1.8} />
+        <div className="modal-overlay">
+          <div className="modal-card" style={{ maxWidth: "420px" }}>
+            <div style={{ width: "48px", height: "48px", borderRadius: "14px", background: "#FEF2F2", border: "1px solid #FEE2E2", display: "flex", alignItems: "center", justifyContent: "center", color: "#991B1B", marginBottom: "16px" }}>
+              <Trash2 size={20} strokeWidth={1.8} />
             </div>
-            <h3>Delete category</h3>
-            <p>
-              <strong>{deleteTarget.title}</strong> will be permanently removed from the Help Centre.
+            <h2 style={{ fontSize: "20px", color: "#1A1614", margin: "0 0 10px" }}>Delete category</h2>
+            <p style={{ color: "#7A6E65", margin: "0 0 24px", lineHeight: "1.5", fontSize: "14px" }}>
+              <strong style={{ color: "#1A1614" }}>{deleteTarget.title}</strong> will be permanently removed from the Help Centre.
             </p>
-            <div className="modal-actions">
-              <button className="secondary-btn" onClick={() => setDeleteTarget(null)}>Cancel</button>
-              <button className="danger-btn" onClick={confirmDelete}>Delete Category</button>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+              <button className="btn btn-secondary" onClick={() => setDeleteTarget(null)}>Cancel</button>
+              <button className="btn btn-danger" onClick={confirmDelete}>Delete Category</button>
             </div>
           </div>
         </div>,
         document.body
       )}
 
-      <div className="support-settings-page">
-        <div className="page-header">
-          <div>
-            <h2>Support Help Categories</h2>
+      {/* Hero Header */}
+      <div className="admin-hero">
+        <div className="hero-top-row">
+          <div className="hero-title-area">
+            <h1>Support Help Categories</h1>
             <p>Manage help topics and customer support routing.</p>
           </div>
-          <div className="sync-info">
+          <div style={{ fontSize: "13px", color: "#7A6E65", fontWeight: 500 }}>
             Last synced {lastSynced}
           </div>
         </div>
 
-        {/* Analytics Cards */}
-        <div className="help-stats">
+        {/* Stats Grid */}
+        <div className="hero-stats-grid">
           <div className="stat-card">
-            <span>Total Categories</span>
-            <h2>{categories.length}</h2>
-          </div>
-          <div className="stat-card">
-            <span>Active</span>
-            <h2>{categories.filter(c => c.active !== false).length}</h2>
-          </div>
-          <div className="stat-card">
-            <span>Hidden</span>
-            <h2>{categories.filter(c => c.active === false).length}</h2>
+            <div className="stat-icon"><ShieldCheck size={22} /></div>
+            <div className="stat-content">
+              <div className="stat-label">Total Categories</div>
+              <div className="stat-value">{categories.length}</div>
+            </div>
           </div>
           <div className="stat-card">
-            <span>Icons Used</span>
-            <h2>{new Set(categories.map(c => c.icon)).size}</h2>
-          </div>
-        </div>
-
-        <div className="dashboard-grid">
-          {/* Recent Activity Section */}
-          <div className="help-card">
-            <div className="section-header" style={{ marginBottom: "16px" }}>
-              <h3 style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "20px" }}>
-                <Activity size={18} color="#C4956A" /> Recent Activity
-              </h3>
-            </div>
-            <div className="activity-list">
-              {recentActivities.length === 0 ? (
-                <div className="activity-empty">No recent activity yet. Actions will appear here as you manage categories.</div>
-              ) : (
-                recentActivities.map(act => (
-                  <div key={act.id} className="activity-item">
-                    <span className="activity-text">{act.text}</span>
-                    <span className="activity-time">{act.time}</span>
-                  </div>
-                ))
-              )}
+            <div className="stat-icon"><Layers size={22} /></div>
+            <div className="stat-content">
+              <div className="stat-label">Active</div>
+              <div className="stat-value">{categories.filter(c => c.active !== false).length}</div>
             </div>
           </div>
-
-          {/* Add / Edit Form (Full Width) */}
-          <div className="help-card" ref={formRef}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: "22px" }}>{editingId ? "Edit Category" : "New Category"}</h3>
-                <p className="form-subtitle">Configure navigation routing for customers.</p>
-              </div>
-            </div>
-
-            {dirty && (
-              <div className="unsaved-banner">
-                You have unsaved changes. (Ctrl + S)
-              </div>
-            )}
-
-            <div className="help-form">
-              <div>
-                <input
-                  ref={titleInputRef}
-                  value={title}
-                  maxLength={40}
-                  onChange={(e) => {
-                    setTitle(e.target.value);
-                    setDirty(true);
-                  }}
-                  placeholder="Category title"
-                />
-                <div className="field-counter">{title.length}/40</div>
-                {isDuplicateTitle && (
-                  <div className="warning-text">Category already exists.</div>
-                )}
-              </div>
-
-              {/* Icon Picker Dropdown List */}
-              <div className="icon-dropdown-container" ref={iconDropdownRef}>
-                <div 
-                  className="icon-dropdown-toggle"
-                  onClick={() => setIconDropdownOpen(!iconDropdownOpen)}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <SelectedIconComponent size={20} color="#C4956A" />
-                    <span>{icon}</span>
-                  </div>
-                  <ChevronDown size={16} color="#8C7C72" />
-                </div>
-
-                {iconDropdownOpen && (
-                  <div className="icon-dropdown-menu">
-                    <div className="icon-picker">
-                      {icons.map(name => {
-                        const Icon = iconMap[name];
-                        return (
-                          <button
-                            key={name}
-                            type="button"
-                            onClick={() => {
-                              setIcon(name);
-                              setDirty(true);
-                              setIconDropdownOpen(false);
-                            }}
-                            className={icon === name ? "icon-option active" : "icon-option"}
-                          >
-                            <Icon size={18} strokeWidth={1.8} />
-                            <span>{name}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <textarea
-                  value={description}
-                  maxLength={120}
-                  onChange={(e) => {
-                    setDescription(e.target.value);
-                    setDirty(true);
-                  }}
-                  placeholder="Description"
-                  rows="3"
-                />
-                <div className="field-counter">{description.length}/120</div>
-              </div>
-
-              <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
-                <button 
-                  className="primary-btn"
-                  onClick={saveCategory}
-                >
-                  {saveState === "saving" ? "Saving..." : saveState === "saved" ? <><Check size={16} /> Saved</> : editingId ? "Update Category" : "Create Category"}
-                </button>
-                <button 
-                  className="secondary-btn"
-                  onClick={() => {
-                    setTitle("");
-                    setDescription("");
-                    setIcon("Truck");
-                    setEditingId(null);
-                    setDirty(false);
-                  }}
-                >
-                  Clear
-                </button>
-              </div>
+          <div className="stat-card">
+            <div className="stat-icon"><FileText size={22} /></div>
+            <div className="stat-content">
+              <div className="stat-label">Hidden</div>
+              <div className="stat-value">{categories.filter(c => c.active === false).length}</div>
             </div>
           </div>
-
-          {/* Category List with Drag & Drop */}
-          <div className="help-card">
-            <div className="section-header">
-              <div>
-                <h3>Manage Categories</h3>
-                <p>Organise how support topics appear. Drag items to reorder.</p>
-              </div>
-              <div className="section-count">
-                {categories.length} Categories
-              </div>
-            </div>
-
-            <input 
-              className="search-input" 
-              placeholder="Search categories..." 
-              value={search} 
-              onChange={(e) => setSearch(e.target.value)} 
-            />
-
-            <div className="filter-row">
-              <button className={filter === "All" ? "filter-active" : "filter-btn"} onClick={() => setFilter("All")}>All</button>
-              <button className={filter === "Active" ? "filter-active" : "filter-btn"} onClick={() => setFilter("Active")}>Active</button>
-              <button className={filter === "Hidden" ? "filter-active" : "filter-btn"} onClick={() => setFilter("Hidden")}>Hidden</button>
-            </div>
-
-            {loading ? (
-              <div className="skeleton-loader">
-                <div className="skeleton-item" />
-                <div className="skeleton-item" />
-                <div className="skeleton-item" />
-              </div>
-            ) : filteredCategories.length === 0 ? (
-              <div className="empty-search">
-                <h4>No matching categories</h4>
-                <p>Try another keyword or search query.</p>
-                <button className="secondary-btn" onClick={() => setSearch("")}>Clear Search</button>
-              </div>
-            ) : (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={filteredCategories.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                  <div className="category-grid">
-                    {filteredCategories.map((category, index) => (
-                      <SortableCategoryItem
-                        key={category.id}
-                        category={category}
-                        index={index}
-                        categories={categories}
-                        toggleStatus={toggleStatus}
-                        openEdit={(cat) => {
-                          setEditingId(cat.id);
-                          setTitle(cat.title);
-                          setDescription(cat.description);
-                          setIcon(cat.icon);
-                          setDirty(false);
-                          if (formRef.current) {
-                            formRef.current.scrollIntoView({ behavior: "smooth" });
-                          }
-                          if (titleInputRef.current) {
-                            titleInputRef.current.focus();
-                          }
-                        }}
-                        setDeleteTarget={setDeleteTarget}
-                        duplicateCategory={duplicateCategory}
-                        expandCard={(id) => setExpandedId(expandedId === id ? null : id)}
-                        expandedId={expandedId}
-                        iconMap={iconMap}
-                        openMenuId={openMenuId}
-                        setOpenMenuId={setOpenMenuId}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            )}
-          </div>
-
-          {/* Customer Preview Lighter Version */}
-          <div className="help-card" style={{ marginBottom: 0 }}>
-            <h3 style={{ margin: "0 0 6px", color: "#221A16", fontSize: "20px", fontWeight: "700" }}>Customer Preview</h3>
-            <p style={{ color: "#8C7C72", marginBottom: "20px", fontSize: "14px" }}>
-              Live rendering inside the consumer Help Centre.
-            </p>
-
-            <div className="customer-preview-box">
-              <div className="customer-preview-header">Support Centre</div>
-              {categories.filter(c => c.active !== false).map(category => {
-                const Icon = iconMap[category.icon] || HelpCircle;
-                return (
-                  <div key={category.id} className="real-preview-card">
-                    <div className="icon-box" style={{ background: "#FAF3EE", border: "1px solid #F1E5DB" }}>
-                      <Icon size={20} strokeWidth={1.7} color="#C4956A" />
-                    </div>
-                    <div>
-                      <h5>{category.title}</h5>
-                      <p>{category.description}</p>
-                    </div>
-                  </div>
-                );
-              })}
+          <div className="stat-card">
+            <div className="stat-icon"><Settings size={22} /></div>
+            <div className="stat-content">
+              <div className="stat-label">Icons Used</div>
+              <div className="stat-value">{new Set(categories.map(c => c.icon)).size}</div>
             </div>
           </div>
         </div>
       </div>
-    </>
+
+      {/* Recent Activity Section */}
+      <div className="dashboard-card">
+        <h2 style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "18px", marginBottom: "16px" }}>
+          <Activity size={18} color="#1A1614" /> Recent Activity
+        </h2>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "220px", overflowY: "auto" }}>
+          {recentActivities.length === 0 ? (
+            <div style={{ color: "#7A6E65", fontSize: "14px", padding: "12px 0" }}>No recent activity yet. Actions will appear here as you manage categories.</div>
+          ) : (
+            recentActivities.map(act => (
+              <div key={act.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "10px 0", borderBottom: "1px solid #ECE8E3" }}>
+                <span style={{ color: "#1A1614", fontWeight: 500 }}>{act.text}</span>
+                <span style={{ color: "#7A6E65", fontSize: "12px" }}>{act.time}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Add / Edit Form Card */}
+      <div className="dashboard-card" ref={formRef}>
+        <h2>{editingId ? "Edit Category" : "New Category"}</h2>
+        <p style={{ margin: "-12px 0 20px 0", color: "#7A6E65", fontSize: "14px" }}>Configure navigation routing for customers.</p>
+
+        {dirty && (
+          <div style={{ marginBottom: "20px", padding: "12px 16px", background: "#FAF8F6", border: "1px solid #ECE8E3", borderRadius: "12px", color: "#1A1614", fontSize: "13px", fontWeight: 600 }}>
+            You have unsaved changes. (Ctrl + S)
+          </div>
+        )}
+
+        <div>
+          <input
+            ref={titleInputRef}
+            className="admin-input"
+            value={title}
+            maxLength={40}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setDirty(true);
+            }}
+            placeholder="Category title"
+          />
+          <div style={{ textAlign: "right", fontSize: "12px", color: "#7A6E65", marginTop: "-10px", marginBottom: "16px" }}>{title.length}/40</div>
+          {isDuplicateTitle && (
+            <div style={{ color: "#991B1B", fontSize: "13px", marginTop: "-10px", marginBottom: "16px", fontWeight: 600 }}>Category already exists.</div>
+          )}
+        </div>
+
+        {/* Icon Picker Dropdown */}
+        <div style={{ position: "relative", marginBottom: "16px" }} ref={iconDropdownRef}>
+          <div 
+            className="admin-input"
+            onClick={() => setIconDropdownOpen(!iconDropdownOpen)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", marginBottom: 0 }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <SelectedIconComponent size={18} color="#1A1614" />
+              <span>{icon}</span>
+            </div>
+            <ChevronDown size={16} color="#7A6E65" />
+          </div>
+
+          {iconDropdownOpen && (
+            <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, background: "white", border: "1px solid #ECE8E3", borderRadius: "14px", boxShadow: "0 10px 30px rgba(0,0,0,0.06)", padding: "8px", zIndex: 50, maxHeight: "220px", overflowY: "auto" }}>
+              {icons.map(name => {
+                const Icon = iconMap[name];
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => {
+                      setIcon(name);
+                      setDirty(true);
+                      setIconDropdownOpen(false);
+                    }}
+                    style={{ background: icon === name ? "#FAF8F6" : "white", border: "none", borderRadius: "10px", padding: "10px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "12px", color: "#1A1614", width: "100%", textAlign: "left", fontWeight: icon === name ? 600 : 400 }}
+                  >
+                    <Icon size={18} strokeWidth={1.8} />
+                    <span style={{ fontSize: "14px" }}>{name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <textarea
+            className="admin-textarea"
+            value={description}
+            maxLength={120}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              setDirty(true);
+            }}
+            placeholder="Description"
+            rows="3"
+          />
+          <div style={{ textAlign: "right", fontSize: "12px", color: "#7A6E65", marginTop: "-10px", marginBottom: "16px" }}>{description.length}/120</div>
+        </div>
+
+        <div style={{ display: "flex", gap: "12px" }}>
+          <button 
+            className="btn btn-primary"
+            onClick={saveCategory}
+            style={{ padding: "12px 24px" }}
+          >
+            {saveState === "saving" ? "Saving..." : saveState === "saved" ? <><Check size={16} /> Saved</> : editingId ? "Update Category" : "Create Category"}
+          </button>
+          <button 
+            className="btn btn-secondary"
+            onClick={() => {
+              setTitle("");
+              setDescription("");
+              setIcon("Truck");
+              setEditingId(null);
+              setDirty(false);
+            }}
+            style={{ padding: "12px 20px" }}
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+
+      {/* Category List & Filter Toolbar */}
+      <div className="dashboard-card">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "20px", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <h2 style={{ margin: 0 }}>Manage Categories</h2>
+            <p style={{ margin: "4px 0 0", color: "#7A6E65", fontSize: "14px" }}>Organise how support topics appear. Drag items to reorder.</p>
+          </div>
+          <span className="badge badge-blue">{categories.length} Categories</span>
+        </div>
+
+        <div style={{ position: "relative", marginBottom: "16px" }}>
+          <input 
+            className="admin-input" 
+            placeholder="Search categories..." 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)} 
+            style={{ marginBottom: 0, paddingLeft: "42px" }}
+          />
+          <Search size={16} style={{ position: "absolute", left: 15, top: 16, color: "#7A6E65" }} />
+        </div>
+
+        <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
+          <button className={`btn ${filter === "All" ? "btn-primary" : "btn-secondary"}`} onClick={() => setFilter("All")}>All</button>
+          <button className={`btn ${filter === "Active" ? "btn-primary" : "btn-secondary"}`} onClick={() => setFilter("Active")}>Active</button>
+          <button className={`btn ${filter === "Hidden" ? "btn-primary" : "btn-secondary"}`} onClick={() => setFilter("Hidden")}>Hidden</button>
+        </div>
+
+        {loading ? (
+          <div className="empty-state">Loading categories...</div>
+        ) : filteredCategories.length === 0 ? (
+          <div className="empty-state">
+            <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#1A1614" }}>No matching categories</h3>
+            <p style={{ margin: "0 0 16px 0", fontSize: "14px" }}>Try another keyword or search query.</p>
+            <button className="btn btn-secondary" onClick={() => setSearch("")}>Clear Search</button>
+          </div>
+        ) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={filteredCategories.map(c => c.id)} strategy={verticalListSortingStrategy}>
+              <div className="admin-list">
+                {filteredCategories.map((category, index) => (
+                  <SortableCategoryItem
+                    key={category.id}
+                    category={category}
+                    index={index}
+                    categories={categories}
+                    toggleStatus={toggleStatus}
+                    openEdit={(cat) => {
+                      setEditingId(cat.id);
+                      setTitle(cat.title);
+                      setDescription(cat.description);
+                      setIcon(cat.icon);
+                      setDirty(false);
+                      if (formRef.current) {
+                        formRef.current.scrollIntoView({ behavior: "smooth" });
+                      }
+                      if (titleInputRef.current) {
+                        titleInputRef.current.focus();
+                      }
+                    }}
+                    setDeleteTarget={setDeleteTarget}
+                    duplicateCategory={duplicateCategory}
+                    expandCard={(id) => setExpandedId(expandedId === id ? null : id)}
+                    expandedId={expandedId}
+                    iconMap={iconMap}
+                    openMenuId={openMenuId}
+                    setOpenMenuId={setOpenMenuId}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
+      </div>
+
+      {/* Customer Preview Box */}
+      <div className="dashboard-card" style={{ marginBottom: 0 }}>
+        <h2 style={{ margin: "0 0 6px" }}>Customer Preview</h2>
+        <p style={{ color: "#7A6E65", marginBottom: "20px", fontSize: "14px" }}>
+          Live rendering inside the consumer Help Centre.
+        </p>
+
+        <div style={{ background: "#FAF8F6", color: "#1A1614", borderRadius: "16px", padding: "20px", border: "1px solid #ECE8E3", maxHeight: "430px", overflowY: "auto" }}>
+          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em", color: "#7A6E65", marginBottom: "16px", fontWeight: 600 }}>Support Centre</div>
+          {categories.filter(c => c.active !== false).map(category => {
+            const Icon = iconMap[category.icon] || HelpCircle;
+            return (
+              <div key={category.id} style={{ background: "white", border: "1px solid #ECE8E3", borderRadius: "14px", padding: "16px", display: "flex", gap: "16px", alignItems: "flex-start", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: "#FAF8F6", border: "1px solid #ECE8E3", display: "flex", justifyContent: "center", alignItems: "center", flexShrink: 0, color: "#1A1614" }}>
+                  <Icon size={18} strokeWidth={1.7} />
+                </div>
+                <div>
+                  <h5 style={{ margin: "0 0 4px", fontSize: "15px", fontWeight: 600, color: "#1A1614" }}>{category.title}</h5>
+                  <p style={{ margin: 0, fontSize: "13px", color: "#7A6E65", lineHeight: "1.5" }}>{category.description}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
