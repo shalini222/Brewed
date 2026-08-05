@@ -5,7 +5,7 @@ import {
   Phone, 
   Mail, 
   MessageCircle, 
-  Instagram, 
+  Camera,
   Clock, 
   Bot, 
   Eye, 
@@ -988,7 +988,7 @@ export default function SupportSettingsManagement() {
 
             <div className="toggle-row">
               <div className="toggle-row-info">
-                <div className="toggle-row-icon"><Instagram size={18} /></div>
+                <div className="toggle-row-icon"><Camera size={18} /></div>
                 <div className="toggle-row-text">
                   <strong>Instagram Channel</strong>
                   <span>Display Instagram support handle and direct DM link</span>
