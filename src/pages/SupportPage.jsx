@@ -88,6 +88,7 @@ export default function SupportPage({ setPage }) {
   const [replyAttachments, setReplyAttachments] = useState([]);
   const [sending, setSending] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(true);
+  const [adminTyping, setAdminTyping] = useState(false);
 
   // Support Settings state
   const [supportSettings, setSupportSettings] = useState({
@@ -163,7 +164,7 @@ export default function SupportPage({ setPage }) {
     setIsNearBottom(nearBottom);
   };
 
-  // Load categories from Firestore (Moved up so it's ready for useEffect category sync)
+  // Load categories from Firestore
   useEffect(() => {
     const q = query(
       collection(db, "supportHelpCategories"),
@@ -237,6 +238,21 @@ export default function SupportPage({ setPage }) {
 
     markAsRead();
   }, [selectedTicket?.id, selectedTicket?.customerUnread]);
+
+  // Listen to the active ticket document for live updates (like adminTyping)
+  useEffect(() => {
+    if (!selectedTicket?.id) return;
+
+    const unsubscribe = onSnapshot(
+      doc(db, "supportTickets", selectedTicket.id),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setAdminTyping(docSnap.data().adminTyping || false);
+        }
+      }
+    );
+    return () => unsubscribe();
+  }, [selectedTicket?.id]);
 
   // Real-time messages listener for the active ticket
   useEffect(() => {
@@ -327,12 +343,12 @@ export default function SupportPage({ setPage }) {
     return unsubscribe;
   }, []);
 
-  // Auto-scroll when messages update
+  // Auto-scroll when messages update or admin typing status changes
   useEffect(() => {
     if (isNearBottom || messages.length <= 5) {
       scrollToBottom();
     }
-  }, [messages, isNearBottom]);
+  }, [messages, adminTyping, isNearBottom]);
 
   // File Type Icon Helper
   const getFileIcon = (type) => {
@@ -350,7 +366,6 @@ export default function SupportPage({ setPage }) {
     const totalFiles = filesToUpload.length;
     if (totalFiles === 0) return uploaded;
 
-    let completedBytes = 0;
     const fileSizes = filesToUpload.map(f => f.size);
     const totalBytes = fileSizes.reduce((a, b) => a + b, 0) || 1;
     const uploadedBytesPerFile = new Array(totalFiles).fill(0);
@@ -415,7 +430,8 @@ export default function SupportPage({ setPage }) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastMessageAt: serverTimestamp(),
-        attachments: uploadedFiles
+        attachments: uploadedFiles,
+        adminTyping: false
       });
 
       await addDoc(collection(db, "supportTickets", ticketRef.id, "messages"), {
@@ -576,7 +592,7 @@ export default function SupportPage({ setPage }) {
   // Dynamic Open/Closed business check
   const checkIsBusinessOpen = () => {
     const now = new Date();
-    const day = now.getDay(); // 0 is Sunday, 6 is Saturday
+    const day = now.getDay();
     const hours = now.getHours();
     const minutes = now.getMinutes();
     const currentTimeVal = hours * 60 + minutes;
@@ -670,6 +686,19 @@ export default function SupportPage({ setPage }) {
         .empty-state { background: #FAF6F0; border: 1px dashed #E8DED2; border-radius: 16px; padding: 40px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
         .empty-state h3 { margin: 0; color: #2C221E; font-size: 16px; font-weight: 650; }
         .empty-state p { margin: 0; color: #9A8C82; font-size: 13px; max-width: 320px; line-height: 1.5; }
+
+        .support-typing { display: flex; align-items: flex-end; gap: 10px; margin: 12px 0; }
+        .typing-avatar { width: 38px; height: 38px; border-radius: 50%; background: #2C221E; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
+        .typing-bubble { background: #F6F3EE; border-radius: 18px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; border: 1px solid #E8DED2; }
+        .typing-bubble span { font-size: 13px; color: #6B635C; }
+        .typing-dots { display: flex; gap: 4px; }
+        .typing-dots span { width: 6px; height: 6px; background: #8A8178; border-radius: 50%; animation: typingBounce 1.2s infinite; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingBounce {
+          0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+          40% { opacity: 1; transform: translateY(-4px); }
+        }
       `}</style>
 
       {/* Navigation Header */}
@@ -1361,7 +1390,7 @@ export default function SupportPage({ setPage }) {
                 accept="image/*,.pdf,.txt,.doc,.docx,.zip"
                 onChange={(e) => {
                   const files = Array.from(e.target.files);
-                  const MAX_SIZE = 10 * 1024 * 1024; // 10 MB limit
+                  const MAX_SIZE = 10 * 1024 * 1024;
                   const validFiles = files.filter(file => file.size <= MAX_SIZE);
                   
                   if (validFiles.length !== files.length) {
@@ -1374,13 +1403,13 @@ export default function SupportPage({ setPage }) {
                   }
 
                   setAttachments(prev => [...prev, ...validFiles]);
-                  e.target.value = null; // Reset input
+                  e.target.value = null;
                 }}
                 style={{ fontSize: "13px", color: "#6E5E53" }}
               />
             </div>
 
-            {/* Show selected files with removable cards & file sizes */}
+            {/* Show selected files */}
             {attachments.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 <div style={{ fontSize: "12px", fontWeight: 600, color: "#2C221E" }}>Selected Files ({attachments.length}/5):</div>
@@ -1483,7 +1512,6 @@ export default function SupportPage({ setPage }) {
                     <div className={isCustomer ? "customer-msg" : "support-msg"}>
                       <p style={{ margin: 0 }}>{msg.message}</p>
                       
-                      {/* Show attachments in the conversation with size and icon */}
                       {msg.attachments?.length > 0 && (
                         <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid rgba(0,0,0,0.1)", display: "flex", flexDirection: "column", gap: "4px" }}>
                           {msg.attachments.map((file, index) => (
@@ -1514,6 +1542,22 @@ export default function SupportPage({ setPage }) {
                   </div>
                 );
               })}
+
+              {/* Admin Typing Indicator Bubble */}
+              {adminTyping && (
+                <div className="support-typing">
+                  <div className="typing-avatar">S</div>
+                  <div className="typing-bubble">
+                    <span>Support Team is typing</span>
+                    <div className="typing-dots">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
           )}
