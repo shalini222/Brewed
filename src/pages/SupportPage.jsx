@@ -47,7 +47,8 @@ import {
   MessageSquare,
   X,
   Star,
-  AlertCircle
+  AlertCircle,
+  Paperclip
 } from "lucide-react";
 
 // Map icon names from Firestore to Lucide components
@@ -89,10 +90,10 @@ export default function SupportPage({ setPage }) {
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  // Upload Tasks Ref for cancellation on unmount (Step 15)
+  // Upload Tasks Ref for cancellation on unmount
   const uploadTasksRef = useRef([]);
 
-  // Duplicate submission prevention refs (Step 16)
+  // Duplicate submission prevention refs
   const creatingTicketRef = useRef(false);
   const sendingReplyRef = useRef(false);
 
@@ -107,11 +108,6 @@ export default function SupportPage({ setPage }) {
 
   // Failed Messages state
   const [failedMessages, setFailedMessages] = useState([]);
-
-  // CSAT Rating states
-  const [rating, setRating] = useState(0);
-  const [feedback, setFeedback] = useState("");
-  const [submittingRating, setSubmittingRating] = useState(false);
 
   // Support Settings state
   const [supportSettings, setSupportSettings] = useState({
@@ -134,7 +130,7 @@ export default function SupportPage({ setPage }) {
   const messagesEndRef = useRef(null);
   const typingTimeout = useRef(null);
 
-  // Cancel pending upload tasks on unmount (Step 15)
+  // Cancel pending upload tasks on unmount
   useEffect(() => {
     return () => {
       uploadTasksRef.current.forEach(task => {
@@ -149,26 +145,6 @@ export default function SupportPage({ setPage }) {
   // FAQ 
   const [faqs, setFaqs] = useState([]);
 
-  // Support Policies state
-  const [policies, setPolicies] = useState([]);
-  const [openPolicy, setOpenPolicy] = useState(null);
-  const [selectedPolicyCategory, setSelectedPolicyCategory] = useState("All");
-  const [policySearch, setPolicySearch] = useState("");
-
-  const filteredPolicies = policies.filter((policy) => {
-    const matchesCategory = selectedPolicyCategory === "All" || policy.category === selectedPolicyCategory;
-    const matchesSearch =
-      (policy.title || "").toLowerCase().includes(policySearch.toLowerCase()) ||
-      (policy.content || "").toLowerCase().includes(policySearch.toLowerCase()) ||
-      (policy.category || "").toLowerCase().includes(policySearch.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  const policyCategories = [
-    "All",
-    ...new Set(policies.map((policy) => policy.category))
-  ];
-
   // Filter FAQs by question, answer, or category
   const filteredFaqs = faqs.filter((faq) => {
     const matchesSearch =
@@ -182,11 +158,6 @@ export default function SupportPage({ setPage }) {
 
     return matchesSearch && matchesCategory;
   });
-
-  const featuredFaq = faqs.find(faq => faq.featured);
-  const regularFaqs = filteredFaqs.filter(
-    faq => !faq.featured
-  );
 
   // Auto-scroll logic
   const scrollToBottom = (behavior = "smooth") => {
@@ -241,9 +212,7 @@ export default function SupportPage({ setPage }) {
       try {
         await updateDoc(
           doc(db, "supportTickets", selectedTicket.id),
-          {
-            customerTypingAt: null
-          }
+          { customerTypingAt: null }
         );
       } catch (err) {
         console.log(err);
@@ -264,9 +233,7 @@ export default function SupportPage({ setPage }) {
       if (selectedTicket?.id) {
         updateDoc(
           doc(db, "supportTickets", selectedTicket.id),
-          {
-            customerTypingAt: null
-          }
+          { customerTypingAt: null }
         ).catch(() => {});
       }
     };
@@ -328,7 +295,7 @@ export default function SupportPage({ setPage }) {
     return () => unsubscribe();
   }, [currentUser?.uid]);
 
-  // Mark messages as read for Customer when viewing a ticket and update unread customer messages status to "read"
+  // Mark messages as read for Customer when viewing a ticket
   useEffect(() => {
     if (!selectedTicket?.id) return;
 
@@ -362,7 +329,7 @@ export default function SupportPage({ setPage }) {
     markAsRead();
   }, [selectedTicket?.id, selectedTicket?.customerUnread]);
 
-  // Listen to the active ticket document for live updates
+  // Listen to the active ticket document for live updates & support typing
   useEffect(() => {
     if (!selectedTicket?.id) return;
 
@@ -460,27 +427,6 @@ export default function SupportPage({ setPage }) {
     return unsubscribe;
   }, []);
 
-  // Fetch published policies
-  useEffect(() => {
-    const q = query(
-      collection(db, "supportPolicies"),
-      where("status", "==", "Published")
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      data.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-
-      setPolicies(data);
-    });
-
-    return unsubscribe;
-  }, []);
-
   // Auto-scroll when messages update or admin typing status changes
   useEffect(() => {
     if (isNearBottom || messages.length <= 5) {
@@ -488,17 +434,7 @@ export default function SupportPage({ setPage }) {
     }
   }, [messages, adminTyping, isNearBottom]);
 
-  // File Type Icon Helper
-  const getFileIcon = (type) => {
-    if (!type) return "📎";
-    if (type.startsWith("image/")) return "🖼";
-    if (type.includes("pdf")) return "📄";
-    if (type.includes("word") || type.includes("document")) return "📝";
-    if (type.includes("zip") || type.includes("compressed")) return "🗜";
-    return "📎";
-  };
-
-  // Helper to upload attachments with tracking and filtering (Step 15)
+  // Helper to upload attachments with tracking and filtering
   const uploadAttachments = async (filesToUpload, onProgress) => {
     if (!filesToUpload.length) return [];
     const totalBytes = filesToUpload.reduce((sum, file) => sum + file.size, 0) || 1;
@@ -539,7 +475,7 @@ export default function SupportPage({ setPage }) {
     return Promise.all(uploads);
   };
 
-  // Handle file selection with validation
+  // Handle file selection with validation for ticket creation
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     const MAX_ATTACHMENTS = 5;
@@ -561,7 +497,6 @@ export default function SupportPage({ setPage }) {
     }
 
     const validFiles = [];
-
     for (const file of files) {
       if (!allowedTypes.includes(file.type)) {
         setErrorModal({
@@ -585,7 +520,23 @@ export default function SupportPage({ setPage }) {
     setAttachments(validFiles);
   };
 
-  // Create a new support ticket with duplicate protection (Step 16)
+  // Handle file selection for ongoing conversation replies
+  const handleReplyFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+
+    const validFiles = [];
+    for (const file of files) {
+      if (!allowedTypes.includes(file.type) || file.size > MAX_FILE_SIZE) {
+        continue;
+      }
+      validFiles.push(file);
+    }
+    setReplyAttachments(prev => [...prev, ...validFiles]);
+  };
+
+  // Create a new support ticket with duplicate protection
   const handleCreateTicket = async (e) => {
     e.preventDefault();
     if (
@@ -644,11 +595,6 @@ export default function SupportPage({ setPage }) {
         slaStatus: "On Time",
         firstResponseAt: null,
         resolvedAt: null,
-        responseTime: null,
-        resolutionTime: null,
-        rating: null,
-        feedback: "",
-        ratedAt: null,
         attachments: uploadedFiles,
         adminTypingAt: null,
         customerTypingAt: null
@@ -687,7 +633,7 @@ export default function SupportPage({ setPage }) {
     }
   };
 
-  // Send a message reply with duplicate protection (Step 16)
+  // Send a message reply with duplicate protection
   const sendReply = async () => {
     if (
       sendingReplyRef.current ||
@@ -778,33 +724,6 @@ export default function SupportPage({ setPage }) {
     }
   };
 
-  const openFAQ = async (faq, index) => {
-    if (openFaq === index) {
-      setOpenFaq(null);
-      return;
-    }
-    setOpenFaq(index);
-    try {
-      await updateDoc(doc(db, "supportFAQs", faq.id), {
-        views: increment(1)
-      });
-    } catch (err) {
-      console.log("Error updating FAQ views:", err);
-    }
-  };
-
-  const voteFAQ = async (faqId, type) => {
-    if (faqVotes[faqId]) return;
-    try {
-      await updateDoc(doc(db, "supportFAQs", faqId), {
-        [type]: increment(1)
-      });
-      setFaqVotes((prev) => ({ ...prev, [faqId]: type }));
-    } catch (err) {
-      console.log("Error voting:", err);
-    }
-  };
-
   const isClosed = selectedTicket?.status === "Closed";
 
   const sortedTickets = [...tickets].sort((a, b) => { 
@@ -814,45 +733,6 @@ export default function SupportPage({ setPage }) {
   });
 
   const recentTickets = [...sortedTickets].slice(0, 3);
-
-  const checkIsBusinessOpen = () => {
-    const now = new Date();
-    const day = now.getDay();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    const currentTimeVal = hours * 60 + minutes;
-
-    const parseTimeRange = (rangeStr) => {
-      if (!rangeStr || rangeStr.toLowerCase().includes("closed")) return null;
-      try {
-        const parts = rangeStr.split("-");
-        if (parts.length !== 2) return null;
-        
-        const parse12h = (str) => {
-          const [time, modifier] = str.trim().split(" ");
-          let [h, m] = time.split(":").map(Number);
-          if (modifier?.toUpperCase() === "PM" && h < 12) h += 12;
-          if (modifier?.toUpperCase() === "AM" && h === 12) h = 0;
-          return h * 60 + (m || 0);
-        };
-
-        return { start: parse12h(parts[0]), end: parse12h(parts[1]) };
-      } catch {
-        return null;
-      }
-    };
-
-    let todayRangeStr = "";
-    if (day >= 1 && day <= 5) todayRangeStr = supportSettings.mondayFriday;
-    else if (day === 6) todayRangeStr = supportSettings.saturday;
-    else todayRangeStr = supportSettings.sunday;
-
-    const range = parseTimeRange(todayRangeStr);
-    if (!range) return false;
-    return currentTimeVal >= range.start && currentTimeVal <= range.end;
-  };
-
-  const isBusinessOpen = checkIsBusinessOpen();
 
   const getStatusBadgeClass = (status) => {
     switch(status) {
@@ -946,28 +826,20 @@ export default function SupportPage({ setPage }) {
         .help-card p { margin: 0; color: #9A8C82; font-size: 13px; line-height: 1.5; }
         
         .support-heading { font-size: 18px; color: #2C221E; margin-bottom: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-        .faq-card { background: white; border: 1px solid #E8DED2; border-radius: 14px; margin-bottom: 12px; overflow: hidden; transition: border-color 0.2s; }
-        .faq-card:hover { border-color: #D4B294; }
-        .faq-btn { width: 100%; background: white; border: none; padding: 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 14px; font-weight: 600; color: #2C221E; text-align: left; }
-        .faq-btn:hover { background: #FAF6F0; }
-        .faq-answer { padding: 0 18px 18px; color: #6E5E53; line-height: 1.6; font-size: 14px; }
-        
-        .contact-card-link { text-decoration: none; color: inherit; display: block; height: 100%; }
         .empty-state { background: #FAF6F0; border: 1px dashed #E8DED2; border-radius: 16px; padding: 40px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
         .empty-state h3 { margin: 0; color: #2C221E; font-size: 16px; font-weight: 650; }
         .empty-state p { margin: 0; color: #9A8C82; font-size: 13px; max-width: 320px; line-height: 1.5; }
 
-        .support-typing { display: flex; align-items: flex-end; gap: 10px; margin: 12px 0; }
-        .typing-avatar { width: 38px; height: 38px; border-radius: 50%; background: #2C221E; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
-        .typing-bubble { background: #F6F3EE; border-radius: 18px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; border: 1px solid #E8DED2; }
-        .typing-bubble span { font-size: 13px; color: #6B635C; }
-        .typing-dots { display: flex; gap: 4px; }
-        .typing-dots span { width: 6px; height: 6px; background: #8A8178; border-radius: 50%; animation: typingBounce 1.2s infinite; }
+        .support-typing { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+        .typing-bubble { background: #FAF6F0; border-radius: 14px; padding: 8px 12px; display: flex; align-items: center; gap: 6px; border: 1px solid #E8DED2; }
+        .typing-bubble span { font-size: 12px; color: #6B635C; }
+        .typing-dots { display: flex; gap: 3px; }
+        .typing-dots span { width: 5px; height: 5px; background: #8A8178; border-radius: 50%; animation: typingBounce 1.2s infinite; }
         .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
         .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
         @keyframes typingBounce {
           0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
-          40% { opacity: 1; transform: translateY(-4px); }
+          40% { opacity: 1; transform: translateY(-3px); }
         }
       `}</style>
 
@@ -1169,7 +1041,7 @@ export default function SupportPage({ setPage }) {
         </div>
       )}
 
-      {/* TICKET LIST VIEW */}
+      {/* TICKET LIST VIEW (MY TICKETS) */}
       {activePage === "list" && (
         <div className="support-card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1226,7 +1098,7 @@ export default function SupportPage({ setPage }) {
         </div>
       )}
 
-      {/* CREATE TICKET VIEW */}
+      {/* CREATE TICKET VIEW (WITH ATTACHMENT UPLOAD OPTION) */}
       {activePage === "create" && (
         <div className="support-card">
           <h3 style={{ margin: "0 0 16px 0", color: "#2C221E", fontSize: "18px", fontWeight: "700" }}>Create New Support Ticket</h3>
@@ -1275,6 +1147,23 @@ export default function SupportPage({ setPage }) {
               />
             </div>
 
+            {/* File Upload Option */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontSize: "13px", fontWeight: "600", color: "#6E5E53" }}>Attachments (Optional - up to 5 files, max 10MB each)</label>
+              <input
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                style={{ fontSize: "13px", color: "#6E5E53" }}
+              />
+              {attachments.length > 0 && (
+                <div style={{ fontSize: "12px", color: "#C4956A", marginTop: "4px" }}>
+                  {attachments.length} file(s) selected
+                </div>
+              )}
+            </div>
+
             <button type="submit" className="support-btn" disabled={submitting || helpCategories.length === 0} style={{ alignSelf: "flex-end" }}>
               {submitting ? `Uploading... ${uploadProgress}%` : helpCategories.length === 0 ? "No Categories Available" : "Submit Ticket"}
             </button>
@@ -1282,7 +1171,7 @@ export default function SupportPage({ setPage }) {
         </div>
       )}
 
-      {/* CONVERSATION VIEW */}
+      {/* CONVERSATION VIEW (WITH SUPPORT TYPING INDICATOR & ATTACHMENTS) */}
       {activePage === "conversation" && selectedTicket && (
         <div className="support-card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", color: "#9A8C82", background: "#FAF6F0", padding: "12px 16px", borderRadius: "12px", border: "1px solid #E8DED2", flexWrap: "wrap", gap: "8px" }}>
@@ -1322,6 +1211,21 @@ export default function SupportPage({ setPage }) {
                     )}
                     <div className={isCustomer ? "customer-msg" : "support-msg"}>
                       <p style={{ margin: 0 }}>{msg.message}</p>
+                      {msg.attachments && msg.attachments.length > 0 && (
+                        <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                          {msg.attachments.map((file, fIdx) => (
+                            <a
+                              key={fIdx}
+                              href={file.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ fontSize: "11px", background: "rgba(0,0,0,0.06)", padding: "4px 8px", borderRadius: "6px", textDecoration: "none", color: "inherit", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                            >
+                              <Paperclip size={12} /> {file.name || "Attachment"}
+                            </a>
+                          ))}
+                        </div>
+                      )}
                       <div style={{ marginTop: "6px", fontSize: "11px", opacity: 0.8, textAlign: isCustomer ? "right" : "left" }}>
                         {formatMessageTime(msg.createdAt)}
                       </div>
@@ -1329,6 +1233,21 @@ export default function SupportPage({ setPage }) {
                   </div>
                 );
               })}
+
+              {/* Support Team Typing Indicator */}
+              {adminTyping && (
+                <div className="support-typing">
+                  <div className="typing-bubble">
+                    <span>Support team is typing</span>
+                    <div className="typing-dots">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
           )}
@@ -1337,14 +1256,30 @@ export default function SupportPage({ setPage }) {
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "10px" }}>
               <textarea
                 value={reply}
-                onChange={(e) => setReply(e.target.value)}
+                onChange={handleReplyChange}
                 onKeyDown={handleKeyDown}
                 placeholder="Type your message... (Press Enter to send)"
                 disabled={sending}
                 rows={3}
                 style={{ width: "100%", padding: "12px", border: "1px solid #E8DED2", borderRadius: "12px", background: "#FDFAF5", outline: "none", color: "#2C221E", fontSize: "14px", resize: "vertical" }}
               />
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <label style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#C4956A", fontWeight: 600 }}>
+                    <Paperclip size={15} /> Add File
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleReplyFileChange}
+                      style={{ display: "none" }}
+                    />
+                  </label>
+                  {replyAttachments.length > 0 && (
+                    <span style={{ fontSize: "12px", color: "#6E5E53" }}>{replyAttachments.length} file(s) attached</span>
+                  )}
+                </div>
+
                 <button onClick={sendReply} className="support-btn" disabled={sending}>
                   <Send size={16} /> {sending ? "Sending..." : "Send Reply"}
                 </button>
