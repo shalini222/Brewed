@@ -1547,10 +1547,7 @@ export default function SupportPage({ setPage }) {
                     {showSender && (
                       <span className="message-sender-label">
                         {isCustomer ? (
-                          <>
-                            You
-                            <span className="avatar-badge" style={{ background: "#C4956A", color: "white" }}>Me</span>
-                          </>
+                          "You"
                         ) : (
                           <>
                             <span className="avatar-badge">☕</span>
