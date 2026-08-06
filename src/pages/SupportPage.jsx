@@ -489,13 +489,9 @@ export default function SupportPage({ setPage }) {
 
   const isClosed = selectedTicket?.status === "Closed";
 
-  const recentTickets = [...tickets]
-    .sort((a, b) => {
-      const aTime = a.updatedAt?.seconds || 0;
-      const bTime = b.updatedAt?.seconds || 0;
-      return bTime - aTime;
-    })
-    .slice(0, 3);
+  const sortedTickets = [...tickets].sort((a, b) => { const aTime = a.updatedAt?.seconds || 0; const bTime = b.updatedAt?.seconds || 0; return bTime - aTime; });
+
+  const recentTickets = [...sortedTickets].slice(0, 3);
 
   // Dynamic Open/Closed business check
   const checkIsBusinessOpen = () => {
@@ -1178,7 +1174,7 @@ export default function SupportPage({ setPage }) {
 
           {loadingTickets ? (
             <div style={{ textAlign: "center", padding: "30px", color: "#9A8C82" }}>Loading your tickets...</div>
-          ) : tickets.length === 0 ? (
+          ) : sortedTickets.length === 0 ? (
             <div className="empty-state">
               <MessageSquare size={36} color="#C4956A" />
               <h3>No support tickets yet</h3>
@@ -1189,7 +1185,7 @@ export default function SupportPage({ setPage }) {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {tickets.map((t) => (
+              {sortedTickets.map((t) => (
                 <div
                   key={t.id}
                   className="ticket-item"
@@ -1233,6 +1229,7 @@ export default function SupportPage({ setPage }) {
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
+                required
                 style={{ padding: "12px", border: "1px solid #E8DED2", borderRadius: "10px", background: "#FDFAF5", color: "#2C221E", outline: "none", fontSize: "14px" }}
               >
                 {helpCategories.length > 0 ? (
@@ -1271,8 +1268,8 @@ export default function SupportPage({ setPage }) {
               />
             </div>
 
-            <button type="submit" className="support-btn" disabled={submitting} style={{ alignSelf: "flex-end" }}>
-              {submitting ? "Submitting..." : "Submit Ticket"}
+            <button type="submit" className="support-btn" disabled={submitting || helpCategories.length === 0} style={{ alignSelf: "flex-end" }}>
+              {submitting ? "Submitting..." : helpCategories.length === 0 ? "No Categories Available" : "Submit Ticket"}
             </button>
           </form>
         </div>
