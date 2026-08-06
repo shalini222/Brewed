@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
-import { collection, query, orderBy, onSnapshot, doc, addDoc, updateDoc, setDoc, serverTimestamp, increment } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, doc, addDoc, updateDoc, serverTimestamp, increment } from "firebase/firestore";
 import SupportFAQManagement from "./SupportFAQManagement";
 import SupportPolicyManagement from "./SupportPolicyManagement";
 import SupportSettingsManagement from "./SupportSettingsManagement";
@@ -180,14 +180,13 @@ export default function SupportManagement({ setPage, setActivePage }) {
     }
   };
 
-  // Helper to update admin typing boolean state
+  // Helper to update admin typing timestamp state
   const updateTypingStatus = async (isTyping) => {
     if (!selectedTicket) return;
     try {
-      await setDoc(
+      await updateDoc(
         doc(db, "supportTickets", selectedTicket.id),
-        { adminTyping: isTyping },
-        { merge: true }
+        { adminTypingAt: isTyping ? serverTimestamp() : null }
       );
     } catch (err) {
       console.log(err);
@@ -232,7 +231,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
         lastReplyBy: "support",
         lastMessage: reply.trim(),
         lastMessageAt: serverTimestamp(),
-        adminTyping: false
+        adminTypingAt: null
       });
       
       setReply("");
@@ -253,7 +252,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
       await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
         status: newStatus,
         updatedAt: serverTimestamp(),
-        adminTyping: false
+        adminTypingAt: null
       });
       
       setSelectedTicket((prev) => ({ ...prev, status: newStatus }));
@@ -376,6 +375,8 @@ export default function SupportManagement({ setPage, setActivePage }) {
       </div>
     );
   }
+
+ 
 
 
 
