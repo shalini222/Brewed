@@ -191,11 +191,16 @@ export default function SupportManagement({ setPage, setActivePage }) {
     return;
   }
 
-  updateTypingStatus(true);
+  typingTimeout.current = setTimeout(async () => {
+    await updateTypingStatus(true);
 
-  typingTimeout.current = setTimeout(() => {
-    updateTypingStatus(false);
-  }, 5000);
+    clearTimeout(typingTimeout.current);
+
+    typingTimeout.current = setTimeout(() => {
+      updateTypingStatus(false);
+    }, 5000);
+
+  }, 800);
 };
 
   // Helper to securely open a ticket while clearing old typing states
