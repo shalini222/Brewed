@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+Import React, { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -60,6 +60,10 @@ export default function SupportPage({ setPage }) {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [loadingTickets, setLoadingTickets] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
+
+  // Success Modal States
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [createdTicket, setCreatedTicket] = useState(null);
 
   // Help Categories state
   const [helpCategories, setHelpCategories] = useState([]);
@@ -154,9 +158,7 @@ export default function SupportPage({ setPage }) {
   useEffect(() => {
     const q = query(
       collection(db, "supportHelpCategories"),
-      where("active", "==", true),
-      
-      
+      where("active", "==", true)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({
@@ -262,7 +264,7 @@ export default function SupportPage({ setPage }) {
   useEffect(() => {
     const q = query(
       collection(db, "supportFAQs"),
-      where("active", "==", true),
+      where("active", "==", true)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -348,6 +350,7 @@ export default function SupportPage({ setPage }) {
         lastMessageAt: serverTimestamp()
       });
 
+      // Using serverTimestamp() for the initial message document in the subcollection
       await addDoc(collection(db, "supportTickets", ticketRef.id, "messages"), {
         sender: "customer",
         senderName: currentUser.displayName || currentUser.email || "Customer",
@@ -356,12 +359,14 @@ export default function SupportPage({ setPage }) {
       });
 
       const snap = await getDoc(ticketRef);
-      setSelectedTicket({ id: ticketRef.id, ...snap.data() });
+      const newTicket = { id: ticketRef.id, ...snap.data() };
+      setCreatedTicket(newTicket);
+      setSelectedTicket(newTicket);
       
       setSubject("");
-      setCategory(helpCategories.length > 0 ? helpCategories[0].title : "");
+      setCategory(helpCategories.length > 0 ? helpCategories[0].title : "General");
       setInitialMessage("");
-      setActivePage("conversation");
+      setShowSuccessModal(true);
     } catch (err) {
       console.log("Error creating support ticket:", err);
     } finally {
@@ -384,6 +389,7 @@ export default function SupportPage({ setPage }) {
         return;
       }
 
+      // Using serverTimestamp() for the reply message document in the subcollection
       await addDoc(collection(db, "supportTickets", selectedTicket.id, "messages"), {
         sender: "customer",
         senderName: currentUser.displayName || currentUser.email || "Customer",
@@ -501,7 +507,6 @@ export default function SupportPage({ setPage }) {
     const minutes = now.getMinutes();
     const currentTimeVal = hours * 60 + minutes;
 
-    // Helper to parse time string like "09:00 AM - 06:00 PM"
     const parseTimeRange = (rangeStr) => {
       if (!rangeStr || rangeStr.toLowerCase().includes("closed")) return null;
       try {
@@ -844,8 +849,11 @@ export default function SupportPage({ setPage }) {
                   }}
                 >
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <div style={{ fontWeight: 650, color: "#2C221E", fontSize: "14px" }}>
-                      {ticket.subject}
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontWeight: 650, color: "#2C221E", fontSize: "14px" }}>
+                        {ticket.subject}
+                      </span>
+                      <span style={{ fontSize: "11px", color: "#9A8C82" }}>#BRW-{ticket.id.slice(-6).toUpperCase()}</span>
                     </div>
 
                     <div style={{ fontSize: "12px", color: "#9A8C82" }}>
@@ -1198,7 +1206,7 @@ export default function SupportPage({ setPage }) {
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <span style={{ fontWeight: "650", color: "#2C221E", fontSize: "14px" }}>{t.subject}</span>
-                      <span style={{ fontSize: "11px", color: "#9A8C82" }}>#CS{t.id.slice(-6).toUpperCase()}</span>
+                      <span style={{ fontSize: "11px", color: "#9A8C82" }}>#BRW-{t.id.slice(-6).toUpperCase()}</span>
                     </div>
                     <span style={{ fontSize: "12px", color: "#6E5E53" }}>{t.lastMessage || "No messages yet"}</span>
                   </div>
@@ -1281,7 +1289,7 @@ export default function SupportPage({ setPage }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", color: "#9A8C82", background: "#FAF6F0", padding: "12px 16px", borderRadius: "12px", border: "1px solid #E8DED2", flexWrap: "wrap", gap: "8px" }}>
             <div>
               <strong style={{ color: "#2C221E", fontSize: "14px" }}>{selectedTicket.subject}</strong>
-              <div style={{ fontSize: "11px", marginTop: "2px" }}>Ticket #CS{selectedTicket.id.slice(-6).toUpperCase()} • Category: {selectedTicket.category}</div>
+              <div style={{ fontSize: "11px", marginTop: "2px" }}>Ticket #BRW-{selectedTicket.id.slice(-6).toUpperCase()} • Category: {selectedTicket.category}</div>
             </div>
             <div style={{ textAlign: "right", display: "flex", alignItems: "center", gap: "8px" }}>
               <span className={`badge ${getStatusBadgeClass(selectedTicket.status)}`}>{selectedTicket.status}</span>
@@ -1361,6 +1369,52 @@ export default function SupportPage({ setPage }) {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* SUCCESS MODAL */}
+      {showSuccessModal && createdTicket && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 9999 }}>
+          <div style={{ width: "420px", maxWidth: "92%", background: "#fff", borderRadius: "20px", padding: "32px", textAlign: "center", border: "1px solid #E8DED2", boxShadow: "0 20px 60px rgba(0,0,0,.15)" }}>
+            <div style={{ width: 70, height: 70, margin: "0 auto 20px", borderRadius: "50%", background: "#F4F8F2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34 }}>
+              ✅
+            </div>
+            <h2 style={{ margin: 0, color: "#2C221E", fontSize: "24px", fontWeight: 700 }}>
+              Ticket Submitted
+            </h2>
+            <p style={{ marginTop: "14px", color: "#6E5E53", lineHeight: 1.6 }}>
+              Your support request has been received successfully.
+            </p>
+            <div style={{ marginTop: "22px", padding: "14px", background: "#FAF6F0", borderRadius: "12px", fontWeight: 700, color: "#C4956A", fontSize: "17px" }}>
+              Ticket ID
+              <div style={{ marginTop: "6px", color: "#2C221E", letterSpacing: 1 }}>
+                BRW-{createdTicket.id.slice(-6).toUpperCase()}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "12px", marginTop: "28px" }}>
+              <button 
+                className="support-btn support-btn-secondary" 
+                style={{ flex: 1 }} 
+                onClick={() => { 
+                  setShowSuccessModal(false); 
+                  setActivePage("home"); 
+                }}
+              >
+                Back Home
+              </button>
+              <button 
+                className="support-btn" 
+                style={{ flex: 1 }} 
+                onClick={() => { 
+                  setShowSuccessModal(false);
+                  setSelectedTicket(createdTicket);
+                  setActivePage("conversation"); 
+                }}
+              >
+                View Ticket
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
