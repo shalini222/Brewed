@@ -287,7 +287,7 @@ export default function SupportPage({ setPage }) {
     markAsRead();
   }, [selectedTicket?.id, selectedTicket?.customerUnread]);
 
-  // Listen to the active ticket document for live updates (like adminTyping)
+  // Listen to the active ticket document for live updates
   useEffect(() => {
     if (!selectedTicket?.id) return;
 
@@ -637,7 +637,11 @@ export default function SupportPage({ setPage }) {
 
   const isClosed = selectedTicket?.status === "Closed";
 
-  const sortedTickets = [...tickets].sort((a, b) => { const aTime = a.updatedAt?.seconds || 0; const bTime = b.updatedAt?.seconds || 0; return bTime - aTime; });
+  const sortedTickets = [...tickets].sort((a, b) => { 
+    const aTime = a.updatedAt?.seconds || 0; 
+    const bTime = b.updatedAt?.seconds || 0; 
+    return bTime - aTime; 
+  });
 
   const recentTickets = [...sortedTickets].slice(0, 3);
 
@@ -691,29 +695,6 @@ export default function SupportPage({ setPage }) {
       default: return "badge-open";
     }
   };
-
-  return (
-    <div className="support-container">
-      {/* Render your Support page layout here, making use of adminTyping for support typing indicators: */}
-      {adminTyping && (
-        <div className="typing-indicator">
-          Support is typing...
-        </div>
-      )}
-      
-      {/* Navigation handling with typing clearance */}
-      <button 
-        onClick={async () => { 
-          await updateTypingStatus(false); 
-          setActivePage("list"); 
-        }}
-      >
-        Back to Tickets
-      </button>
-    </div>
-  );
-}
-
 
   return (
     <div style={{ padding: "20px", maxWidth: "840px", margin: "0 auto", fontFamily: "inherit" }}>
@@ -964,38 +945,6 @@ export default function SupportPage({ setPage }) {
             </div>
           </section>
 
-          {/* SUPPORT TICKETS ACTION SECTION */}
-          <section>
-            <h2 className="support-heading">
-              <MessageSquare size={20} color="#C4956A" /> Support Tickets
-            </h2>
-            <div className="support-grid">
-              <div
-                className="support-card"
-                style={{ cursor: "pointer", padding: "22px", marginBottom: 0 }}
-                onClick={() => setActivePage("create")}
-              >
-                <PlusCircle size={26} color="#C4956A" />
-                <h3 style={{ margin: "12px 0 6px 0", color: "#2C221E", fontSize: "16px" }}>Create New Ticket</h3>
-                <p style={{ margin: 0, color: "#9A8C82", fontSize: "13px", lineHeight: "1.4" }}>
-                  Report an issue or ask our support team for help.
-                </p>
-              </div>
-
-              <div
-                className="support-card"
-                style={{ cursor: "pointer", padding: "22px", marginBottom: 0 }}
-                onClick={() => setActivePage("list")}
-              >
-                <LifeBuoy size={26} color="#C4956A" />
-                <h3 style={{ margin: "12px 0 6px 0", color: "#2C221E", fontSize: "16px" }}>My Tickets</h3>
-                <p style={{ margin: 0, color: "#9A8C82", fontSize: "13px", lineHeight: "1.4" }}>
-                  View your support conversations and ticket status. ({tickets.length})
-                </p>
-              </div>
-            </div>
-          </section>
-
           {/* RECENT TICKETS SECTION */}
           <section>
             <h2 className="support-heading">
@@ -1134,7 +1083,6 @@ export default function SupportPage({ setPage }) {
             </h2>
 
             <div className="support-grid">
-              {/* Call Us */}
               <div className="support-card" style={{ marginBottom: 0, padding: 0 }}>
                 <a href={`tel:${supportSettings.phone}`} className="contact-card-link" style={{ padding: "22px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -1149,7 +1097,6 @@ export default function SupportPage({ setPage }) {
                 </a>
               </div>
 
-              {/* Email */}
               <div className="support-card" style={{ marginBottom: 0, padding: 0 }}>
                 <a href={`mailto:${supportSettings.email}`} className="contact-card-link" style={{ padding: "22px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -1164,7 +1111,6 @@ export default function SupportPage({ setPage }) {
                 </a>
               </div>
 
-              {/* WhatsApp */}
               <div className="support-card" style={{ marginBottom: 0, padding: 0 }}>
                 <a href={`https://wa.me/${supportSettings.whatsapp?.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="contact-card-link" style={{ padding: "22px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -1179,7 +1125,6 @@ export default function SupportPage({ setPage }) {
                 </a>
               </div>
 
-              {/* Instagram */}
               <div className="support-card" style={{ marginBottom: 0, padding: 0 }}>
                 <a href={`https://instagram.com/${supportSettings.instagram?.replace("@", "")}`} target="_blank" rel="noopener noreferrer" className="contact-card-link" style={{ padding: "22px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -1237,111 +1182,6 @@ export default function SupportPage({ setPage }) {
                 </div>
               </div>
             </div>
-          </section>
-
-          {/* SUPPORT POLICIES SECTION */}
-          <section>
-            <h2 className="support-heading">
-              <FileText size={20} color="#C4956A" /> Support Policies
-            </h2>
-
-            <div style={{ display: "flex", gap: "8px", overflowX: "auto", margin: "14px 0 16px", paddingBottom: "4px" }}>
-              {policyCategories.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedPolicyCategory(category)}
-                  className="support-btn support-btn-secondary"
-                  style={{
-                    background: selectedPolicyCategory === category ? "#C4956A" : "#FAF6F0",
-                    color: selectedPolicyCategory === category ? "#fff" : "#2C221E",
-                    whiteSpace: "nowrap"
-                  }}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", background: "#fff", border: "1px solid #E8DED2", borderRadius: "14px", padding: "12px 16px", marginBottom: "16px" }}>
-              <Search size={18} color="#C4956A" />
-              <input
-                type="text"
-                value={policySearch}
-                onChange={(e) => setPolicySearch(e.target.value)}
-                placeholder="Search policies..."
-                style={{ flex: 1, border: "none", outline: "none", marginLeft: "10px", background: "transparent", fontSize: "14px" }}
-              />
-            </div>
-
-            {filteredPolicies.length === 0 ? (
-              <div className="empty-state">
-                <ShieldCheck size={36} color="#C4956A" />
-                <h3>No policies found</h3>
-                <p>Try searching with another keyword or category.</p>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {filteredPolicies.map((policy) => {
-                  const relatedPolicies = policies
-                    .filter((p) => p.id !== policy.id && p.category === policy.category)
-                    .slice(0, 3);
-
-                  return (
-                    <div id={`policy-${policy.id}`} key={policy.id} className="faq-card">
-                      <button className="faq-btn" onClick={() => setOpenPolicy(openPolicy === policy.id ? null : policy.id)}>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "6px" }}>
-                          <span style={{ fontWeight: 700, color: "#2C221E", fontSize: "15px" }}>
-                            {policy.title}
-                          </span>
-                          <span style={{ background: "#FAF6F0", color: "#C4956A", padding: "2px 8px", borderRadius: "999px", fontSize: "11px", fontWeight: 600 }}>
-                            {policy.category}
-                          </span>
-                        </div>
-                        {openPolicy === policy.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                      </button>
-
-                      {openPolicy === policy.id && (
-                        <div className="faq-answer">
-                          <div style={{ whiteSpace: "pre-wrap", lineHeight: "1.8" }}>
-                            {policy.content}
-                          </div>
-
-                          {relatedPolicies.length > 0 && (
-                            <div style={{ marginTop: "20px", borderTop: "1px solid #E8DED2", paddingTop: "16px" }}>
-                              <div style={{ fontWeight: 650, color: "#2C221E", marginBottom: "10px", fontSize: "13px" }}>
-                                Related Policies
-                              </div>
-                              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                {relatedPolicies.map((related) => (
-                                  <button
-                                    key={related.id}
-                                    onClick={() => {
-                                      setOpenPolicy(related.id);
-                                      setTimeout(() => {
-                                        document.getElementById(`policy-${related.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                      }, 100);
-                                    }}
-                                    style={{ background: "#FAF6F0", border: "1px solid #E8DED2", borderRadius: "10px", padding: "10px 14px", textAlign: "left", cursor: "pointer" }}
-                                  >
-                                    <div style={{ fontWeight: 600, color: "#2C221E", fontSize: "13px" }}>{related.title}</div>
-                                    <div style={{ fontSize: "11px", color: "#9A8C82", marginTop: "2px" }}>{related.category}</div>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid #E8DED2", fontSize: "12px", color: "#9A8C82", display: "flex", justifyContent: "space-between" }}>
-                            <span>Category: {policy.category}</span>
-                            <span>Updated by {policy.editedBy || "Admin"}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </section>
 
         </div>
@@ -1577,13 +1417,7 @@ export default function SupportPage({ setPage }) {
                   <div key={msg.id} className={`message-wrapper ${isCustomer ? "customer-message-wrapper" : "support-message-wrapper"}`}>
                     {showSender && (
                       <span className="message-sender-label">
-                        {isCustomer ? (
-                          "You"
-                        ) : (
-                          <>
-                            Support Team
-                          </>
-                        )}
+                        {isCustomer ? "You" : "Support Team"}
                       </span>
                     )}
                     <div className={isCustomer ? "customer-msg" : "support-msg"}>
@@ -1664,7 +1498,6 @@ export default function SupportPage({ setPage }) {
                 style={{ width: "100%", padding: "12px", border: "1px solid #E8DED2", borderRadius: "12px", background: "#FDFAF5", outline: "none", color: "#2C221E", fontSize: "14px", resize: "vertical" }}
               />
 
-              {/* Reply File Picker */}
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 <input
                   type="file"
