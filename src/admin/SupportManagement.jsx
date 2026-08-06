@@ -63,7 +63,9 @@ export default function SupportManagement({ setPage, setActivePage }) {
   
   const messagesEndRef = useRef(null);
   const typingTimeout = useRef(null);
+const adminTypingTimeout = useRef(null);
 
+  
   useEffect(() => {
     const q = query(
       collection(db, "supportTickets"),
@@ -164,14 +166,14 @@ export default function SupportManagement({ setPage, setActivePage }) {
   };
 
   // Helper to update admin typing timestamp state
-  const updateTypingStatus = async (isTyping) => {
+const updateAdminTypingStatus = async () => {
   if (!selectedTicket?.id) return;
 
   try {
     await updateDoc(
       doc(db, "supportTickets", selectedTicket.id),
       {
-        adminTypingAt: isTyping ? serverTimestamp() : null
+        adminTypingAt: serverTimestamp()
       }
     );
   } catch (err) {
@@ -180,23 +182,21 @@ export default function SupportManagement({ setPage, setActivePage }) {
 };
 
   // Optimized typing handler tied directly to text input changes
- 
-const handleReplyChange = (e) => {
+ const handleAdminReplyChange = (e) => {
   const value = e.target.value;
   setReply(value);
 
-  if (!selectedTicket?.id) return;
+  if (value.trim()) {
+    updateTypingStatus(true);
+  }
 
-  alert("Admin typing", selectedTicket.id);
+  clearTimeout(typingTimeout.current);
 
-  updateDoc(
-    doc(db, "supportTickets", selectedTicket.id),
-    {
-      adminTypingAt: serverTimestamp()
-    }
-  );
+  typingTimeout.current = setTimeout(() => {
+    updateTypingStatus(false);
+  }, 2500);
 };
-
+c
   // Helper to securely open a ticket while clearing old typing states
   const openTicket = async (ticket) => {
     if (selectedTicket) {
@@ -220,8 +220,10 @@ const sendReply = async () => {
   try {
     setSending(true);
     clearTimeout(typingTimeout.current);
+
+    // Stop typing indicator
     await updateTypingStatus(false);
-    
+
     await Promise.all([
       addDoc(
         collection(db, "supportTickets", selectedTicket.id, "messages"),
@@ -229,9 +231,11 @@ const sendReply = async () => {
           sender: "support",
           senderName: "Support Team",
           message,
-          createdAt: serverTimestamp()
+          createdAt: serverTimestamp(),
+          status: "sent"
         }
       ),
+
       updateDoc(doc(db, "supportTickets", selectedTicket.id), {
         updatedAt: serverTimestamp(),
         customerUnread: increment(1),
@@ -241,10 +245,9 @@ const sendReply = async () => {
         adminTypingAt: null
       })
     ]);
-    
-    // Clear reply text *after* successful write
+
     setReply("");
-    
+
   } catch (err) {
     console.log("Error sending reply:", err);
   } finally {
@@ -1159,29 +1162,42 @@ const updateTicketStatus = async (newStatus) => {
                 <h3 style={{ margin: "0 0 12px 0", fontFamily: "Playfair Display, serif", fontSize: "18px" }}>
                   Write a Reply
                 </h3>
-                <textarea
-                  value={reply}
-                  onChange={handleReplyChange}
-                  onKeyDown={(e) => {
-                    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-                      e.preventDefault();
-                      sendReply();
-                    }
-                  }}
-                  placeholder="Write a reply..."
-                  rows={4}
-                  style={{
-                    width: "100%",
-                    padding: "14px",
-                    border: "1px solid #EFE8DF",
-                    borderRadius: "14px",
-                    background: "#FFFFFF",
-                    fontSize: "14px",
-                    outline: "none",
-                    resize: "vertical",
-                    boxSizing: "border-box"
-                  }}
-                />
+               <textarea
+  value={reply}
+  onChange={(e) => {
+    const value = e.target.value;
+    setReply(value);
+
+    if (value.trim()) {
+      updateTypingStatus(true);
+    }
+
+    clearTimeout(typingTimeout.current);
+
+    typingTimeout.current = setTimeout(() => {
+      updateTypingStatus(false);
+    }, 2500);
+  }}
+  onKeyDown={(e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      sendReply();
+    }
+  }}
+  placeholder="Write a reply..."
+  rows={4}
+  style={{
+    width: "100%",
+    padding: "14px",
+    border: "1px solid #EFE8DF",
+    borderRadius: "14px",
+    background: "#FFFFFF",
+    fontSize: "14px",
+    outline: "none",
+    resize: "vertical",
+    boxSizing: "border-box"
+  }}
+/>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "12px" }}>
                   <span style={{ fontSize: "12px", color: "#9A8C82" }}>
                     Tip: Press <kbd style={{ background: "#EFE8DF", padding: "2px 6px", borderRadius: "4px" }}>Ctrl + Enter</kbd> to send quickly
