@@ -1168,18 +1168,6 @@ const updateTicketStatus = async (newStatus) => {
   value={reply}
   onChange={handleAdminReplyChange}
 
-    if (value.trim()) {
-      updateTypingStatus(true);
-    } else {
-      updateTypingStatus(false);
-    }
-
-    clearTimeout(typingTimeout.current);
-
-    typingTimeout.current = setTimeout(() => {
-      updateTypingStatus(false);
-    }, 2500);
-  }}
   onKeyDown={(e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
