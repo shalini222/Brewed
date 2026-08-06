@@ -195,27 +195,7 @@ export default function SupportPage({ setPage }) {
   const isBusinessOpen = checkIsBusinessOpen();
   
   // Filter Policies
-  const filteredPolicies = policies.filter((policy) => {
-    const matchesCategory =
-      selectedPolicyCategory === "All" ||
-      policy.category === selectedPolicyCategory;
-    
 
-  const matchesSearch =
-      (policy.title || "")
-        .toLowerCase()
-        .includes(policySearch.toLowerCase()) ||
-      (policy.content || "")
-        .toLowerCase()
-        .includes(policySearch.toLowerCase()) ||
-      (policy.category || "")
-        .toLowerCase()
-        .includes(policySearch.toLowerCase());
-
-    return matchesCategory && matchesSearch;
-  });
-
-    
 
   // Cancel pending upload tasks on unmount
   useEffect(() => {
@@ -603,6 +583,32 @@ export default function SupportPage({ setPage }) {
     }
   }, [messages, adminTyping, isNearBottom]);
 
+
+  
+    const filteredPolicies = policies.filter((policy) => {
+    const matchesCategory =
+      selectedPolicyCategory === "All" ||
+      policy.category === selectedPolicyCategory;
+    
+
+  const matchesSearch =
+      (policy.title || "")
+        .toLowerCase()
+        .includes(policySearch.toLowerCase()) ||
+      (policy.content || "")
+        .toLowerCase()
+        .includes(policySearch.toLowerCase()) ||
+      (policy.category || "")
+        .toLowerCase()
+        .includes(policySearch.toLowerCase());
+
+    return matchesCategory && matchesSearch;
+  });
+
+    
+  
+  
+  
   // Helper to upload attachments with tracking and filtering
   const uploadAttachments = async (filesToUpload, onProgress) => {
     if (!filesToUpload.length) return [];
