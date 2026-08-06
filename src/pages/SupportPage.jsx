@@ -329,7 +329,7 @@ export default function SupportPage({ setPage }) {
     markAsRead();
   }, [selectedTicket?.id, selectedTicket?.customerUnread]);
 
-  // Listen to the active ticket document for live updates & support typing
+  // Listen to the active ticket document for live updates & support typing (FIXED)
   useEffect(() => {
     if (!selectedTicket?.id) return;
 
@@ -338,24 +338,44 @@ export default function SupportPage({ setPage }) {
       (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
+          // Directly update admin typing state when snapshot arrives
           setLastAdminTyping(data.adminTypingAt || null);
-          setSelectedTicket((prev) => prev ? { ...prev, ...data } : null);
+          setSelectedTicket((prev) => (prev ? { ...prev, ...data } : null));
         }
       }
     );
     return () => unsubscribe();
   }, [selectedTicket?.id]);
 
-  // Admin typing status timer interval
+  // Admin typing status checker interval (FIXED)
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!lastAdminTyping?.seconds) {
+      if (!lastAdminTyping) {
         setAdminTyping(false);
         return;
       }
-      const diff = Date.now() / 1000 - lastAdminTyping.seconds;
-      setAdminTyping(diff < 3);
-    }, 500);
+
+      let timestampSeconds = 0;
+      if (typeof lastAdminTyping.seconds === "number") {
+        timestampSeconds = lastAdminTyping.seconds;
+      } else if (typeof lastAdminTyping.toMillis === "function") {
+        timestampSeconds = lastAdminTyping.toMillis() / 1000;
+      } else if (lastAdminTyping instanceof Date) {
+        timestampSeconds = lastAdminTyping.getTime() / 1000;
+      }
+
+      if (!timestampSeconds) {
+        setAdminTyping(false);
+        return;
+      }
+
+      const currentSeconds = Date.now() / 1000;
+      const timeDifference = currentSeconds - timestampSeconds;
+      
+      // Show indicator if timestamp is within the last 3.5 seconds
+      setAdminTyping(timeDifference >= 0 && timeDifference < 3.5);
+    }, 400);
+
     return () => clearInterval(interval);
   }, [lastAdminTyping]);
 
@@ -790,6 +810,8 @@ export default function SupportPage({ setPage }) {
       sendReply();
     }
   };
+
+ 
 
   return (
     <div style={{ padding: "20px", maxWidth: "840px", margin: "0 auto", fontFamily: "inherit" }}>
