@@ -60,7 +60,9 @@ export default function SupportManagement({ setPage, setActivePage }) {
   const [activeTab, setActiveTab] = useState("tickets");
   const [internalNotes, setInternalNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  
   const messagesEndRef = useRef(null);
+  const typingTimeout = useRef(null);
 
   useEffect(() => {
     const q = query(
@@ -91,11 +93,11 @@ export default function SupportManagement({ setPage, setActivePage }) {
     }
   }, [tickets]);
 
-  // Fix 1: Cleanup effect to clear typing when unmounting or switching tickets
+  // Cleanup effect to clear typing when unmounting or switching tickets
   useEffect(() => {
     return () => {
       if (selectedTicket) {
-        updateTypingStatus(null);
+        updateTypingStatus(false);
       }
     };
   }, [selectedTicket]);
@@ -135,14 +137,21 @@ export default function SupportManagement({ setPage, setActivePage }) {
     setInternalNotes(selectedTicket.internalNotes || "");
   }, [selectedTicket]);
 
-  // Throttle/Update timestamp typing status
+  // Optimized Typing Status Effect with Debounce Timeout
   useEffect(() => {
     if (!selectedTicket) return;
+    
     if (reply.trim()) {
-      updateTypingStatus(serverTimestamp());
+      updateTypingStatus(true);
+      clearTimeout(typingTimeout.current);
+      typingTimeout.current = setTimeout(() => {
+        updateTypingStatus(false);
+      }, 2500);
     } else {
-      updateTypingStatus(null);
+      updateTypingStatus(false);
     }
+
+    return () => clearTimeout(typingTimeout.current);
   }, [reply, selectedTicket]);
 
   const updatePriority = async (newPriority) => {
@@ -171,13 +180,13 @@ export default function SupportManagement({ setPage, setActivePage }) {
     }
   };
 
-  // Updated to support timestamp or null to clear
-  const updateTypingStatus = async (timestampValue) => {
+  // Helper to update admin typing boolean state
+  const updateTypingStatus = async (isTyping) => {
     if (!selectedTicket) return;
     try {
       await setDoc(
         doc(db, "supportTickets", selectedTicket.id),
-        { adminTypingAt: timestampValue },
+        { adminTyping: isTyping },
         { merge: true }
       );
     } catch (err) {
@@ -185,18 +194,18 @@ export default function SupportManagement({ setPage, setActivePage }) {
     }
   };
 
-  // Fix 2: Helper to securely open a ticket while clearing old typing states
+  // Helper to securely open a ticket while clearing old typing states
   const openTicket = async (ticket) => {
     if (selectedTicket) {
-      await updateTypingStatus(null);
+      await updateTypingStatus(false);
     }
     setSelectedTicket(ticket);
   };
 
-  // Fix 3: Helper to switch admin tabs safely
+  // Helper to switch admin tabs safely
   const changeTab = async (tab) => {
     if (selectedTicket) {
-      await updateTypingStatus(null);
+      await updateTypingStatus(false);
     }
     setActiveTab(tab);
   };
@@ -205,6 +214,8 @@ export default function SupportManagement({ setPage, setActivePage }) {
     if (!reply.trim() || !selectedTicket || sending) return;
     try {
       setSending(true);
+      clearTimeout(typingTimeout.current);
+      
       await addDoc(
         collection(db, "supportTickets", selectedTicket.id, "messages"),
         {
@@ -214,16 +225,17 @@ export default function SupportManagement({ setPage, setActivePage }) {
           createdAt: serverTimestamp()
         }
       );
+      
       await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
         updatedAt: serverTimestamp(),
         customerUnread: increment(1),
         lastReplyBy: "support",
         lastMessage: reply.trim(),
         lastMessageAt: serverTimestamp(),
-        adminTypingAt: null
+        adminTyping: false
       });
+      
       setReply("");
-      await updateTypingStatus(null);
     } catch (err) {
       console.log("Error sending reply:", err);
     } finally {
@@ -231,16 +243,19 @@ export default function SupportManagement({ setPage, setActivePage }) {
     }
   };
 
-  // Fix 4: Safely clear typing status on status change
+  // Safely clear typing status on status change
   const updateTicketStatus = async (newStatus) => {
     if (!selectedTicket) return;
     try {
-      await updateTypingStatus(null);
+      clearTimeout(typingTimeout.current);
+      await updateTypingStatus(false);
+      
       await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
         status: newStatus,
         updatedAt: serverTimestamp(),
-        adminTypingAt: null
+        adminTyping: false
       });
+      
       setSelectedTicket((prev) => ({ ...prev, status: newStatus }));
     } catch (err) {
       console.log("Error updating status:", err);
@@ -361,6 +376,8 @@ export default function SupportManagement({ setPage, setActivePage }) {
       </div>
     );
   }
+
+
 
 
 
