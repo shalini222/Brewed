@@ -1712,6 +1712,253 @@ export default function SupportPage({ setPage }) {
 
             </div>
           </section>
+          <section>
+  <h2 className="support-heading">
+    <FileText size={20} color="#C4956A" />
+    {" "}
+    Support Policies
+  </h2>
+
+  {/* Categories */}
+  <div
+    style={{
+      display: "flex",
+      gap: "8px",
+      overflowX: "auto",
+      margin: "14px 0 16px",
+      paddingBottom: "4px"
+    }}
+  >
+    {policyCategories.map((category) => (
+      <button
+        key={category}
+        onClick={() => setSelectedPolicyCategory(category)}
+        className="support-btn support-btn-secondary"
+        style={{
+          background:
+            selectedPolicyCategory === category
+              ? "#C4956A"
+              : "#FAF6F0",
+          color:
+            selectedPolicyCategory === category
+              ? "#fff"
+              : "#2C221E",
+          whiteSpace: "nowrap"
+        }}
+      >
+        {category}
+      </button>
+    ))}
+  </div>
+
+  {/* Search */}
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      background: "#fff",
+      border: "1px solid #E8DED2",
+      borderRadius: "14px",
+      padding: "12px 16px",
+      marginBottom: "16px"
+    }}
+  >
+    <Search size={18} color="#C4956A" />
+
+    <input
+      type="text"
+      value={policySearch}
+      onChange={(e) => setPolicySearch(e.target.value)}
+      placeholder="Search policies..."
+      style={{
+        flex: 1,
+        border: "none",
+        outline: "none",
+        marginLeft: "10px",
+        background: "transparent",
+        fontSize: "14px"
+      }}
+    />
+  </div>
+
+  {/* Policies */}
+  {filteredPolicies.length === 0 ? (
+    <div className="empty-state">
+      <ShieldCheck size={36} color="#C4956A" />
+      <h3>No policies found</h3>
+      <p>Try another search or category.</p>
+    </div>
+  ) : (
+    filteredPolicies.map((policy) => {
+      const relatedPolicies = policies
+        .filter(
+          (p) =>
+            p.id !== policy.id &&
+            p.category === policy.category
+        )
+        .slice(0, 3);
+
+      return (
+        <div
+          key={policy.id}
+          id={`policy-${policy.id}`}
+          className="faq-card"
+        >
+          <button
+            className="faq-btn"
+            onClick={() =>
+              setOpenPolicy(
+                openPolicy === policy.id
+                  ? null
+                  : policy.id
+              )
+            }
+          >
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: "6px"
+              }}
+            >
+              <span
+                style={{
+                  fontWeight: 700,
+                  color: "#2C221E"
+                }}
+              >
+                {policy.title}
+              </span>
+
+              <span
+                style={{
+                  background: "#FAF6F0",
+                  color: "#C4956A",
+                  padding: "2px 8px",
+                  borderRadius: "999px",
+                  fontSize: "11px",
+                  fontWeight: 600
+                }}
+              >
+                {policy.category}
+              </span>
+            </div>
+
+            {openPolicy === policy.id ? (
+              <ChevronUp size={18} />
+            ) : (
+              <ChevronDown size={18} />
+            )}
+          </button>
+
+          {openPolicy === policy.id && (
+            <div className="faq-answer">
+
+              <div
+                style={{
+                  whiteSpace: "pre-wrap",
+                  lineHeight: "1.8"
+                }}
+              >
+                {policy.content}
+              </div>
+
+              {relatedPolicies.length > 0 && (
+                <div
+                  style={{
+                    marginTop: "20px",
+                    borderTop: "1px solid #E8DED2",
+                    paddingTop: "16px"
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 650,
+                      marginBottom: "10px",
+                      color: "#2C221E"
+                    }}
+                  >
+                    Related Policies
+                  </div>
+
+                  {relatedPolicies.map((related) => (
+                    <button
+                      key={related.id}
+                      onClick={() => {
+                        setOpenPolicy(related.id);
+
+                        setTimeout(() => {
+                          document
+                            .getElementById(
+                              `policy-${related.id}`
+                            )
+                            ?.scrollIntoView({
+                              behavior: "smooth",
+                              block: "start"
+                            });
+                        }, 100);
+                      }}
+                      style={{
+                        width: "100%",
+                        textAlign: "left",
+                        marginBottom: "8px",
+                        background: "#FAF6F0",
+                        border: "1px solid #E8DED2",
+                        borderRadius: "10px",
+                        padding: "10px 14px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          color: "#2C221E"
+                        }}
+                      >
+                        {related.title}
+                      </div>
+
+                      <div
+                        style={{
+                          fontSize: "11px",
+                          color: "#9A8C82"
+                        }}
+                      >
+                        {related.category}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div
+                style={{
+                  marginTop: "16px",
+                  paddingTop: "12px",
+                  borderTop: "1px solid #E8DED2",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "12px",
+                  color: "#9A8C82"
+                }}
+              >
+                <span>
+                  Category: {policy.category}
+                </span>
+
+                <span>
+                  Updated by {policy.editedBy || "Admin"}
+                </span>
+              </div>
+
+            </div>
+          )}
+        </div>
+      );
+    })
+  )}
+</section>
 
         </div>
       )}
