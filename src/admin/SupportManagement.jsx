@@ -180,16 +180,13 @@ export default function SupportManagement({ setPage, setActivePage }) {
   const handleReplyChange = (e) => {
     const value = e.target.value;
     setReply(value);
-
     clearTimeout(typingTimeout.current);
-
-    if (!value.trim()) {
+    if (!selectedTicket) return;
+    if (value.trim() === "") {
       updateTypingStatus(false);
       return;
     }
-
     updateTypingStatus(true);
-
     typingTimeout.current = setTimeout(() => {
       updateTypingStatus(false);
     }, 2500);
@@ -217,9 +214,9 @@ export default function SupportManagement({ setPage, setActivePage }) {
 
     try {
       setSending(true);
+      setReply("");
       clearTimeout(typingTimeout.current);
-      setReply(""); // Clear input immediately for snappy UI response
-      await updateTypingStatus(false); // Clear typing status immediately
+      await updateTypingStatus(false);
       
       await Promise.all([
         addDoc(
@@ -381,10 +378,6 @@ export default function SupportManagement({ setPage, setActivePage }) {
       </div>
     );
   }
-
-
-
-
 
   return (
     <div
@@ -1157,7 +1150,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
                 </h3>
                 <textarea
                   value={reply}
-                  onChange={(e) => setReply(e.target.value)}
+                  onChange={handleReplyChange}
                   onKeyDown={(e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
                       e.preventDefault();
