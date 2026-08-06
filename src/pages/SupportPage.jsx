@@ -476,7 +476,7 @@ export default function SupportPage({ setPage }) {
     return () => unsubscribe();
   }, [selectedTicket?.id]);
 
-  // Fetch support settings in real-time
+  // Load Support Settings
   useEffect(() => {
     const unsubscribe = onSnapshot(
       doc(db, "supportSettings", "general"),
@@ -486,6 +486,7 @@ export default function SupportPage({ setPage }) {
         }
       }
     );
+
     return unsubscribe;
   }, []);
 
@@ -853,7 +854,6 @@ export default function SupportPage({ setPage }) {
     }
   };
 
-  
 
  
 
@@ -904,13 +904,17 @@ export default function SupportPage({ setPage }) {
         .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
         .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
         .faq-card { background: white; border: 1px solid #E8DED2; border-radius: 14px; margin-bottom: 12px; overflow: hidden; transition: border-color 0.2s; } .faq-card:hover { border-color: #D4B294; } .faq-btn { width: 100%; background: white; border: none; padding: 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 14px; font-weight: 600; color: #2C221E; text-align: left; } .faq-btn:hover { background: #FAF6F0; } .faq-answer { padding: 0 18px 18px; color: #6E5E53; line-height: 1.6; font-size: 14px; }
+        
+        .contact-card-link { text-decoration: none; color: inherit; display: block; height: 100%; }
+        
+        
         @keyframes typingBounce {
           0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
           40% { opacity: 1; transform: translateY(-3px); }
         }
       `}</style>
 
-      {/* Navigation Header */}
+     {/* Navigation Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           {activePage !== "home" && (
@@ -1296,6 +1300,183 @@ export default function SupportPage({ setPage }) {
                 </div>
               ))
             )}
+          </section>
+
+          <section>
+            <h2 className="support-heading">
+              <Phone size={20} color="#C4956A" />
+              {" "}
+              Contact Support
+            </h2>
+
+            <div className="support-grid">
+
+              {/* Phone */}
+              <div className="support-card" style={{ padding: 0, marginBottom: 0 }}>
+                <a
+                  href={`tel:${supportSettings.phone}`}
+                  className="contact-card-link"
+                  style={{ padding: "22px" }}
+                >
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start"
+                  }}>
+                    <Phone size={26} color="#C4956A" />
+                    <ExternalLink size={16} color="#B5A69B" />
+                  </div>
+
+                  <h3 style={{
+                    marginTop: "14px",
+                    marginBottom: "4px",
+                    color: "#2C221E"
+                  }}>
+                    Call Us
+                  </h3>
+
+                  <p style={{
+                    fontWeight: 600,
+                    color: "#C4956A"
+                  }}>
+                    {supportSettings.phone || "Not available"}
+                  </p>
+
+                  <p style={{
+                    fontSize: "12px",
+                    color: "#9A8C82"
+                  }}>
+                    {supportSettings.callDescription}
+                  </p>
+                </a>
+              </div>
+
+              {/* Email */}
+              <div className="support-card" style={{ padding: 0, marginBottom: 0 }}>
+                <a
+                  href={`mailto:${supportSettings.email}`}
+                  className="contact-card-link"
+                  style={{ padding: "22px" }}
+                >
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start"
+                  }}>
+                    <Mail size={26} color="#C4956A" />
+                    <ExternalLink size={16} color="#B5A69B" />
+                  </div>
+
+                  <h3 style={{
+                    marginTop: "14px",
+                    marginBottom: "4px",
+                    color: "#2C221E"
+                  }}>
+                    Email
+                  </h3>
+
+                  <p style={{
+                    fontWeight: 600,
+                    color: "#C4956A",
+                    wordBreak: "break-all"
+                  }}>
+                    {supportSettings.email || "Not available"}
+                  </p>
+
+                  <p style={{
+                    fontSize: "12px",
+                    color: "#9A8C82"
+                  }}>
+                    {supportSettings.emailDescription}
+                  </p>
+                </a>
+              </div>
+
+              {/* WhatsApp */}
+              <div className="support-card" style={{ padding: 0, marginBottom: 0 }}>
+                <a
+                  href={`https://wa.me/${supportSettings.whatsapp?.replace(/[^0-9]/g,"")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="contact-card-link"
+                  style={{ padding: "22px" }}
+                >
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start"
+                  }}>
+                    <MessageCircle size={26} color="#C4956A" />
+                    <ExternalLink size={16} color="#B5A69B" />
+                  </div>
+
+                  <h3 style={{
+                    marginTop: "14px",
+                    marginBottom: "4px",
+                    color: "#2C221E"
+                  }}>
+                    WhatsApp
+                  </h3>
+
+                  <p style={{
+                    fontWeight: 600,
+                    color: "#C4956A"
+                  }}>
+                    {supportSettings.whatsapp || "Not available"}
+                  </p>
+
+                  <p style={{
+                    fontSize: "12px",
+                    color: "#9A8C82"
+                  }}>
+                    {supportSettings.whatsappDescription}
+                  </p>
+                </a>
+              </div>
+
+              {/* Instagram */}
+              <div className="support-card" style={{ padding: 0, marginBottom: 0 }}>
+                <a
+                  href={`https://instagram.com/${supportSettings.instagram?.replace("@","")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="contact-card-link"
+                  style={{ padding: "22px" }}
+                >
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start"
+                  }}>
+                    <Camera size={26} color="#C4956A" />
+                    <ExternalLink size={16} color="#B5A69B" />
+                  </div>
+
+                  <h3 style={{
+                    marginTop: "14px",
+                    marginBottom: "4px",
+                    color: "#2C221E"
+                  }}>
+                    Instagram
+                  </h3>
+
+                  <p style={{
+                    fontWeight: 600,
+                    color: "#C4956A"
+                  }}>
+                    {supportSettings.instagram || "Not available"}
+                  </p>
+
+                  <p style={{
+                    fontSize: "12px",
+                    color: "#9A8C82"
+                  }}>
+                    {supportSettings.instagramDescription}
+                  </p>
+                </a>
+              </div>
+
+            </div>
           </section>
 
         </div>
