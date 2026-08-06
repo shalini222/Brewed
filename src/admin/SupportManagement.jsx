@@ -170,7 +170,8 @@ export default function SupportManagement({ setPage, setActivePage }) {
         customerUnread: increment(1),
         lastReplyBy: "support",
         lastMessage: reply.trim(),
-        lastMessageAt: serverTimestamp()
+        lastMessageAt: serverTimestamp(),
+        adminTyping: false
       });
       setReply("");
     } catch (err) {
@@ -1079,7 +1080,16 @@ export default function SupportManagement({ setPage, setActivePage }) {
                 </h3>
                 <textarea
                   value={reply}
-                  onChange={(e) => setReply(e.target.value)}
+                  onChange={async (e) => {
+                    const value = e.target.value;
+                    setReply(value);
+                    if (selectedTicket) {
+                      await updateDoc(
+                        doc(db, "supportTickets", selectedTicket.id),
+                        { adminTyping: value.trim().length > 0 }
+                      );
+                    }
+                  }}
                   onKeyDown={(e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
                       e.preventDefault();
