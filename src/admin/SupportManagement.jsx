@@ -185,20 +185,16 @@ const handleReplyChange = (e) => {
   const value = e.target.value;
   setReply(value);
 
-  if (!selectedTicket) return;
+  if (!selectedTicket?.id) return;
 
-  clearTimeout(typingTimeout.current);
+  alert("Admin typing", selectedTicket.id);
 
-  if (value.trim() === "") {
-    updateTypingStatus(false);
-    return;
-  }
-
-  updateTypingStatus(true);
-
-  typingTimeout.current = setTimeout(() => {
-    updateTypingStatus(false);
-  }, 3000);
+  updateDoc(
+    doc(db, "supportTickets", selectedTicket.id),
+    {
+      adminTypingAt: serverTimestamp()
+    }
+  );
 };
 
   // Helper to securely open a ticket while clearing old typing states
