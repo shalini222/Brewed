@@ -2,6 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL
+} from "firebase/storage";
+import {
   doc,
   getDoc,
   collection,
@@ -40,6 +46,9 @@ import {
   MessageSquare
 } from "lucide-react";
 
+// Initialize Firebase Storage
+const storage = getStorage();
+
 // Map icon names from Firestore to Lucide components
 const iconMap = { Truck, CreditCard, Gift, ShieldCheck, Package, HelpCircle };
 
@@ -72,11 +81,13 @@ export default function SupportPage({ setPage }) {
   const [subject, setSubject] = useState("");
   const [category, setCategory] = useState("");
   const [initialMessage, setInitialMessage] = useState("");
+  const [attachments, setAttachments] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   // Chat conversation states
   const [messages, setMessages] = useState([]);
   const [reply, setReply] = useState("");
+  const [replyAttachments, setReplyAttachments] = useState([]);
   const [sending, setSending] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(true);
 
@@ -325,6 +336,21 @@ export default function SupportPage({ setPage }) {
     }
   }, [messages, isNearBottom]);
 
+  // Helper to upload attachments to Firebase Storage
+  const uploadAttachments = async (filesToUpload) => {
+    const uploaded = [];
+    for (const file of filesToUpload) {
+      const fileRef = storageRef(
+        storage,
+        `support/${currentUser.uid}/${Date.now()}-${file.name}`
+      );
+      await uploadBytes(fileRef, file);
+      const url = await getDownloadURL(fileRef);
+      uploaded.push({ name: file.name, url, type: file.type });
+    }
+    return uploaded;
+  };
+
   // Create a new support ticket
   const handleCreateTicket = async (e) => {
     e.preventDefault();
@@ -332,6 +358,8 @@ export default function SupportPage({ setPage }) {
 
     try {
       setSubmitting(true);
+
+      const uploadedFiles = await uploadAttachments(attachments);
 
       const ticketRef = await addDoc(collection(db, "supportTickets"), {
         customerId: currentUser.uid,
@@ -347,15 +375,16 @@ export default function SupportPage({ setPage }) {
         lastMessage: initialMessage.trim(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        lastMessageAt: serverTimestamp()
+        lastMessageAt: serverTimestamp(),
+        attachments: uploadedFiles
       });
 
-      // Using serverTimestamp() for the initial message document in the subcollection
       await addDoc(collection(db, "supportTickets", ticketRef.id, "messages"), {
         sender: "customer",
         senderName: currentUser.displayName || currentUser.email || "Customer",
         message: initialMessage.trim(),
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        attachments: uploadedFiles
       });
 
       const snap = await getDoc(ticketRef);
@@ -366,6 +395,7 @@ export default function SupportPage({ setPage }) {
       setSubject("");
       setCategory(helpCategories.length > 0 ? helpCategories[0].title : "General");
       setInitialMessage("");
+      setAttachments([]);
       setShowSuccessModal(true);
     } catch (err) {
       console.log("Error creating support ticket:", err);
@@ -376,7 +406,7 @@ export default function SupportPage({ setPage }) {
 
   // Send a message reply
   const sendReply = async () => {
-    if (!reply.trim() || sending || !selectedTicket?.id || !currentUser?.uid) return;
+    if ((!reply.trim() && replyAttachments.length === 0) || sending || !selectedTicket?.id || !currentUser?.uid) return;
 
     try {
       setSending(true);
@@ -389,23 +419,26 @@ export default function SupportPage({ setPage }) {
         return;
       }
 
-      // Using serverTimestamp() for the reply message document in the subcollection
+      const uploadedReplyFiles = await uploadAttachments(replyAttachments);
+
       await addDoc(collection(db, "supportTickets", selectedTicket.id, "messages"), {
         sender: "customer",
         senderName: currentUser.displayName || currentUser.email || "Customer",
         message: reply.trim(),
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        attachments: uploadedReplyFiles
       });
 
       await updateDoc(ticketRef, {
         updatedAt: serverTimestamp(),
         supportUnread: increment(1),
         lastReplyBy: "customer",
-        lastMessage: reply.trim(),
+        lastMessage: reply.trim() || "[Attachment]",
         lastMessageAt: serverTimestamp()
       });
 
       setReply("");
+      setReplyAttachments([]);
     } catch (err) {
       console.log("Error sending reply:", err);
     } finally {
@@ -1276,6 +1309,39 @@ export default function SupportPage({ setPage }) {
               />
             </div>
 
+            {/* File Picker */}
+            <div style={{ marginBottom: "15px" }}>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: 600, fontSize: "13px", color: "#6E5E53" }}>
+                Attach files (optional)
+              </label>
+              <input
+                type="file"
+                multiple
+                accept="image/*,.pdf,.txt,.doc,.docx"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files);
+                  if (files.length > 5) {
+                    alert("Maximum 5 attachments allowed.");
+                    return;
+                  }
+                  setAttachments(files);
+                }}
+                style={{ fontSize: "13px", color: "#6E5E53" }}
+              />
+            </div>
+
+            {/* Show selected files before submitting */}
+            {attachments.length > 0 && (
+              <div style={{ marginBottom: "15px", padding: "12px", background: "#FAF6F0", borderRadius: "10px", border: "1px solid #E8DED2" }}>
+                <div style={{ fontSize: "12px", fontWeight: 600, color: "#2C221E", marginBottom: "6px" }}>Selected Files:</div>
+                {attachments.map((file, index) => (
+                  <div key={index} style={{ fontSize: "13px", color: "#6E5E53", marginBottom: "4px" }}>
+                    📎 {file.name}
+                  </div>
+                ))}
+              </div>
+            )}
+
             <button type="submit" className="support-btn" disabled={submitting || helpCategories.length === 0} style={{ alignSelf: "flex-end" }}>
               {submitting ? "Submitting..." : helpCategories.length === 0 ? "No Categories Available" : "Submit Ticket"}
             </button>
@@ -1326,6 +1392,25 @@ export default function SupportPage({ setPage }) {
                     </span>
                     <div className={isCustomer ? "customer-msg" : "support-msg"}>
                       <p style={{ margin: 0 }}>{msg.message}</p>
+                      
+                      {/* Show attachments in the conversation */}
+                      {msg.attachments?.length > 0 && (
+                        <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid rgba(0,0,0,0.1)" }}>
+                          {msg.attachments.map((file, index) => (
+                            <div key={index} style={{ marginTop: "4px" }}>
+                              <a 
+                                href={file.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                style={{ color: isCustomer ? "#fff" : "#C4956A", textDecoration: "underline", fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                              >
+                                📎 {file.name}
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       <div style={{ marginTop: "6px", fontSize: "11px", opacity: 0.8, textAlign: isCustomer ? "right" : "left" }}>
                         {formatMessageTime(msg.createdAt)}
                       </div>
@@ -1361,6 +1446,30 @@ export default function SupportPage({ setPage }) {
                 rows={3}
                 style={{ width: "100%", padding: "12px", border: "1px solid #E8DED2", borderRadius: "12px", background: "#FDFAF5", outline: "none", color: "#2C221E", fontSize: "14px", resize: "vertical" }}
               />
+
+              {/* Reply File Picker */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf,.txt,.doc,.docx"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files);
+                    if (files.length > 5) {
+                      alert("Maximum 5 attachments allowed.");
+                      return;
+                    }
+                    setReplyAttachments(files);
+                  }}
+                  style={{ fontSize: "12px", color: "#9A8C82" }}
+                />
+                {replyAttachments.length > 0 && (
+                  <div style={{ fontSize: "12px", color: "#C4956A", fontWeight: 600 }}>
+                    {replyAttachments.length} file(s) selected for reply
+                  </div>
+                )}
+              </div>
+
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
                 <span style={{ fontSize: "11px", color: "#9A8C82" }}>Press Enter to send, Shift + Enter for new line</span>
                 <button onClick={sendReply} className="support-btn" disabled={sending}>
