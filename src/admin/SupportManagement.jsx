@@ -61,11 +61,11 @@ export default function SupportManagement({ setPage, setActivePage }) {
   const [internalNotes, setInternalNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   
- const messagesEndRef = useRef(null);
+  const messagesEndRef = useRef(null);
   const typingTimeout = useRef(null);
   const adminTypingTimeout = useRef(null);
+  const isTypingRef = useRef(false);
 
-  
   useEffect(() => {
     const q = query(
       collection(db, "supportTickets"),
@@ -95,16 +95,15 @@ export default function SupportManagement({ setPage, setActivePage }) {
     }
   }, [tickets]);
 
-  // Cleanup effect to clear typing when unmounting or switching tickets
-    // Cleanup effect to clear typing when unmounting or switching tickets
+  // Cleanup effect for unmount safety
   useEffect(() => {
     return () => {
-      if (selectedTicket) {
-        updateAdminTypingStatus(false);
+      clearTimeout(adminTypingTimeout.current);
+      if (selectedTicket?.id) {
+        updateAdminTypingStatus(selectedTicket.id, false);
       }
     };
-  }, [selectedTicket]);
-  
+  }, []);
 
   useEffect(() => {
     if (!selectedTicket) {
@@ -168,66 +167,62 @@ export default function SupportManagement({ setPage, setActivePage }) {
   };
 
   // Helper to update admin typing timestamp state
- const updateAdminTypingStatus = async (isTyping) => {
-    if (!selectedTicket?.id) return;
-
+  const updateAdminTypingStatus = async (ticketId, isTyping) => {
+    if (!ticketId) return;
     try {
-      await updateDoc(
-        doc(db, "supportTickets", selectedTicket.id),
-        {
-          adminTypingAt: isTyping ? serverTimestamp() : null
-        }
-      );
+      await updateDoc(doc(db, "supportTickets", ticketId), {
+        adminTypingAt: isTyping ? serverTimestamp() : null
+      });
     } catch (err) {
       console.log(err);
     }
   };
 
   // Optimized typing handler tied directly to text input changes
-// Optimized typing handler tied directly to text input changes with safety checks
-const handleAdminReplyChange = (e) => {
-  const value = e.target.value;
-  setReply(value);
+  const handleAdminReplyChange = (e) => {
+    const value = e.target.value;
+    setReply(value);
 
-  // Safety check: only run typing update if we have a valid selected ticket
-  if (!selectedTicket?.id) return;
+    if (!selectedTicket?.id) return;
 
-  if (value.trim()) {
-    updateAdminTypingStatus(true);
-  } else {
-    updateAdminTypingStatus(false);
-  }
-
-  if (adminTypingTimeout.current) {
-    clearTimeout(adminTypingTimeout.current);
-  }
-
-  adminTypingTimeout.current = setTimeout(() => {
-    if (selectedTicket?.id) {
-      updateAdminTypingStatus(false);
+    if (value.trim()) {
+      if (!isTypingRef.current) {
+        isTypingRef.current = true;
+        updateAdminTypingStatus(selectedTicket.id, true);
+      }
+      clearTimeout(adminTypingTimeout.current);
+      adminTypingTimeout.current = setTimeout(() => {
+        isTypingRef.current = false;
+        updateAdminTypingStatus(selectedTicket.id, false);
+      }, 2500);
+    } else {
+      clearTimeout(adminTypingTimeout.current);
+      isTypingRef.current = false;
+      updateAdminTypingStatus(selectedTicket.id, false);
     }
-  }, 2500);
-};
+  };
 
   // Helper to securely open a ticket while clearing old typing states
   const openTicket = async (ticket) => {
-    if (selectedTicket) {
-      await updateAdminTypingStatus(false);
+    clearTimeout(adminTypingTimeout.current);
+    if (selectedTicket?.id) {
+      isTypingRef.current = false;
+      await updateAdminTypingStatus(selectedTicket.id, false);
     }
     setSelectedTicket(ticket);
   };
 
   // Helper to switch admin tabs safely
   const changeTab = async (tab) => {
-    if (selectedTicket) {
-      await updateAdminTypingStatus(false);
+    clearTimeout(adminTypingTimeout.current);
+    if (selectedTicket?.id) {
+      isTypingRef.current = false;
+      await updateAdminTypingStatus(selectedTicket.id, false);
     }
     setActiveTab(tab);
   };
- 
 
-
-const sendReply = async () => {
+  const sendReply = async () => {
     const message = reply.trim();
     if (!message || !selectedTicket || sending) return;
 
@@ -236,7 +231,8 @@ const sendReply = async () => {
       clearTimeout(adminTypingTimeout.current);
 
       // Stop typing indicator
-      await updateAdminTypingStatus(false);
+      isTypingRef.current = false;
+      await updateAdminTypingStatus(selectedTicket.id, false);
 
       await Promise.all([
         addDoc(
@@ -269,15 +265,13 @@ const sendReply = async () => {
     }
   };
 
-  // Safely clear typing status on status change
-// Safely clear typing status on status change
-
-const updateTicketStatus = async (newStatus) => {
+  const updateTicketStatus = async (newStatus) => {
     if (!selectedTicket) return;
 
     try {
       clearTimeout(adminTypingTimeout.current);
-      await updateAdminTypingStatus(false);
+      isTypingRef.current = false;
+      await updateAdminTypingStatus(selectedTicket.id, false);
       
       await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
         status: newStatus,
@@ -405,6 +399,12 @@ const updateTicketStatus = async (newStatus) => {
       </div>
     );
   }
+
+ 
+
+
+
+
 
   return (
     <div
