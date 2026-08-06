@@ -165,7 +165,7 @@ export default function SupportPage({ setPage }) {
     setIsNearBottom(nearBottom);
   };
 
-  // Helper function to update customer typing status in Firestore if needed
+  // Helper function to update customer typing status in Firestore
   const updateTypingStatus = async (isTyping) => {
     if (!selectedTicket?.id || !currentUser?.uid) return;
     try {
@@ -177,19 +177,20 @@ export default function SupportPage({ setPage }) {
     }
   };
 
-  // Typing debounce implementation
+  // Improved debounce implementation for typing
   useEffect(() => {
     if (!selectedTicket) return;
-    if (!reply.trim()) {
+    if (reply.trim()) {
+      updateTypingStatus(true);
+      clearTimeout(typingTimeout.current);
+      typingTimeout.current = setTimeout(() => {
+        updateTypingStatus(false);
+      }, 2500);
+    } else {
       updateTypingStatus(false);
-      return;
     }
-    updateTypingStatus(true);
-    clearTimeout(typingTimeout.current);
-    typingTimeout.current = setTimeout(() => {
-      updateTypingStatus(false);
-    }, 3000);
-  }, [reply]);
+    return () => clearTimeout(typingTimeout.current);
+  }, [reply, selectedTicket]);
 
   // Clean up typing status on component unmount
   useEffect(() => {
@@ -203,6 +204,13 @@ export default function SupportPage({ setPage }) {
   useEffect(() => {
     updateTypingStatus(false);
   }, [selectedTicket]);
+
+  // Clear typing if ticket is closed
+  useEffect(() => {
+    if (selectedTicket?.status === "Closed") {
+      updateTypingStatus(false);
+    }
+  }, [selectedTicket?.status]);
 
   // Load categories from Firestore
   useEffect(() => {
@@ -471,7 +479,8 @@ export default function SupportPage({ setPage }) {
         updatedAt: serverTimestamp(),
         lastMessageAt: serverTimestamp(),
         attachments: uploadedFiles,
-        adminTyping: false
+        adminTyping: false,
+        customerTyping: false
       });
 
       await addDoc(collection(db, "supportTickets", ticketRef.id, "messages"), {
@@ -507,7 +516,7 @@ export default function SupportPage({ setPage }) {
 
     try {
       setSending(true);
-      updateTypingStatus(false);
+      await updateTypingStatus(false);
       clearTimeout(typingTimeout.current);
 
       const ticketRef = doc(db, "supportTickets", selectedTicket.id);
@@ -682,6 +691,29 @@ export default function SupportPage({ setPage }) {
       default: return "badge-open";
     }
   };
+
+  return (
+    <div className="support-container">
+      {/* Render your Support page layout here, making use of adminTyping for support typing indicators: */}
+      {adminTyping && (
+        <div className="typing-indicator">
+          Support is typing...
+        </div>
+      )}
+      
+      {/* Navigation handling with typing clearance */}
+      <button 
+        onClick={async () => { 
+          await updateTypingStatus(false); 
+          setActivePage("list"); 
+        }}
+      >
+        Back to Tickets
+      </button>
+    </div>
+  );
+}
+
 
   return (
     <div style={{ padding: "20px", maxWidth: "840px", margin: "0 auto", fontFamily: "inherit" }}>
