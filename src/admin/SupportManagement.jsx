@@ -376,12 +376,6 @@ export default function SupportManagement({ setPage, setActivePage }) {
     );
   }
 
- 
-
-
-
-
-
   return (
     <div
       style={{
@@ -478,7 +472,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => changeTab(tab.id)}
               onMouseEnter={(e) => {
                 if (!isActive) {
                   e.currentTarget.style.background = "#FAF8F5";
@@ -743,7 +737,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
                 return (
                   <div
                     key={ticket.id}
-                    onClick={() => setSelectedTicket(ticket)}
+                    onClick={() => openTicket(ticket)}
                     onMouseEnter={(e) => {
                       if (!isSelected) {
                         e.currentTarget.style.transform = "translateY(-2px)";
@@ -926,7 +920,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
                   </h2>
                 </div>
                 <button
-                  onClick={() => setSelectedTicket(null)}
+                  onClick={() => openTicket(null)}
                   style={{
                     background: "#F8F6F2",
                     border: "1px solid #EFE8DF",
