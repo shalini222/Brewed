@@ -133,6 +133,62 @@ export default function SupportPage({ setPage }) {
   const messagesEndRef = useRef(null);
   const typingTimeout = useRef(null);
 
+
+  // Check if business is currently open
+  const checkIsBusinessOpen = () => {
+    const now = new Date();
+
+    const day = now.getDay(); // 0 = Sunday
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+
+    const currentTime = hours * 60 + minutes;
+
+    const parseTimeRange = (range) => {
+      if (!range || range.toLowerCase().includes("closed")) return null;
+
+      const parts = range.split("-");
+
+      if (parts.length !== 2) return null;
+
+      const parse12Hour = (timeString) => {
+        const [time, period] = timeString.trim().split(" ");
+
+        let [h, m] = time.split(":").map(Number);
+
+        if (period?.toUpperCase() === "PM" && h < 12) h += 12;
+        if (period?.toUpperCase() === "AM" && h === 12) h = 0;
+
+        return h * 60 + (m || 0);
+      };
+
+      return {
+        start: parse12Hour(parts[0]),
+        end: parse12Hour(parts[1])
+      };
+    };
+
+    let todayHours = "";
+
+    if (day >= 1 && day <= 5)
+      todayHours = supportSettings.mondayFriday;
+    else if (day === 6)
+      todayHours = supportSettings.saturday;
+    else
+      todayHours = supportSettings.sunday;
+
+    const range = parseTimeRange(todayHours);
+
+    if (!range) return false;
+
+    return currentTime >= range.start && currentTime <= range.end;
+  };
+
+  const isBusinessOpen = checkIsBusinessOpen();
+  
+
+  
+
   // Cancel pending upload tasks on unmount
   useEffect(() => {
     return () => {
