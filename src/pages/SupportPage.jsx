@@ -1,5 +1,4 @@
-
-  import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { db, storage } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -18,7 +17,9 @@ import {
   addDoc,
   serverTimestamp,
   updateDoc,
-  increment
+  increment,
+  getDocs,
+  writeBatch
 } from "firebase/firestore";
 import { 
   Send, 
@@ -44,7 +45,9 @@ import {
   Clock3,
   ExternalLink,
   MessageSquare,
-  X
+  X,
+  Star,
+  AlertCircle
 } from "lucide-react";
 
 // Map icon names from Firestore to Lucide components
@@ -72,6 +75,9 @@ export default function SupportPage({ setPage }) {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [createdTicket, setCreatedTicket] = useState(null);
 
+  // Error Modal State
+  const [errorModal, setErrorModal] = useState({ open: false, title: "", message: "" });
+
   // Help Categories state
   const [helpCategories, setHelpCategories] = useState([]);
 
@@ -83,6 +89,13 @@ export default function SupportPage({ setPage }) {
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  // Upload Tasks Ref for cancellation on unmount (Step 15)
+  const uploadTasksRef = useRef([]);
+
+  // Duplicate submission prevention refs (Step 16)
+  const creatingTicketRef = useRef(false);
+  const sendingReplyRef = useRef(false);
+
   // Chat conversation states
   const [messages, setMessages] = useState([]);
   const [reply, setReply] = useState("");
@@ -91,6 +104,14 @@ export default function SupportPage({ setPage }) {
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [adminTyping, setAdminTyping] = useState(false);
   const [lastAdminTyping, setLastAdminTyping] = useState(null);
+
+  // Failed Messages state
+  const [failedMessages, setFailedMessages] = useState([]);
+
+  // CSAT Rating states
+  const [rating, setRating] = useState(0);
+  const [feedback, setFeedback] = useState("");
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   // Support Settings state
   const [supportSettings, setSupportSettings] = useState({
@@ -112,6 +133,18 @@ export default function SupportPage({ setPage }) {
   const containerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const typingTimeout = useRef(null);
+
+  // Cancel pending upload tasks on unmount (Step 15)
+  useEffect(() => {
+    return () => {
+      uploadTasksRef.current.forEach(task => {
+        try {
+          task.cancel();
+        } catch {}
+      });
+      uploadTasksRef.current = [];
+    };
+  }, []);
 
   // FAQ 
   const [faqs, setFaqs] = useState([]);
@@ -180,7 +213,7 @@ export default function SupportPage({ setPage }) {
     }
   };
 
-  // Typing change handler with optimized writes and safe timeouts (Fix 4)
+  // Typing change handler with optimized writes and safe timeouts
   const handleReplyChange = (e) => {
     const value = e.target.value;
     setReply(value);
@@ -295,7 +328,7 @@ export default function SupportPage({ setPage }) {
     return () => unsubscribe();
   }, [currentUser?.uid]);
 
-  // Mark messages as read for Customer when viewing a ticket
+  // Mark messages as read for Customer when viewing a ticket and update unread customer messages status to "read"
   useEffect(() => {
     if (!selectedTicket?.id) return;
 
@@ -305,6 +338,21 @@ export default function SupportPage({ setPage }) {
           await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
             customerUnread: 0
           });
+
+          const messagesRef = collection(db, "supportTickets", selectedTicket.id, "messages");
+          const q = query(messagesRef, where("sender", "==", "customer"), where("status", "==", "sent"));
+          const querySnapshot = await getDocs(q);
+          
+          if (!querySnapshot.empty) {
+            const batch = writeBatch(db);
+            querySnapshot.forEach((document) => {
+              batch.update(document.ref, {
+                status: "read",
+                readAt: serverTimestamp()
+              });
+            });
+            await batch.commit();
+          }
         }
       } catch (err) {
         console.log("Error marking ticket as read for customer:", err);
@@ -324,6 +372,7 @@ export default function SupportPage({ setPage }) {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setLastAdminTyping(data.adminTypingAt || null);
+          setSelectedTicket((prev) => prev ? { ...prev, ...data } : null);
         }
       }
     );
@@ -449,84 +498,121 @@ export default function SupportPage({ setPage }) {
     return "📎";
   };
 
-  // Helper to upload attachments to Firebase Storage with Progress
+  // Helper to upload attachments with tracking and filtering (Step 15)
   const uploadAttachments = async (filesToUpload, onProgress) => {
-    const uploaded = [];
-    const totalFiles = filesToUpload.length;
-    if (totalFiles === 0) return uploaded;
-
-    const fileSizes = filesToUpload.map(f => f.size);
-    const totalBytes = fileSizes.reduce((a, b) => a + b, 0) || 1;
-    const uploadedBytesPerFile = new Array(totalFiles).fill(0);
-
-    for (let i = 0; i < filesToUpload.length; i++) {
-      const file = filesToUpload[i];
-      const fileRef = storageRef(
-        storage,
-        `support/${currentUser.uid}/${Date.now()}-${file.name}`
-      );
-      
-      await new Promise((resolve, reject) => {
+    if (!filesToUpload.length) return [];
+    const totalBytes = filesToUpload.reduce((sum, file) => sum + file.size, 0) || 1;
+    let transferredBytes = 0;
+    
+    const uploads = filesToUpload.map((file) => {
+      return new Promise((resolve, reject) => {
+        const fileRef = storageRef(
+          storage,
+          `support/${currentUser.uid}/${Date.now()}-${file.name}`
+        );
         const uploadTask = uploadBytesResumable(fileRef, file);
+        uploadTasksRef.current.push(uploadTask);
 
+        let previousTransferred = 0;
         uploadTask.on(
           "state_changed",
           (snapshot) => {
-            uploadedBytesPerFile[i] = snapshot.bytesTransferred;
-            const currentTotalTransferred = uploadedBytesPerFile.reduce((a, b) => a + b, 0);
-            const percentage = Math.round((currentTotalTransferred / totalBytes) * 100);
-            if (onProgress) onProgress(Math.min(percentage, 100));
+            transferredBytes += snapshot.bytesTransferred - previousTransferred;
+            previousTransferred = snapshot.bytesTransferred;
+            if (onProgress) {
+              onProgress(
+                Math.round((transferredBytes / totalBytes) * 100)
+              );
+            }
           },
-          (error) => {
-            reject(error);
-          },
+          reject,
           async () => {
             const url = await getDownloadURL(uploadTask.snapshot.ref);
-            uploaded.push({ name: file.name, url, type: file.type, size: file.size });
-            resolve();
+            uploadTasksRef.current = uploadTasksRef.current.filter(
+              task => task !== uploadTask
+            );
+            resolve({ name: file.name, url, type: file.type, size: file.size });
           }
         );
       });
-    }
-    return uploaded;
+    });
+    return Promise.all(uploads);
   };
 
-  // Handle file selection with validation (Fix 3)
+  // Handle file selection with validation
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-    const MAX_FILES = 5;
-    const MAX_SIZE = 10 * 1024 * 1024;
+    const MAX_ATTACHMENTS = 5;
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     const allowedTypes = [
       "image/jpeg",
       "image/png",
       "image/webp",
       "application/pdf"
     ];
+
+    if (files.length > MAX_ATTACHMENTS) {
+      setErrorModal({
+        open: true,
+        title: "Too Many Files",
+        message: `You can only attach up to ${MAX_ATTACHMENTS} files.`
+      });
+      return;
+    }
+
     const validFiles = [];
 
     for (const file of files) {
       if (!allowedTypes.includes(file.type)) {
-        alert(`${file.name} is not supported.`);
-        continue;
+        setErrorModal({
+          open: true,
+          title: "Unsupported File Type",
+          message: `${file.name} is not supported. Please upload images or PDFs.`
+        });
+        return;
       }
-      if (file.size > MAX_SIZE) {
-        alert(`${file.name} exceeds 10MB.`);
-        continue;
+      if (file.size > MAX_FILE_SIZE) {
+        setErrorModal({
+          open: true,
+          title: "File Too Large",
+          message: `${file.name} exceeds the 10MB limit.`
+        });
+        return;
       }
       validFiles.push(file);
     }
 
-    if (validFiles.length > MAX_FILES) {
-      alert("Maximum 5 attachments.");
-      return;
-    }
     setAttachments(validFiles);
   };
 
-  // Create a new support ticket
+  // Create a new support ticket with duplicate protection (Step 16)
   const handleCreateTicket = async (e) => {
     e.preventDefault();
-    if (!subject.trim() || !initialMessage.trim() || submitting || !currentUser?.uid) return;
+    if (
+      !subject.trim() ||
+      !initialMessage.trim() ||
+      !currentUser?.uid ||
+      creatingTicketRef.current
+    ) {
+      return;
+    }
+    creatingTicketRef.current = true;
+
+    const existingOpenTicket = tickets.find(
+      (ticket) =>
+        ticket.subject.trim().toLowerCase() === subject.trim().toLowerCase() &&
+        ticket.category === category &&
+        ["Open", "In Progress", "Waiting for Customer"].includes(ticket.status)
+    );
+    if (existingOpenTicket) {
+      creatingTicketRef.current = false;
+      setErrorModal({
+        open: true,
+        title: "Active Ticket Exists",
+        message: `You already have an open ${category} support ticket with this subject.`
+      });
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -536,7 +622,6 @@ export default function SupportPage({ setPage }) {
         setUploadProgress(progress);
       });
 
-      // Generate ticket number (Fix 2)
       const ticketNumber = "SUP-" + Math.floor(100000 + Math.random() * 900000);
 
       const ticketRef = await addDoc(collection(db, "supportTickets"), {
@@ -547,7 +632,7 @@ export default function SupportPage({ setPage }) {
         subject: subject.trim(),
         category: category,
         status: "Open",
-        priority: "Medium", // Fixed Priority (Fix 1)
+        priority: "Medium",
         customerUnread: 0,
         supportUnread: 1,
         lastReplyBy: "customer",
@@ -555,6 +640,16 @@ export default function SupportPage({ setPage }) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastMessageAt: serverTimestamp(),
+        lastCustomerReplyAt: serverTimestamp(),
+        // SLA fields (Step 13, Step 1)
+        slaStatus: "On Time",
+        firstResponseAt: null,
+        resolvedAt: null,
+        responseTime: null,
+        resolutionTime: null,
+        rating: null,
+        feedback: "",
+        ratedAt: null,
         attachments: uploadedFiles,
         adminTypingAt: null,
         customerTypingAt: null
@@ -565,7 +660,8 @@ export default function SupportPage({ setPage }) {
         senderName: currentUser.displayName || currentUser.email || "Customer",
         message: initialMessage.trim(),
         createdAt: serverTimestamp(),
-        attachments: uploadedFiles
+        attachments: uploadedFiles,
+        status: "sent"
       });
 
       const snap = await getDoc(ticketRef);
@@ -577,19 +673,49 @@ export default function SupportPage({ setPage }) {
       setCategory(helpCategories.length > 0 ? helpCategories[0].title : "General");
       setInitialMessage("");
       setAttachments([]);
-      setUploadProgress(0);
       setShowSuccessModal(true);
     } catch (err) {
       console.error("Error creating support ticket:", err);
-      alert("Error uploading attachments or creating ticket. Check console for details.");
+      setErrorModal({
+        open: true,
+        title: "Upload Failed",
+        message: "We couldn't create your support ticket. Please try again."
+      });
     } finally {
+      creatingTicketRef.current = false;
       setSubmitting(false);
+      setUploadProgress(0);
     }
   };
 
-  // Send a message reply
+  // Send a message reply with duplicate protection (Step 16)
   const sendReply = async () => {
-    if ((!reply.trim() && replyAttachments.length === 0) || sending || !selectedTicket?.id || !currentUser?.uid) return;
+    if (
+      sendingReplyRef.current ||
+      (!reply.trim() && replyAttachments.length === 0) ||
+      !selectedTicket?.id ||
+      !currentUser?.uid
+    ) {
+      return;
+    }
+    sendingReplyRef.current = true;
+
+    const tempId = `temp-${Date.now()}`;
+    const messageText = reply.trim();
+    const currentReplyAttachments = [...replyAttachments];
+
+    const optimisticMessage = {
+      id: tempId,
+      sender: "customer",
+      senderName: currentUser.displayName || currentUser.email || "Customer",
+      message: messageText,
+      attachments: currentReplyAttachments.map(f => ({ name: f.name, type: f.type, size: f.size, url: "" })),
+      createdAt: { toDate: () => new Date() },
+      sending: true,
+      status: "sending"
+    };
+
+    setMessages(prev => [...prev, optimisticMessage]);
 
     try {
       setSending(true);
@@ -599,36 +725,135 @@ export default function SupportPage({ setPage }) {
       const ticketSnap = await getDoc(ticketRef);
 
       if (!ticketSnap.exists()) {
-        alert("This ticket no longer exists.");
+        setErrorModal({
+          open: true,
+          title: "Ticket Unavailable",
+          message: "This ticket no longer exists."
+        });
+        setMessages(prev => prev.filter(msg => msg.id !== tempId));
         setActivePage("list");
         return;
       }
 
-      const uploadedReplyFiles = await uploadAttachments(replyAttachments);
+      const uploadedReplyFiles = await uploadAttachments(currentReplyAttachments);
 
       await addDoc(collection(db, "supportTickets", selectedTicket.id, "messages"), {
         sender: "customer",
         senderName: currentUser.displayName || currentUser.email || "Customer",
-        message: reply.trim(),
+        message: messageText,
         createdAt: serverTimestamp(),
-        attachments: uploadedReplyFiles
+        attachments: uploadedReplyFiles,
+        status: "sent"
       });
 
       await updateDoc(ticketRef, {
         updatedAt: serverTimestamp(),
         supportUnread: increment(1),
         lastReplyBy: "customer",
-        lastMessage: reply.trim() || "[Attachment]",
+        lastMessage: messageText || "[Attachment]",
         lastMessageAt: serverTimestamp(),
+        lastCustomerReplyAt: serverTimestamp(),
         customerTypingAt: null
       });
 
       setReply("");
       setReplyAttachments([]);
+
     } catch (err) {
       console.error("Error sending reply:", err);
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
+      
+      setFailedMessages(prev => [
+        ...prev,
+        { id: Date.now(), text: messageText, attachments: currentReplyAttachments }
+      ]);
+
+      setErrorModal({
+        open: true,
+        title: "Failed to Send",
+        message: "Could not send your message. You can retry below."
+      });
     } finally {
+      sendingReplyRef.current = false;
       setSending(false);
+    }
+  };
+
+  // Retry function for failed messages
+  const retryMessage = async (message) => {
+    setReply(message.text);
+    setReplyAttachments(message.attachments);
+    await sendReply();
+    setFailedMessages(prev =>
+      prev.filter(m => m.id !== message.id)
+    );
+  };
+
+  // Submit Rating (Step 12)
+  const submitRating = async () => {
+    if (!selectedTicket?.id || submittingRating || rating === 0) return;
+    try {
+      setSubmittingRating(true);
+      await updateDoc(
+        doc(db, "supportTickets", selectedTicket.id),
+        {
+          rating,
+          feedback,
+          ratedAt: serverTimestamp()
+        }
+      );
+      setSelectedTicket(prev => prev ? { ...prev, rating, feedback, ratedAt: { toDate: () => new Date() } } : null);
+    } catch (err) {
+      console.error("Error submitting rating:", err);
+      setErrorModal({
+        open: true,
+        title: "Rating Failed",
+        message: "Could not submit your feedback. Please try again."
+      });
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
+  // Reopen Ticket Function with 30-day age validation & system message logging
+  const reopenTicket = async () => {
+    if (!selectedTicket?.id) return;
+    try {
+      if (selectedTicket.updatedAt?.toDate) {
+        const daysSinceClosed = (Date.now() - selectedTicket.updatedAt.toDate()) / (1000 * 60 * 60 * 24);
+        if (daysSinceClosed > 30) {
+          setErrorModal({
+            open: true,
+            title: "Cannot Reopen",
+            message: "This ticket is too old to reopen. Please create a new support request."
+          });
+          return;
+        }
+      }
+
+      const ticketRef = doc(db, "supportTickets", selectedTicket.id);
+
+      await updateDoc(ticketRef, {
+        status: "Open",
+        updatedAt: serverTimestamp(),
+        customerUnread: 0,
+        supportUnread: increment(1),
+        lastReplyBy: "customer"
+      });
+
+      await addDoc(collection(db, "supportTickets", selectedTicket.id, "messages"), {
+        sender: "system",
+        message: "Customer reopened this support ticket.",
+        createdAt: serverTimestamp()
+      });
+
+    } catch (err) {
+      console.error("Error reopening ticket:", err);
+      setErrorModal({
+        open: true,
+        title: "Reopen Failed",
+        message: "Failed to reopen ticket. Please try again."
+      });
     }
   };
 
@@ -772,6 +997,13 @@ export default function SupportPage({ setPage }) {
       default: return "badge-open";
     }
   };
+
+  // SLA Response Time calculation (Step 13, Step 3)
+  const responseMinutes = selectedTicket?.firstResponseAt && selectedTicket?.createdAt ? Math.floor(
+    (selectedTicket.firstResponseAt.toDate() - selectedTicket.createdAt.toDate()) / 60000
+  ) : null;
+}
+
 
   
 
