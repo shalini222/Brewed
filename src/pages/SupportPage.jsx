@@ -708,7 +708,6 @@ export default function SupportPage({ setPage }) {
         .customer-message-wrapper { align-self: flex-end; align-items: flex-end; }
         .support-message-wrapper { align-self: flex-start; align-items: flex-start; }
         .message-sender-label { font-size: 12px; color: #9A8C82; margin-bottom: 4px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
-        .avatar-badge { width: 22px; height: 22px; border-radius: 50%; background: #E8DED2; color: #2C221E; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
         .customer-msg { background: #C4956A; color: white; padding: 14px 18px; border-radius: 18px 18px 4px 18px; font-size: 14px; line-height: 1.5; }
         .support-msg { background: #FFFFFF; border: 1px solid #E8DED2; color: #2C221E; padding: 14px 18px; border-radius: 18px 18px 18px 4px; font-size: 14px; line-height: 1.5; }
         
@@ -1550,7 +1549,6 @@ export default function SupportPage({ setPage }) {
                           "You"
                         ) : (
                           <>
-                            <span className="avatar-badge">☕</span>
                             Support Team
                           </>
                         )}
