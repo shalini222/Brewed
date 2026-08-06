@@ -89,6 +89,7 @@ export default function SupportPage({ setPage }) {
   const [sending, setSending] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [adminTyping, setAdminTyping] = useState(false);
+  const [lastAdminTyping, setLastAdminTyping] = useState(null);
 
   // Support Settings state
   const [supportSettings, setSupportSettings] = useState({
@@ -183,20 +184,27 @@ export default function SupportPage({ setPage }) {
     const value = e.target.value;
     setReply(value);
     clearTimeout(typingTimeout.current);
-    if (value.trim()) {
-      updateTypingStatus();
+    if (!value.trim()) {
+      return;
     }
+    updateTypingStatus();
     typingTimeout.current = setTimeout(() => {
       updateTypingStatus();
     }, 2000);
   };
 
-  // Clean up typing timeout on component unmount
+  // Clean up typing timeout and reset customer typing on unmount / ticket change
   useEffect(() => {
     return () => {
       clearTimeout(typingTimeout.current);
+      if (selectedTicket?.id) {
+        updateDoc(
+          doc(db, "supportTickets", selectedTicket.id),
+          { customerTypingAt: null }
+        ).catch(() => {});
+      }
     };
-  }, []);
+  }, [selectedTicket]);
 
   // Load categories from Firestore
   useEffect(() => {
@@ -273,7 +281,7 @@ export default function SupportPage({ setPage }) {
     markAsRead();
   }, [selectedTicket?.id, selectedTicket?.customerUnread]);
 
-  // Listen to the active ticket document for live updates (including admin typing via timestamp)
+  // Listen to the active ticket document for live updates
   useEffect(() => {
     if (!selectedTicket?.id) return;
 
@@ -282,17 +290,25 @@ export default function SupportPage({ setPage }) {
       (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
-          if (data.adminTypingAt?.seconds) {
-            const diff = Date.now() / 1000 - data.adminTypingAt.seconds;
-            setAdminTyping(diff < 3);
-          } else {
-            setAdminTyping(false);
-          }
+          setLastAdminTyping(data.adminTypingAt || null);
         }
       }
     );
     return () => unsubscribe();
   }, [selectedTicket?.id]);
+
+  // Admin typing status timer interval
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!lastAdminTyping?.seconds) {
+        setAdminTyping(false);
+        return;
+      }
+      const diff = Date.now() / 1000 - lastAdminTyping.seconds;
+      setAdminTyping(diff < 3);
+    }, 500);
+    return () => clearInterval(interval);
+  }, [lastAdminTyping]);
 
   // Real-time messages listener for the active ticket
   useEffect(() => {
@@ -534,7 +550,8 @@ export default function SupportPage({ setPage }) {
         supportUnread: increment(1),
         lastReplyBy: "customer",
         lastMessage: reply.trim() || "[Attachment]",
-        lastMessageAt: serverTimestamp()
+        lastMessageAt: serverTimestamp(),
+        customerTypingAt: null
       });
 
       setReply("");
@@ -686,6 +703,9 @@ export default function SupportPage({ setPage }) {
       default: return "badge-open";
     }
   };
+
+
+
 
 
   return (
