@@ -109,6 +109,7 @@ export default function SupportPage({ setPage }) {
 
   const containerRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const typingTimeout = useRef(null); // Added typing timeout ref
 
   // FAQ 
   const [faqs, setFaqs] = useState([]);
@@ -163,6 +164,45 @@ export default function SupportPage({ setPage }) {
     const nearBottom = scrollHeight - scrollTop - clientHeight < 150;
     setIsNearBottom(nearBottom);
   };
+
+  // Helper function to update customer typing status in Firestore if needed
+  const updateTypingStatus = async (isTyping) => {
+    if (!selectedTicket?.id || !currentUser?.uid) return;
+    try {
+      await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
+        customerTyping: isTyping
+      });
+    } catch (err) {
+      console.log("Error updating typing status:", err);
+    }
+  };
+
+  // Typing debounce implementation
+  useEffect(() => {
+    if (!selectedTicket) return;
+    if (!reply.trim()) {
+      updateTypingStatus(false);
+      return;
+    }
+    updateTypingStatus(true);
+    clearTimeout(typingTimeout.current);
+    typingTimeout.current = setTimeout(() => {
+      updateTypingStatus(false);
+    }, 3000);
+  }, [reply]);
+
+  // Clean up typing status on component unmount
+  useEffect(() => {
+    return () => {
+      updateTypingStatus(false);
+      clearTimeout(typingTimeout.current);
+    };
+  }, []);
+
+  // Clear typing status when changing tickets
+  useEffect(() => {
+    updateTypingStatus(false);
+  }, [selectedTicket]);
 
   // Load categories from Firestore
   useEffect(() => {
@@ -467,6 +507,9 @@ export default function SupportPage({ setPage }) {
 
     try {
       setSending(true);
+      updateTypingStatus(false);
+      clearTimeout(typingTimeout.current);
+
       const ticketRef = doc(db, "supportTickets", selectedTicket.id);
       const ticketSnap = await getDoc(ticketRef);
 
