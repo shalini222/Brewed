@@ -178,6 +178,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
 
   // Optimized typing handler tied directly to text input changes
   const handleReplyChange = (e) => {
+     alert("typing");
     const value = e.target.value;
     setReply(value);
     clearTimeout(typingTimeout.current);
