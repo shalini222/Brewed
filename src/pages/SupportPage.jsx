@@ -913,8 +913,7 @@ export default function SupportPage({ setPage }) {
           40% { opacity: 1; transform: translateY(-3px); }
         }
       `}</style>
-
-     {/* Navigation Header */}
+{/* Navigation Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           {activePage !== "home" && (
@@ -1479,6 +1478,132 @@ export default function SupportPage({ setPage }) {
             </div>
           </section>
 
+          <section>
+            <h2 className="support-heading">
+              <Clock size={20} color="#C4956A" />
+              {" "}
+              Business Hours
+            </h2>
+
+            <div className="support-card" style={{ marginBottom: 0 }}>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "16px",
+                  paddingBottom: "14px",
+                  borderBottom: "1px solid #F2ECE5",
+                  flexWrap: "wrap",
+                  gap: "10px"
+                }}
+              >
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <Clock size={24} color="#C4956A" />
+
+                  <div>
+                    <h3
+                      style={{
+                        margin: 0,
+                        color: "#2C221E"
+                      }}
+                    >
+                      {supportSettings.businessHoursTitle || "Business Hours"}
+                    </h3>
+
+                    <p
+                      style={{
+                        marginTop: "2px",
+                        color: "#9A8C82",
+                        fontSize: "13px"
+                      }}
+                    >
+                      {supportSettings.businessHoursDescription}
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: isBusinessOpen ? "#DCFCE7" : "#FEE2E2",
+                    color: isBusinessOpen ? "#16A34A" : "#DC2626",
+                    padding: "6px 12px",
+                    borderRadius: "999px",
+                    fontWeight: 700,
+                    fontSize: "12px"
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: isBusinessOpen ? "#16A34A" : "#DC2626"
+                    }}
+                  />
+
+                  {isBusinessOpen ? "Open Now" : "Closed Now"}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px"
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    borderBottom: "1px solid #F2ECE5",
+                    paddingBottom: "10px"
+                  }}
+                >
+                  <span>Monday – Friday</span>
+
+                  <strong>
+                    {supportSettings.mondayFriday || "Closed"}
+                  </strong>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    borderBottom: "1px solid #F2ECE5",
+                    paddingBottom: "10px"
+                  }}
+                >
+                  <span>Saturday</span>
+
+                  <strong>
+                    {supportSettings.saturday || "Closed"}
+                  </strong>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between"
+                  }}
+                >
+                  <span>Sunday</span>
+
+                  <strong>
+                    {supportSettings.sunday || "Closed"}
+                  </strong>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
         </div>
       )}
 
@@ -1769,3 +1894,5 @@ export default function SupportPage({ setPage }) {
     </div>
   );
 }
+
+  
