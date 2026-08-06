@@ -248,6 +248,8 @@ export default function SupportManagement({ setPage, setActivePage }) {
   // Safely clear typing status on status change
   const updateTicketStatus = async (newStatus) => {
     if (!selectedTicket) return;
+
+    alert("Typing: " + isTyping);
     try {
       clearTimeout(typingTimeout.current);
       await updateTypingStatus(false);
