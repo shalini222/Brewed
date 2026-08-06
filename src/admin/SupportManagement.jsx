@@ -61,9 +61,9 @@ export default function SupportManagement({ setPage, setActivePage }) {
   const [internalNotes, setInternalNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   
-  const messagesEndRef = useRef(null);
+ const messagesEndRef = useRef(null);
   const typingTimeout = useRef(null);
-const adminTypingTimeout = useRef(null);
+  const adminTypingTimeout = useRef(null);
 
   
   useEffect(() => {
@@ -166,43 +166,42 @@ const adminTypingTimeout = useRef(null);
   };
 
   // Helper to update admin typing timestamp state
-const updateTypingStatus = async (isTyping) => {
-  if (!selectedTicket?.id) return;
+ const updateAdminTypingStatus = async (isTyping) => {
+    if (!selectedTicket?.id) return;
 
-  try {
-    await updateDoc(
-      doc(db, "supportTickets", selectedTicket.id),
-      {
-        adminTypingAt: isTyping ? serverTimestamp() : null
-      }
-    );
-  } catch (err) {
-    console.log(err);
-  }
-};
+    try {
+      await updateDoc(
+        doc(db, "supportTickets", selectedTicket.id),
+        {
+          adminTypingAt: isTyping ? serverTimestamp() : null
+        }
+      );
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   // Optimized typing handler tied directly to text input changes
-const handleAdminReplyChange = (e) => {
-  const value = e.target.value;
-  setReply(value);
+ const handleAdminReplyChange = (e) => {
+    const value = e.target.value;
+    setReply(value);
 
-  if (value.trim()) {
-    updateAdminTypingStatus(true);
-  } else {
-    updateAdminTypingStatus(false);
-  }
+    if (value.trim()) {
+      updateAdminTypingStatus(true);
+    } else {
+      updateAdminTypingStatus(false);
+    }
 
-  clearTimeout(typingTimeout.current);
+    clearTimeout(adminTypingTimeout.current);
 
-  typingTimeout.current = setTimeout(() => {
-    updateAdminTypingStatus(false);
-  }, 2500);
-};
-
+    adminTypingTimeout.current = setTimeout(() => {
+      updateAdminTypingStatus(false);
+    }, 2500);
+  };
   // Helper to securely open a ticket while clearing old typing states
   const openTicket = async (ticket) => {
     if (selectedTicket) {
-      await updateTypingStatus(false);
+      await updateAdminTypingStatus(false);
     }
     setSelectedTicket(ticket);
   };
@@ -210,75 +209,76 @@ const handleAdminReplyChange = (e) => {
   // Helper to switch admin tabs safely
   const changeTab = async (tab) => {
     if (selectedTicket) {
-      await updateTypingStatus(false);
+      await updateAdminTypingStatus(false);
     }
     setActiveTab(tab);
   };
+ 
+
 
 const sendReply = async () => {
-  const message = reply.trim();
-  if (!message || !selectedTicket || sending) return;
+    const message = reply.trim();
+    if (!message || !selectedTicket || sending) return;
 
-  try {
-    setSending(true);
-    clearTimeout(typingTimeout.current);
+    try {
+      setSending(true);
+      clearTimeout(adminTypingTimeout.current);
 
-    // Stop typing indicator
-    await updateTypingStatus(false);
+      // Stop typing indicator
+      await updateAdminTypingStatus(false);
 
-    await Promise.all([
-      addDoc(
-        collection(db, "supportTickets", selectedTicket.id, "messages"),
-        {
-          sender: "support",
-          senderName: "Support Team",
-          message,
-          createdAt: serverTimestamp(),
-          status: "sent"
-        }
-      ),
+      await Promise.all([
+        addDoc(
+          collection(db, "supportTickets", selectedTicket.id, "messages"),
+          {
+            sender: "support",
+            senderName: "Support Team",
+            message,
+            createdAt: serverTimestamp(),
+            status: "sent"
+          }
+        ),
 
-      updateDoc(doc(db, "supportTickets", selectedTicket.id), {
-        updatedAt: serverTimestamp(),
-        customerUnread: increment(1),
-        lastReplyBy: "support",
-        lastMessage: message,
-        lastMessageAt: serverTimestamp(),
-        adminTypingAt: null
-      })
-    ]);
+        updateDoc(doc(db, "supportTickets", selectedTicket.id), {
+          updatedAt: serverTimestamp(),
+          customerUnread: increment(1),
+          lastReplyBy: "support",
+          lastMessage: message,
+          lastMessageAt: serverTimestamp(),
+          adminTypingAt: null
+        })
+      ]);
 
-    setReply("");
+      setReply("");
 
-  } catch (err) {
-    console.log("Error sending reply:", err);
-  } finally {
-    setSending(false);
-  }
-};
-
+    } catch (err) {
+      console.log("Error sending reply:", err);
+    } finally {
+      setSending(false);
+    }
+  };
 
   // Safely clear typing status on status change
 // Safely clear typing status on status change
+
 const updateTicketStatus = async (newStatus) => {
-  if (!selectedTicket) return;
+    if (!selectedTicket) return;
 
-  try {
-    clearTimeout(typingTimeout.current);
-    await updateTypingStatus(false);
-    
-    await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
-      status: newStatus,
-      updatedAt: serverTimestamp(),
-      adminTypingAt: null
-    });
-    
-    setSelectedTicket((prev) => ({ ...prev, status: newStatus }));
-  } catch (err) {
-    console.log("Error updating status:", err);
-  }
-};
-
+    try {
+      clearTimeout(adminTypingTimeout.current);
+      await updateAdminTypingStatus(false);
+      
+      await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
+        status: newStatus,
+        updatedAt: serverTimestamp(),
+        adminTypingAt: null
+      });
+      
+      setSelectedTicket((prev) => ({ ...prev, status: newStatus }));
+    } catch (err) {
+      console.log("Error updating status:", err);
+    }
+  };
 
   const saveInternalNotes = async () => {
     if (!selectedTicket) return;
