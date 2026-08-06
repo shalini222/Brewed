@@ -583,27 +583,25 @@ export default function SupportPage({ setPage }) {
     }
   }, [messages, adminTyping, isNearBottom]);
 
-
+// Categories
+const policyCategories = [
+  "All",
+  ...new Set(policies.map((policy) => policy.category))
+];
   
-    const filteredPolicies = policies.filter((policy) => {
-    const matchesCategory =
-      selectedPolicyCategory === "All" ||
-      policy.category === selectedPolicyCategory;
-    
+  
+   const filteredPolicies = policies.filter((policy) => {
+  const matchesCategory =
+    selectedPolicyCategory === "All" ||
+    policy.category === selectedPolicyCategory;
 
   const matchesSearch =
-      (policy.title || "")
-        .toLowerCase()
-        .includes(policySearch.toLowerCase()) ||
-      (policy.content || "")
-        .toLowerCase()
-        .includes(policySearch.toLowerCase()) ||
-      (policy.category || "")
-        .toLowerCase()
-        .includes(policySearch.toLowerCase());
+    (policy.title || "").toLowerCase().includes(policySearch.toLowerCase()) ||
+    (policy.content || "").toLowerCase().includes(policySearch.toLowerCase()) ||
+    (policy.category || "").toLowerCase().includes(policySearch.toLowerCase());
 
-    return matchesCategory && matchesSearch;
-  });
+  return matchesCategory && matchesSearch;
+});
 
     
   
