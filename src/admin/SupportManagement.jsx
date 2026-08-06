@@ -178,20 +178,20 @@ export default function SupportManagement({ setPage, setActivePage }) {
 
   // Optimized typing handler tied directly to text input changes
   const handleReplyChange = (e) => {
-     alert("typing");
-    const value = e.target.value;
-    setReply(value);
-    clearTimeout(typingTimeout.current);
-    if (!selectedTicket) return;
-    if (value.trim() === "") {
-      updateTypingStatus(false);
-      return;
-    }
-    updateTypingStatus(true);
-    typingTimeout.current = setTimeout(() => {
-      updateTypingStatus(false);
-    }, 2500);
-  };
+  const value = e.target.value;
+  setReply(value);
+  clearTimeout(typingTimeout.current);
+  if (!selectedTicket) return;
+  if (value.trim() === "") {
+    updateTypingStatus(false);
+    return;
+  }
+  updateTypingStatus(true); // <--- Fires a network request on every keystroke
+  typingTimeout.current = setTimeout(() => {
+    updateTypingStatus(false);
+  }, 2500);
+};
+  
 
   // Helper to securely open a ticket while clearing old typing states
   const openTicket = async (ticket) => {
