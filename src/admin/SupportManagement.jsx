@@ -96,13 +96,15 @@ export default function SupportManagement({ setPage, setActivePage }) {
   }, [tickets]);
 
   // Cleanup effect to clear typing when unmounting or switching tickets
+    // Cleanup effect to clear typing when unmounting or switching tickets
   useEffect(() => {
     return () => {
       if (selectedTicket) {
-        updateTypingStatus(false);
+        updateAdminTypingStatus(false);
       }
     };
   }, [selectedTicket]);
+  
 
   useEffect(() => {
     if (!selectedTicket) {
