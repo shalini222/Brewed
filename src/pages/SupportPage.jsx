@@ -165,52 +165,38 @@ export default function SupportPage({ setPage }) {
     setIsNearBottom(nearBottom);
   };
 
-  // Helper function to update customer typing status in Firestore
-  const updateTypingStatus = async (isTyping) => {
-    if (!selectedTicket?.id || !currentUser?.uid) return;
+  // Helper function to update customer typing status in Firestore using server timestamp
+  const updateTypingStatus = async () => {
+    if (!selectedTicket?.id) return;
     try {
-      await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
-        customerTyping: isTyping
-      });
+      await updateDoc(
+        doc(db, "supportTickets", selectedTicket.id),
+        { customerTypingAt: serverTimestamp() }
+      );
     } catch (err) {
-      console.log("Error updating typing status:", err);
+      console.log(err);
     }
   };
 
-  // Improved debounce implementation for typing
-  useEffect(() => {
-    if (!selectedTicket) return;
-    if (reply.trim()) {
-      updateTypingStatus(true);
-      clearTimeout(typingTimeout.current);
-      typingTimeout.current = setTimeout(() => {
-        updateTypingStatus(false);
-      }, 2500);
-    } else {
-      updateTypingStatus(false);
+  // Typing change handler with debounce
+  const handleReplyChange = (e) => {
+    const value = e.target.value;
+    setReply(value);
+    clearTimeout(typingTimeout.current);
+    if (value.trim()) {
+      updateTypingStatus();
     }
-    return () => clearTimeout(typingTimeout.current);
-  }, [reply, selectedTicket]);
+    typingTimeout.current = setTimeout(() => {
+      updateTypingStatus();
+    }, 2000);
+  };
 
-  // Clean up typing status on component unmount
+  // Clean up typing timeout on component unmount
   useEffect(() => {
     return () => {
-      updateTypingStatus(false);
       clearTimeout(typingTimeout.current);
     };
   }, []);
-
-  // Clear typing status when changing tickets
-  useEffect(() => {
-    updateTypingStatus(false);
-  }, [selectedTicket]);
-
-  // Clear typing if ticket is closed
-  useEffect(() => {
-    if (selectedTicket?.status === "Closed") {
-      updateTypingStatus(false);
-    }
-  }, [selectedTicket?.status]);
 
   // Load categories from Firestore
   useEffect(() => {
@@ -287,7 +273,7 @@ export default function SupportPage({ setPage }) {
     markAsRead();
   }, [selectedTicket?.id, selectedTicket?.customerUnread]);
 
-  // Listen to the active ticket document for live updates
+  // Listen to the active ticket document for live updates (including admin typing via timestamp)
   useEffect(() => {
     if (!selectedTicket?.id) return;
 
@@ -295,7 +281,13 @@ export default function SupportPage({ setPage }) {
       doc(db, "supportTickets", selectedTicket.id),
       (docSnap) => {
         if (docSnap.exists()) {
-          setAdminTyping(docSnap.data().adminTyping || false);
+          const data = docSnap.data();
+          if (data.adminTypingAt?.seconds) {
+            const diff = Date.now() / 1000 - data.adminTypingAt.seconds;
+            setAdminTyping(diff < 3);
+          } else {
+            setAdminTyping(false);
+          }
         }
       }
     );
@@ -479,8 +471,8 @@ export default function SupportPage({ setPage }) {
         updatedAt: serverTimestamp(),
         lastMessageAt: serverTimestamp(),
         attachments: uploadedFiles,
-        adminTyping: false,
-        customerTyping: false
+        adminTypingAt: null,
+        customerTypingAt: null
       });
 
       await addDoc(collection(db, "supportTickets", ticketRef.id, "messages"), {
@@ -516,7 +508,6 @@ export default function SupportPage({ setPage }) {
 
     try {
       setSending(true);
-      await updateTypingStatus(false);
       clearTimeout(typingTimeout.current);
 
       const ticketRef = doc(db, "supportTickets", selectedTicket.id);
@@ -695,6 +686,7 @@ export default function SupportPage({ setPage }) {
       default: return "badge-open";
     }
   };
+
 
   return (
     <div style={{ padding: "20px", maxWidth: "840px", margin: "0 auto", fontFamily: "inherit" }}>
