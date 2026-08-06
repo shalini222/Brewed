@@ -109,6 +109,14 @@ export default function SupportPage({ setPage }) {
   const [adminTyping, setAdminTyping] = useState(false);
   const [lastAdminTyping, setLastAdminTyping] = useState(null);
 
+
+
+
+  // Policies state
+  const [policies, setPolicies] = useState([]);
+  const [openPolicy, setOpenPolicy] = useState(null);
+  const [selectedPolicyCategory, setSelectedPolicyCategory] = useState("All");
+  const [policySearch, setPolicySearch] = useState("");
   // Failed Messages state
   const [failedMessages, setFailedMessages] = useState([]);
 
@@ -186,8 +194,28 @@ export default function SupportPage({ setPage }) {
 
   const isBusinessOpen = checkIsBusinessOpen();
   
+  // Filter Policies
+  const filteredPolicies = policies.filter((policy) => {
+    const matchesCategory =
+      selectedPolicyCategory === "All" ||
+      policy.category === selectedPolicyCategory;
+    
 
-  
+  const matchesSearch =
+      (policy.title || "")
+        .toLowerCase()
+        .includes(policySearch.toLowerCase()) ||
+      (policy.content || "")
+        .toLowerCase()
+        .includes(policySearch.toLowerCase()) ||
+      (policy.category || "")
+        .toLowerCase()
+        .includes(policySearch.toLowerCase());
+
+    return matchesCategory && matchesSearch;
+  });
+
+    
 
   // Cancel pending upload tasks on unmount
   useEffect(() => {
@@ -546,6 +574,28 @@ export default function SupportPage({ setPage }) {
     return unsubscribe;
   }, []);
 
+
+  // Load published policies
+  useEffect(() => {
+    const q = query(
+      collection(db, "supportPolicies"),
+      where("status", "==", "Published")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      data.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
+      setPolicies(data);
+    });
+
+    return unsubscribe;
+  }, []);
+
   // Auto-scroll when messages update or admin typing status changes
   useEffect(() => {
     if (isNearBottom || messages.length <= 5) {
@@ -843,6 +893,9 @@ export default function SupportPage({ setPage }) {
     }
   };
 
+  
+  
+  
   const isClosed = selectedTicket?.status === "Closed";
 
   const sortedTickets = [...tickets].sort((a, b) => { 
