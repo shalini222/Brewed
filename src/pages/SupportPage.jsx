@@ -1537,11 +1537,10 @@ export default function SupportPage({ setPage }) {
             <div className="conversation-box" ref={containerRef} onScroll={handleScroll}>
               {messages.map((msg, index) => {
                 const previousMessage = messages[index - 1];
-                const showSender =
-                  index === 0 ||
-                  previousMessage?.sender !== msg.sender;
-
-                const isCustomer = msg.sender === "customer";
+                const sender = (msg.sender || "").toLowerCase();
+                const previousSender = (previousMessage?.sender || "").toLowerCase();
+                const showSender = index === 0 || sender !== previousSender;
+                const isCustomer = sender === "customer";
 
                 return (
                   <div key={msg.id} className={`message-wrapper ${isCustomer ? "customer-message-wrapper" : "support-message-wrapper"}`}>
