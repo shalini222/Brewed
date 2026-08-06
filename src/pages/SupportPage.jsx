@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { db } from "../firebase";
+import { db, storage } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import {
-  getStorage,
   ref as storageRef,
-  uploadBytes,
+  uploadBytesResumable,
   getDownloadURL
 } from "firebase/storage";
 import {
@@ -43,11 +42,9 @@ import {
   FileText,
   Clock3,
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  X
 } from "lucide-react";
-
-// Initialize Firebase Storage
-const storage = getStorage();
 
 // Map icon names from Firestore to Lucide components
 const iconMap = { Truck, CreditCard, Gift, ShieldCheck, Package, HelpCircle };
@@ -83,6 +80,7 @@ export default function SupportPage({ setPage }) {
   const [initialMessage, setInitialMessage] = useState("");
   const [attachments, setAttachments] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Chat conversation states
   const [messages, setMessages] = useState([]);
@@ -336,17 +334,55 @@ export default function SupportPage({ setPage }) {
     }
   }, [messages, isNearBottom]);
 
-  // Helper to upload attachments to Firebase Storage
-  const uploadAttachments = async (filesToUpload) => {
+  // File Type Icon Helper
+  const getFileIcon = (type) => {
+    if (!type) return "📎";
+    if (type.startsWith("image/")) return "🖼";
+    if (type.includes("pdf")) return "📄";
+    if (type.includes("word") || type.includes("document")) return "📝";
+    if (type.includes("zip") || type.includes("compressed")) return "🗜";
+    return "📎";
+  };
+
+  // Helper to upload attachments to Firebase Storage with Progress
+  const uploadAttachments = async (filesToUpload, onProgress) => {
     const uploaded = [];
-    for (const file of filesToUpload) {
+    const totalFiles = filesToUpload.length;
+    if (totalFiles === 0) return uploaded;
+
+    let completedBytes = 0;
+    const fileSizes = filesToUpload.map(f => f.size);
+    const totalBytes = fileSizes.reduce((a, b) => a + b, 0) || 1;
+    const uploadedBytesPerFile = new Array(totalFiles).fill(0);
+
+    for (let i = 0; i < filesToUpload.length; i++) {
+      const file = filesToUpload[i];
       const fileRef = storageRef(
         storage,
         `support/${currentUser.uid}/${Date.now()}-${file.name}`
       );
-      await uploadBytes(fileRef, file);
-      const url = await getDownloadURL(fileRef);
-      uploaded.push({ name: file.name, url, type: file.type });
+      
+      await new Promise((resolve, reject) => {
+        const uploadTask = uploadBytesResumable(fileRef, file);
+
+        uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+            uploadedBytesPerFile[i] = snapshot.bytesTransferred;
+            const currentTotalTransferred = uploadedBytesPerFile.reduce((a, b) => a + b, 0);
+            const percentage = Math.round((currentTotalTransferred / totalBytes) * 100);
+            if (onProgress) onProgress(Math.min(percentage, 100));
+          },
+          (error) => {
+            reject(error);
+          },
+          async () => {
+            const url = await getDownloadURL(uploadTask.snapshot.ref);
+            uploaded.push({ name: file.name, url, type: file.type, size: file.size });
+            resolve();
+          }
+        );
+      });
     }
     return uploaded;
   };
@@ -358,8 +394,11 @@ export default function SupportPage({ setPage }) {
 
     try {
       setSubmitting(true);
+      setUploadProgress(0);
 
-      const uploadedFiles = await uploadAttachments(attachments);
+      const uploadedFiles = await uploadAttachments(attachments, (progress) => {
+        setUploadProgress(progress);
+      });
 
       const ticketRef = await addDoc(collection(db, "supportTickets"), {
         customerId: currentUser.uid,
@@ -396,9 +435,11 @@ export default function SupportPage({ setPage }) {
       setCategory(helpCategories.length > 0 ? helpCategories[0].title : "General");
       setInitialMessage("");
       setAttachments([]);
+      setUploadProgress(0);
       setShowSuccessModal(true);
     } catch (err) {
-      console.log("Error creating support ticket:", err);
+      console.error("Error creating support ticket:", err);
+      alert("Error uploading attachments or creating ticket. Check console for details.");
     } finally {
       setSubmitting(false);
     }
@@ -440,7 +481,7 @@ export default function SupportPage({ setPage }) {
       setReply("");
       setReplyAttachments([]);
     } catch (err) {
-      console.log("Error sending reply:", err);
+      console.error("Error sending reply:", err);
     } finally {
       setSending(false);
     }
@@ -1310,40 +1351,89 @@ export default function SupportPage({ setPage }) {
             </div>
 
             {/* File Picker */}
-            <div style={{ marginBottom: "15px" }}>
+            <div style={{ marginBottom: "5px" }}>
               <label style={{ display: "block", marginBottom: "8px", fontWeight: 600, fontSize: "13px", color: "#6E5E53" }}>
                 Attach files (optional)
               </label>
               <input
                 type="file"
                 multiple
-                accept="image/*,.pdf,.txt,.doc,.docx"
+                accept="image/*,.pdf,.txt,.doc,.docx,.zip"
                 onChange={(e) => {
                   const files = Array.from(e.target.files);
-                  if (files.length > 5) {
-                    alert("Maximum 5 attachments allowed.");
+                  const MAX_SIZE = 10 * 1024 * 1024; // 10 MB limit
+                  const validFiles = files.filter(file => file.size <= MAX_SIZE);
+                  
+                  if (validFiles.length !== files.length) {
+                    alert("Each attachment must be under 10 MB.");
+                  }
+                  
+                  if (attachments.length + validFiles.length > 5) {
+                    alert("Maximum 5 attachments allowed in total.");
                     return;
                   }
-                  setAttachments(files);
+
+                  setAttachments(prev => [...prev, ...validFiles]);
+                  e.target.value = null; // Reset input
                 }}
                 style={{ fontSize: "13px", color: "#6E5E53" }}
               />
             </div>
 
-            {/* Show selected files before submitting */}
+            {/* Show selected files with removable cards & file sizes */}
             {attachments.length > 0 && (
-              <div style={{ marginBottom: "15px", padding: "12px", background: "#FAF6F0", borderRadius: "10px", border: "1px solid #E8DED2" }}>
-                <div style={{ fontSize: "12px", fontWeight: 600, color: "#2C221E", marginBottom: "6px" }}>Selected Files:</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div style={{ fontSize: "12px", fontWeight: 600, color: "#2C221E" }}>Selected Files ({attachments.length}/5):</div>
                 {attachments.map((file, index) => (
-                  <div key={index} style={{ fontSize: "13px", color: "#6E5E53", marginBottom: "4px" }}>
-                    📎 {file.name}
+                  <div 
+                    key={index} 
+                    style={{ 
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      alignItems: "center", 
+                      padding: "10px 14px", 
+                      background: "#FAF6F0", 
+                      borderRadius: "10px", 
+                      border: "1px solid #E8DED2",
+                      fontSize: "13px" 
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", marginRight: "10px" }}>
+                      <span>{getFileIcon(file.type)}</span>
+                      <span style={{ fontWeight: 500, color: "#2C221E", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {file.name}
+                      </span>
+                      <span style={{ color: "#9A8C82", fontSize: "12px", flexShrink: 0 }}>
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
+                      style={{ background: "transparent", border: "none", color: "#DC2626", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: 600, flexShrink: 0 }}
+                    >
+                      <X size={14} /> Remove
+                    </button>
                   </div>
                 ))}
               </div>
             )}
 
+            {/* Upload Progress Bar */}
+            {submitting && (
+              <div style={{ padding: "14px", background: "#FAF6F0", borderRadius: "10px", border: "1px solid #E8DED2" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: 600, color: "#2C221E", marginBottom: "6px" }}>
+                  <span>Uploading attachments...</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div style={{ width: "100%", height: "8px", background: "#E8DED2", borderRadius: "4px", overflow: "hidden" }}>
+                  <div style={{ width: `${uploadProgress}%`, height: "100%", background: "#C4956A", transition: "width 0.2s ease" }}></div>
+                </div>
+              </div>
+            )}
+
             <button type="submit" className="support-btn" disabled={submitting || helpCategories.length === 0} style={{ alignSelf: "flex-end" }}>
-              {submitting ? "Submitting..." : helpCategories.length === 0 ? "No Categories Available" : "Submit Ticket"}
+              {submitting ? `Uploading... ${uploadProgress}%` : helpCategories.length === 0 ? "No Categories Available" : "Submit Ticket"}
             </button>
           </form>
         </div>
@@ -1393,18 +1483,24 @@ export default function SupportPage({ setPage }) {
                     <div className={isCustomer ? "customer-msg" : "support-msg"}>
                       <p style={{ margin: 0 }}>{msg.message}</p>
                       
-                      {/* Show attachments in the conversation */}
+                      {/* Show attachments in the conversation with size and icon */}
                       {msg.attachments?.length > 0 && (
-                        <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid rgba(0,0,0,0.1)" }}>
+                        <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid rgba(0,0,0,0.1)", display: "flex", flexDirection: "column", gap: "4px" }}>
                           {msg.attachments.map((file, index) => (
-                            <div key={index} style={{ marginTop: "4px" }}>
+                            <div key={index}>
                               <a 
                                 href={file.url} 
                                 target="_blank" 
                                 rel="noopener noreferrer" 
-                                style={{ color: isCustomer ? "#fff" : "#C4956A", textDecoration: "underline", fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                                style={{ color: isCustomer ? "#fff" : "#C4956A", textDecoration: "underline", fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "6px" }}
                               >
-                                📎 {file.name}
+                                <span>{getFileIcon(file.type)}</span>
+                                <span>{file.name}</span>
+                                {file.size && (
+                                  <span style={{ fontSize: "11px", opacity: 0.8 }}>
+                                    ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                                  </span>
+                                )}
                               </a>
                             </div>
                           ))}
@@ -1448,24 +1544,60 @@ export default function SupportPage({ setPage }) {
               />
 
               {/* Reply File Picker */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 <input
                   type="file"
                   multiple
-                  accept="image/*,.pdf,.txt,.doc,.docx"
+                  accept="image/*,.pdf,.txt,.doc,.docx,.zip"
                   onChange={(e) => {
                     const files = Array.from(e.target.files);
-                    if (files.length > 5) {
-                      alert("Maximum 5 attachments allowed.");
+                    const MAX_SIZE = 10 * 1024 * 1024;
+                    const validFiles = files.filter(file => file.size <= MAX_SIZE);
+                    
+                    if (validFiles.length !== files.length) {
+                      alert("Each attachment must be under 10 MB.");
+                    }
+                    
+                    if (replyAttachments.length + validFiles.length > 5) {
+                      alert("Maximum 5 attachments allowed in total.");
                       return;
                     }
-                    setReplyAttachments(files);
+                    setReplyAttachments(prev => [...prev, ...validFiles]);
+                    e.target.value = null;
                   }}
                   style={{ fontSize: "12px", color: "#9A8C82" }}
                 />
+
                 {replyAttachments.length > 0 && (
-                  <div style={{ fontSize: "12px", color: "#C4956A", fontWeight: 600 }}>
-                    {replyAttachments.length} file(s) selected for reply
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {replyAttachments.map((file, index) => (
+                      <div 
+                        key={index} 
+                        style={{ 
+                          display: "flex", 
+                          justifyContent: "space-between", 
+                          alignItems: "center", 
+                          padding: "8px 12px", 
+                          background: "#FAF6F0", 
+                          borderRadius: "8px", 
+                          border: "1px solid #E8DED2",
+                          fontSize: "12px" 
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span>{getFileIcon(file.type)}</span>
+                          <span style={{ fontWeight: 500, color: "#2C221E" }}>{file.name}</span>
+                          <span style={{ color: "#9A8C82" }}>({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setReplyAttachments(prev => prev.filter((_, i) => i !== index))}
+                          style={{ background: "transparent", border: "none", color: "#DC2626", cursor: "pointer", fontSize: "12px", fontWeight: 600 }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
