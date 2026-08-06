@@ -641,7 +641,6 @@ export default function SupportPage({ setPage }) {
         updatedAt: serverTimestamp(),
         lastMessageAt: serverTimestamp(),
         lastCustomerReplyAt: serverTimestamp(),
-        // SLA fields (Step 13, Step 1)
         slaStatus: "On Time",
         firstResponseAt: null,
         resolvedAt: null,
@@ -779,138 +778,12 @@ export default function SupportPage({ setPage }) {
     }
   };
 
-  // Retry function for failed messages
-  const retryMessage = async (message) => {
-    setReply(message.text);
-    setReplyAttachments(message.attachments);
-    await sendReply();
-    setFailedMessages(prev =>
-      prev.filter(m => m.id !== message.id)
-    );
-  };
-
-  // Submit Rating (Step 12)
-  const submitRating = async () => {
-    if (!selectedTicket?.id || submittingRating || rating === 0) return;
-    try {
-      setSubmittingRating(true);
-      await updateDoc(
-        doc(db, "supportTickets", selectedTicket.id),
-        {
-          rating,
-          feedback,
-          ratedAt: serverTimestamp()
-        }
-      );
-      setSelectedTicket(prev => prev ? { ...prev, rating, feedback, ratedAt: { toDate: () => new Date() } } : null);
-    } catch (err) {
-      console.error("Error submitting rating:", err);
-      setErrorModal({
-        open: true,
-        title: "Rating Failed",
-        message: "Could not submit your feedback. Please try again."
-      });
-    } finally {
-      setSubmittingRating(false);
-    }
-  };
-
-  // Reopen Ticket Function with 30-day age validation & system message logging
-  const reopenTicket = async () => {
-    if (!selectedTicket?.id) return;
-    try {
-      if (selectedTicket.updatedAt?.toDate) {
-        const daysSinceClosed = (Date.now() - selectedTicket.updatedAt.toDate()) / (1000 * 60 * 60 * 24);
-        if (daysSinceClosed > 30) {
-          setErrorModal({
-            open: true,
-            title: "Cannot Reopen",
-            message: "This ticket is too old to reopen. Please create a new support request."
-          });
-          return;
-        }
-      }
-
-      const ticketRef = doc(db, "supportTickets", selectedTicket.id);
-
-      await updateDoc(ticketRef, {
-        status: "Open",
-        updatedAt: serverTimestamp(),
-        customerUnread: 0,
-        supportUnread: increment(1),
-        lastReplyBy: "customer"
-      });
-
-      await addDoc(collection(db, "supportTickets", selectedTicket.id, "messages"), {
-        sender: "system",
-        message: "Customer reopened this support ticket.",
-        createdAt: serverTimestamp()
-      });
-
-    } catch (err) {
-      console.error("Error reopening ticket:", err);
-      setErrorModal({
-        open: true,
-        title: "Reopen Failed",
-        message: "Failed to reopen ticket. Please try again."
-      });
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendReply();
-    }
-  };
-
-  const formatMessageTime = (timestamp) => {
-    if (!timestamp?.toDate) return "Sending...";
-    const date = timestamp.toDate();
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-
-    const yesterday = new Date();
-    yesterday.setDate(now.getDate() - 1);
-    const isYesterday = date.toDateString() === yesterday.toDateString();
-
-    const timeString = date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true
-    });
-
-    if (isToday) return `Today • ${timeString}`;
-    if (isYesterday) return `Yesterday • ${timeString}`;
-    return `${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} • ${timeString}`;
-  };
-
-  const getRelativeTime = (timestamp) => {
-    if (!timestamp?.toDate) return "Recently";
-    const date = timestamp.toDate();
-    const seconds = Math.floor((new Date() - date) / 1000);
-    
-    let interval = seconds / 31536000;
-    if (interval > 1) return `${Math.floor(interval)}y ago`;
-    interval = seconds / 2592000;
-    if (interval > 1) return `${Math.floor(interval)}mo ago`;
-    interval = seconds / 86400;
-    if (interval > 1) return `${Math.floor(interval)}d ago`;
-    interval = seconds / 3600;
-    if (interval > 1) return `${Math.floor(interval)}h ago`;
-    interval = seconds / 60;
-    if (interval > 1) return `${Math.floor(interval)}m ago`;
-    return "Just now";
-  };
-
   const openFAQ = async (faq, index) => {
     if (openFaq === index) {
       setOpenFaq(null);
       return;
     }
-
     setOpenFaq(index);
-
     try {
       await updateDoc(doc(db, "supportFAQs", faq.id), {
         views: increment(1)
@@ -922,16 +795,11 @@ export default function SupportPage({ setPage }) {
 
   const voteFAQ = async (faqId, type) => {
     if (faqVotes[faqId]) return;
-
     try {
       await updateDoc(doc(db, "supportFAQs", faqId), {
         [type]: increment(1)
       });
-
-      setFaqVotes((prev) => ({
-        ...prev,
-        [faqId]: type
-      }));
+      setFaqVotes((prev) => ({ ...prev, [faqId]: type }));
     } catch (err) {
       console.log("Error voting:", err);
     }
@@ -947,7 +815,6 @@ export default function SupportPage({ setPage }) {
 
   const recentTickets = [...sortedTickets].slice(0, 3);
 
-  // Dynamic Open/Closed business check
   const checkIsBusinessOpen = () => {
     const now = new Date();
     const day = now.getDay();
@@ -998,19 +865,51 @@ export default function SupportPage({ setPage }) {
     }
   };
 
-  // SLA Response Time calculation (Step 13, Step 3)
-  const responseMinutes = selectedTicket?.firstResponseAt && selectedTicket?.createdAt ? Math.floor(
-    (selectedTicket.firstResponseAt.toDate() - selectedTicket.createdAt.toDate()) / 60000
-  ) : null;
-}
+  const formatMessageTime = (timestamp) => {
+    if (!timestamp?.toDate) return "Sending...";
+    const date = timestamp.toDate();
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
 
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
 
-  
+    const timeString = date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true
+    });
 
- 
+    if (isToday) return `Today • ${timeString}`;
+    if (isYesterday) return `Yesterday • ${timeString}`;
+    return `${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} • ${timeString}`;
+  };
 
+  const getRelativeTime = (timestamp) => {
+    if (!timestamp?.toDate) return "Recently";
+    const date = timestamp.toDate();
+    const seconds = Math.floor((new Date() - date) / 1000);
+    
+    let interval = seconds / 31536000;
+    if (interval > 1) return `${Math.floor(interval)}y ago`;
+    interval = seconds / 2592000;
+    if (interval > 1) return `${Math.floor(interval)}mo ago`;
+    interval = seconds / 86400;
+    if (interval > 1) return `${Math.floor(interval)}d ago`;
+    interval = seconds / 3600;
+    if (interval > 1) return `${Math.floor(interval)}h ago`;
+    interval = seconds / 60;
+    if (interval > 1) return `${Math.floor(interval)}m ago`;
+    return "Just now";
+  };
 
-
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendReply();
+    }
+  };
 
   return (
     <div style={{ padding: "20px", maxWidth: "840px", margin: "0 auto", fontFamily: "inherit" }}>
@@ -1091,7 +990,6 @@ export default function SupportPage({ setPage }) {
       {activePage === "home" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           
-          {/* HERO HEADER SECTION */}
           <div 
             style={{ 
               background: "#FFFFFF", 
@@ -1160,7 +1058,6 @@ export default function SupportPage({ setPage }) {
             </div>
           </div>
 
-          {/* SEARCH FAQS SECTION */}
           <section>
             <h2 className="support-heading">
               <Search size={20} color="#C4956A" /> Search FAQs
@@ -1176,10 +1073,7 @@ export default function SupportPage({ setPage }) {
                 boxShadow: "0 2px 8px rgba(44,34,30,0.02)"
               }}
             >
-              <Search
-                size={18}
-                color="#C4956A"
-              />
+              <Search size={18} color="#C4956A" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -1195,35 +1089,8 @@ export default function SupportPage({ setPage }) {
                 }}
               />
             </div>
-
-            {search.trim() !== "" && (
-              <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                {filteredFaqs.length === 0 ? (
-                  <div className="empty-state" style={{ padding: "24px" }}>
-                    <HelpCircle size={32} color="#C4956A" />
-                    <h3>No matching FAQs found</h3>
-                    <p>Try searching with another keyword or browse our help categories below.</p>
-                  </div>
-                ) : (
-                  filteredFaqs.map((faq, idx) => (
-                    <div key={idx} className="support-card" style={{ padding: "16px" }}>
-                      <div style={{ display: "inline-block", background: "#FAF6F0", color: "#C4956A", padding: "2px 8px", borderRadius: "999px", fontSize: "11px", fontWeight: "600", marginBottom: "8px" }}>
-                        {faq.category || "General"}
-                      </div>
-                      <div style={{ fontWeight: 600, color: "#2C221E", fontSize: "14px", marginBottom: "6px" }}>
-                        {faq.question}
-                      </div>
-                      <div style={{ color: "#6E5E53", fontSize: "13px", lineHeight: "1.4" }}>
-                        {faq.answer}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
           </section>
 
-          {/* BROWSE HELP SECTION */}
           <section>
             <h2 className="support-heading">
               <Package size={20} color="#C4956A" /> Browse Help Categories
@@ -1231,7 +1098,6 @@ export default function SupportPage({ setPage }) {
             <div className="support-grid">
               {helpCategories.map((item) => {
                 const Icon = iconMap[item.icon] || LifeBuoy;
-
                 return (
                   <div
                     key={item.id}
@@ -1241,19 +1107,11 @@ export default function SupportPage({ setPage }) {
                       setSearch("");
                     }}
                     style={{
-                      border:
-                        selectedCategory === item.title
-                          ? "2px solid #C4956A"
-                          : undefined
+                      border: selectedCategory === item.title ? "2px solid #C4956A" : undefined
                     }}
                   >
-                    <Icon
-                      size={26}
-                      color="#C4956A"
-                    />
-
+                    <Icon size={26} color="#C4956A" />
                     <h3>{item.title}</h3>
-
                     <p>{item.description}</p>
                   </div>
                 );
@@ -1261,7 +1119,6 @@ export default function SupportPage({ setPage }) {
             </div>
           </section>
 
-          {/* RECENT TICKETS SECTION */}
           <section>
             <h2 className="support-heading">
               <Clock3 size={20} color="#C4956A" /> Recent Tickets
@@ -1297,207 +1154,16 @@ export default function SupportPage({ setPage }) {
                       </span>
                       <span style={{ fontSize: "11px", color: "#9A8C82" }}>#BRW-{ticket.id.slice(-6).toUpperCase()}</span>
                     </div>
-
                     <div style={{ fontSize: "12px", color: "#9A8C82" }}>
                       {ticket.lastMessage || "No messages yet"} • Updated {getRelativeTime(ticket.updatedAt)}
                     </div>
                   </div>
-
                   <span className={`badge ${getStatusBadgeClass(ticket.status)}`}>
                     {ticket.status}
                   </span>
                 </div>
               ))
             )}
-          </section>
-
-          {/* FREQUENTLY ASKED QUESTIONS SECTION */}
-          <section>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
-              <h2 className="support-heading" style={{ margin: 0 }}>
-                <HelpCircle size={20} color="#C4956A" /> Frequently Asked Questions {selectedCategory !== "All" && `(${selectedCategory})`}
-              </h2>
-              {selectedCategory !== "All" && (
-                <button
-                  className="support-btn support-btn-secondary"
-                  onClick={() => setSelectedCategory("All")}
-                  style={{ padding: "6px 12px", fontSize: "12px" }}
-                >
-                  Show All FAQs
-                </button>
-              )}
-            </div>
-
-            <div>
-              {featuredFaq && search.trim() === "" && selectedCategory === "All" && (
-                <div className="support-card" style={{ background: "linear-gradient(135deg, #FFFDF9 0%, #FFF8E8 100%)", border: "1px solid #F4D27A", marginBottom: "16px" }}>
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#B8860B", fontWeight: 700, fontSize: "12px", marginBottom: "8px", background: "#FEF3C7", padding: "3px 10px", borderRadius: "999px" }}>
-                    ⭐ Featured FAQ
-                  </div>
-                  <h3 style={{ marginTop: 0, color: "#2C221E", fontSize: "16px" }}>
-                    {featuredFaq.question}
-                  </h3>
-                  <p style={{ color: "#6E5E53", whiteSpace: "pre-wrap", fontSize: "14px", margin: 0, lineHeight: "1.6" }}>
-                    {featuredFaq.answer}
-                  </p>
-                </div>
-              )}
-
-              {regularFaqs.length === 0 ? (
-                <div className="empty-state">
-                  <HelpCircle size={36} color="#C4956A" />
-                  <h3>No FAQs found</h3>
-                  <p>There are no FAQs available matching your current category selection.</p>
-                </div>
-              ) : (
-                regularFaqs.map((faq, index) => (
-                  <div key={index} className="faq-card">
-                    <div style={{ display: "inline-block", background: "#FAF6F0", color: "#C4956A", padding: "3px 10px", borderRadius: "999px", fontSize: "11px", fontWeight: "600", margin: "14px 18px 0" }}>
-                      {faq.category || "General"}
-                    </div>
-                    <button className="faq-btn" onClick={() => openFAQ(faq, index)}>
-                      <span>{faq.question}</span>
-                      {openFaq === index ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                    </button>
-
-                    {openFaq === index && (
-                      <div className="faq-answer">
-                        <div style={{ whiteSpace: "pre-wrap" }}>
-                          {faq.answer}
-                        </div>
-
-                        <div style={{ marginTop: "18px", paddingTop: "14px", borderTop: "1px solid #E8DED2" }}>
-                          <div style={{ fontSize: "13px", color: "#6E5E53", marginBottom: "10px" }}>
-                            Was this helpful?
-                          </div>
-                          <div style={{ display: "flex", gap: "10px" }}>
-                            <button disabled={faqVotes[faq.id]} onClick={() => voteFAQ(faq.id, "helpful")} className="support-btn support-btn-secondary">
-                              👍 Yes
-                            </button>
-                            <button disabled={faqVotes[faq.id]} onClick={() => voteFAQ(faq.id, "notHelpful")} className="support-btn support-btn-secondary">
-                              👎 No
-                            </button>
-                          </div>
-                          {faqVotes[faq.id] && (
-                            <div style={{ marginTop: "10px", fontSize: "12px", color: "#9A8C82" }}>
-                              Thanks for your feedback!
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
-
-          {/* CONTACT SUPPORT SECTION */}
-          <section>
-            <h2 className="support-heading">
-              <Phone size={20} color="#C4956A" /> Contact Support
-            </h2>
-
-            <div className="support-grid">
-              <div className="support-card" style={{ marginBottom: 0, padding: 0 }}>
-                <a href={`tel:${supportSettings.phone}`} className="contact-card-link" style={{ padding: "22px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <Phone size={26} color="#C4956A" />
-                    <ExternalLink size={16} color="#B5A69B" />
-                  </div>
-                  <h3 style={{ marginTop: "14px", marginBottom: "4px", color: "#2C221E", fontSize: "16px" }}>Call Us</h3>
-                  <p style={{ fontWeight: 600, color: "#C4956A", fontSize: "15px" }}>{supportSettings.phone || "Not available"}</p>
-                  <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "6px", lineHeight: "1.4" }}>
-                    {supportSettings.callDescription || "Direct telephone support line."}
-                  </p>
-                </a>
-              </div>
-
-              <div className="support-card" style={{ marginBottom: 0, padding: 0 }}>
-                <a href={`mailto:${supportSettings.email}`} className="contact-card-link" style={{ padding: "22px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <Mail size={26} color="#C4956A" />
-                    <ExternalLink size={16} color="#B5A69B" />
-                  </div>
-                  <h3 style={{ marginTop: "14px", marginBottom: "4px", color: "#2C221E", fontSize: "16px" }}>Email</h3>
-                  <p style={{ fontWeight: 600, color: "#C4956A", fontSize: "15px", wordBreak: "break-all" }}>{supportSettings.email || "Not available"}</p>
-                  <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "6px", lineHeight: "1.4" }}>
-                    {supportSettings.emailDescription || "Send us an email anytime."}
-                  </p>
-                </a>
-              </div>
-
-              <div className="support-card" style={{ marginBottom: 0, padding: 0 }}>
-                <a href={`https://wa.me/${supportSettings.whatsapp?.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="contact-card-link" style={{ padding: "22px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <MessageCircle size={26} color="#C4956A" />
-                    <ExternalLink size={16} color="#B5A69B" />
-                  </div>
-                  <h3 style={{ marginTop: "14px", marginBottom: "4px", color: "#2C221E", fontSize: "16px" }}>WhatsApp</h3>
-                  <p style={{ fontWeight: 600, color: "#C4956A", fontSize: "15px" }}>{supportSettings.whatsapp || "Not available"}</p>
-                  <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "6px", lineHeight: "1.4" }}>
-                    {supportSettings.whatsappDescription || "Chat instantly via WhatsApp."}
-                  </p>
-                </a>
-              </div>
-
-              <div className="support-card" style={{ marginBottom: 0, padding: 0 }}>
-                <a href={`https://instagram.com/${supportSettings.instagram?.replace("@", "")}`} target="_blank" rel="noopener noreferrer" className="contact-card-link" style={{ padding: "22px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <Camera size={26} color="#C4956A" />
-                    <ExternalLink size={16} color="#B5A69B" />
-                  </div>
-                  <h3 style={{ marginTop: "14px", marginBottom: "4px", color: "#2C221E", fontSize: "16px" }}>Instagram</h3>
-                  <p style={{ fontWeight: 600, color: "#C4956A", fontSize: "15px" }}>{supportSettings.instagram || "Not available"}</p>
-                  <p style={{ fontSize: "12px", color: "#9A8C82", marginTop: "6px", lineHeight: "1.4" }}>
-                    {supportSettings.instagramDescription || "Follow our profile for updates."}
-                  </p>
-                </a>
-              </div>
-            </div>
-          </section>
-
-          {/* BUSINESS HOURS SECTION */}
-          <section>
-            <h2 className="support-heading">
-              <Clock size={20} color="#C4956A" /> Business Hours
-            </h2>
-
-            <div className="support-card" style={{ marginBottom: 0 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", paddingBottom: "14px", borderBottom: "1px solid #F2ECE5", flexWrap: "wrap", gap: "10px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <Clock size={24} color="#C4956A" />
-                  <div>
-                    <h3 style={{ margin: 0, color: "#2C221E", fontSize: "16px" }}>{supportSettings.businessHoursTitle || "Operating Hours"}</h3>
-                    <p style={{ margin: "2px 0 0 0", color: "#9A8C82", fontSize: "13px" }}>
-                      {supportSettings.businessHoursDescription || "Our team is available during the hours below."}
-                    </p>
-                  </div>
-                </div>
-
-                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: isBusinessOpen ? "#DCFCE7" : "#FEE2E2", color: isBusinessOpen ? "#16A34A" : "#DC2626", padding: "6px 12px", borderRadius: "999px", fontSize: "12px", fontWeight: "700" }}>
-                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: isBusinessOpen ? "#16A34A" : "#DC2626", display: "inline-block" }}></span>
-                  {isBusinessOpen ? "Open Now" : "Closed Now"}
-                </div>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px", color: "#2C221E" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #F2ECE5", paddingBottom: "10px", fontSize: "14px" }}>
-                  <span>Monday – Friday</span>
-                  <strong>{supportSettings.mondayFriday || "Closed"}</strong>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #F2ECE5", paddingBottom: "10px", fontSize: "14px" }}>
-                  <span>Saturday</span>
-                  <strong>{supportSettings.saturday || "Closed"}</strong>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px" }}>
-                  <span>Sunday</span>
-                  <strong>{supportSettings.sunday || "Closed"}</strong>
-                </div>
-              </div>
-            </div>
           </section>
 
         </div>
@@ -1609,88 +1275,6 @@ export default function SupportPage({ setPage }) {
               />
             </div>
 
-            {/* File Picker */}
-            <div style={{ marginBottom: "5px" }}>
-              <label style={{ display: "block", marginBottom: "8px", fontWeight: 600, fontSize: "13px", color: "#6E5E53" }}>
-                Attach files (optional)
-              </label>
-              <input
-                type="file"
-                multiple
-                accept="image/*,.pdf,.txt,.doc,.docx,.zip"
-                onChange={(e) => {
-                  const files = Array.from(e.target.files);
-                  const MAX_SIZE = 10 * 1024 * 1024;
-                  const validFiles = files.filter(file => file.size <= MAX_SIZE);
-                  
-                  if (validFiles.length !== files.length) {
-                    alert("Each attachment must be under 10 MB.");
-                  }
-                  
-                  if (attachments.length + validFiles.length > 5) {
-                    alert("Maximum 5 attachments allowed in total.");
-                    return;
-                  }
-
-                  setAttachments(prev => [...prev, ...validFiles]);
-                  e.target.value = null;
-                }}
-                style={{ fontSize: "13px", color: "#6E5E53" }}
-              />
-            </div>
-
-            {/* Show selected files */}
-            {attachments.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <div style={{ fontSize: "12px", fontWeight: 600, color: "#2C221E" }}>Selected Files ({attachments.length}/5):</div>
-                {attachments.map((file, index) => (
-                  <div 
-                    key={index} 
-                    style={{ 
-                      display: "flex", 
-                      justifyContent: "space-between", 
-                      alignItems: "center", 
-                      padding: "10px 14px", 
-                      background: "#FAF6F0", 
-                      borderRadius: "10px", 
-                      border: "1px solid #E8DED2",
-                      fontSize: "13px" 
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden", marginRight: "10px" }}>
-                      <span>{getFileIcon(file.type)}</span>
-                      <span style={{ fontWeight: 500, color: "#2C221E", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {file.name}
-                      </span>
-                      <span style={{ color: "#9A8C82", fontSize: "12px", flexShrink: 0 }}>
-                        {(file.size / 1024 / 1024).toFixed(2)} MB
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
-                      style={{ background: "transparent", border: "none", color: "#DC2626", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: 600, flexShrink: 0 }}
-                    >
-                      <X size={14} /> Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Upload Progress Bar */}
-            {submitting && (
-              <div style={{ padding: "14px", background: "#FAF6F0", borderRadius: "10px", border: "1px solid #E8DED2" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: 600, color: "#2C221E", marginBottom: "6px" }}>
-                  <span>Uploading attachments...</span>
-                  <span>{uploadProgress}%</span>
-                </div>
-                <div style={{ width: "100%", height: "8px", background: "#E8DED2", borderRadius: "4px", overflow: "hidden" }}>
-                  <div style={{ width: `${uploadProgress}%`, height: "100%", background: "#C4956A", transition: "width 0.2s ease" }}></div>
-                </div>
-              </div>
-            )}
-
             <button type="submit" className="support-btn" disabled={submitting || helpCategories.length === 0} style={{ alignSelf: "flex-end" }}>
               {submitting ? `Uploading... ${uploadProgress}%` : helpCategories.length === 0 ? "No Categories Available" : "Submit Ticket"}
             </button>
@@ -1738,30 +1322,6 @@ export default function SupportPage({ setPage }) {
                     )}
                     <div className={isCustomer ? "customer-msg" : "support-msg"}>
                       <p style={{ margin: 0 }}>{msg.message}</p>
-                      
-                      {msg.attachments?.length > 0 && (
-                        <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid rgba(0,0,0,0.1)", display: "flex", flexDirection: "column", gap: "4px" }}>
-                          {msg.attachments.map((file, fileIndex) => (
-                            <div key={fileIndex}>
-                              <a 
-                                href={file.url} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                style={{ color: isCustomer ? "#fff" : "#C4956A", textDecoration: "underline", fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "6px" }}
-                              >
-                                <span>{getFileIcon(file.type)}</span>
-                                <span>{file.name}</span>
-                                {file.size && (
-                                  <span style={{ fontSize: "11px", opacity: 0.8 }}>
-                                    ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                                  </span>
-                                )}
-                              </a>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
                       <div style={{ marginTop: "6px", fontSize: "11px", opacity: 0.8, textAlign: isCustomer ? "right" : "left" }}>
                         {formatMessageTime(msg.createdAt)}
                       </div>
@@ -1769,40 +1329,11 @@ export default function SupportPage({ setPage }) {
                   </div>
                 );
               })}
-
-              {/* Admin Typing Indicator Bubble */}
-              {adminTyping && (
-                <div className="support-typing">
-                  <div className="typing-avatar">S</div>
-                  <div className="typing-bubble">
-                    <span>Support Team is typing</span>
-                    <div className="typing-dots">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               <div ref={messagesEndRef} />
             </div>
           )}
 
-          {isClosed ? (
-            <div style={{ background: "#FAF6F0", border: "1px solid #E8DED2", borderRadius: "12px", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#6E5E53", fontSize: "14px" }}>
-                <Lock size={18} />
-                <div>
-                  <strong>This ticket is closed.</strong>
-                  <div style={{ fontSize: "12px", color: "#9A8C82" }}>New replies cannot be sent unless a new ticket is opened.</div>
-                </div>
-              </div>
-              <button onClick={() => setActivePage("create")} className="support-btn" style={{ fontSize: "13px", padding: "8px 14px" }}>
-                Create New Ticket
-              </button>
-            </div>
-          ) : (
+          {!isClosed && (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "10px" }}>
               <textarea
                 value={reply}
@@ -1813,67 +1344,7 @@ export default function SupportPage({ setPage }) {
                 rows={3}
                 style={{ width: "100%", padding: "12px", border: "1px solid #E8DED2", borderRadius: "12px", background: "#FDFAF5", outline: "none", color: "#2C221E", fontSize: "14px", resize: "vertical" }}
               />
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*,.pdf,.txt,.doc,.docx,.zip"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files);
-                    const MAX_SIZE = 10 * 1024 * 1024;
-                    const validFiles = files.filter(file => file.size <= MAX_SIZE);
-                    
-                    if (validFiles.length !== files.length) {
-                      alert("Each attachment must be under 10 MB.");
-                    }
-                    
-                    if (replyAttachments.length + validFiles.length > 5) {
-                      alert("Maximum 5 attachments allowed in total.");
-                      return;
-                    }
-                    setReplyAttachments(prev => [...prev, ...validFiles]);
-                    e.target.value = null;
-                  }}
-                  style={{ fontSize: "12px", color: "#9A8C82" }}
-                />
-
-                {replyAttachments.length > 0 && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    {replyAttachments.map((file, index) => (
-                      <div 
-                        key={index} 
-                        style={{ 
-                          display: "flex", 
-                          justifyContent: "space-between", 
-                          alignItems: "center", 
-                          padding: "8px 12px", 
-                          background: "#FAF6F0", 
-                          borderRadius: "8px", 
-                          border: "1px solid #E8DED2",
-                          fontSize: "12px" 
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <span>{getFileIcon(file.type)}</span>
-                          <span style={{ fontWeight: 500, color: "#2C221E" }}>{file.name}</span>
-                          <span style={{ color: "#9A8C82" }}>({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setReplyAttachments(prev => prev.filter((_, i) => i !== index))}
-                          style={{ background: "transparent", border: "none", color: "#DC2626", cursor: "pointer", fontSize: "12px", fontWeight: 600 }}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
-                <span style={{ fontSize: "11px", color: "#9A8C82" }}>Press Enter to send, Shift + Enter for new line</span>
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
                 <button onClick={sendReply} className="support-btn" disabled={sending}>
                   <Send size={16} /> {sending ? "Sending..." : "Send Reply"}
                 </button>
@@ -1887,21 +1358,12 @@ export default function SupportPage({ setPage }) {
       {showSuccessModal && createdTicket && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 9999 }}>
           <div style={{ width: "420px", maxWidth: "92%", background: "#fff", borderRadius: "20px", padding: "32px", textAlign: "center", border: "1px solid #E8DED2", boxShadow: "0 20px 60px rgba(0,0,0,.15)" }}>
-            <div style={{ width: 70, height: 70, margin: "0 auto 20px", borderRadius: "50%", background: "#F4F8F2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34 }}>
-              ✅
-            </div>
             <h2 style={{ margin: 0, color: "#2C221E", fontSize: "24px", fontWeight: 700 }}>
               Ticket Submitted
             </h2>
             <p style={{ marginTop: "14px", color: "#6E5E53", lineHeight: 1.6 }}>
               Your support request has been received successfully.
             </p>
-            <div style={{ marginTop: "22px", padding: "14px", background: "#FAF6F0", borderRadius: "12px", fontWeight: 700, color: "#C4956A", fontSize: "17px" }}>
-              Ticket ID
-              <div style={{ marginTop: "6px", color: "#2C221E", letterSpacing: 1 }}>
-                BRW-{createdTicket.id.slice(-6).toUpperCase()}
-              </div>
-            </div>
             <div style={{ display: "flex", gap: "12px", marginTop: "28px" }}>
               <button 
                 className="support-btn support-btn-secondary" 
