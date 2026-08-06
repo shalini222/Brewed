@@ -182,22 +182,31 @@ export default function SupportManagement({ setPage, setActivePage }) {
   };
 
   // Optimized typing handler tied directly to text input changes
- const handleAdminReplyChange = (e) => {
-    const value = e.target.value;
-    setReply(value);
+// Optimized typing handler tied directly to text input changes with safety checks
+const handleAdminReplyChange = (e) => {
+  const value = e.target.value;
+  setReply(value);
 
-    if (value.trim()) {
-      updateAdminTypingStatus(true);
-    } else {
+  // Safety check: only run typing update if we have a valid selected ticket
+  if (!selectedTicket?.id) return;
+
+  if (value.trim()) {
+    updateAdminTypingStatus(true);
+  } else {
+    updateAdminTypingStatus(false);
+  }
+
+  if (adminTypingTimeout.current) {
+    clearTimeout(adminTypingTimeout.current);
+  }
+
+  adminTypingTimeout.current = setTimeout(() => {
+    if (selectedTicket?.id) {
       updateAdminTypingStatus(false);
     }
+  }, 2500);
+};
 
-    clearTimeout(adminTypingTimeout.current);
-
-    adminTypingTimeout.current = setTimeout(() => {
-      updateAdminTypingStatus(false);
-    }, 2500);
-  };
   // Helper to securely open a ticket while clearing old typing states
   const openTicket = async (ticket) => {
     if (selectedTicket) {
