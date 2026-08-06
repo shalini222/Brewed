@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+  import React, { useState, useEffect, useRef } from "react";
 import { db, storage } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -180,13 +180,14 @@ export default function SupportPage({ setPage }) {
     }
   };
 
-  // Typing change handler with robust empty-text clearing and safe timeouts
+  // Typing change handler with optimized writes and safe timeouts (Fix 4)
   const handleReplyChange = (e) => {
     const value = e.target.value;
     setReply(value);
-    clearTimeout(typingTimeout.current);
 
     if (!value.trim()) {
+      clearTimeout(typingTimeout.current);
+      typingTimeout.current = null;
       if (selectedTicket?.id) {
         updateDoc(
           doc(db, "supportTickets", selectedTicket.id),
@@ -196,9 +197,13 @@ export default function SupportPage({ setPage }) {
       return;
     }
 
-    updateTypingStatus();
+    if (!typingTimeout.current) {
+      updateTypingStatus();
+    }
 
+    clearTimeout(typingTimeout.current);
     typingTimeout.current = setTimeout(async () => {
+      typingTimeout.current = null;
       if (!selectedTicket?.id) return;
       try {
         await updateDoc(
@@ -486,6 +491,38 @@ export default function SupportPage({ setPage }) {
     return uploaded;
   };
 
+  // Handle file selection with validation (Fix 3)
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    const MAX_FILES = 5;
+    const MAX_SIZE = 10 * 1024 * 1024;
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "application/pdf"
+    ];
+    const validFiles = [];
+
+    for (const file of files) {
+      if (!allowedTypes.includes(file.type)) {
+        alert(`${file.name} is not supported.`);
+        continue;
+      }
+      if (file.size > MAX_SIZE) {
+        alert(`${file.name} exceeds 10MB.`);
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    if (validFiles.length > MAX_FILES) {
+      alert("Maximum 5 attachments.");
+      return;
+    }
+    setAttachments(validFiles);
+  };
+
   // Create a new support ticket
   const handleCreateTicket = async (e) => {
     e.preventDefault();
@@ -499,14 +536,18 @@ export default function SupportPage({ setPage }) {
         setUploadProgress(progress);
       });
 
+      // Generate ticket number (Fix 2)
+      const ticketNumber = "SUP-" + Math.floor(100000 + Math.random() * 900000);
+
       const ticketRef = await addDoc(collection(db, "supportTickets"), {
+        ticketNumber,
         customerId: currentUser.uid,
         customerName: currentUser.displayName || currentUser.email || "Customer",
         customerEmail: currentUser.email || "",
         subject: subject.trim(),
         category: category,
         status: "Open",
-        priority: "Normal",
+        priority: "Medium", // Fixed Priority (Fix 1)
         customerUnread: 0,
         supportUnread: 1,
         lastReplyBy: "customer",
