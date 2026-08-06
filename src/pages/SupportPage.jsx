@@ -109,7 +109,7 @@ export default function SupportPage({ setPage }) {
 
   const containerRef = useRef(null);
   const messagesEndRef = useRef(null);
-  const typingTimeout = useRef(null); // Added typing timeout ref
+  const typingTimeout = useRef(null);
 
   // FAQ 
   const [faqs, setFaqs] = useState([]);
@@ -1535,30 +1535,38 @@ export default function SupportPage({ setPage }) {
             </div>
           ) : (
             <div className="conversation-box" ref={containerRef} onScroll={handleScroll}>
-              {messages.map((msg) => {
+              {messages.map((msg, index) => {
+                const previousMessage = messages[index - 1];
+                const showSender =
+                  index === 0 ||
+                  previousMessage?.sender !== msg.sender;
+
                 const isCustomer = msg.sender === "customer";
+
                 return (
                   <div key={msg.id} className={`message-wrapper ${isCustomer ? "customer-message-wrapper" : "support-message-wrapper"}`}>
-                    <span className="message-sender-label">
-                      {isCustomer ? (
-                        <>
-                          You
-                          <span className="avatar-badge" style={{ background: "#C4956A", color: "white" }}>Me</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="avatar-badge">☕</span>
-                          Support Team
-                        </>
-                      )}
-                    </span>
+                    {showSender && (
+                      <span className="message-sender-label">
+                        {isCustomer ? (
+                          <>
+                            You
+                            <span className="avatar-badge" style={{ background: "#C4956A", color: "white" }}>Me</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="avatar-badge">☕</span>
+                            Support Team
+                          </>
+                        )}
+                      </span>
+                    )}
                     <div className={isCustomer ? "customer-msg" : "support-msg"}>
                       <p style={{ margin: 0 }}>{msg.message}</p>
                       
                       {msg.attachments?.length > 0 && (
                         <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid rgba(0,0,0,0.1)", display: "flex", flexDirection: "column", gap: "4px" }}>
-                          {msg.attachments.map((file, index) => (
-                            <div key={index}>
+                          {msg.attachments.map((file, fileIndex) => (
+                            <div key={fileIndex}>
                               <a 
                                 href={file.url} 
                                 target="_blank" 
