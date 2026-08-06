@@ -166,14 +166,14 @@ const adminTypingTimeout = useRef(null);
   };
 
   // Helper to update admin typing timestamp state
-const updateAdminTypingStatus = async () => {
+const updateTypingStatus = async (isTyping) => {
   if (!selectedTicket?.id) return;
 
   try {
     await updateDoc(
       doc(db, "supportTickets", selectedTicket.id),
       {
-        adminTypingAt: serverTimestamp()
+        adminTypingAt: isTyping ? serverTimestamp() : null
       }
     );
   } catch (err) {
@@ -182,21 +182,23 @@ const updateAdminTypingStatus = async () => {
 };
 
   // Optimized typing handler tied directly to text input changes
- const handleAdminReplyChange = (e) => {
+const handleAdminReplyChange = (e) => {
   const value = e.target.value;
   setReply(value);
 
   if (value.trim()) {
-    updateTypingStatus(true);
+    updateAdminTypingStatus(true);
+  } else {
+    updateAdminTypingStatus(false);
   }
 
   clearTimeout(typingTimeout.current);
 
   typingTimeout.current = setTimeout(() => {
-    updateTypingStatus(false);
+    updateAdminTypingStatus(false);
   }, 2500);
 };
-c
+
   // Helper to securely open a ticket while clearing old typing states
   const openTicket = async (ticket) => {
     if (selectedTicket) {
@@ -1162,14 +1164,14 @@ const updateTicketStatus = async (newStatus) => {
                 <h3 style={{ margin: "0 0 12px 0", fontFamily: "Playfair Display, serif", fontSize: "18px" }}>
                   Write a Reply
                 </h3>
-               <textarea
+   <textarea
   value={reply}
-  onChange={(e) => {
-    const value = e.target.value;
-    setReply(value);
+  onChange={handleAdminReplyChange}
 
     if (value.trim()) {
       updateTypingStatus(true);
+    } else {
+      updateTypingStatus(false);
     }
 
     clearTimeout(typingTimeout.current);
