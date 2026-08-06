@@ -137,23 +137,6 @@ export default function SupportManagement({ setPage, setActivePage }) {
     setInternalNotes(selectedTicket.internalNotes || "");
   }, [selectedTicket]);
 
-  // Optimized Typing Status Effect with Debounce Timeout
-  useEffect(() => {
-    if (!selectedTicket) return;
-    
-    if (reply.trim()) {
-      updateTypingStatus(true);
-      clearTimeout(typingTimeout.current);
-      typingTimeout.current = setTimeout(() => {
-        updateTypingStatus(false);
-      }, 2500);
-    } else {
-      updateTypingStatus(false);
-    }
-
-    return () => clearTimeout(typingTimeout.current);
-  }, [reply, selectedTicket]);
-
   const updatePriority = async (newPriority) => {
     if (!selectedTicket) return;
     try {
@@ -193,6 +176,25 @@ export default function SupportManagement({ setPage, setActivePage }) {
     }
   };
 
+  // Optimized typing handler tied directly to text input changes
+  const handleReplyChange = (e) => {
+    const value = e.target.value;
+    setReply(value);
+
+    clearTimeout(typingTimeout.current);
+
+    if (!value.trim()) {
+      updateTypingStatus(false);
+      return;
+    }
+
+    updateTypingStatus(true);
+
+    typingTimeout.current = setTimeout(() => {
+      updateTypingStatus(false);
+    }, 2500);
+  };
+
   // Helper to securely open a ticket while clearing old typing states
   const openTicket = async (ticket) => {
     if (selectedTicket) {
@@ -210,17 +212,20 @@ export default function SupportManagement({ setPage, setActivePage }) {
   };
 
   const sendReply = async () => {
-    if (!reply.trim() || !selectedTicket || sending) return;
+    const message = reply.trim();
+    if (!message || !selectedTicket || sending) return;
+
     try {
       setSending(true);
       clearTimeout(typingTimeout.current);
+      setReply(""); // Clear input immediately for snappy UI response
       
       await addDoc(
         collection(db, "supportTickets", selectedTicket.id, "messages"),
         {
           sender: "support",
           senderName: "Support Team",
-          message: reply.trim(),
+          message,
           createdAt: serverTimestamp()
         }
       );
@@ -229,12 +234,11 @@ export default function SupportManagement({ setPage, setActivePage }) {
         updatedAt: serverTimestamp(),
         customerUnread: increment(1),
         lastReplyBy: "support",
-        lastMessage: reply.trim(),
+        lastMessage: message,
         lastMessageAt: serverTimestamp(),
         adminTypingAt: null
       });
       
-      setReply("");
     } catch (err) {
       console.log("Error sending reply:", err);
     } finally {
@@ -375,6 +379,9 @@ export default function SupportManagement({ setPage, setActivePage }) {
       </div>
     );
   }
+
+
+
 
   return (
     <div
