@@ -48,7 +48,9 @@ import {
   X,
   Star,
   AlertCircle,
-  Paperclip
+  Paperclip,
+  ThumbsUp,
+  ThumbsDown
 } from "lucide-react";
 
 // Map icon names from Firestore to Lucide components
@@ -61,6 +63,7 @@ export default function SupportPage({ setPage }) {
   const [activePage, setActivePage] = useState("home");
   
   // FAQ state
+  const [faqs, setFaqs] = useState([]);
   const [openFaq, setOpenFaq] = useState(null);
   const [search, setSearch] = useState("");
   const [faqVotes, setFaqVotes] = useState({});
@@ -142,10 +145,33 @@ export default function SupportPage({ setPage }) {
     };
   }, []);
 
-  // FAQ 
-  const [faqs, setFaqs] = useState([]);
+  // Load FAQs
+  useEffect(() => {
+    const q = query(
+      collection(db, "supportFAQs"),
+      where("active", "==", true)
+    );
 
-  // Filter FAQs by question, answer, or category
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }));
+
+      data.sort((a, b) => {
+        if (a.pinned === b.pinned) {
+          return (a.sortOrder || 0) - (b.sortOrder || 0);
+        }
+        return b.pinned - a.pinned;
+      });
+
+      setFaqs(data);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // Filter FAQs
   const filteredFaqs = faqs.filter((faq) => {
     const matchesSearch =
       (faq.question || "").toLowerCase().includes(search.toLowerCase()) ||
@@ -158,6 +184,48 @@ export default function SupportPage({ setPage }) {
 
     return matchesSearch && matchesCategory;
   });
+
+  const featuredFaq = faqs.find((faq) => faq.featured);
+
+  const regularFaqs = filteredFaqs.filter(
+    (faq) => !faq.featured
+  );
+
+  // Open FAQ + increment views
+  const openFAQ = async (faq, index) => {
+    if (openFaq === index) {
+      setOpenFaq(null);
+      return;
+    }
+
+    setOpenFaq(index);
+
+    try {
+      await updateDoc(doc(db, "supportFAQs", faq.id), {
+        views: increment(1)
+      });
+    } catch (err) {
+      console.log("Error updating FAQ views:", err);
+    }
+  };
+
+  // Helpful / Not Helpful voting
+  const voteFAQ = async (faqId, type) => {
+    if (faqVotes[faqId]) return;
+
+    try {
+      await updateDoc(doc(db, "supportFAQs", faqId), {
+        [type]: increment(1)
+      });
+
+      setFaqVotes((prev) => ({
+        ...prev,
+        [faqId]: type
+      }));
+    } catch (err) {
+      console.log("Error voting:", err);
+    }
+  };
 
   // Auto-scroll logic
   const scrollToBottom = (behavior = "smooth") => {
@@ -246,9 +314,9 @@ export default function SupportPage({ setPage }) {
       where("active", "==", true)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
+      const data = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data()
       }));
       setHelpCategories(data);
     });
@@ -272,8 +340,7 @@ export default function SupportPage({ setPage }) {
     setLoadingTickets(true);
     const q = query(
       collection(db, "supportTickets"),
-      where("customerId", "==", currentUser.uid),
-     
+      where("customerId", "==", currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(
@@ -329,7 +396,7 @@ export default function SupportPage({ setPage }) {
     markAsRead();
   }, [selectedTicket?.id, selectedTicket?.customerUnread]);
 
-  // Listen to the active ticket document for live updates & support typing (FIXED)
+  // Listen to the active ticket document for live updates & support typing
   useEffect(() => {
     if (!selectedTicket?.id) return;
 
@@ -338,7 +405,6 @@ export default function SupportPage({ setPage }) {
       (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
-          // Directly update admin typing state when snapshot arrives
           setLastAdminTyping(data.adminTypingAt || null);
           setSelectedTicket((prev) => (prev ? { ...prev, ...data } : null));
         }
@@ -347,7 +413,7 @@ export default function SupportPage({ setPage }) {
     return () => unsubscribe();
   }, [selectedTicket?.id]);
 
-  // Admin typing status checker interval (FIXED)
+  // Admin typing status checker interval
   useEffect(() => {
     const interval = setInterval(() => {
       if (!lastAdminTyping) {
@@ -372,7 +438,6 @@ export default function SupportPage({ setPage }) {
       const currentSeconds = Date.now() / 1000;
       const timeDifference = currentSeconds - timestampSeconds;
       
-      // Show indicator if timestamp is within the last 3.5 seconds
       setAdminTyping(timeDifference >= 0 && timeDifference < 3.5);
     }, 400);
 
@@ -410,29 +475,6 @@ export default function SupportPage({ setPage }) {
 
     return () => unsubscribe();
   }, [selectedTicket?.id]);
-
-  useEffect(() => {
-    const q = query(
-      collection(db, "supportFAQs"),
-      where("active", "==", true)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      data.sort((a, b) => {
-        if (a.pinned === b.pinned) {
-          return (a.sortOrder || 0) - (b.sortOrder || 0);
-        }
-        return b.pinned - a.pinned;
-      });
-      setFaqs(data);
-    });
-
-    return unsubscribe;
-  }, []);
 
   // Fetch support settings in real-time
   useEffect(() => {
@@ -811,6 +853,8 @@ export default function SupportPage({ setPage }) {
     }
   };
 
+  
+
  
 
   return (
@@ -1015,6 +1059,199 @@ export default function SupportPage({ setPage }) {
           </section>
 
           <section>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "14px"
+              }}
+            >
+              <h2 className="support-heading" style={{ margin: 0 }}>
+                <HelpCircle size={20} color="#C4956A" />
+                {" "}
+                Frequently Asked Questions
+                {selectedCategory !== "All" &&
+                  ` (${selectedCategory})`}
+              </h2>
+
+              {selectedCategory !== "All" && (
+                <button
+                  className="support-btn support-btn-secondary"
+                  onClick={() => setSelectedCategory("All")}
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: "12px"
+                  }}
+                >
+                  Show All FAQs
+                </button>
+              )}
+            </div>
+
+            {featuredFaq &&
+              search.trim() === "" &&
+              selectedCategory === "All" && (
+                <div
+                  className="support-card"
+                  style={{
+                    background:
+                      "linear-gradient(135deg,#FFFDF9 0%,#FFF8E8 100%)",
+                    border: "1px solid #F4D27A",
+                    marginBottom: "16px"
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      color: "#B8860B",
+                      fontWeight: 700,
+                      fontSize: "12px",
+                      marginBottom: "8px",
+                      background: "#FEF3C7",
+                      padding: "3px 10px",
+                      borderRadius: "999px"
+                    }}
+                  >
+                    ⭐ Featured FAQ
+                  </div>
+
+                  <h3
+                    style={{
+                      marginTop: 0,
+                      color: "#2C221E",
+                      fontSize: "16px"
+                    }}
+                  >
+                    {featuredFaq.question}
+                  </h3>
+
+                  <p
+                    style={{
+                      color: "#6E5E53",
+                      whiteSpace: "pre-wrap",
+                      fontSize: "14px",
+                      margin: 0,
+                      lineHeight: "1.6"
+                    }}
+                  >
+                    {featuredFaq.answer}
+                  </p>
+                </div>
+              )}
+
+            {regularFaqs.length === 0 ? (
+              <div className="empty-state">
+                <HelpCircle size={36} color="#C4956A" />
+                <h3>No FAQs found</h3>
+                <p>
+                  There are no FAQs available matching your
+                  current category selection.
+                </p>
+              </div>
+            ) : (
+              regularFaqs.map((faq, index) => (
+                <div key={faq.id} className="faq-card">
+                  <div
+                    style={{
+                      display: "inline-block",
+                      background: "#FAF6F0",
+                      color: "#C4956A",
+                      padding: "3px 10px",
+                      borderRadius: "999px",
+                      fontSize: "11px",
+                      fontWeight: "600",
+                      margin: "14px 18px 0"
+                    }}
+                  >
+                    {faq.category || "General"}
+                  </div>
+
+                  <button
+                    className="faq-btn"
+                    onClick={() => openFAQ(faq, index)}
+                  >
+                    <span>{faq.question}</span>
+
+                    {openFaq === index ? (
+                      <ChevronUp size={18} />
+                    ) : (
+                      <ChevronDown size={18} />
+                    )}
+                  </button>
+
+                  {openFaq === index && (
+                    <div className="faq-answer">
+                      <div style={{ whiteSpace: "pre-wrap" }}>
+                        {faq.answer}
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: "18px",
+                          paddingTop: "14px",
+                          borderTop: "1px solid #E8DED2"
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            color: "#6E5E53",
+                            marginBottom: "10px"
+                          }}
+                        >
+                          Was this helpful?
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "10px"
+                          }}
+                        >
+                          <button
+                            disabled={faqVotes[faq.id]}
+                            onClick={() =>
+                              voteFAQ(faq.id, "helpful")
+                            }
+                            className="support-btn support-btn-secondary"
+                          >
+                            👍 Yes
+                          </button>
+
+                          <button
+                            disabled={faqVotes[faq.id]}
+                            onClick={() =>
+                              voteFAQ(faq.id, "notHelpful")
+                            }
+                            className="support-btn support-btn-secondary"
+                          >
+                            👎 No
+                          </button>
+                        </div>
+
+                        {faqVotes[faq.id] && (
+                          <div
+                            style={{
+                              marginTop: "10px",
+                              fontSize: "12px",
+                              color: "#9A8C82"
+                            }}
+                          >
+                            Thanks for your feedback!
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </section>
+
+          <section>
             <h2 className="support-heading">
               <Clock3 size={20} color="#C4956A" /> Recent Tickets
             </h2>
@@ -1061,29 +1298,8 @@ export default function SupportPage({ setPage }) {
             )}
           </section>
 
-
-
-
-          
         </div>
       )}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      
 
       {/* TICKET LIST VIEW (MY TICKETS) */}
       {activePage === "list" && (
