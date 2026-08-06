@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { db, storage } from "../firebase";
 import { useAuth } from "../context/AuthContext";
@@ -179,24 +180,35 @@ export default function SupportPage({ setPage }) {
     }
   };
 
-  // Typing change handler with optimized Firestore writes
+  // Typing change handler with robust empty-text clearing and safe timeouts
   const handleReplyChange = (e) => {
     const value = e.target.value;
     setReply(value);
-    
-    if (!value.trim()) return;
-
     clearTimeout(typingTimeout.current);
+
+    if (!value.trim()) {
+      if (selectedTicket?.id) {
+        updateDoc(
+          doc(db, "supportTickets", selectedTicket.id),
+          { customerTypingAt: null }
+        ).catch(() => {});
+      }
+      return;
+    }
+
     updateTypingStatus();
 
     typingTimeout.current = setTimeout(async () => {
-      if (selectedTicket?.id) {
+      if (!selectedTicket?.id) return;
+      try {
         await updateDoc(
           doc(db, "supportTickets", selectedTicket.id),
           {
             customerTypingAt: null
           }
         );
+      } catch (err) {
+        console.log(err);
       }
     }, 2500);
   };
@@ -719,6 +731,8 @@ export default function SupportPage({ setPage }) {
       default: return "badge-open";
     }
   };
+
+  
 
  
 
