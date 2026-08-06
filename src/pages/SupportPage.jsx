@@ -179,32 +179,48 @@ export default function SupportPage({ setPage }) {
     }
   };
 
-  // Typing change handler with debounce
+  // Typing change handler with optimized Firestore writes
   const handleReplyChange = (e) => {
     const value = e.target.value;
     setReply(value);
+    
+    if (!value.trim()) return;
+
     clearTimeout(typingTimeout.current);
-    if (!value.trim()) {
-      return;
-    }
     updateTypingStatus();
-    typingTimeout.current = setTimeout(() => {
-      updateTypingStatus();
-    }, 2000);
+
+    typingTimeout.current = setTimeout(async () => {
+      if (selectedTicket?.id) {
+        await updateDoc(
+          doc(db, "supportTickets", selectedTicket.id),
+          {
+            customerTypingAt: null
+          }
+        );
+      }
+    }, 2500);
   };
 
-  // Clean up typing timeout and reset customer typing on unmount / ticket change
+  // Clean up typing timeout on component unmount
   useEffect(() => {
     return () => {
       clearTimeout(typingTimeout.current);
+    };
+  }, []);
+
+  // Clean up customer typing when switching tickets or unmounting
+  useEffect(() => {
+    return () => {
       if (selectedTicket?.id) {
         updateDoc(
           doc(db, "supportTickets", selectedTicket.id),
-          { customerTypingAt: null }
+          {
+            customerTypingAt: null
+          }
         ).catch(() => {});
       }
     };
-  }, [selectedTicket]);
+  }, [selectedTicket?.id]);
 
   // Load categories from Firestore
   useEffect(() => {
@@ -704,6 +720,7 @@ export default function SupportPage({ setPage }) {
     }
   };
 
+ 
 
 
 
