@@ -209,63 +209,67 @@ export default function SupportManagement({ setPage, setActivePage }) {
     setActiveTab(tab);
   };
 
-  const sendReply = async () => {
-    const message = reply.trim();
-    if (!message || !selectedTicket || sending) return;
+const sendReply = async () => {
+  const message = reply.trim();
+  if (!message || !selectedTicket || sending) return;
 
-    try {
-      setSending(true);
-      setReply("");
-      clearTimeout(typingTimeout.current);
-      await updateTypingStatus(false);
-      
-      await Promise.all([
-        addDoc(
-          collection(db, "supportTickets", selectedTicket.id, "messages"),
-          {
-            sender: "support",
-            senderName: "Support Team",
-            message,
-            createdAt: serverTimestamp()
-          }
-        ),
-        updateDoc(doc(db, "supportTickets", selectedTicket.id), {
-          updatedAt: serverTimestamp(),
-          customerUnread: increment(1),
-          lastReplyBy: "support",
-          lastMessage: message,
-          lastMessageAt: serverTimestamp(),
-          adminTypingAt: null
-        })
-      ]);
-      
-    } catch (err) {
-      console.log("Error sending reply:", err);
-    } finally {
-      setSending(false);
-    }
-  };
+  try {
+    setSending(true);
+    clearTimeout(typingTimeout.current);
+    await updateTypingStatus(false);
+    
+    await Promise.all([
+      addDoc(
+        collection(db, "supportTickets", selectedTicket.id, "messages"),
+        {
+          sender: "support",
+          senderName: "Support Team",
+          message,
+          createdAt: serverTimestamp()
+        }
+      ),
+      updateDoc(doc(db, "supportTickets", selectedTicket.id), {
+        updatedAt: serverTimestamp(),
+        customerUnread: increment(1),
+        lastReplyBy: "support",
+        lastMessage: message,
+        lastMessageAt: serverTimestamp(),
+        adminTypingAt: null
+      })
+    ]);
+    
+    // Clear reply text *after* successful write
+    setReply("");
+    
+  } catch (err) {
+    console.log("Error sending reply:", err);
+  } finally {
+    setSending(false);
+  }
+};
+
 
   // Safely clear typing status on status change
-  const updateTicketStatus = async (newStatus) => {
-    if (!selectedTicket) return;
+// Safely clear typing status on status change
+const updateTicketStatus = async (newStatus) => {
+  if (!selectedTicket) return;
 
-    alert("Typing: " + isTyping);
-    try {
-      clearTimeout(typingTimeout.current);
-      await updateTypingStatus(false);
-      
-      await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
-        status: newStatus,
-        updatedAt: serverTimestamp(),
-        adminTypingAt: null
-      });
-      
-      setSelectedTicket((prev) => ({ ...prev, status: newStatus }));
-    } catch (err) {
-      console.log("Error updating status:", err);
-    }
-  };
+  try {
+    clearTimeout(typingTimeout.current);
+    await updateTypingStatus(false);
+    
+    await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
+      status: newStatus,
+      updatedAt: serverTimestamp(),
+      adminTypingAt: null
+    });
+    
+    setSelectedTicket((prev) => ({ ...prev, status: newStatus }));
+  } catch (err) {
+    console.log("Error updating status:", err);
+  }
+};
+
 
   const saveInternalNotes = async () => {
     if (!selectedTicket) return;
