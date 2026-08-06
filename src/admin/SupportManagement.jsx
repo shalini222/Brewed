@@ -219,25 +219,27 @@ export default function SupportManagement({ setPage, setActivePage }) {
       setSending(true);
       clearTimeout(typingTimeout.current);
       setReply(""); // Clear input immediately for snappy UI response
+      await updateTypingStatus(false); // Clear typing status immediately
       
-      await addDoc(
-        collection(db, "supportTickets", selectedTicket.id, "messages"),
-        {
-          sender: "support",
-          senderName: "Support Team",
-          message,
-          createdAt: serverTimestamp()
-        }
-      );
-      
-      await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
-        updatedAt: serverTimestamp(),
-        customerUnread: increment(1),
-        lastReplyBy: "support",
-        lastMessage: message,
-        lastMessageAt: serverTimestamp(),
-        adminTypingAt: null
-      });
+      await Promise.all([
+        addDoc(
+          collection(db, "supportTickets", selectedTicket.id, "messages"),
+          {
+            sender: "support",
+            senderName: "Support Team",
+            message,
+            createdAt: serverTimestamp()
+          }
+        ),
+        updateDoc(doc(db, "supportTickets", selectedTicket.id), {
+          updatedAt: serverTimestamp(),
+          customerUnread: increment(1),
+          lastReplyBy: "support",
+          lastMessage: message,
+          lastMessageAt: serverTimestamp(),
+          adminTypingAt: null
+        })
+      ]);
       
     } catch (err) {
       console.log("Error sending reply:", err);
@@ -379,6 +381,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
       </div>
     );
   }
+
 
 
 
