@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
-import { collection, query, orderBy, onSnapshot, doc, addDoc, updateDoc, serverTimestamp, increment } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, doc, addDoc, updateDoc, setDoc, serverTimestamp, increment } from "firebase/firestore";
 import SupportFAQManagement from "./SupportFAQManagement";
 import SupportPolicyManagement from "./SupportPolicyManagement";
 import SupportSettingsManagement from "./SupportSettingsManagement";
@@ -126,6 +126,15 @@ export default function SupportManagement({ setPage, setActivePage }) {
     setInternalNotes(selectedTicket.internalNotes || "");
   }, [selectedTicket]);
 
+  useEffect(() => {
+    if (!selectedTicket) return;
+    if (reply.trim()) {
+      updateTypingStatus(true);
+    } else {
+      updateTypingStatus(false);
+    }
+  }, [reply, selectedTicket]);
+
   const updatePriority = async (newPriority) => {
     if (!selectedTicket) return;
     try {
@@ -152,6 +161,19 @@ export default function SupportManagement({ setPage, setActivePage }) {
     }
   };
 
+  const updateTypingStatus = async (typing) => {
+    if (!selectedTicket) return;
+    try {
+      await setDoc(
+        doc(db, "supportTickets", selectedTicket.id),
+        { adminTyping: typing },
+        { merge: true }
+      );
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   const sendReply = async () => {
     if (!reply.trim() || !selectedTicket || sending) return;
     try {
@@ -174,6 +196,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
         adminTyping: false
       });
       setReply("");
+      await updateTypingStatus(false);
     } catch (err) {
       console.log("Error sending reply:", err);
     } finally {
@@ -1080,16 +1103,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
                 </h3>
                 <textarea
                   value={reply}
-                  onChange={async (e) => {
-                    const value = e.target.value;
-                    setReply(value);
-                    if (selectedTicket) {
-                      await updateDoc(
-                        doc(db, "supportTickets", selectedTicket.id),
-                        { adminTyping: value.trim().length > 0 }
-                      );
-                    }
-                  }}
+                  onChange={(e) => setReply(e.target.value)}
                   onKeyDown={(e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
                       e.preventDefault();
