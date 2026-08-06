@@ -165,20 +165,23 @@ export default function SupportManagement({ setPage, setActivePage }) {
 
   // Helper to update admin typing timestamp state
   const updateTypingStatus = async (isTyping) => {
-    if (!selectedTicket) return;
-    try {
-      await updateDoc(
-        doc(db, "supportTickets", selectedTicket.id),
-        { adminTypingAt: isTyping ? serverTimestamp() : null }
-      );
-    } catch (err) {
-      console.log(err);
-    }
-  };
+  if (!selectedTicket?.id) return;
+
+  try {
+    await updateDoc(
+      doc(db, "supportTickets", selectedTicket.id),
+      {
+        adminTypingAt: isTyping ? serverTimestamp() : null
+      }
+    );
+  } catch (err) {
+    console.log(err);
+  }
+};
 
   // Optimized typing handler tied directly to text input changes
  
-  const handleReplyChange = (e) => {
+const handleReplyChange = (e) => {
   const value = e.target.value;
   setReply(value);
 
@@ -191,16 +194,11 @@ export default function SupportManagement({ setPage, setActivePage }) {
     return;
   }
 
-  typingTimeout.current = setTimeout(async () => {
-    await updateTypingStatus(true);
+  updateTypingStatus(true);
 
-    clearTimeout(typingTimeout.current);
-
-    typingTimeout.current = setTimeout(() => {
-      updateTypingStatus(false);
-    }, 5000);
-
-  }, 800);
+  typingTimeout.current = setTimeout(() => {
+    updateTypingStatus(false);
+  }, 3000);
 };
 
   // Helper to securely open a ticket while clearing old typing states
