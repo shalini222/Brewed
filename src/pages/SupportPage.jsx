@@ -2173,6 +2173,40 @@ const policyCategories = [
             </div>
           </div>
 
+
+
+
+
+<div
+  className="live-chat-badge"
+  style={{
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "8px 14px",
+    borderRadius: "999px",
+    background: "#F7F3EE",
+    border: "1px solid #E8DED2",
+    width: "fit-content",
+    marginBottom: "6px"
+  }}
+>
+  <span
+    style={{
+      width: "8px",
+      height: "8px",
+      borderRadius: "50%",
+      background: adminTyping ? "#22C55E" : "#9CA3AF"
+    }}
+  />
+  <span style={{ fontSize: "12px", fontWeight: 600 }}>
+    {adminTyping ? "Support is typing…" : "Live Conversation"}
+  </span>
+</div>
+
+{loadingMessages ? (
+          
+
           {loadingMessages ? (
             <div style={{ textAlign: "center", padding: "40px", color: "#9A8C82" }}>Loading conversation...</div>
           ) : messages.length === 0 ? (
