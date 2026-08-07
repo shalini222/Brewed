@@ -144,66 +144,73 @@ export default function SupportPage({ setPage }) {
   const typingTimeout = useRef(null);
 
 
-  // Check if business is currently open
-  const checkIsBusinessOpen = () => {
-    const now = new Date();
+ // Check if business is currently open
+const checkIsBusinessOpen = () => {
+  const now = new Date();
 
-    const day = now.getDay(); // 0 = Sunday
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
+  const day = now.getDay(); // 0 = Sunday
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
 
-    const currentTime = hours * 60 + minutes;
+  const currentTime = hours * 60 + minutes;
 
-    const parseTimeRange = (range) => {
-      if (!range || range.toLowerCase().includes("closed")) return null;
+  const parseTimeRange = (range) => {
+    if (!range || range.toLowerCase().includes("closed")) return null;
 
-      const parts = range.split("-");
+    const parts = range.split("-");
 
-      if (parts.length !== 2) return null;
+    if (parts.length !== 2) return null;
 
-      const parse12Hour = (timeString) => {
-        const [time, period] = timeString.trim().split(" ");
+    const parse12Hour = (timeString) => {
+      const [time, period] = timeString.trim().split(" ");
 
-        let [h, m] = time.split(":").map(Number);
+      let [h, m] = time.split(":").map(Number);
 
-        if (period?.toUpperCase() === "PM" && h < 12) h += 12;
-        if (period?.toUpperCase() === "AM" && h === 12) h = 0;
+      if (period?.toUpperCase() === "PM" && h < 12) h += 12;
+      if (period?.toUpperCase() === "AM" && h === 12) h = 0;
 
-        return h * 60 + (m || 0);
-      };
-
-      return {
-        start: parse12Hour(parts[0]),
-        end: parse12Hour(parts[1])
-      };
+      return h * 60 + (m || 0);
     };
 
-let todayHours = "";
+    return {
+      start: parse12Hour(parts[0]),
+      end: parse12Hour(parts[1])
+    };
+  };
 
-switch (day) {
-  case 1:
-    todayHours = supportSettings.monday;
-    break;
-  case 2:
-    todayHours = supportSettings.tuesday;
-    break;
-  case 3:
-    todayHours = supportSettings.wednesday;
-    break;
-  case 4:
-    todayHours = supportSettings.thursday;
-    break;
-  case 5:
-    todayHours = supportSettings.friday;
-    break;
-  case 6:
-    todayHours = supportSettings.saturday;
-    break;
-  default:
-    todayHours = supportSettings.sunday;
-}
+  let todayHours = "";
 
-  const isBusinessOpen = checkIsBusinessOpen();
+  switch (day) {
+    case 1:
+      todayHours = supportSettings.monday;
+      break;
+    case 2:
+      todayHours = supportSettings.tuesday;
+      break;
+    case 3:
+      todayHours = supportSettings.wednesday;
+      break;
+    case 4:
+      todayHours = supportSettings.thursday;
+      break;
+    case 5:
+      todayHours = supportSettings.friday;
+      break;
+    case 6:
+      todayHours = supportSettings.saturday;
+      break;
+    default:
+      todayHours = supportSettings.sunday;
+  }
+
+  const range = parseTimeRange(todayHours);
+
+  if (!range) return false;
+
+  return currentTime >= range.start && currentTime <= range.end;
+};
+
+const isBusinessOpen = checkIsBusinessOpen();
   
   // Filter Policies
 
