@@ -629,12 +629,12 @@ const faqCategories = [
       scrollToBottom();
     }
   }, [messages, adminTyping, isNearBottom]);
-  useEffect(() => {
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
+
+
+useEffect(() => {
+  window.scrollTo(0, 0);
 }, [activePage]);
+  
 
 // Categories
 const policyCategories = [
