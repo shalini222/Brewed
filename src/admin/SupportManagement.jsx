@@ -60,6 +60,8 @@ export default function SupportManagement({ setPage, setActivePage }) {
   const [activeTab, setActiveTab] = useState("tickets");
   const [internalNotes, setInternalNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [reviews, setReviews] = useState([]);
+const [loadingReviews, setLoadingReviews] = useState(true);
   
   const messagesEndRef = useRef(null);
   const typingTimeout = useRef(null);
@@ -139,6 +141,28 @@ export default function SupportManagement({ setPage, setActivePage }) {
     }
     setInternalNotes(selectedTicket.internalNotes || "");
   }, [selectedTicket]);
+
+useEffect(() => {
+  const q = query(
+    collection(db, "supportReviews"),
+    orderBy("createdAt", "desc")
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const data = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    setReviews(data);
+    setLoadingReviews(false);
+  });
+
+  return () => unsubscribe();
+}, []);
+
+
+  
 
   const updatePriority = async (newPriority) => {
     if (!selectedTicket) return;
@@ -1315,6 +1339,7 @@ const formatTicketNumber = (ticket) => {
       {activeTab === "supporthelpdesk" && <SupportHelpCategoryManagement />}
       {activeTab === "supportanalytics" && <SupportAnalyticsManagement />}
       {activeTab === "supportpolicies" && <SupportPolicyManagement />}
+      {activeTab === "supportreviews" && <SupportReviewsManagement />}
     </div>
   );
 }
