@@ -1117,38 +1117,7 @@ const policyCategories = [
             </div>
           </div>
 
-          <section>
-            <h2 className="support-heading">
-              <Search size={20} color="#C4956A" /> Search FAQs
-            </h2>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                background: "white",
-                border: "1px solid #E8DED2",
-                borderRadius: "14px",
-                padding: "14px 18px",
-                boxShadow: "0 2px 8px rgba(44,34,30,0.02)"
-              }}
-            >
-              <Search size={18} color="#C4956A" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search FAQs by question, answer, or category..."
-                style={{
-                  flex: 1,
-                  border: "none",
-                  outline: "none",
-                  background: "transparent",
-                  marginLeft: "12px",
-                  fontSize: "14px",
-                  color: "#2C221E"
-                }}
-              />
-            </div>
-          </section>
+          
 
           <section>
             <h2 className="support-heading">
