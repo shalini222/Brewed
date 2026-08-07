@@ -1178,52 +1178,125 @@ const policyCategories = [
          
           
           {recentTickets.length > 0 && (
-          <section>
-            <h2 className="support-heading">
-              <Clock3 size={20} color="#C4956A" /> Recent Tickets
-            </h2>
+         
+              <section>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: "16px"
+    }}
+  >
+    <h2 className="support-heading" style={{ margin: 0 }}>
+      <Clock3 size={20} color="#C4956A" /> Recent Tickets
+    </h2>
 
-            {loadingTickets ? (
-              <div className="support-card" style={{ padding: "20px", textAlign: "center", color: "#9A8C82" }}>
-                Loading recent tickets...
-              </div>
-            ) : recentTickets.length === 0 ? (
-              <div className="empty-state">
-                <MessageSquare size={36} color="#C4956A" />
-                <h3>No recent tickets</h3>
-                <p>When you create support requests, they will appear right here for quick tracking.</p>
-                <button onClick={() => setActivePage("create")} className="support-btn" style={{ marginTop: "4px" }}>
-                  <PlusCircle size={16} /> Create Ticket
-                </button>
-              </div>
-            ) : (
-              recentTickets.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className="ticket-item"
-                  onClick={() => {
-                    setSelectedTicket(ticket);
-                    setActivePage("conversation");
-                  }}
-                >
-                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontWeight: 650, color: "#2C221E", fontSize: "14px" }}>
-                        {ticket.subject}
-                      </span>
-                      <span style={{ fontSize: "11px", color: "#9A8C82" }}>#BRW-{ticket.id.slice(-6).toUpperCase()}</span>
-                    </div>
-                    <div style={{ fontSize: "12px", color: "#9A8C82" }}>
-                      {ticket.lastMessage || "No messages yet"} • Updated {getRelativeTime(ticket.updatedAt)}
-                    </div>
-                  </div>
-                  <span className={`badge ${getStatusBadgeClass(ticket.status)}`}>
-                    {ticket.status}
-                  </span>
-                </div>
-              ))
-            )}
-          </section>
+    <button
+      onClick={() => setActivePage("tickets")}
+      style={{
+        background: "none",
+        border: "none",
+        color: "#C4956A",
+        fontSize: "13px",
+        fontWeight: 600,
+        cursor: "pointer"
+      }}
+    >
+      View All →
+    </button>
+  </div>
+
+  {loadingTickets ? (
+    <div
+      className="support-card"
+      style={{
+        padding: "20px",
+        textAlign: "center",
+        color: "#9A8C82"
+      }}
+    >
+      Loading recent tickets...
+    </div>
+  ) : recentTickets.length === 0 ? (
+    <div className="empty-state">
+      <MessageSquare size={36} color="#C4956A" />
+      <h3>No recent tickets</h3>
+      <p>
+        When you create support requests, they will appear right here for quick
+        tracking.
+      </p>
+
+      <button
+        onClick={() => setActivePage("create")}
+        className="support-btn"
+        style={{ marginTop: "4px" }}
+      >
+        <PlusCircle size={16} /> Create Ticket
+      </button>
+    </div>
+  ) : (
+    recentTickets.slice(0, 5).map((ticket) => (
+      <div
+        key={ticket.id}
+        className="ticket-item"
+        onClick={() => {
+          setSelectedTicket(ticket);
+          setActivePage("conversation");
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px"
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px"
+            }}
+          >
+            <span
+              style={{
+                fontWeight: 650,
+                color: "#2C221E",
+                fontSize: "14px"
+              }}
+            >
+              {ticket.subject}
+            </span>
+
+            <span
+              style={{
+                fontSize: "11px",
+                color: "#9A8C82"
+              }}
+            >
+              #BRW-{ticket.id.slice(-6).toUpperCase()}
+            </span>
+          </div>
+
+          <div
+            style={{
+              fontSize: "12px",
+              color: "#9A8C82"
+            }}
+          >
+            {ticket.lastMessage || "No messages yet"} • Updated{" "}
+            {getRelativeTime(ticket.updatedAt)}
+          </div>
+        </div>
+
+        <span className={`badge ${getStatusBadgeClass(ticket.status)}`}>
+          {ticket.status}
+        </span>
+      </div>
+    ))
+  )}
+</section>
           )}
 
 
