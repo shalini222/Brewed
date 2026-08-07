@@ -1341,7 +1341,12 @@ const formatTicketNumber = (ticket) => {
       {activeTab === "supporthelpdesk" && <SupportHelpCategoryManagement />}
       {activeTab === "supportanalytics" && <SupportAnalyticsManagement />}
       {activeTab === "supportpolicies" && <SupportPolicyManagement />}
-      {activeTab === "supportreviews" && <SupportReviewsManagement />}
+      {activeTab === "supportreviews" && (
+  <SupportReviewsManagement
+    setActiveTab={setActiveTab}
+    setSelectedTicket={setSelectedTicket}
+  />
+)}
     </div>
   );
 }
