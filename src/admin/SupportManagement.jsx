@@ -1173,6 +1173,29 @@ const formatTicketNumber = (ticket) => {
                             }}
                           >
                             <div>{msg.message}</div>
+                            {/* Attachment */}
+{msg.attachmentUrl && (
+  <div style={{ marginTop: "10px" }}>
+    {msg.attachmentType?.startsWith("image/") ? (
+      <img
+        src={msg.attachmentUrl}
+        alt={msg.attachmentName}
+        style={{
+          maxWidth: "220px",
+          borderRadius: "10px"
+        }}
+      />
+    ) : (
+      <a
+        href={msg.attachmentUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        📎 {msg.attachmentName || "View Attachment"}
+      </a>
+    )}
+  </div>
+)}
                             <div style={{ marginTop: "6px", fontSize: "11px", opacity: 0.75, textAlign: "right" }}>
                               {msg.createdAt?.toDate?.().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || "Sending..."}
                             </div>
