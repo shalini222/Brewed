@@ -2239,8 +2239,7 @@ const policyCategories = [
               )}
 
               <div ref={messagesEndRef} />
-            </div>
-          )}
+            
 
           {!isClosed && (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "10px" }}>
