@@ -178,21 +178,30 @@ export default function SupportPage({ setPage }) {
       };
     };
 
-    let todayHours = "";
+let todayHours = "";
 
-    if (day >= 1 && day <= 5)
-      todayHours = supportSettings.mondayFriday;
-    else if (day === 6)
-      todayHours = supportSettings.saturday;
-    else
-      todayHours = supportSettings.sunday;
-
-    const range = parseTimeRange(todayHours);
-
-    if (!range) return false;
-
-    return currentTime >= range.start && currentTime <= range.end;
-  };
+switch (day) {
+  case 1:
+    todayHours = supportSettings.monday;
+    break;
+  case 2:
+    todayHours = supportSettings.tuesday;
+    break;
+  case 3:
+    todayHours = supportSettings.wednesday;
+    break;
+  case 4:
+    todayHours = supportSettings.thursday;
+    break;
+  case 5:
+    todayHours = supportSettings.friday;
+    break;
+  case 6:
+    todayHours = supportSettings.saturday;
+    break;
+  default:
+    todayHours = supportSettings.sunday;
+}
 
   const isBusinessOpen = checkIsBusinessOpen();
   
