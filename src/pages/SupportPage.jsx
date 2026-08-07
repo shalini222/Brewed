@@ -1030,7 +1030,8 @@ const policyCategories = [
         .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
         .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
         .faq-card { background: white; border: 1px solid #E8DED2; border-radius: 14px; margin-bottom: 12px; overflow: hidden; transition: border-color 0.2s; } .faq-card:hover { border-color: #D4B294; } .faq-btn { width: 100%; background: white; border: none; padding: 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 14px; font-weight: 600; color: #2C221E; text-align: left; } .faq-btn:hover { background: #FAF6F0; } .faq-answer { padding: 0 18px 18px; color: #6E5E53; line-height: 1.6; font-size: 14px; }
-        
+        .faq-btn { width: 100%; background: white; border: none; padding: 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 14px; font-weight: 600; color: #2C221E; text-align: left; }
+              
         .contact-card-link { text-decoration: none; color: inherit; display: block; height: 100%; }
         
         
@@ -1242,20 +1243,7 @@ const policyCategories = [
             ) : (
               regularFaqs.map((faq, index) => (
                 <div key={faq.id} className="faq-card">
-                  <div
-                    style={{
-                      display: "inline-block",
-                      background: "#FAF6F0",
-                      color: "#C4956A",
-                      padding: "3px 10px",
-                      borderRadius: "999px",
-                      fontSize: "11px",
-                      fontWeight: "600",
-                      margin: "14px 18px 0"
-                    }}
-                  >
-                    {faq.category || "General"}
-                  </div>
+                 
 
                   <button
                     className="faq-btn"
