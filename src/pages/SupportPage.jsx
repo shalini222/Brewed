@@ -1193,7 +1193,7 @@ const policyCategories = [
     </h2>
 
     <button
-      onClick={() => setActivePage("tickets")}
+      onClick={() => setActivePage("mytickets")}
       style={{
         background: "none",
         border: "none",
@@ -1275,7 +1275,7 @@ const policyCategories = [
                 color: "#9A8C82"
               }}
             >
-              #BRW-{ticket.id.slice(-6).toUpperCase()}
+             #{ticket.ticketNumber || ticket.ticketId || ticket.supportId || "No ID"}
             </span>
           </div>
 
