@@ -111,6 +111,7 @@ export default function SupportPage({ setPage }) {
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [adminTyping, setAdminTyping] = useState(false);
   const [lastAdminTyping, setLastAdminTyping] = useState(null);
+  const [previewFile, setPreviewFile] = useState(null);
 
 
 
@@ -2238,15 +2239,24 @@ const policyCategories = [
                       {msg.attachments && msg.attachments.length > 0 && (
                         <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
                           {msg.attachments.map((file, fIdx) => (
-                            <a
-                              key={fIdx}
-                              href={file.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{ fontSize: "11px", background: "rgba(0,0,0,0.06)", padding: "4px 8px", borderRadius: "6px", textDecoration: "none", color: "inherit", display: "inline-flex", alignItems: "center", gap: "4px" }}
-                            >
-                              <Paperclip size={12} /> {file.name || "Attachment"}
-                            </a>
+                           <button
+  onClick={() => setPreviewFile(file)}
+  style={{
+    fontSize: "11px",
+    background: "rgba(0,0,0,0.06)",
+    padding: "4px 8px",
+    borderRadius: "6px",
+    border: "none",
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "4px",
+    color: "inherit"
+  }}
+>
+  <Paperclip size={12} />
+  {file.name || "Attachment"}
+</button>
                           ))}
                         </div>
                       )}
@@ -2314,42 +2324,194 @@ const policyCategories = [
         </div>
       )}
 
-      {/* SUCCESS MODAL */}
-      {showSuccessModal && createdTicket && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 9999 }}>
-          <div style={{ width: "420px", maxWidth: "92%", background: "#fff", borderRadius: "20px", padding: "32px", textAlign: "center", border: "1px solid #E8DED2", boxShadow: "0 20px 60px rgba(0,0,0,.15)" }}>
-            <h2 style={{ margin: 0, color: "#2C221E", fontSize: "24px", fontWeight: 700 }}>
-              Ticket Submitted
-            </h2>
-            <p style={{ marginTop: "14px", color: "#6E5E53", lineHeight: 1.6 }}>
-              Your support request has been received successfully.
-            </p>
-            <div style={{ display: "flex", gap: "12px", marginTop: "28px" }}>
-              <button 
-                className="support-btn support-btn-secondary" 
-                style={{ flex: 1 }} 
-                onClick={() => { 
-                  setShowSuccessModal(false); 
-                  setActivePage("home"); 
-                }}
-              >
-                Back Home
-              </button>
-              <button 
-                className="support-btn" 
-                style={{ flex: 1 }} 
-                onClick={() => { 
-                  setShowSuccessModal(false);
-                  setSelectedTicket(createdTicket);
-                  setActivePage("conversation"); 
-                }}
-              >
-                View Ticket
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
+
+      {/* PREWIEW MODAL */}
+      {previewFile && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,0.45)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 9999,
+      padding: "20px"
+    }}
+    onClick={() => setPreviewFile(null)}
+  >
+    <div
+      style={{
+        background: "#FDFAF5",
+        borderRadius: "16px",
+        padding: "20px",
+        maxWidth: "90%",
+        maxHeight: "90%",
+        position: "relative"
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+
+      <button
+        onClick={() => setPreviewFile(null)}
+        style={{
+          position: "absolute",
+          top: "10px",
+          right: "10px",
+          border: "none",
+          background: "#F3EEE8",
+          width: "28px",
+          height: "28px",
+          borderRadius: "50%",
+          cursor: "pointer",
+          fontSize: "18px"
+        }}
+      >
+        ×
+      </button>
+
+      <img
+        src={previewFile.url}
+        alt={previewFile.name}
+        style={{
+          maxWidth: "70vw",
+          maxHeight: "70vh",
+          borderRadius: "12px",
+          objectFit: "contain"
+        }}
+      />
+
+      <p style={{marginTop:"12px", fontSize:"13px"}}>
+        {previewFile.name}
+      </p>
+
+    </div>
+  </div>
+)}
+
+     {/* SUCCESS MODAL */}
+{showSuccessModal && createdTicket && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(44,34,30,0.35)",
+      backdropFilter: "blur(6px)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 9999,
+      padding: "20px"
+    }}
+  >
+    <div
+      style={{
+        width: "400px",
+        maxWidth: "100%",
+        background: "#FDFAF5",
+        borderRadius: "24px",
+        padding: "36px 32px",
+        textAlign: "center",
+        border: "1px solid #E8DED2",
+        boxShadow: "0 25px 70px rgba(44,34,30,0.18)"
+      }}
+    >
+      <div
+        style={{
+          width: "52px",
+          height: "52px",
+          borderRadius: "50%",
+          background: "#F3FAF5",
+          border: "1px solid #D6EAD9",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          margin: "0 auto 18px",
+          color: "#22C55E",
+          fontSize: "24px",
+          fontWeight: 700
+        }}
+      >
+        ✓
+      </div>
+
+      <h2
+        style={{
+          margin: 0,
+          color: "#2C221E",
+          fontSize: "22px",
+          fontWeight: 700,
+          letterSpacing: "-0.3px"
+        }}
+      >
+        Ticket Submitted
+      </h2>
+
+      <p
+        style={{
+          marginTop: "12px",
+          color: "#6E5E53",
+          fontSize: "14px",
+          lineHeight: 1.6
+        }}
+      >
+        Your support request has been received. Our team will get back to you shortly.
+      </p>
+
+      <div
+        style={{
+          marginTop: "20px",
+          padding: "12px 16px",
+          borderRadius: "12px",
+          background: "#FAF6F0",
+          border: "1px solid #E8DED2",
+          fontSize: "13px",
+          color: "#6E5E53"
+        }}
+      >
+        Ticket #{createdTicket.ticketNumber}
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          gap: "12px",
+          marginTop: "28px"
+        }}
+      >
+        <button
+          className="support-btn support-btn-secondary"
+          style={{
+            flex: 1,
+            height: "42px"
+          }}
+          onClick={() => {
+            setShowSuccessModal(false);
+            setActivePage("home");
+          }}
+        >
+          Back Home
+        </button>
+
+        <button
+          className="support-btn"
+          style={{
+            flex: 1,
+            height: "42px"
+          }}
+          onClick={() => {
+            setShowSuccessModal(false);
+            setSelectedTicket(createdTicket);
+            setActivePage("conversation");
+          }}
+        >
+          View Ticket
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
     
     </div>
