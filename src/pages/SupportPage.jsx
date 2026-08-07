@@ -1162,7 +1162,10 @@ const policyCategories = [
             </div>
           </div>
 
-           <section>
+         
+          
+          {recentTickets.length > 0 && (
+          <section>
             <h2 className="support-heading">
               <Clock3 size={20} color="#C4956A" /> Recent Tickets
             </h2>
@@ -1208,6 +1211,7 @@ const policyCategories = [
               ))
             )}
           </section>
+          )}
 
 
           
