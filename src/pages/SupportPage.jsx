@@ -52,6 +52,7 @@ import {
   ThumbsUp,
   ThumbsDown
 } from "lucide-react";
+import { MessageSquarePlus } from "lucide-react";
 
 // Map icon names from Firestore to Lucide components
 const iconMap = { Truck, CreditCard, Gift, ShieldCheck, Package, HelpCircle };
@@ -1371,24 +1372,22 @@ const policyCategories = [
                           }}
                         >
                           <button
-                            disabled={faqVotes[faq.id]}
-                            onClick={() =>
-                              voteFAQ(faq.id, "helpful")
-                            }
-                            className="support-btn support-btn-secondary"
-                          >
-                            👍 Yes
-                          </button>
+  disabled={faqVotes[faq.id]}
+  onClick={() => voteFAQ(faq.id, "helpful")}
+  className="support-btn support-btn-secondary"
+>
+  <ThumbsUp size={16} />
+  Yes
+</button>
 
-                          <button
-                            disabled={faqVotes[faq.id]}
-                            onClick={() =>
-                              voteFAQ(faq.id, "notHelpful")
-                            }
-                            className="support-btn support-btn-secondary"
-                          >
-                            👎 No
-                          </button>
+<button
+  disabled={faqVotes[faq.id]}
+  onClick={() => voteFAQ(faq.id, "notHelpful")}
+  className="support-btn support-btn-secondary"
+>
+  <ThumbsDown size={16} />
+  No
+</button>
                         </div>
 
                         {faqVotes[faq.id] && (
@@ -1409,6 +1408,91 @@ const policyCategories = [
               ))
             )}
           </section>
+
+
+
+<section>
+  <h2 className="support-heading">
+    <PlusCircle size={20} color="#C4956A" /> Create Support Ticket
+  </h2>
+
+  <div
+    className="support-card"
+    style={{
+      textAlign: "center",
+      padding: "32px 24px",
+      background: "linear-gradient(135deg, #FFFDF9 0%, #FAF6F0 100%)",
+      border: "1px solid #E8DED2"
+    }}
+  >
+    <div
+      style={{
+        width: "64px",
+        height: "64px",
+        borderRadius: "50%",
+        background: "#FAF6F0",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        margin: "0 auto 18px"
+      }}
+    >
+      <MessageSquarePlus size={30} color="#C4956A" />
+    </div>
+
+    <h3
+      style={{
+        margin: "0 0 10px",
+        color: "#2C221E",
+        fontSize: "20px",
+        fontWeight: 700
+      }}
+    >
+      Still need help?
+    </h3>
+
+    <p
+      style={{
+        margin: "0 auto 24px",
+        color: "#6E5E53",
+        maxWidth: "500px",
+        lineHeight: "1.7",
+        fontSize: "14px"
+      }}
+    >
+      Can't find the answer you're looking for? Create a support
+      ticket and our team will review your request and respond as
+      soon as possible.
+    </p>
+
+    <button
+      onClick={() => setActivePage("create")}
+      className="support-btn"
+      style={{
+        padding: "14px 24px",
+        fontSize: "15px"
+      }}
+    >
+      <PlusCircle size={18} />
+      Create Support Ticket
+    </button>
+
+    <div
+      style={{
+        marginTop: "18px",
+        fontSize: "13px",
+        color: "#9A8C82"
+      }}
+    >
+      Average response time:{" "}
+      <strong style={{ color: "#2C221E" }}>
+        {supportSettings.estimatedResponseTime || "Within 24 hours"}
+      </strong>
+    </div>
+  </div>
+</section>
+
+          
 
          
           <section>
