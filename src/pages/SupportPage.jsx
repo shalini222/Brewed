@@ -981,7 +981,7 @@ const policyCategories = [
 
   
  const submitReview = async () => {
-  if (!reviewRating || !selectedTicket) return;
+  if (!reviewRating || !selectedTicket || !currentUser) return;
 
   try {
     setSubmittingReview(true);
@@ -994,9 +994,9 @@ const policyCategories = [
         selectedTicket.supportId ||
         "",
 
-      userId: user.uid,
-      customerName: user.displayName || "",
-      customerEmail: user.email || "",
+      userId: currentUser.uid,
+      customerName: currentUser.displayName || "",
+      customerEmail: currentUser.email || "",
 
       rating: reviewRating,
       comment: reviewComment.trim(),
