@@ -2159,8 +2159,7 @@ const policyCategories = [
           </form>
         </div>
       )}
-
-      {/* CONVERSATION VIEW (WITH SUPPORT TYPING INDICATOR & ATTACHMENTS) */}
+{/* CONVERSATION VIEW (WITH SUPPORT TYPING INDICATOR & ATTACHMENTS) */}
       {activePage === "conversation" && selectedTicket && (
         <div className="support-card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", color: "#9A8C82", background: "#FAF6F0", padding: "12px 16px", borderRadius: "12px", border: "1px solid #E8DED2", flexWrap: "wrap", gap: "8px" }}>
@@ -2173,38 +2172,32 @@ const policyCategories = [
             </div>
           </div>
 
-
-
-
-
-<div
-  className="live-chat-badge"
-  style={{
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "8px 14px",
-    borderRadius: "999px",
-    background: "#F7F3EE",
-    border: "1px solid #E8DED2",
-    width: "fit-content",
-    marginBottom: "6px"
-  }}
->
-  <span
-    style={{
-      width: "8px",
-      height: "8px",
-      borderRadius: "50%",
-      background: adminTyping ? "#22C55E" : "#9CA3AF"
-    }}
-  />
-  <span style={{ fontSize: "12px", fontWeight: 600 }}>
-    {adminTyping ? "Support is typing…" : "Live Conversation"}
-  </span>
-</div>
-
-          
+          <div
+            className="live-chat-badge"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 14px",
+              borderRadius: "999px",
+              background: "#F7F3EE",
+              border: "1px solid #E8DED2",
+              width: "fit-content",
+              marginBottom: "6px"
+            }}
+          >
+            <span
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                background: adminTyping ? "#22C55E" : "#9CA3AF"
+              }}
+            />
+            <span style={{ fontSize: "12px", fontWeight: 600 }}>
+              {adminTyping ? "Support is typing…" : "Live Conversation"}
+            </span>
+          </div>
 
           {loadingMessages ? (
             <div style={{ textAlign: "center", padding: "40px", color: "#9A8C82" }}>Loading conversation...</div>
@@ -2214,6 +2207,7 @@ const policyCategories = [
               <h3>No messages yet</h3>
               <p>Your conversation with our support team will appear here once messages are sent.</p>
               <div ref={messagesEndRef} />
+            </div>
           ) : (
             <div className="conversation-box" ref={containerRef} onScroll={handleScroll}>
               {messages.map((msg, index) => {
@@ -2254,29 +2248,25 @@ const policyCategories = [
                   </div>
                 );
               })}
-              <div/>
+              <div />
             </div>
           )}
-        
 
-
-              {/* Support Team Typing Indicator */}
-              {adminTyping && (
-                <div className="support-typing">
-                  <div className="typing-bubble">
-                    <span>Support team is typing</span>
-                    <div className="typing-dots">
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-                  </div>
+          {/* Support Team Typing Indicator */}
+          {adminTyping && (
+            <div className="support-typing">
+              <div className="typing-bubble">
+                <span>Support team is typing</span>
+                <div className="typing-dots">
+                  <span />
+                  <span />
+                  <span />
                 </div>
-              )}
-
-              <div ref={messagesEndRef} />
               </div>
-            
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
 
           {!isClosed && (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "10px" }}>
@@ -2351,6 +2341,8 @@ const policyCategories = [
           </div>
         </div>
       )}
+
+    
     </div>
   );
 }
