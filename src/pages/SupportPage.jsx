@@ -157,7 +157,7 @@ const checkIsBusinessOpen = () => {
   const parseTimeRange = (range) => {
     if (!range || range.toLowerCase().includes("closed")) return null;
 
-    const parts = range.split("-");
+    const parts = range.split(/[-–]/);
 
     if (parts.length !== 2) return null;
 
@@ -177,9 +177,16 @@ const checkIsBusinessOpen = () => {
       end: parse12Hour(parts[1])
     };
   };
+let todayHours = "";
 
-  let todayHours = "";
-
+if (
+  supportSettings.monday ||
+  supportSettings.tuesday ||
+  supportSettings.wednesday ||
+  supportSettings.thursday ||
+  supportSettings.friday
+) {
+  // Per-day schedule
   switch (day) {
     case 1:
       todayHours = supportSettings.monday;
@@ -202,6 +209,16 @@ const checkIsBusinessOpen = () => {
     default:
       todayHours = supportSettings.sunday;
   }
+} else {
+  // Monday-Friday schedule
+  if (day >= 1 && day <= 5) {
+    todayHours = supportSettings.mondayFriday;
+  } else if (day === 6) {
+    todayHours = supportSettings.saturday;
+  } else {
+    todayHours = supportSettings.sunday;
+  }
+}
 
   const range = parseTimeRange(todayHours);
 
