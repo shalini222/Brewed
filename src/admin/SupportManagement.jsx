@@ -342,6 +342,21 @@ export default function SupportManagement({ setPage, setActivePage }) {
     }
   });
 
+
+
+// Helper to format ticket ID cleanly without double "SUP-" prefixes
+const formatTicketNumber = (ticket) => {
+  if (!ticket) return "#SUP-000000";
+  const num = ticket.ticketNumber || ticket.id.slice(0, 6);
+  const cleanNum = num.toString().replace(/^#?SUP-?/i, "").toUpperCase();
+  return `#SUP-${cleanNum}`;
+};
+
+
+
+
+  
+
   const getStatusBadge = (status) => {
     let bg = "#F3F4F6";
     let color = "#5E6572";
@@ -435,7 +450,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
               margin: "0 0 6px 0"
             }}
           >
-            Support Operations
+            Support Management
           </h1>
           <p style={{ color: "#6B5E55", fontSize: "15px", margin: 0 }}>
             Customer Support Center — Manage tickets, conversations, help articles and support performance.
@@ -567,9 +582,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
               { label: "Resolved", count: resolvedTickets, color: "#007C63", dot: "#007C63" },
               { label: "Closed", count: closedTickets, color: "#5E6572" },
               { label: "High Priority", count: highPriorityTickets, color: "#C62828", dot: "#C62828" },
-              { label: "Avg Response Time", count: "1.4h", color: "#2C221E" },
-              { label: "Avg Resolution Time", count: "5.2h", color: "#2C221E" },
-              { label: "CSAT Score", count: "4.9/5", color: "#177245" }
+              
             ].map((kpi, idx) => (
               <div
                 key={idx}
@@ -820,8 +833,9 @@ export default function SupportManagement({ setPage, setActivePage }) {
                         </div>
                         <div>
                           <div style={{ fontSize: "12px", color: "#9A8C82", fontWeight: 600, marginBottom: "2px" }}>
-                            #SUP-{ticket.ticketNumber || ticket.id.slice(0, 6).toUpperCase()}
-                          </div>
+  {formatTicketNumber(ticket)}
+</div>
+
                           <h3 style={{ margin: 0, color: "#2C221E", fontSize: "17px", fontWeight: 700 }}>
                             {ticket.subject}
                           </h3>
@@ -946,8 +960,9 @@ export default function SupportManagement({ setPage, setActivePage }) {
                     TICKET DETAILS MANAGEMENT
                   </div>
                   <h2 style={{ margin: 0, color: "#2C221E", fontFamily: "Playfair Display, serif", fontSize: "24px" }}>
-                    #{selectedTicket.ticketNumber || selectedTicket.id.slice(0, 6).toUpperCase()} — {selectedTicket.subject}
-                  </h2>
+  #{selectedTicket.ticketNumber || selectedTicket.id.slice(0, 6).toUpperCase()} — {selectedTicket.subject}
+</h2>
+
                 </div>
                 <button
                   onClick={() => openTicket(null)}
