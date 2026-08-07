@@ -536,6 +536,7 @@ const formatTicketNumber = (ticket) => {
           { id: "supportpolicies", label: "Policies" },
           { id: "supportsettings", label: "Contact" },
           { id: "supporthelpdesk", label: "Help Desk" },
+        { id:"supportreviews", label:"Reviews"},
           { id: "supportanalytics", label: "Analytics" }
         ].map((tab) => {
           const isActive = activeTab === tab.id;
@@ -695,7 +696,7 @@ const formatTicketNumber = (ticket) => {
               <option value="In Progress">In Progress</option>
               <option value="Waiting for Customer">Waiting for Customer</option>
               <option value="Resolved">Resolved</option>
-              <option value="Closed">Closed</option>
+              
             </select>
             <select
               value={priorityFilter}
