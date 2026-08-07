@@ -2241,7 +2241,10 @@ const policyCategories = [
                         <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
                           {msg.attachments.map((file, fIdx) => (
                            <button
-  onClick={() => setPreviewFile(file)}
+ onClick={() => {
+  setPreviewFile(file);
+  setPreviewLoading(true);
+}}
   style={{
     fontSize: "11px",
     background: "rgba(0,0,0,0.06)",
@@ -2325,10 +2328,8 @@ const policyCategories = [
         </div>
       )}
 
-
-
-      {/* PREWIEW MODAL */}
-      {previewFile && (
+{/* PREVIEW MODAL */}
+{previewFile && (
   <div
     style={{
       position: "fixed",
@@ -2341,9 +2342,9 @@ const policyCategories = [
       padding: "20px"
     }}
     onClick={() => {
-  setPreviewLoading(true);
-  setPreviewFile(file);
-}}
+      setPreviewFile(null);
+      setPreviewLoading(false);
+    }}
   >
     <div
       style={{
@@ -2356,12 +2357,11 @@ const policyCategories = [
       }}
       onClick={(e) => e.stopPropagation()}
     >
-
       <button
         onClick={() => {
-  setPreviewFile(null);
-  setPreviewLoading(false);
-}}
+          setPreviewFile(null);
+          setPreviewLoading(false);
+        }}
         style={{
           position: "absolute",
           top: "10px",
@@ -2372,51 +2372,55 @@ const policyCategories = [
           height: "28px",
           borderRadius: "50%",
           cursor: "pointer",
-          fontSize: "18px"
+          fontSize: "18px",
+          color: "#2C221E"
         }}
       >
         ×
       </button>
+
       {previewLoading && (
-  <div
-    style={{
-      width: "300px",
-      height: "250px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      color: "#6E5E53",
-      fontSize: "14px"
-    }}
-  >
-    Loading preview...
-  </div>
-)}
+        <div
+          style={{
+            width: "300px",
+            height: "250px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#6E5E53",
+            fontSize: "14px"
+          }}
+        >
+          Loading preview...
+        </div>
+      )}
 
-    {previewLoading && (
-  <div
-    style={{
-      width: "300px",
-      height: "250px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      color: "#6E5E53",
-      fontSize: "14px"
-    }}
-  >
-    Loading preview...
-  </div>
-)}
+      <img
+        src={previewFile.url}
+        alt={previewFile.name}
+        onLoad={() => setPreviewLoading(false)}
+        style={{
+          display: previewLoading ? "none" : "block",
+          maxWidth: "70vw",
+          maxHeight: "70vh",
+          borderRadius: "12px",
+          objectFit: "contain"
+        }}
+      />
 
-      <p style={{marginTop:"12px", fontSize:"13px"}}>
+      <p
+        style={{
+          marginTop: "12px",
+          fontSize: "13px",
+          color: "#6E5E53",
+          textAlign: "center"
+        }}
+      >
         {previewFile.name}
       </p>
-
     </div>
   </div>
 )}
-
      {/* SUCCESS MODAL */}
 {showSuccessModal && createdTicket && (
   <div
