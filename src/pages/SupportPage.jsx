@@ -646,15 +646,21 @@ useEffect(() => {
 
 
 useEffect(() => {
+  if (!selectedTicket) return;
+
+  const isResolved =
+    selectedTicket.status?.toLowerCase() === "resolved";
+
   if (
-    selectedTicket &&
-    selectedTicket.status?.toLowerCase() === "resolved" &&
+    isResolved &&
     !selectedTicket.reviewSubmitted &&
-    !selectedTicket.reviewDismissed
+    !reviewSubmittedSuccess
   ) {
     setShowReviewModal(true);
+  } else {
+    setShowReviewModal(false);
   }
-}, [selectedTicket]);
+}, [selectedTicket, reviewSubmittedSuccess]);
 
  
   
@@ -1020,7 +1026,7 @@ const policyCategories = [
     setReviewSubmittedSuccess(true);
   } catch (err) {
     console.error(err);
-    alert("Failed to submit review.");
+    alert(err.message);
   } finally {
     setSubmittingReview(false);
   }
