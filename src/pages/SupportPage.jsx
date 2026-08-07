@@ -237,6 +237,14 @@ export default function SupportPage({ setPage }) {
     return unsubscribe;
   }, []);
 
+
+
+
+const faqCategories = [
+  "All",
+  ...new Set(faqs.map((faq) => faq.category))
+];
+  
   // Filter FAQs
   const filteredFaqs = faqs.filter((faq) => {
     const matchesSearch =
@@ -251,6 +259,9 @@ export default function SupportPage({ setPage }) {
     return matchesSearch && matchesCategory;
   });
 
+  
+  
+  
   const featuredFaq = faqs.find((faq) => faq.featured);
 
   const regularFaqs = filteredFaqs.filter(
@@ -1119,42 +1130,9 @@ const policyCategories = [
 
           
 
-          <section>
-            <h2 className="support-heading">
-              <Package size={20} color="#C4956A" /> Browse Help Categories
-            </h2>
-            <div className="support-grid">
-              {helpCategories.map((item) => {
-                const Icon = iconMap[item.icon] || LifeBuoy;
-                return (
-                  <div
-                    key={item.id}
-                    className="help-card"
-                    onClick={() => {
-  setSelectedCategory(item.title);
-  setSearch("");
+          
 
-  setTimeout(() => {
-    faqSectionRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-  }, 100);
-}}
-                    style={{
-                      border: selectedCategory === item.title ? "2px solid #C4956A" : undefined
-                    }}
-                  >
-                    <Icon size={26} color="#C4956A" />
-                    <h3>{item.title}</h3>
-                    <p>{item.description}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <section ref={faqSectionRef}>
+          <section >
             <div
               style={{
                 display: "flex",
@@ -1167,8 +1145,39 @@ const policyCategories = [
                 <HelpCircle size={20} color="#C4956A" />
                 {" "}
                 Frequently Asked Questions
-                {selectedCategory !== "All" &&
-                  ` (${selectedCategory})`}
+                <div
+  style={{
+    display: "flex",
+    gap: "8px",
+    overflowX: "auto",
+    marginBottom: "18px",
+    paddingBottom: "4px"
+  }}
+>
+  {faqCategories.map((category) => (
+    <button
+      key={category}
+      onClick={() => setSelectedCategory(category)}
+      className="support-btn support-btn-secondary"
+      style={{
+        background:
+          selectedCategory === category
+            ? "#C4956A"
+            : "#FAF6F0",
+
+        color:
+          selectedCategory === category
+            ? "#fff"
+            : "#2C221E",
+
+        whiteSpace: "nowrap"
+      }}
+    >
+      {category}
+    </button>
+  ))}
+</div>
+                
               </h2>
 
               {selectedCategory !== "All" && (
