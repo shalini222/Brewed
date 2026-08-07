@@ -995,7 +995,7 @@ const policyCategories = [
         "",
 
       userId: currentUser.uid,
-      customerName: currentUser.displayName || "",
+      customerName: customerData.name || currentUser.displayName || "Customer",
       customerEmail: currentUser.email || "",
 
       rating: reviewRating,
