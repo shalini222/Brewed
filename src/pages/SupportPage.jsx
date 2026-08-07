@@ -1131,70 +1131,51 @@ const policyCategories = [
           
 
           
+<section>
+  <div
+    style={{
+      marginBottom: "18px"
+    }}
+  >
+    <h2 className="support-heading" style={{ margin: "0 0 14px 0" }}>
+      <HelpCircle size={20} color="#C4956A" />
+      Frequently Asked Questions
+    </h2>
 
-          <section >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "14px"
-              }}
-            >
-              <h2 className="support-heading" style={{ margin: 0 }}>
-                <HelpCircle size={20} color="#C4956A" />
-                {" "}
-                Frequently Asked Questions
-                <div
-  style={{
-    display: "flex",
-    gap: "8px",
-    overflowX: "auto",
-    marginBottom: "18px",
-    paddingBottom: "4px"
-  }}
->
-  {faqCategories.map((category) => (
-    <button
-      key={category}
-      onClick={() => setSelectedCategory(category)}
-      className="support-btn support-btn-secondary"
+    <div
       style={{
-        background:
-          selectedCategory === category
-            ? "#C4956A"
-            : "#FAF6F0",
-
-        color:
-          selectedCategory === category
-            ? "#fff"
-            : "#2C221E",
-
-        whiteSpace: "nowrap"
+        display: "flex",
+        gap: "8px",
+        overflowX: "auto",
+        paddingBottom: "4px"
       }}
     >
-      {category}
-    </button>
-  ))}
-</div>
+      {faqCategories.map((category) => (
+        <button
+          key={category}
+          onClick={() => setSelectedCategory(category)}
+          className="support-btn support-btn-secondary"
+          style={{
+            background:
+              selectedCategory === category
+                ? "#C4956A"
+                : "#FAF6F0",
+
+            color:
+              selectedCategory === category
+                ? "#fff"
+                : "#2C221E",
+
+            whiteSpace: "nowrap"
+          }}
+        >
+          {category}
+        </button>
+      ))}
+    </div>
+  </div>
                 
-              </h2>
-
-              {selectedCategory !== "All" && (
-    <span
-      style={{
-        background: "#FAF6F0",
-        color: "#C4956A",
-        padding: "4px 10px",
-        borderRadius: "999px",
-        fontSize: "12px",
-        fontWeight: 600
-      }}
-    >
-      {selectedCategory}
-    </span>
-  )}
-            </div>
+             
 
             {featuredFaq &&
               search.trim() === "" &&
