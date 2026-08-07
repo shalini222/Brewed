@@ -1193,7 +1193,7 @@ const policyCategories = [
     </h2>
 
     <button
-      onClick={() => setActivePage("mytickets")}
+      onClick={() => setActivePage("list")}
       style={{
         background: "none",
         border: "none",
