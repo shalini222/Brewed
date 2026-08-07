@@ -114,6 +114,7 @@ export default function SupportPage({ setPage }) {
   const [previewFile, setPreviewFile] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [reviewSubmittedSuccess, setReviewSubmittedSuccess] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
 
 const [showReviewModal, setShowReviewModal] = useState(false);
 const [reviewRating, setReviewRating] = useState(0);
