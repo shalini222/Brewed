@@ -946,7 +946,7 @@ export default function SupportManagement({ setPage, setActivePage }) {
                     TICKET DETAILS MANAGEMENT
                   </div>
                   <h2 style={{ margin: 0, color: "#2C221E", fontFamily: "Playfair Display, serif", fontSize: "24px" }}>
-                    #SUP-{selectedTicket.ticketNumber || selectedTicket.id.slice(0, 6).toUpperCase()} — {selectedTicket.subject}
+                    #{selectedTicket.ticketNumber || selectedTicket.id.slice(0, 6).toUpperCase()} — {selectedTicket.subject}
                   </h2>
                 </div>
                 <button
