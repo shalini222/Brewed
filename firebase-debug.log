@@ -1,0 +1,26 @@
+[debug] [2026-08-07T19:24:45.586Z] ----------------------------------------------------------------------
+[debug] [2026-08-07T19:24:45.589Z] Command:       /usr/local/share/nvm/versions/node/v24.14.0/bin/node /home/codespace/nvm/current/bin/firebase login --reauth
+[debug] [2026-08-07T19:24:45.589Z] CLI Version:   15.26.0
+[debug] [2026-08-07T19:24:45.589Z] Platform:      linux
+[debug] [2026-08-07T19:24:45.590Z] Node Version:  v24.14.0
+[debug] [2026-08-07T19:24:45.590Z] Detected Agent: unknown
+[debug] [2026-08-07T19:24:45.590Z] Time:          Fri Aug 07 2026 19:24:45 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-08-07T19:24:45.590Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-08-07T19:24:45.611Z] >>> [apiv2][query] POST https://auth.firebase.tools/attest [none]
+[debug] [2026-08-07T19:24:45.611Z] >>> [apiv2][body] POST https://auth.firebase.tools/attest {"session_id":"74f9e75d-7ba1-4548-ac13-cf4ee0f6452c"}
+[debug] [2026-08-07T19:24:46.130Z] <<< [apiv2][status] POST https://auth.firebase.tools/attest 200
+[debug] [2026-08-07T19:24:46.130Z] <<< [apiv2][body] POST https://auth.firebase.tools/attest {"token":"hchGV5oyU3DkkGqN_oX4oVH8GhAKeFjSCMwxcDm19hQ"}
+[info] 
+[info] To sign in to the Firebase CLI:
+[info] 
+[info] 1. Take note of your session ID:
+[info] 
+[info]    74F9E
+[info] 
+[info] 2. Visit the URL below on any device and follow the instructions to get your code:
+[info] 
+[info]    https://auth.firebase.tools/login?code_challenge=07_L4yXEciQR-RaBRu5O4NHpm3E7aNHpn-nRQmyJlQY&session=74f9e75d-7ba1-4548-ac13-cf4ee0f6452c&attest=hchGV5oyU3DkkGqN_oX4oVH8GhAKeFjSCMwxcDm19hQ
+[info] 
+[info] 3. Paste or enter the authorization code below once you have it:
+[info] 
