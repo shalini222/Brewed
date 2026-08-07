@@ -2221,8 +2221,7 @@ const policyCategories = [
               <div ref={messagesEndRef} />
             </div>
           )}
-        </div>
-      )}
+        
 
 
               {/* Support Team Typing Indicator */}
