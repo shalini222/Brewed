@@ -996,7 +996,7 @@ const submitReview = async () => {
       : {};
 
     await addDoc(collection(db, "supportReviews"), {
-      ticketId: selectedTicket.id,
+      ticketId: selectedTicket.id || selectedTicket.ticketId || "",
       ticketNumber:
         selectedTicket.ticketNumber ||
         selectedTicket.ticketId ||
