@@ -69,6 +69,7 @@ export default function SupportPage({ setPage }) {
   const [faqVotes, setFaqVotes] = useState({});
   const [selectedCategory, setSelectedCategory] = useState("All");
   
+  
   // Ticket states
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -99,6 +100,7 @@ export default function SupportPage({ setPage }) {
   // Duplicate submission prevention refs
   const creatingTicketRef = useRef(false);
   const sendingReplyRef = useRef(false);
+  const faqSectionRef = useRef(null);
 
   // Chat conversation states
   const [messages, setMessages] = useState([]);
@@ -1160,9 +1162,16 @@ const policyCategories = [
                     key={item.id}
                     className="help-card"
                     onClick={() => {
-                      setSelectedCategory(item.title);
-                      setSearch("");
-                    }}
+  setSelectedCategory(item.title);
+  setSearch("");
+
+  setTimeout(() => {
+    faqSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }, 100);
+}}
                     style={{
                       border: selectedCategory === item.title ? "2px solid #C4956A" : undefined
                     }}
@@ -1176,7 +1185,7 @@ const policyCategories = [
             </div>
           </section>
 
-          <section>
+          <section ref={faqSectionRef}>
             <div
               style={{
                 display: "flex",
@@ -1194,17 +1203,19 @@ const policyCategories = [
               </h2>
 
               {selectedCategory !== "All" && (
-                <button
-                  className="support-btn support-btn-secondary"
-                  onClick={() => setSelectedCategory("All")}
-                  style={{
-                    padding: "6px 12px",
-                    fontSize: "12px"
-                  }}
-                >
-                  Show All FAQs
-                </button>
-              )}
+    <span
+      style={{
+        background: "#FAF6F0",
+        color: "#C4956A",
+        padding: "4px 10px",
+        borderRadius: "999px",
+        fontSize: "12px",
+        fontWeight: 600
+      }}
+    >
+      {selectedCategory}
+    </span>
+  )}
             </div>
 
             {featuredFaq &&
@@ -1233,7 +1244,7 @@ const policyCategories = [
                       borderRadius: "999px"
                     }}
                   >
-                    ⭐ Featured FAQ
+                     Featured FAQ
                   </div>
 
                   <h3
