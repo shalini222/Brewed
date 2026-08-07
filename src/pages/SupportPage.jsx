@@ -113,8 +113,12 @@ export default function SupportPage({ setPage }) {
   const [lastAdminTyping, setLastAdminTyping] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [reviewSubmittedSuccess, setReviewSubmittedSuccess] = useState(false);
 
-
+const [showReviewModal, setShowReviewModal] = useState(false);
+const [reviewRating, setReviewRating] = useState(0);
+const [reviewComment, setReviewComment] = useState("");
+const [submittingReview, setSubmittingReview] = useState(false);
 
 
   // Policies state
@@ -145,7 +149,6 @@ export default function SupportPage({ setPage }) {
   const containerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const typingTimeout = useRef(null);
-
 
  // Check if business is currently open
 const checkIsBusinessOpen = () => {
@@ -640,6 +643,20 @@ useEffect(() => {
     behavior: "auto"
   });
 }, [activePage]);
+
+
+useEffect(() => {
+  if (
+    selectedTicket &&
+    selectedTicket.status?.toLowerCase() === "resolved" &&
+    !selectedTicket.reviewSubmitted &&
+    !selectedTicket.reviewDismissed
+  ) {
+    setShowReviewModal(true);
+  }
+}, [selectedTicket]);
+
+ 
   
 
 // Categories
@@ -957,6 +974,92 @@ const policyCategories = [
   };
 
   
+ const submitReview = async () => {
+  if (!reviewRating || !selectedTicket) return;
+
+  try {
+    setSubmittingReview(true);
+
+    await addDoc(collection(db, "supportReviews"), {
+      ticketId: selectedTicket.id,
+      ticketNumber:
+        selectedTicket.ticketNumber ||
+        selectedTicket.ticketId ||
+        selectedTicket.supportId ||
+        "",
+
+      userId: user.uid,
+      customerName: user.displayName || "",
+      customerEmail: user.email || "",
+
+      rating: reviewRating,
+      comment: reviewComment.trim(),
+
+      category: selectedTicket.category || "",
+      priority: selectedTicket.priority || "",
+
+      createdAt: serverTimestamp()
+    });
+
+    await updateDoc(doc(db, "supportTickets", selectedTicket.id), {
+      reviewSubmitted: true,
+      reviewRating,
+      reviewedAt: serverTimestamp()
+    });
+
+    setSelectedTicket((prev) =>
+      prev
+        ? {
+            ...prev,
+            reviewSubmitted: true,
+            reviewRating
+          }
+        : prev
+    );
+
+    setReviewSubmittedSuccess(true);
+  } catch (err) {
+    console.error(err);
+    alert("Failed to submit review.");
+  } finally {
+    setSubmittingReview(false);
+  }
+};
+
+
+const dismissReview = async () => {
+  if (!selectedTicket) return;
+
+  try {
+    await updateDoc(
+      doc(db, "supportTickets", selectedTicket.id),
+      {
+        reviewDismissed: true
+      }
+    );
+
+    setSelectedTicket((prev) =>
+      prev
+        ? {
+            ...prev,
+            reviewDismissed: true
+          }
+        : prev
+    );
+
+    setShowReviewModal(false);
+  } catch (error) {
+    console.error("Error dismissing review:", error);
+  }
+};
+
+
+
+
+
+
+
+
   
   
   const isClosed = selectedTicket?.status === "Closed";
@@ -2494,6 +2597,208 @@ const policyCategories = [
     </div>
   </div>
 )}
+
+{/* REVIEW MODAL */}
+{showReviewModal && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,0.45)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 9999,
+      padding: "20px"
+    }}
+  >
+    <div
+      style={{
+        width: "100%",
+        maxWidth: "460px",
+        background: "#FFFFFF",
+        borderRadius: "22px",
+        padding: "28px",
+        boxShadow: "0 25px 60px rgba(0,0,0,0.18)"
+      }}
+    >
+      {reviewSubmittedSuccess ? (
+        <>
+          <div
+            style={{
+              textAlign: "center",
+              padding: "10px 0"
+            }}
+          >
+            <div
+              style={{
+                fontSize: "52px",
+                color: "#3A2A22",
+                marginBottom: "16px"
+              }}
+            >
+              ★★★★★
+            </div>
+
+            <h2
+              style={{
+                margin: 0,
+                fontFamily: "Playfair Display, serif",
+                color: "#2C221E"
+              }}
+            >
+              Thank You!
+            </h2>
+
+            <p
+              style={{
+                marginTop: "12px",
+                color: "#9A8C82",
+                lineHeight: 1.6
+              }}
+            >
+              We appreciate your feedback. Your review helps us improve our customer support experience.
+            </p>
+
+            <button
+              onClick={() => {
+                setShowReviewModal(false);
+                setReviewSubmittedSuccess(false);
+                setReviewRating(0);
+                setReviewComment("");
+              }}
+              style={{
+                marginTop: "24px",
+                width: "100%",
+                padding: "14px",
+                border: "none",
+                borderRadius: "14px",
+                background: "#3A2A22",
+                color: "#FFFFFF",
+                fontWeight: 600,
+                cursor: "pointer"
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <h2
+            style={{
+              margin: 0,
+              fontFamily: "Playfair Display, serif",
+              color: "#2C221E",
+              fontSize: "28px",
+              textAlign: "center"
+            }}
+          >
+            Rate Your Support
+          </h2>
+
+          <p
+            style={{
+              marginTop: "10px",
+              color: "#9A8C82",
+              textAlign: "center",
+              fontSize: "14px",
+              lineHeight: 1.6
+            }}
+          >
+            We'd love to hear about your experience with our support team.
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: "12px",
+              margin: "28px 0"
+            }}
+          >
+            {[1, 2, 3, 4, 5].map((star) => (
+              <span
+                key={star}
+                onClick={() => setReviewRating(star)}
+                style={{
+                  cursor: "pointer",
+                  fontSize: reviewRating >= star ? "40px" : "36px",
+                  color: reviewRating >= star ? "#3A2A22" : "#D8D1CA",
+                  transition: "all 0.2s ease",
+                  transform: reviewRating >= star ? "scale(1.08)" : "scale(1)",
+                  userSelect: "none"
+                }}
+              >
+                ★
+              </span>
+            ))}
+          </div>
+
+          <textarea
+            value={reviewComment}
+            onChange={(e) => setReviewComment(e.target.value)}
+            placeholder="Share your feedback (optional)..."
+            rows={4}
+            style={{
+              width: "100%",
+              padding: "14px",
+              border: "1px solid #EFE8DF",
+              borderRadius: "14px",
+              resize: "vertical",
+              fontSize: "14px",
+              boxSizing: "border-box",
+              outline: "none"
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "12px",
+              marginTop: "24px"
+            }}
+          >
+            <button
+              onClick={dismissReview}
+              style={{
+                padding: "11px 18px",
+                borderRadius: "12px",
+                border: "1px solid #EFE8DF",
+                background: "#FFFFFF",
+                cursor: "pointer",
+                fontWeight: 600
+              }}
+            >
+              Maybe Later
+            </button>
+
+            <button
+              disabled={!reviewRating || submittingReview}
+              onClick={submitReview}
+              style={{
+                padding: "11px 20px",
+                borderRadius: "12px",
+                border: "none",
+                background: "#C4956A",
+                color: "#FFFFFF",
+                cursor: reviewRating ? "pointer" : "not-allowed",
+                opacity: reviewRating ? 1 : 0.6,
+                fontWeight: 600
+              }}
+            >
+              {submittingReview ? "Submitting..." : "Submit Review"}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  </div>
+)}
+      
+
+      
      {/* SUCCESS MODAL */}
 {showSuccessModal && createdTicket && (
   <div
