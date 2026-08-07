@@ -980,11 +980,19 @@ const policyCategories = [
   };
 
   
- const submitReview = async () => {
+const submitReview = async () => {
   if (!reviewRating || !selectedTicket || !currentUser) return;
 
   try {
     setSubmittingReview(true);
+
+    const userDoc = await getDoc(
+      doc(db, "users", currentUser.uid)
+    );
+
+    const customerData = userDoc.exists()
+      ? userDoc.data()
+      : {};
 
     await addDoc(collection(db, "supportReviews"), {
       ticketId: selectedTicket.id,
@@ -995,7 +1003,11 @@ const policyCategories = [
         "",
 
       userId: currentUser.uid,
-      customerName: customerData.name || currentUser.displayName || "Customer",
+      customerName:
+        customerData.fullName ||
+        currentUser.displayName ||
+        "Customer",
+
       customerEmail: currentUser.email || "",
 
       rating: reviewRating,
@@ -1024,6 +1036,7 @@ const policyCategories = [
     );
 
     setReviewSubmittedSuccess(true);
+
   } catch (err) {
     console.error(err);
     alert(err.message);
