@@ -2026,7 +2026,7 @@ const policyCategories = [
 
       
 
-      {/* TICKET LIST VIEW (MY TICKETS) */}
+           {/* TICKET LIST VIEW (MY TICKETS) */}
       {activePage === "list" && (
         <div className="support-card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -2062,7 +2062,7 @@ const policyCategories = [
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <span style={{ fontWeight: "650", color: "#2C221E", fontSize: "14px" }}>{t.subject}</span>
-                      <span style={{ fontSize: "11px", color: "#9A8C82" }}>#BRW-{t.id.slice(-6).toUpperCase()}</span>
+                      <span style={{ fontSize: "11px", color: "#9A8C82" }}>#{t.ticketNumber}</span>
                     </div>
                     <span style={{ fontSize: "12px", color: "#6E5E53" }}>{t.lastMessage || "No messages yet"}</span>
                   </div>
@@ -2162,7 +2162,7 @@ const policyCategories = [
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", color: "#9A8C82", background: "#FAF6F0", padding: "12px 16px", borderRadius: "12px", border: "1px solid #E8DED2", flexWrap: "wrap", gap: "8px" }}>
             <div>
               <strong style={{ color: "#2C221E", fontSize: "14px" }}>{selectedTicket.subject}</strong>
-              <div style={{ fontSize: "11px", marginTop: "2px" }}>Ticket #BRW-{selectedTicket.id.slice(-6).toUpperCase()} • Category: {selectedTicket.category}</div>
+              <div style={{ fontSize: "11px", marginTop: "2px" }}>Ticket #{selectedTicket.ticketNumber} • Category: {selectedTicket.category}</div>
             </div>
             <div style={{ textAlign: "right", display: "flex", alignItems: "center", gap: "8px" }}>
               <span className={`badge ${getStatusBadgeClass(selectedTicket.status)}`}>{selectedTicket.status}</span>
@@ -2218,6 +2218,12 @@ const policyCategories = [
                   </div>
                 );
               })}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+      )}
+
 
               {/* Support Team Typing Indicator */}
               {adminTyping && (
