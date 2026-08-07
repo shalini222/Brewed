@@ -2172,32 +2172,41 @@ const policyCategories = [
             </div>
           </div>
 
-          <div
-            className="live-chat-badge"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "8px 14px",
-              borderRadius: "999px",
-              background: "#F7F3EE",
-              border: "1px solid #E8DED2",
-              width: "fit-content",
-              marginBottom: "6px"
-            }}
-          >
-            <span
-              style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: adminTyping ? "#22C55E" : "#9CA3AF"
-              }}
-            />
-            <span style={{ fontSize: "12px", fontWeight: 600 }}>
-              {adminTyping ? "Support is typing…" : "Live Conversation"}
-            </span>
-          </div>
+         <div
+  className="live-chat-badge"
+  style={{
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
+    padding: "5px 12px",
+    borderRadius: "999px",
+    background: "#F3FAF5",
+    border: "1px solid #D6EAD9",
+    width: "fit-content",
+    margin: "0 auto 8px",
+  }}
+>
+  <span
+    style={{
+      width: "7px",
+      height: "7px",
+      borderRadius: "50%",
+      background: "#22C55E",
+      boxShadow: "0 0 6px rgba(34,197,94,0.5)",
+    }}
+  />
+  <span
+    style={{
+      fontSize: "11px",
+      fontWeight: 600,
+      color: "#15803D",
+      letterSpacing: "0.2px",
+    }}
+  >
+    Live
+  </span>
+</div>
 
           {loadingMessages ? (
             <div style={{ textAlign: "center", padding: "40px", color: "#9A8C82" }}>Loading conversation...</div>
