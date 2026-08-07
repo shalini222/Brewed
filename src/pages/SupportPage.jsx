@@ -112,6 +112,7 @@ export default function SupportPage({ setPage }) {
   const [adminTyping, setAdminTyping] = useState(false);
   const [lastAdminTyping, setLastAdminTyping] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
 
 
@@ -2339,7 +2340,10 @@ const policyCategories = [
       zIndex: 9999,
       padding: "20px"
     }}
-    onClick={() => setPreviewFile(null)}
+    onClick={() => {
+  setPreviewLoading(true);
+  setPreviewFile(file);
+}}
   >
     <div
       style={{
@@ -2354,7 +2358,10 @@ const policyCategories = [
     >
 
       <button
-        onClick={() => setPreviewFile(null)}
+        onClick={() => {
+  setPreviewFile(null);
+  setPreviewLoading(false);
+}}
         style={{
           position: "absolute",
           top: "10px",
@@ -2370,17 +2377,37 @@ const policyCategories = [
       >
         ×
       </button>
+      {previewLoading && (
+  <div
+    style={{
+      width: "300px",
+      height: "250px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#6E5E53",
+      fontSize: "14px"
+    }}
+  >
+    Loading preview...
+  </div>
+)}
 
-      <img
-        src={previewFile.url}
-        alt={previewFile.name}
-        style={{
-          maxWidth: "70vw",
-          maxHeight: "70vh",
-          borderRadius: "12px",
-          objectFit: "contain"
-        }}
-      />
+    {previewLoading && (
+  <div
+    style={{
+      width: "300px",
+      height: "250px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#6E5E53",
+      fontSize: "14px"
+    }}
+  >
+    Loading preview...
+  </div>
+)}
 
       <p style={{marginTop:"12px", fontSize:"13px"}}>
         {previewFile.name}
