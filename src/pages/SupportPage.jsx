@@ -1677,7 +1677,7 @@ const policyCategories = [
             </div>
           </section>
 
-          <section>
+       <section>
             <h2 className="support-heading">
               <FileText size={20} color="#C4956A" />
               {" "}
@@ -1779,36 +1779,15 @@ const policyCategories = [
                         )
                       }
                     >
-                      <div
+                      <span
                         style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "flex-start",
-                          gap: "6px"
+                          fontWeight: 700,
+                          color: "#2C221E",
+                          fontSize: "15px"
                         }}
                       >
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            color: "#2C221E"
-                          }}
-                        >
-                          {policy.title}
-                        </span>
-
-                        <span
-                          style={{
-                            background: "#FAF6F0",
-                            color: "#C4956A",
-                            padding: "2px 8px",
-                            borderRadius: "999px",
-                            fontSize: "11px",
-                            fontWeight: 600
-                          }}
-                        >
-                          {policy.category}
-                        </span>
-                      </div>
+                        {policy.title}
+                      </span>
 
                       {openPolicy === policy.id ? (
                         <ChevronUp size={18} />
@@ -1878,19 +1857,11 @@ const policyCategories = [
                                 <div
                                   style={{
                                     fontWeight: 600,
-                                    color: "#2C221E"
+                                    color: "#2C221E",
+                                    fontSize: "13px"
                                   }}
                                 >
                                   {related.title}
-                                </div>
-
-                                <div
-                                  style={{
-                                    fontSize: "11px",
-                                    color: "#9A8C82"
-                                  }}
-                                >
-                                  {related.category}
                                 </div>
                               </button>
                             ))}
@@ -1903,17 +1874,13 @@ const policyCategories = [
                             paddingTop: "12px",
                             borderTop: "1px solid #E8DED2",
                             display: "flex",
-                            justifyContent: "space-between",
+                            justifyContent: "flex-end",
                             fontSize: "12px",
                             color: "#9A8C82"
                           }}
                         >
                           <span>
-                            Category: {policy.category}
-                          </span>
-
-                          <span>
-                            Updated by {policy.editedBy || "Admin"}
+                            Last updated by {policy.editedBy || "Admin"}
                           </span>
                         </div>
 
@@ -1924,7 +1891,7 @@ const policyCategories = [
               })
             )}
           </section>
-       
+
 
         </div>
       )}
