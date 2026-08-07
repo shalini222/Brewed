@@ -6,6 +6,7 @@ import SupportPolicyManagement from "./SupportPolicyManagement";
 import SupportSettingsManagement from "./SupportSettingsManagement";
 import SupportHelpCategoryManagement from "./SupportHelpCategoryManagement";
 import SupportAnalyticsManagement from "./SupportAnalyticsManagement";
+import SupportReviewsManagement from "./SupportReviewsManagement";
 
 const supportStaff = [
   "Unassigned",
