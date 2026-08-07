@@ -2204,7 +2204,6 @@ const policyCategories = [
   </span>
 </div>
 
-{loadingMessages ? (
           
 
           {loadingMessages ? (
@@ -2215,7 +2214,6 @@ const policyCategories = [
               <h3>No messages yet</h3>
               <p>Your conversation with our support team will appear here once messages are sent.</p>
               <div ref={messagesEndRef} />
-            </div>
           ) : (
             <div className="conversation-box" ref={containerRef} onScroll={handleScroll}>
               {messages.map((msg, index) => {
@@ -2256,7 +2254,7 @@ const policyCategories = [
                   </div>
                 );
               })}
-              <div ref={messagesEndRef} />
+              <div/>
             </div>
           )}
         
@@ -2277,6 +2275,7 @@ const policyCategories = [
               )}
 
               <div ref={messagesEndRef} />
+              </div>
             
 
           {!isClosed && (
