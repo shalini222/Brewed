@@ -482,6 +482,18 @@ const createRazorpayOrder = httpsCallable(
 
       // Create the Razorpay order through the secure
       // Firebase Cloud Function.
+     
+      
+      
+      
+      alert("Razorpay auth check:", {
+  uid: auth.currentUser?.uid,
+  email: auth.currentUser?.email,
+  isAuthenticated: !!auth.currentUser,
+});
+      
+      
+      
       const razorpayOrderResult = await createRazorpayOrder({
         amount: calculations.remainingAmount,
       });
