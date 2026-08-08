@@ -516,9 +516,9 @@ const createRazorpayOrder = httpsCallable(
       
       
       
-      const razorpayOrderResult = await createRazorpayOrder({
-        amount: calculations.remainingAmount,
-      });
+     const razorpayOrderResult = await createRazorpayOrder({
+  amount: calculations.remainingAmount,
+});
 
       const razorpayOrder = razorpayOrderResult.data;
 
