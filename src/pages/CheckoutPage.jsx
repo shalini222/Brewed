@@ -401,6 +401,20 @@ const createRazorpayOrder = httpsCallable(
     }
   }, []);
 
+
+
+  useEffect(() => {
+  const unsubscribe = auth.onAuthStateChanged((user) => {
+    console.log("FIREBASE AUTH STATE:", {
+      uid: user?.uid,
+      email: user?.email,
+      loggedIn: !!user,
+    });
+  });
+
+  return unsubscribe;
+}, []);
+
   const handleInputChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const applyCouponCode = (e) => {
@@ -422,12 +436,20 @@ const createRazorpayOrder = httpsCallable(
 
   if (placingOrder) return;
 
+  const user = auth.currentUser;
+
+  console.log("CHECKOUT USER:", {
+    uid: user?.uid,
+    email: user?.email,
+    loggedIn: !!user,
+  });
+
   if (cart.length === 0) {
     alert("Your cart is empty.");
     return;
   }
 
-  if (!auth.currentUser) {
+  if (!user) {
     alert("Please log in to your Brewed account to place an order.");
     setPage("login");
     return;
