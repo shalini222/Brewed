@@ -10,7 +10,7 @@
     "@react-google-maps/api": "^2.20.8",
     "@stripe/react-stripe-js": "^2.4.0",
     "@stripe/stripe-js": "^3.0.0",
-    "firebase": "^12.15.0",
+    "firebase": "^12.17.1",
     "jspdf": "^4.2.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.23.0",
