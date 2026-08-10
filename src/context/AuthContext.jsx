@@ -36,8 +36,13 @@ export function AuthProvider({ children }) {
           setLoading(false);
         },
         (error) => {
-          console.error(error);
-          setLoading(false);
+          alert("🔥 FIRESTORE USER ERROR:", {
+    code: error.code,
+    message: error.message,
+    userId: user.uid,
+  });
+
+  setLoading(false);
         }
       );
     });
