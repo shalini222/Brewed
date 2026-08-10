@@ -13,6 +13,7 @@ const razorpayKeySecret = defineSecret("RAZORPAY_KEY_SECRET");
 
 exports.createRazorpayOrder = onCall(
   {
+    invoker: "public",
     secrets: [razorpayKeyId, razorpayKeySecret],
   },
   async (request) => {
