@@ -71,25 +71,23 @@ exports.createRazorpayOrder = onCall(
         keyId: razorpayKeyId.value(),
       };
 
-    } catch (error) {
+ } catch (error) {
+  logger.error("🔥 RAZORPAY ORDER CREATION FAILED", {
+    message: error?.message,
+    name: error?.name,
+    code: error?.code,
+    description: error?.description,
+    statusCode: error?.statusCode,
+  });
 
-      logger.error("🔥 RAZORPAY FUNCTION FAILED", {
-        message: error?.message,
-        name: error?.name,
-        code: error?.code,
-        description: error?.description,
-        statusCode: error?.statusCode,
-        stack: error?.stack,
-      });
+  if (error instanceof HttpsError) {
+    throw error;
+  }
 
-      if (error instanceof HttpsError) {
-        throw error;
-      }
-
-      throw new HttpsError(
-        "internal",
-        error?.message || "Unable to create Razorpay order."
-      );
-    }
+  throw new HttpsError(
+    "internal",
+    error?.message || "Unable to create Razorpay order."
+  );
+}
   }
 );
