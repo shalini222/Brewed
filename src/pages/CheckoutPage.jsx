@@ -838,14 +838,15 @@ export default function CheckoutPage({ setPage }) {
       setStatus("success");
 
     } catch (err) {
-      console.error(
-        "Critical submission failure:",
-        err
-      );
+      console.error("🔥 CHECKOUT ERROR:", err);
+      console.error("🔥 ERROR CODE:", err?.code);
+      console.error("🔥 ERROR MESSAGE:", err?.message);
+      console.error("🔥 ERROR DETAILS:", err?.details);
 
       alert(
-        err.message ||
-        "Unable to complete your order. Please try again."
+        `Payment error:\n\nCode: ${err?.code || "unknown"}\nMessage: ${
+          err?.message || "Unknown error"
+        }`
       );
 
       setStatus("failure");
@@ -948,6 +949,9 @@ export default function CheckoutPage({ setPage }) {
       </div>
     );
   }
+
+
+
 
  
 
