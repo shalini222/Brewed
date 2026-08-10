@@ -55,6 +55,7 @@ export default function Login({setPage}) {
     }
 
     const user = userCredential.user;
+    alert("AUTH SUCCESS");
 
 
     const userRef = doc(db, "users", user.uid);
