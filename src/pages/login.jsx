@@ -56,11 +56,14 @@ export default function Login({setPage}) {
 
     const user = userCredential.user;
 
-alert("🔥 BEFORE FIRESTORE READ");
-    const userRef = doc(db, "users", user.uid);
-    alert("🔥 AFTER FIRESTORE READ");
 
+    const userRef = doc(db, "users", user.uid);
+
+    
+   alert("🔥 BEFORE FIRESTORE READ");
 const userSnap = await getDoc(userRef);
+     alert("🔥 AFTER FIRESTORE READ");
+    
 
 if (!userSnap.exists()) {
   await setDoc(userRef, {
