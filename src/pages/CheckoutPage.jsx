@@ -938,7 +938,7 @@ const createRazorpayOrder = httpsCallable(
     // SUCCESS
     // =========================================================
 
-    setPage("orderSuccess");
+    setPage("success");
 
   } catch (err) {
     console.error(
@@ -958,19 +958,103 @@ const createRazorpayOrder = httpsCallable(
   }
 };
 
-  if (status === "failure") {
-    return (
-      <div style={styles.confirmPage}>
-        <canvas ref={canvasRef} style={styles.confettiCanvas} />
-        <div style={styles.confirmCard}>
-          <h2 style={{ ...styles.confirmTitle, color: THEME.colors.danger }}>Payment Failed</h2>
-          <p style={styles.confirmSub}>We couldn't process your transaction.</p>
-          <button style={styles.payBtn} onClick={() => { setStatus("idle"); setPage("menu"); }}>Return to Menu</button>
+
+  if (status === "success") {
+  return (
+    <div style={styles.confirmPage}>
+      <canvas ref={canvasRef} style={styles.confettiCanvas} />
+
+      <div style={styles.confirmCard}>
+        <h2
+          style={{
+            ...styles.confirmTitle,
+            color: THEME.colors.primary,
+          }}
+        >
+          Payment Successful!
+        </h2>
+
+        <p style={styles.confirmSub}>
+          Your payment has been processed successfully.
+        </p>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            justifyContent: "center",
+            marginTop: "24px",
+            flexWrap: "wrap",
+          }}
+        >
+          {/* TRACK ORDER */}
+          <button
+            style={{
+              ...styles.payBtn,
+              minWidth: "140px",
+            }}
+            onClick={() => setPage("tracking")}
+          >
+            Track Order
+          </button>
+
+          {/* BACK TO MENU */}
+          <button
+            style={{
+              ...styles.payBtn,
+              minWidth: "140px",
+              background: "transparent",
+              color: THEME.colors.primary,
+              border: `1px solid ${THEME.colors.primary}`,
+            }}
+            onClick={() => {
+              setStatus("idle");
+              setPage("menu");
+            }}
+          >
+            Back to Menu
+          </button>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
+if (status === "failure") {
+  return (
+    <div style={styles.confirmPage}>
+      <canvas ref={canvasRef} style={styles.confettiCanvas} />
+
+      <div style={styles.confirmCard}>
+        <h2
+          style={{
+            ...styles.confirmTitle,
+            color: THEME.colors.danger,
+          }}
+        >
+          Payment Failed
+        </h2>
+
+        <p style={styles.confirmSub}>
+          We couldn't process your transaction.
+        </p>
+
+        <button
+          style={styles.payBtn}
+          onClick={() => {
+            setStatus("idle");
+            setPage("menu");
+          }}
+        >
+          Return to Menu
+        </button>
+      </div>
+    </div>
+  );
+}
+  
+  
+  
 
 
 
