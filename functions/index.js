@@ -8,8 +8,8 @@ setGlobalOptions({
   maxInstances: 10,
 });
 
-const razorpayKeyId = defineSecret("RAZORPAY_KEY_ID");
-const razorpayKeySecret = defineSecret("RAZORPAY_KEY_SECRET");
+const razorpayKeyId = "rzp_test_TMzJBC3B2XTAoq";
+const razorpayKeySecret = "Cs743CL6dgBo4QYf0PUFxlsC"; 
 
 exports.createRazorpayOrder = onCall(
   {
