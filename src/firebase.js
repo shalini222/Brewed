@@ -17,6 +17,14 @@ const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+
+
+
+// Force memory cache to completely bypass IndexedDB locking issues
+export const db = initializeFirestore(app, {
+  localCache: memoryLocalCache()
+});
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
