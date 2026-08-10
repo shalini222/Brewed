@@ -56,8 +56,9 @@ export default function Login({setPage}) {
 
     const user = userCredential.user;
 
-
+alert("🔥 BEFORE FIRESTORE READ");
     const userRef = doc(db, "users", user.uid);
+    alert("🔥 AFTER FIRESTORE READ");
 
 const userSnap = await getDoc(userRef);
 
@@ -95,12 +96,12 @@ if (!userSnap.exists()) {
     
 }
 
-  //  await walletService.createWallet(user.uid);
-   // try {
- // await rewardService.giveSignupReward(user.uid);
-//} catch (error) {
-//  alert("Signup reward failed:", error);
- //   }
+   await walletService.createWallet(user.uid);
+    try {
+ await rewardService.giveSignupReward(user.uid);
+} catch (error) {
+ alert("Signup reward failed:", error);
+   }
 
 
     
