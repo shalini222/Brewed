@@ -43,17 +43,10 @@ const loadRazorpayScript = () =>
   });
 
 export default function CheckoutPage({ setPage }) {
-
-
-
-const createRazorpayOrder = httpsCallable(
-  functions,
-  "createRazorpayOrder"
-);
-
-
-
-
+  const createRazorpayOrder = httpsCallable(
+    functions,
+    "createRazorpayOrder"
+  );
   
   const {
     cart,
@@ -401,19 +394,17 @@ const createRazorpayOrder = httpsCallable(
     }
   }, []);
 
-
-
   useEffect(() => {
-  const unsubscribe = auth.onAuthStateChanged((user) => {
-    console.log("FIREBASE AUTH STATE:", {
-      uid: user?.uid,
-      email: user?.email,
-      loggedIn: !!user,
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      console.log("FIREBASE AUTH STATE:", {
+        uid: user?.uid,
+        email: user?.email,
+        loggedIn: !!user,
+      });
     });
-  });
 
-  return unsubscribe;
-}, []);
+    return unsubscribe;
+  }, []);
 
   const handleInputChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -432,626 +423,534 @@ const createRazorpayOrder = httpsCallable(
   };
 
   const handleFormSubmission = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (placingOrder) return;
+    if (placingOrder) return;
 
-  const user = auth.currentUser;
+    const user = auth.currentUser;
 
-  console.log("CHECKOUT USER:", {
-    uid: user?.uid,
-    email: user?.email,
-    loggedIn: !!user,
-  });
+    console.log("CHECKOUT USER:", {
+      uid: user?.uid,
+      email: user?.email,
+      loggedIn: !!user,
+    });
 
-  if (cart.length === 0) {
-    alert("Your cart is empty.");
-    return;
-  }
-
-  if (!user) {
-    alert("Please log in to your Brewed account to place an order.");
-    setPage("login");
-    return;
-  }
-
-  if (!selectedAddress) {
-    alert("Please select a delivery address.");
-    return;
-  }
-
-  if (!selectedAddress.pincode) {
-    alert("Selected address doesn't have a valid pincode.");
-    return;
-  }
-
-  if (deliveryLoading) {
-    alert("Please wait while we verify delivery availability.");
-    return;
-  }
-
-  if (deliveryAvailable === false) {
-    alert("Sorry, we don't deliver to the selected address.");
-    return;
-  }
-
-  if (
-    deliveryInfo &&
-    calculations.subtotal < deliveryInfo.minOrder
-  ) {
-    alert(`Minimum order for this area is ₹${deliveryInfo.minOrder}.`);
-    return;
-  }
-
-  setPlacingOrder(true);
-
-  let paymentResponse = null;
-
-  try {
-    // =========================================================
-    // RAZORPAY ONLINE PAYMENT
-    // =========================================================
-
-    if (
-      paymentMethod === "online" &&
-      calculations.remainingAmount > 0
-    ) {
-      const razorpayLoaded = await loadRazorpayScript();
-
-      if (!razorpayLoaded) {
-        throw new Error("Razorpay SDK failed to load.");
-      }
-
-      // Create the Razorpay order through the secure
-      // Firebase Cloud Function.
-     
-      
-      
-      
-      alert("Razorpay auth check:", {
-  uid: auth.currentUser?.uid,
-  email: auth.currentUser?.email,
-  isAuthenticated: !!auth.currentUser,
-});
-      
-      
-      
-     const razorpayOrderResult = await createRazorpayOrder({
-  amount: calculations.remainingAmount,
-});
-
-      const razorpayOrder = razorpayOrderResult.data;
-
-      if (
-        !razorpayOrder ||
-        !razorpayOrder.success ||
-        !razorpayOrder.orderId ||
-        !razorpayOrder.keyId
-      ) {
-        throw new Error("Unable to create Razorpay order.");
-      }
-
-      paymentResponse = await new Promise((resolve, reject) => {
-        const options = {
-          key: razorpayOrder.keyId,
-
-          // Razorpay returns the order amount in paise.
-          amount: razorpayOrder.amount,
-
-          currency: razorpayOrder.currency,
-
-          name: "Brewed Cafe",
-
-          description: "Online Order Settlement",
-
-          // Connect checkout to the server-created Razorpay order.
-          order_id: razorpayOrder.orderId,
-
-          handler: function (response) {
-            resolve(response);
-          },
-
-          modal: {
-            ondismiss: function () {
-              reject(
-                new Error("Payment cancelled by user.")
-              );
-            },
-          },
-
-          prefill: {
-            name: form.name,
-            email: form.email,
-            contact: form.phone,
-          },
-
-          theme: {
-            color: THEME.colors.primary,
-          },
-        };
-
-        try {
-          const rzp = new window.Razorpay(options);
-          rzp.open();
-        } catch (err) {
-          reject(err);
-        }
-      });
+    if (cart.length === 0) {
+      alert("Your cart is empty.");
+      return;
     }
 
-    // =========================================================
-    // WALLET / REWARDS
-    // =========================================================
+    if (!user) {
+      alert("Please log in to your Brewed account to place an order.");
+      setPage("login");
+      return;
+    }
 
-    let walletPaid = 0;
-    let refreshedWalletBalance = wallet
-      ? wallet.balance
-      : 0;
+    if (!selectedAddress) {
+      alert("Please select a delivery address.");
+      return;
+    }
 
-    let walletTransaction = null;
+    if (!selectedAddress.pincode) {
+      alert("Selected address doesn't have a valid pincode.");
+      return;
+    }
 
-    let rewardPaid = 0;
-    let refreshedRewardBalance = wallet
-      ? wallet.rewardBalance
-      : 0;
+    if (deliveryLoading) {
+      alert("Please wait while we verify delivery availability.");
+      return;
+    }
+
+    if (deliveryAvailable === false) {
+      alert("Sorry, we don't deliver to the selected address.");
+      return;
+    }
 
     if (
-      useWallet &&
-      calculations.walletDeduction > 0
+      deliveryInfo &&
+      calculations.subtotal < deliveryInfo.minOrder
     ) {
-      walletTransaction =
-        await walletService.deductMoney({
-          userId: auth.currentUser.uid,
-          amount: calculations.walletDeduction,
+      alert(`Minimum order for this area is ₹${deliveryInfo.minOrder}.`);
+      return;
+    }
+
+    setPlacingOrder(true);
+
+    let paymentResponse = null;
+
+    try {
+      // =========================================================
+      // RAZORPAY ONLINE PAYMENT
+      // =========================================================
+
+      if (
+        paymentMethod === "online" &&
+        calculations.remainingAmount > 0
+      ) {
+        const razorpayLoaded = await loadRazorpayScript();
+
+        if (!razorpayLoaded) {
+          throw new Error("Razorpay SDK failed to load.");
+        }
+
+        console.log("RAZORPAY AUTH CHECK:", {
+          uid: auth.currentUser?.uid,
+          email: auth.currentUser?.email,
+          isAuthenticated: !!auth.currentUser,
+        });
+        console.log("RAZORPAY AMOUNT:", calculations.remainingAmount);
+
+        const razorpayOrderResult = await createRazorpayOrder({
+          amount: calculations.remainingAmount,
         });
 
-      walletPaid = calculations.walletDeduction;
+        console.log("RAZORPAY FUNCTION RESPONSE:", razorpayOrderResult.data);
+        const razorpayOrder = razorpayOrderResult.data;
 
-      refreshedWalletBalance = Math.max(
-        0,
-        refreshedWalletBalance - walletPaid
-      );
-    }
+        if (
+          !razorpayOrder ||
+          !razorpayOrder.success ||
+          !razorpayOrder.orderId ||
+          !razorpayOrder.keyId
+        ) {
+          throw new Error("Unable to create Razorpay order.");
+        }
 
-    if (
-      useRewards &&
-      calculations.rewardDeduction > 0
-    ) {
-      await walletService.redeemReward({
-        userId: auth.currentUser.uid,
-        amount: calculations.rewardDeduction,
-        description: "Reward Redemption",
-      });
+        paymentResponse = await new Promise((resolve, reject) => {
+          const options = {
+            key: razorpayOrder.keyId,
+            amount: razorpayOrder.amount,
+            currency: razorpayOrder.currency,
+            name: "Brewed Cafe",
+            description: "Online Order Settlement",
+            order_id: razorpayOrder.orderId,
+            handler: function (response) {
+              console.log("RAZORPAY PAYMENT SUCCESS:", response);
+              resolve(response);
+            },
+            modal: {
+              ondismiss: function () {
+                reject(
+                  new Error("Payment cancelled by user.")
+                );
+              },
+            },
+            prefill: {
+              name: form.name,
+              email: form.email,
+              contact: form.phone,
+            },
+            theme: {
+              color: THEME.colors.primary,
+            },
+          };
 
-      rewardPaid = calculations.rewardDeduction;
+          try {
+            const rzp = new window.Razorpay(options);
+            rzp.on("payment.failed", function (response) {
+              console.error("RAZORPAY PAYMENT FAILED:", response.error);
+              reject(
+                new Error(
+                  response.error?.description || "Razorpay payment failed."
+                )
+              );
+            });
+            rzp.open();
+          } catch (err) {
+            reject(err);
+          }
+        });
+      }
 
-      refreshedRewardBalance = Math.max(
-        0,
-        refreshedRewardBalance - rewardPaid
-      );
-    }
+      // =========================================================
+      // WALLET / REWARDS
+      // =========================================================
 
-    // =========================================================
-    // PAYMENT METHOD
-    // =========================================================
+      let walletPaid = 0;
+      let refreshedWalletBalance = wallet
+        ? wallet.balance
+        : 0;
 
-    const remainingAmount =
-      calculations.remainingAmount;
+      let walletTransaction = null;
 
-    const basePaymentLabel =
-      paymentMethod === "cod"
-        ? "Cash on Delivery"
-        : "UPI/Card";
-
-    const finalPaymentMethod =
-      walletPaid > 0 || rewardPaid > 0
-        ? remainingAmount > 0
-          ? `Wallet/Rewards + ${basePaymentLabel}`
-          : "Wallet/Rewards"
-        : basePaymentLabel;
-
-    // =========================================================
-    // CREATE ORDER
-    // =========================================================
-
-    const orderData = {
-      customer: form,
-
-      userId:
-        auth.currentUser.uid,
-
-      items: cart,
-
-      subtotal:
-        calculations.subtotal,
-
-      tax:
-        calculations.tax,
-
-      delivery:
-        calculations.delivery,
-
-      deliveryZone:
-        deliveryInfo?.zoneName || "",
-
-      estimatedDelivery:
-        deliveryInfo?.estimatedTime || "",
-
-      minimumOrder:
-        deliveryInfo?.minOrder || 0,
-
-      freeDeliveryAbove:
-        deliveryInfo?.freeDeliveryAbove || 0,
-
-      walletPaid,
-
-      usedWallet:
-        walletPaid > 0,
-
-      walletBalanceBeforePayment:
-        wallet?.balance || 0,
-
-      walletBalanceAfterPayment:
-        refreshedWalletBalance,
-
-      usedRewards:
-        rewardPaid > 0,
-
-      rewardPaid,
-
-      rewardBalanceBeforePayment:
-        wallet?.rewardBalance || 0,
-
-      rewardBalanceAfterPayment:
-        refreshedRewardBalance,
-
-      otherPayment:
-        remainingAmount,
-
-      total:
-        calculations.grandTotal,
-
-      paymentMethod:
-        finalPaymentMethod,
-
-      status:
-        "New",
-
-      walletTransactionId:
-        walletTransaction?.transactionId || null,
-
-      walletPayment:
-        walletPaid,
-
-      walletStatus:
-        walletPaid > 0
-          ? "PAID"
-          : "NOT_USED",
-
-      paymentStatus:
-        "SUCCESS",
-
-      paymentGateway:
-        paymentMethod === "online"
-          ? "Razorpay"
-          : null,
-
-      paymentReference:
-        paymentResponse?.razorpay_payment_id || null,
-
-      razorpayOrderId:
-        paymentResponse?.razorpay_order_id || null,
-
-      refundStatus:
-        "NOT_REFUNDED",
-
-      loyaltyPointsUsed:
-        selectedReward?.points || 0,
-
-      refundAmount:
-        0,
-
-      refundTransactionId:
-        null,
-
-      cancelReason:
-        null,
-
-      cancelledAt:
-        null,
-
-      cancelledBy:
-        null,
-
-      selectedReward,
-
-      rewardStatus:
-        rewardPaid > 0
-          ? "REDEEMED"
-          : "PENDING",
-
-      rewardAmount:
-        rewardPaid,
-
-      rewardCreditedAt:
-        rewardPaid > 0
-          ? serverTimestamp()
-          : null,
-
-      createdAt:
-        serverTimestamp(),
-    };
-
-    const orderId =
-      await placeOrder(orderData);
-
-    // =========================================================
-    // LOYALTY POINTS
-    // =========================================================
-
-    const loyaltySettingsSnap =
-      await getDoc(
-        doc(db, "settings", "loyalty")
-      );
-
-    if (loyaltySettingsSnap.exists()) {
-      const fetchedLoyaltySettings =
-        loyaltySettingsSnap.data();
+      let rewardPaid = 0;
+      let refreshedRewardBalance = wallet
+        ? wallet.rewardBalance
+        : 0;
 
       if (
-        fetchedLoyaltySettings.enabled !== false
+        useWallet &&
+        calculations.walletDeduction > 0
       ) {
-        let earnedPoints =
-          Math.floor(
-            calculations.subtotal / 100
-          ) *
-          (
-            fetchedLoyaltySettings.pointsPer100 ||
-            0
-          );
+        walletTransaction =
+          await walletService.deductMoney({
+            userId: auth.currentUser.uid,
+            amount: calculations.walletDeduction,
+          });
 
-        const today =
-          new Date();
+        walletPaid = calculations.walletDeduction;
 
-        const campaignActive =
-          fetchedLoyaltySettings.seasonalCampaignEnabled &&
-          fetchedLoyaltySettings.seasonalStartDate &&
-          fetchedLoyaltySettings.seasonalEndDate &&
-          today >=
-            new Date(
-              fetchedLoyaltySettings.seasonalStartDate
-            ) &&
-          today <=
-            new Date(
-              fetchedLoyaltySettings.seasonalEndDate
+        refreshedWalletBalance = Math.max(
+          0,
+          refreshedWalletBalance - walletPaid
+        );
+      }
+
+      if (
+        useRewards &&
+        calculations.rewardDeduction > 0
+      ) {
+        await walletService.redeemReward({
+          userId: auth.currentUser.uid,
+          amount: calculations.rewardDeduction,
+          description: "Reward Redemption",
+        });
+
+        rewardPaid = calculations.rewardDeduction;
+
+        refreshedRewardBalance = Math.max(
+          0,
+          refreshedRewardBalance - rewardPaid
+        );
+      }
+
+      // =========================================================
+      // PAYMENT METHOD
+      // =========================================================
+
+      const remainingAmount =
+        calculations.remainingAmount;
+
+      const basePaymentLabel =
+        paymentMethod === "cod"
+          ? "Cash on Delivery"
+          : "UPI/Card";
+
+      const finalPaymentMethod =
+        walletPaid > 0 || rewardPaid > 0
+          ? remainingAmount > 0
+            ? `Wallet/Rewards + ${basePaymentLabel}`
+            : "Wallet/Rewards"
+          : basePaymentLabel;
+
+      // =========================================================
+      // CREATE ORDER
+      // =========================================================
+
+      const orderData = {
+        customer: form,
+        userId: auth.currentUser.uid,
+        items: cart,
+        subtotal: calculations.subtotal,
+        tax: calculations.tax,
+        delivery: calculations.delivery,
+        deliveryZone: deliveryInfo?.zoneName || "",
+        estimatedDelivery: deliveryInfo?.estimatedTime || "",
+        minimumOrder: deliveryInfo?.minOrder || 0,
+        freeDeliveryAbove: deliveryInfo?.freeDeliveryAbove || 0,
+        walletPaid,
+        usedWallet: walletPaid > 0,
+        walletBalanceBeforePayment: wallet?.balance || 0,
+        walletBalanceAfterPayment: refreshedWalletBalance,
+        usedRewards: rewardPaid > 0,
+        rewardPaid,
+        rewardBalanceBeforePayment: wallet?.rewardBalance || 0,
+        rewardBalanceAfterPayment: refreshedRewardBalance,
+        otherPayment: remainingAmount,
+        total: calculations.grandTotal,
+        paymentMethod: finalPaymentMethod,
+        status: "New",
+        walletTransactionId: walletTransaction?.transactionId || null,
+        walletPayment: walletPaid,
+        walletStatus: walletPaid > 0 ? "PAID" : "NOT_USED",
+        paymentStatus: "SUCCESS",
+        paymentGateway: paymentMethod === "online" ? "Razorpay" : null,
+        paymentReference: paymentResponse?.razorpay_payment_id || null,
+        razorpayOrderId: paymentResponse?.razorpay_order_id || null,
+        refundStatus: "NOT_REFUNDED",
+        loyaltyPointsUsed: selectedReward?.points || 0,
+        refundAmount: 0,
+        refundTransactionId: null,
+        cancelReason: null,
+        cancelledAt: null,
+        cancelledBy: null,
+        selectedReward,
+        rewardStatus: rewardPaid > 0 ? "REDEEMED" : "PENDING",
+        rewardAmount: rewardPaid,
+        rewardCreditedAt: rewardPaid > 0 ? serverTimestamp() : null,
+        createdAt: serverTimestamp(),
+      };
+
+      const orderId = await placeOrder(orderData);
+
+      // =========================================================
+      // LOYALTY POINTS
+      // =========================================================
+
+      const loyaltySettingsSnap =
+        await getDoc(
+          doc(db, "settings", "loyalty")
+        );
+
+      if (loyaltySettingsSnap.exists()) {
+        const fetchedLoyaltySettings =
+          loyaltySettingsSnap.data();
+
+        if (
+          fetchedLoyaltySettings.enabled !== false
+        ) {
+          let earnedPoints =
+            Math.floor(
+              calculations.subtotal / 100
+            ) *
+            (
+              fetchedLoyaltySettings.pointsPer100 ||
+              0
             );
 
-        if (campaignActive) {
-          earnedPoints =
-            Math.round(
-              earnedPoints *
-                (
-                  fetchedLoyaltySettings.seasonalMultiplier ||
-                  2
-                )
-            );
-        }
+          const today = new Date();
 
-        if (earnedPoints > 0) {
-          await runTransaction(
-            db,
-            async (transaction) => {
-              const userRef =
-                doc(
-                  db,
-                  "users",
-                  auth.currentUser.uid
-                );
+          const campaignActive =
+            fetchedLoyaltySettings.seasonalCampaignEnabled &&
+            fetchedLoyaltySettings.seasonalStartDate &&
+            fetchedLoyaltySettings.seasonalEndDate &&
+            today >=
+              new Date(
+                fetchedLoyaltySettings.seasonalStartDate
+              ) &&
+            today <=
+              new Date(
+                fetchedLoyaltySettings.seasonalEndDate
+              );
 
-              const userSnap =
-                await transaction.get(
-                  userRef
-                );
+          if (campaignActive) {
+            earnedPoints =
+              Math.round(
+                earnedPoints *
+                  (
+                    fetchedLoyaltySettings.seasonalMultiplier ||
+                    2
+                  )
+              );
+          }
 
-              if (userSnap.exists()) {
-                const user =
-                  userSnap.data();
-
-                transaction.update(
-                  userRef,
-                  {
-                    loyaltyPoints:
-                      (user.loyaltyPoints || 0) +
-                      earnedPoints,
-
-                    lifetimePoints:
-                      (user.lifetimePoints || 0) +
-                      earnedPoints,
-
-                    totalOrders:
-                      (user.totalOrders || 0) +
-                      1,
-                  }
-                );
-
-                const txRef =
+          if (earnedPoints > 0) {
+            await runTransaction(
+              db,
+              async (transaction) => {
+                const userRef =
                   doc(
-                    collection(
-                      db,
-                      "loyaltyTransactions"
-                    )
+                    db,
+                    "users",
+                    auth.currentUser.uid
                   );
 
-                transaction.set(
-                  txRef,
-                  {
-                    userId:
-                      auth.currentUser.uid,
+                const userSnap =
+                  await transaction.get(
+                    userRef
+                  );
 
-                    type:
-                      "earned",
+                if (userSnap.exists()) {
+                  const user =
+                    userSnap.data();
 
-                    points:
-                      earnedPoints,
+                  transaction.update(
+                    userRef,
+                    {
+                      loyaltyPoints:
+                        (user.loyaltyPoints || 0) +
+                        earnedPoints,
 
-                    description:
-                      campaignActive
-                        ? `🎉 ${fetchedLoyaltySettings.seasonalCampaignName} Bonus`
-                        : "Points earned from order",
+                      lifetimePoints:
+                        (user.lifetimePoints || 0) +
+                        earnedPoints,
 
-                    seasonalCampaign:
-                      campaignActive
-                        ? fetchedLoyaltySettings.seasonalCampaignName
-                        : null,
+                      totalOrders:
+                        (user.totalOrders || 0) +
+                        1,
+                    }
+                  );
 
-                    orderId,
+                  const txRef =
+                    doc(
+                      collection(
+                        db,
+                        "loyaltyTransactions"
+                      )
+                    );
 
-                    amount:
-                      calculations.subtotal,
+                  transaction.set(
+                    txRef,
+                    {
+                      userId:
+                        auth.currentUser.uid,
 
-                    createdAt:
-                      serverTimestamp(),
-                  }
-                );
+                      type:
+                        "earned",
+
+                      points:
+                        earnedPoints,
+
+                      description:
+                        campaignActive
+                          ? `🎉 ${fetchedLoyaltySettings.seasonalCampaignName} Bonus`
+                          : "Points earned from order",
+
+                      seasonalCampaign:
+                        campaignActive
+                          ? fetchedLoyaltySettings.seasonalCampaignName
+                          : null,
+
+                      orderId,
+
+                      amount:
+                        calculations.subtotal,
+
+                      createdAt:
+                        serverTimestamp(),
+                    }
+                  );
+                }
               }
-            }
-          );
+            );
+          }
         }
       }
-    }
 
-    // =========================================================
-    // REFRESH WALLET
-    // =========================================================
+      // =========================================================
+      // REFRESH WALLET
+      // =========================================================
 
-    const updatedWallet =
-      await walletService.getWallet(
-        auth.currentUser.uid
+      const updatedWallet =
+        await walletService.getWallet(
+          auth.currentUser.uid
+        );
+
+      setWallet(updatedWallet);
+
+      setUseWallet(false);
+      setUseRewards(false);
+
+      // =========================================================
+      // SUCCESS
+      // =========================================================
+
+      setStatus("success");
+
+    } catch (err) {
+      console.error(
+        "Critical submission failure:",
+        err
       );
 
-    setWallet(updatedWallet);
+      alert(
+        err.message ||
+        "Unable to complete your order. Please try again."
+      );
 
-    setUseWallet(false);
-    setUseRewards(false);
+      setStatus("failure");
 
-    // =========================================================
-    // SUCCESS
-    // =========================================================
-
-    setPage("success");
-
-  } catch (err) {
-    console.error(
-      "Critical submission failure:",
-      err
-    );
-
-    alert(
-      err.message ||
-      "Unable to complete your order. Please try again."
-    );
-
-    setStatus("failure");
-
-  } finally {
-    setPlacingOrder(false);
-  }
-};
-
+    } finally {
+      setPlacingOrder(false);
+    }
+  };
 
   if (status === "success") {
-  return (
-    <div style={styles.confirmPage}>
-      <canvas ref={canvasRef} style={styles.confettiCanvas} />
+    return (
+      <div style={styles.confirmPage}>
+        <canvas ref={canvasRef} style={styles.confettiCanvas} />
 
-      <div style={styles.confirmCard}>
-        <h2
-          style={{
-            ...styles.confirmTitle,
-            color: THEME.colors.primary,
-          }}
-        >
-          Payment Successful!
-        </h2>
-
-        <p style={styles.confirmSub}>
-          Your payment has been processed successfully.
-        </p>
-
-        <div
-          style={{
-            display: "flex",
-            gap: "12px",
-            justifyContent: "center",
-            marginTop: "24px",
-            flexWrap: "wrap",
-          }}
-        >
-          {/* TRACK ORDER */}
-          <button
+        <div style={styles.confirmCard}>
+          <h2
             style={{
-              ...styles.payBtn,
-              minWidth: "140px",
-            }}
-            onClick={() => setPage("tracking")}
-          >
-            Track Order
-          </button>
-
-          {/* BACK TO MENU */}
-          <button
-            style={{
-              ...styles.payBtn,
-              minWidth: "140px",
-              background: "transparent",
+              ...styles.confirmTitle,
               color: THEME.colors.primary,
-              border: `1px solid ${THEME.colors.primary}`,
             }}
+          >
+            Payment Successful!
+          </h2>
+
+          <p style={styles.confirmSub}>
+            Your payment has been processed successfully.
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              justifyContent: "center",
+              marginTop: "24px",
+              flexWrap: "wrap",
+            }}
+          >
+            {/* TRACK ORDER */}
+            <button
+              style={{
+                ...styles.payBtn,
+                minWidth: "140px",
+              }}
+              onClick={() => setPage("tracking")}
+            >
+              Track Order
+            </button>
+
+            {/* BACK TO MENU */}
+            <button
+              style={{
+                ...styles.payBtn,
+                minWidth: "140px",
+                background: "transparent",
+                color: THEME.colors.primary,
+                border: `1px solid ${THEME.colors.primary}`,
+              }}
+              onClick={() => {
+                setStatus("idle");
+                setPage("menu");
+              }}
+            >
+              Back to Menu
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "failure") {
+    return (
+      <div style={styles.confirmPage}>
+        <canvas ref={canvasRef} style={styles.confettiCanvas} />
+
+        <div style={styles.confirmCard}>
+          <h2
+            style={{
+              ...styles.confirmTitle,
+              color: THEME.colors.danger,
+            }}
+          >
+            Payment Failed
+          </h2>
+
+          <p style={styles.confirmSub}>
+            We couldn't process your transaction.
+          </p>
+
+          <button
+            style={styles.payBtn}
             onClick={() => {
               setStatus("idle");
               setPage("menu");
             }}
           >
-            Back to Menu
+            Return to Menu
           </button>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-if (status === "failure") {
-  return (
-    <div style={styles.confirmPage}>
-      <canvas ref={canvasRef} style={styles.confettiCanvas} />
+ 
 
-      <div style={styles.confirmCard}>
-        <h2
-          style={{
-            ...styles.confirmTitle,
-            color: THEME.colors.danger,
-          }}
-        >
-          Payment Failed
-        </h2>
-
-        <p style={styles.confirmSub}>
-          We couldn't process your transaction.
-        </p>
-
-        <button
-          style={styles.payBtn}
-          onClick={() => {
-            setStatus("idle");
-            setPage("menu");
-          }}
-        >
-          Return to Menu
-        </button>
-      </div>
-    </div>
-  );
-}
   
   
   
