@@ -17,7 +17,6 @@ exports.createRazorpayOrder = onCall(
   },
   async (request) => {
     try {
-      // Require logged-in customer
       if (!request.auth) {
         throw new HttpsError(
           "unauthenticated",
@@ -27,7 +26,13 @@ exports.createRazorpayOrder = onCall(
 
       const { amount } = request.data;
 
-      // Amount must be sent in INR rupees from the frontend
+      logger.info("Razorpay request received", {
+        userId: request.auth.uid,
+        amount,
+        hasKeyId: !!razorpayKeyId.value(),
+        hasKeySecret: !!razorpayKeySecret.value(),
+      });
+
       if (
         typeof amount !== "number" ||
         !Number.isFinite(amount) ||
@@ -39,7 +44,6 @@ exports.createRazorpayOrder = onCall(
         );
       }
 
-      // Convert rupees → paise
       const amountInPaise = Math.round(amount * 100);
 
       const razorpay = new Razorpay({
@@ -47,18 +51,16 @@ exports.createRazorpayOrder = onCall(
         key_secret: razorpayKeySecret.value(),
       });
 
-      const receipt = `brew_${Date.now()}`;
-
       const order = await razorpay.orders.create({
         amount: amountInPaise,
         currency: "INR",
-        receipt,
+        receipt: `brew_${Date.now()}`,
       });
 
-      logger.info("Razorpay order created", {
+      logger.info("Razorpay order created successfully", {
         orderId: order.id,
         userId: request.auth.uid,
-        amount: amount,
+        amount,
       });
 
       return {
@@ -68,8 +70,17 @@ exports.createRazorpayOrder = onCall(
         currency: order.currency,
         keyId: razorpayKeyId.value(),
       };
+
     } catch (error) {
-      logger.error("Razorpay order creation failed", error);
+
+      logger.error("🔥 RAZORPAY FUNCTION FAILED", {
+        message: error?.message,
+        name: error?.name,
+        code: error?.code,
+        description: error?.description,
+        statusCode: error?.statusCode,
+        stack: error?.stack,
+      });
 
       if (error instanceof HttpsError) {
         throw error;
@@ -77,7 +88,7 @@ exports.createRazorpayOrder = onCall(
 
       throw new HttpsError(
         "internal",
-        "Unable to create Razorpay order."
+        error?.message || "Unable to create Razorpay order."
       );
     }
   }
