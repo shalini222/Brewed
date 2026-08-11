@@ -884,22 +884,24 @@ export default function CheckoutPage({ setPage, orderSnapshot }) {
               flexWrap: "wrap",
             }}
           >
-            {/* TRACK ORDER */}
-            <button
-              style={{
-                ...styles.payBtn,
-                minWidth: "140px",
-              }}
-               alert("TRACK BUTTON CLICKED");
-              onClick={() => {
-  if (orderSnapshot) {
-    setPage("tracking", orderSnapshot);
-  }
-}}
-               
-            >
-              Track Order
-            </button>
+          {/* TRACK ORDER */}
+<button
+  style={{
+    ...styles.payBtn,
+    minWidth: "140px",
+  }}
+  onClick={() => {
+    alert("TRACK BUTTON CLICKED");
+
+    if (orderSnapshot) {
+      setPage("tracking", orderSnapshot);
+    } else {
+      alert("NO ORDER SNAPSHOT!");
+    }
+  }}
+>
+  Track Order
+</button>
 
             {/* BACK TO MENU */}
             <button
