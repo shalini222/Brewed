@@ -74,6 +74,7 @@ export default function CheckoutPage({ setPage, orderSnapshot }) {
   const [selectedReward, setSelectedReward] = useState(null);
   const [loadingAvailableRewards, setLoadingAvailableRewards] = useState(true);
   const [rewardMenuItem, setRewardMenuItem] = useState(null);
+  const [completedOrder, setCompletedOrder] = useState(null);
 
   // Loyalty states
   const [loyaltyEnabled, setLoyaltyEnabled] = useState(true);
@@ -682,6 +683,13 @@ export default function CheckoutPage({ setPage, orderSnapshot }) {
       };
 
       const orderId = await placeOrder(orderData);
+      
+      const completedOrderData = {
+  ...orderData,
+  id: orderId,
+};
+
+setCompletedOrder(completedOrderData);
 
       // =========================================================
       // LOYALTY POINTS
@@ -891,12 +899,14 @@ export default function CheckoutPage({ setPage, orderSnapshot }) {
     minWidth: "140px",
   }}
   onClick={() => {
-    alert("TRACK BUTTON CLICKED");
+    alert(
+      completedOrder
+        ? "TRACKING ORDER FOUND"
+        : "NO COMPLETED ORDER"
+    );
 
-    if (orderSnapshot) {
-      setPage("tracking", orderSnapshot);
-    } else {
-      alert("NO ORDER SNAPSHOT!");
+    if (completedOrder) {
+      setPage("tracking", completedOrder);
     }
   }}
 >
