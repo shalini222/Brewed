@@ -525,6 +525,32 @@ export default function CheckoutPage({ setPage, orderSnapshot }) {
             name: "Brewed Cafe",
             description: "Online Order Settlement",
             order_id: razorpayOrder.orderId,
+
+
+            config: {
+    display: {
+      blocks: {
+        upi: {
+          name: "UPI",
+          instruments: [
+            {
+              method: "upi",
+            },
+          ],
+        },
+      },
+      sequence: ["block.upi"],
+      preferences: {
+        show_default_blocks: true,
+      },
+    },
+  },
+
+
+
+
+
+            
             handler: function (response) {
               console.log("RAZORPAY PAYMENT SUCCESS:", response);
               resolve(response);
