@@ -890,7 +890,9 @@ export default function CheckoutPage({ setPage }) {
                 ...styles.payBtn,
                 minWidth: "140px",
               }}
+               alert("TRACK BUTTON CLICKED");
               onClick={() => setPage("tracking")}
+               
             >
               Track Order
             </button>
