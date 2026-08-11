@@ -42,7 +42,7 @@ const loadRazorpayScript = () =>
     document.body.appendChild(script);
   });
 
-export default function CheckoutPage({ setPage }) {
+export default function CheckoutPage({ setPage, orderSnapshot }) {
   const createRazorpayOrder = httpsCallable(
     functions,
     "createRazorpayOrder"
@@ -891,7 +891,11 @@ export default function CheckoutPage({ setPage }) {
                 minWidth: "140px",
               }}
                alert("TRACK BUTTON CLICKED");
-              onClick={() => setPage("tracking")}
+              onClick={() => {
+  if (orderSnapshot) {
+    setPage("tracking", orderSnapshot);
+  }
+}}
                
             >
               Track Order
