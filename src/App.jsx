@@ -157,8 +157,11 @@ export default function App() {
           )}
 
           {page === "checkout" && (
-            <CheckoutPage setPage={navigateTo} />
-          )}
+  <CheckoutPage
+    setPage={navigateTo}
+    orderSnapshot={activeOrder}
+  />
+)}
 
           {page === "tracking" && (
             <TrackingPage 
