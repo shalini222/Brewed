@@ -527,24 +527,7 @@ export default function CheckoutPage({ setPage, orderSnapshot }) {
             order_id: razorpayOrder.orderId,
 
 
-            config: {
-    display: {
-      blocks: {
-        upi: {
-          name: "UPI",
-          instruments: [
-            {
-              method: "upi",
-            },
-          ],
-        },
-      },
-      sequence: ["block.upi"],
-      preferences: {
-        show_default_blocks: true,
-      },
-    },
-  },
+ 
 
 
 
