@@ -52,7 +52,7 @@ export default function CartPage({ setPage }) {
               {cart.map((item, index) => (
                 <div key={`${item.id}-${index}`} style={styles.cartItem}>
                   <img 
-                    src={item.image || "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=150"} 
+                    src={item.image|| item.img ||"https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=150"} 
                     alt={item.name} 
                     style={styles.itemImage}
                   />
