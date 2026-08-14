@@ -982,7 +982,7 @@ useEffect(() => {
           gap: "0.75rem",
           paddingBottom: "0.75rem",
           borderBottom:
-            index < orderSnapshot.items.length - 1
+        index < (orderSnapshot?.items?.length || 0) - 1
               ? `1px solid ${THEME.colors.cardBorder}`
               : "none",
         }}
