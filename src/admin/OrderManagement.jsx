@@ -768,26 +768,33 @@ return (
     </button>
   )}
 
-  {order.status === "Ready" && (
-    <button
-      onClick={() =>
-        updateOrderStatus(order.id, "Assigned to Rider")
-      }
-      style={{
-        flex: 1,
-        background: "#1565C0",
-        color: "white",
-        border: "none",
-        padding: "14px 20px",
-        borderRadius: 12,
-        cursor: "pointer",
-        fontWeight: 600,
-        fontSize: 15,
-      }}
-    >
-      🛵 Assign to Rider
-    </button>
-  )}
+ {order.status === "Ready" && (
+  <button
+    onClick={async () => {
+      await updateDoc(doc(db, "orders", order.id), {
+        status: "Assigned to Rider",
+        deliveryPartnerName: "Rahul Kumar",
+        deliveryPartnerPhone: "9876543210",
+        deliveryPartnerMessage: "Your coffee is on the way! ☕",
+        estimatedDeliveryMinutes: 25,
+        trackingUpdatedAt: serverTimestamp(),
+      });
+    }}
+    style={{
+      flex: 1,
+      background: "#1565C0",
+      color: "white",
+      border: "none",
+      padding: "14px 20px",
+      borderRadius: 12,
+      cursor: "pointer",
+      fontWeight: 600,
+      fontSize: 15,
+    }}
+  >
+    🛵 Assign to Rider
+  </button>
+)}
 
   {order.status === "Assigned to Rider" && (
     <button
