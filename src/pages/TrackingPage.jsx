@@ -900,43 +900,68 @@ useEffect(() => {
 
        
         
-        
-        
-        
-        
-        
         <div
   style={{
-    borderTop: `1px solid ${THEME.colors.cardBorder}`,
-    paddingTop: "1rem",
     marginTop: "1rem",
+    marginBottom: "1rem",
+    padding: "1rem 1.1rem",
+    background: THEME.colors.cardBg,
+    border: `1px solid ${THEME.colors.cardBorder}`,
+    borderRadius: "16px",
+    boxShadow: "0 3px 12px rgba(26, 11, 5, 0.04)",
+    display: "flex",
+    alignItems: "flex-start",
+    gap: "0.85rem",
   }}
 >
-  <p
+  <div
     style={{
-      margin: "0 0 0.35rem",
-      fontSize: "0.8rem",
-      color: THEME.colors.textMuted,
-      fontWeight: "600",
+      width: "38px",
+      height: "38px",
+      minWidth: "38px",
+      borderRadius: "12px",
+      background: THEME.colors.accentLight,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "1.05rem",
     }}
   >
-    📍 Delivery Address
-  </p>
+    📍
+  </div>
 
-  <p
-    style={{
-      margin: 0,
-      fontSize: "0.9rem",
-      color: THEME.colors.textDark,
-      lineHeight: 1.45,
-    }}
-  >
-    {liveOrder?.customer?.address ||
-      orderSnapshot?.customer?.address ||
-      "Delivery address unavailable"}
-  </p>
+  <div style={{ minWidth: 0 }}>
+    <p
+      style={{
+        margin: "0 0 0.25rem",
+        fontSize: "0.72rem",
+        fontWeight: "700",
+        textTransform: "uppercase",
+        letterSpacing: "0.08em",
+        color: THEME.colors.textMuted,
+      }}
+    >
+      Delivery Address
+    </p>
+
+    <p
+      style={{
+        margin: 0,
+        fontSize: "0.9rem",
+        lineHeight: 1.45,
+        fontWeight: "600",
+        color: THEME.colors.textDark,
+      }}
+    >
+      {liveOrder?.customer?.address ||
+        orderSnapshot?.customer?.address ||
+        "Delivery address unavailable"}
+    </p>
+  </div>
 </div>
-
+        
+        
+  
      
         
         
