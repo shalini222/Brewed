@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase";
 import { jsPDF } from "jspdf"; 
 import { useCart } from "../context/CartContext"; 
 import DeliveryMap from "../components/DeliveryMap"; 
@@ -65,6 +67,22 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const [selectedTags, setSelectedTags] = useState([]);
   const [typedReview, setTypedReview] = useState("");
 
+
+
+const STATUS_TO_STEP = {
+  New: 1,
+  Confirmed: 1,
+  Brewing: 2,
+  "Out for Delivery": 3,
+  Delivered: 4,
+  "Delivery Failed": 5,
+  Failed: 5,
+};
+
+
+
+  
+
   useEffect(() => {
     if (!orderSnapshot) {
       setPage("menu");
@@ -77,17 +95,49 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // 1. SYSTEM TRANSITION TIMER (INCREMENTS STEPS ONLY)
-  useEffect(() => {
-    if (!orderSnapshot || currentStep >= 4) return;
-    const interval = setInterval(() => {
-      setCurrentStep((prev) => {
-        setEstimatedTime((time) => Math.max(0, time - 8));
-        return prev + 1;
-      });
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [currentStep, orderSnapshot]);
+
+
+
+
+useEffect(() => {
+  if (!orderSnapshot?.id) return;
+
+  const orderRef = doc(db, "orders", orderSnapshot.id);
+
+  const unsubscribe = onSnapshot(
+    orderRef,
+    (snapshot) => {
+      if (!snapshot.exists()) {
+        console.error("Order not found:", orderSnapshot.id);
+        return;
+      }
+
+      const order = snapshot.data();
+
+      console.log("🔥 LIVE ORDER UPDATE:", order);
+
+      const step = STATUS_TO_STEP[order.status] || 1;
+
+      setCurrentStep(step);
+
+      if (order.estimatedDeliveryMinutes !== undefined) {
+        setEstimatedTime(order.estimatedDeliveryMinutes);
+      }
+
+      if (order.deliveryPartnerMessage) {
+        setPartnerMessage(order.deliveryPartnerMessage);
+      }
+    },
+    (error) => {
+      console.error("🔥 TRACKING LISTENER ERROR:", error);
+    }
+  );
+
+  return () => unsubscribe();
+}, [orderSnapshot?.id]);
+
+
+  
 
   // 2. DELIVERED STATUS WATCHER (POPS UP REVIEW AFTER NATURAL HOVER WINDOW)
   useEffect(() => {
