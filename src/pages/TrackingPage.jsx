@@ -383,7 +383,15 @@ useEffect(() => {
           <>
           <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
 
-<div style={styles.summarySummary}>
+
+            
+            <pre style={{ fontSize: "11px", whiteSpace: "pre-wrap" }}>
+  {JSON.stringify(orderSnapshot?.createdAt, null, 2)}
+</pre>
+            
+            
+            
+            <div style={styles.summarySummary}>
   <span>Order Time:</span>
   <span style={{ fontWeight: "600", textAlign: "right" }}>
     {orderSnapshot?.createdAt
@@ -405,9 +413,19 @@ useEffect(() => {
 <div style={styles.summarySummary}>
   <span>Payment Method:</span>
   <span style={{ fontWeight: "600", textAlign: "right" }}>
-    {orderSnapshot?.method === "cod"
-      ? "COD (Cash/QR)"
-      : "Paid Online"}
+    {(() => {
+      const method = String(
+        orderSnapshot?.method ||
+        orderSnapshot?.paymentMethod ||
+        ""
+      ).toLowerCase();
+
+      return method.includes("cod") ||
+        method.includes("cash") ||
+        method.includes("qr")
+        ? "COD (Cash/QR)"
+        : "Paid Online";
+    })()}
   </span>
 </div>
 
@@ -417,22 +435,44 @@ useEffect(() => {
     style={{
       fontWeight: "600",
       color:
-        orderSnapshot?.paymentStatus === "REFUNDED"
+        String(orderSnapshot?.paymentStatus || "").toUpperCase() === "REFUNDED"
           ? THEME.colors.error
           : THEME.colors.success,
     }}
   >
-    {orderSnapshot?.paymentStatus === "REFUNDED"
-      ? "Refunded"
-      : orderSnapshot?.method === "cod"
-      ? "Pending"
-      : "Paid"}
+    {(() => {
+      const method = String(
+        orderSnapshot?.method ||
+        orderSnapshot?.paymentMethod ||
+        ""
+      ).toLowerCase();
+
+      const paymentStatus = String(
+        orderSnapshot?.paymentStatus || ""
+      ).toUpperCase();
+
+      if (paymentStatus === "REFUNDED") {
+        return "Refunded";
+      }
+
+      if (
+        method.includes("cod") ||
+        method.includes("cash") ||
+        method.includes("qr")
+      ) {
+        return "Pending";
+      }
+
+      return "Paid";
+    })()}
   </span>
 </div>
 
 <div style={styles.summarySummary}>
   <span>Amount Paid:</span>
-  <span style={{ fontWeight: "600" }}>₹{grandTotal}</span>
+  <span style={{ fontWeight: "600" }}>
+    ₹{grandTotal}
+  </span>
 </div>
 
             <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
