@@ -898,6 +898,51 @@ useEffect(() => {
           </div>
         )}
 
+       
+        
+        
+        
+        
+        
+        
+        <div
+  style={{
+    borderTop: `1px solid ${THEME.colors.cardBorder}`,
+    paddingTop: "1rem",
+    marginTop: "1rem",
+  }}
+>
+  <p
+    style={{
+      margin: "0 0 0.35rem",
+      fontSize: "0.8rem",
+      color: THEME.colors.textMuted,
+      fontWeight: "600",
+    }}
+  >
+    📍 Delivery Address
+  </p>
+
+  <p
+    style={{
+      margin: 0,
+      fontSize: "0.9rem",
+      color: THEME.colors.textDark,
+      lineHeight: 1.45,
+    }}
+  >
+    {liveOrder?.customer?.address ||
+      orderSnapshot?.customer?.address ||
+      "Delivery address unavailable"}
+  </p>
+</div>
+
+     
+        
+        
+        
+        
+        
         <div className="layout-grid">
           {/* LEFT PANEL: TIMELINE */}
           <div className="main-panel">
