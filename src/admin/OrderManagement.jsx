@@ -212,32 +212,33 @@ export default function OrderManagement({ setPage, setActivePage }) {
     return snapshot.data();
   }
 
-  async function restoreLoyaltyPoints(order) {
-    const pointsUsed = order.loyaltyPointsUsed || 0;
-    if (pointsUsed <= 0) return;
+async function restoreLoyaltyPoints(order) {
+  const pointsUsed = order.loyaltyPointsUsed || 0;
 
-    const userRef = doc(db, "users", order.userId);
-    const userSnap = await getDoc(userRef);
+  if (pointsUsed <= 0) return;
 
-    if (!userSnap.exists()) return;
+  const userRef = doc(db, "users", order.userId);
+  const userSnap = await getDoc(userRef);
 
-    const currentPoints = userSnap.data().loyaltyPoints || 0;
+  if (!userSnap.exists()) return;
 
-    await updateDoc(userRef, {
-      loyaltyPoints: currentPoints + pointsUsed,
-    });
+  const currentPoints = userSnap.data().loyaltyPoints || 0;
 
-    await addDoc(collection(db, "loyaltyTransactions"), {
-      userId: order.userId,
-      orderId: order.id,
-      points: pointsUsed,
-      type: "refund",
-      description: `Points restored for cancelled order`,
-      createdAt: serverTimestamp(),
-    });
+  await updateDoc(userRef, {
+    loyaltyPoints: currentPoints + pointsUsed,
+  });
 
-    console.log("Restored", pointsUsed, "points");
-  }
+  await addDoc(collection(db, "loyaltyTransactions"), {
+    userId: order.userId,
+    orderId: order.id,
+    points: pointsUsed,
+    type: "refund",
+    description: "Points restored for cancelled order",
+    createdAt: serverTimestamp(),
+  });
+
+  console.log("Restored", pointsUsed, "points");
+}
 
   async function updateOrderStatus(id, status) {
     const order = orders.find((o) => o.id === id);
