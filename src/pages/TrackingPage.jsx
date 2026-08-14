@@ -386,8 +386,12 @@ useEffect(() => {
 <div style={styles.summarySummary}>
   <span>Order Time:</span>
   <span style={{ fontWeight: "600", textAlign: "right" }}>
-    {orderSnapshot?.createdAt?.toDate
-      ? orderSnapshot.createdAt.toDate().toLocaleString("en-IN", {
+    {orderSnapshot?.createdAt
+      ? new Date(
+          orderSnapshot.createdAt?.toDate
+            ? orderSnapshot.createdAt.toDate()
+            : orderSnapshot.createdAt
+        ).toLocaleString("en-IN", {
           day: "2-digit",
           month: "short",
           year: "numeric",
