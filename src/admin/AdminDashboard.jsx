@@ -598,6 +598,11 @@ return (
           page: "supportadmin",
         },
 
+       {
+          title: "🛵 Rider",
+          page: rideradmin",
+        },
+
 
        {
           title: "🤵🏼‍♀️employees",
