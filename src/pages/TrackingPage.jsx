@@ -66,6 +66,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const [hoveredRating, setHoveredRating] = useState(0);
   const [selectedTags, setSelectedTags] = useState([]);
   const [typedReview, setTypedReview] = useState("");
+  const [orderCreatedAt, setOrderCreatedAt] = useState(null);
 
 
 const STATUS_TO_STEP = {
@@ -123,6 +124,8 @@ useEffect(() => {
       const order = snapshot.data();
 
       console.log("🔥 LIVE ORDER UPDATE:", order);
+      
+      setOrderCreatedAt(order.createdAt || null);
 
       const step = STATUS_TO_STEP[order.status] || 1;
 
@@ -385,21 +388,12 @@ useEffect(() => {
 
 
             
-            <pre style={{ fontSize: "11px", whiteSpace: "pre-wrap" }}>
-  {JSON.stringify(orderSnapshot?.createdAt, null, 2)}
-</pre>
-            
-            
-            
-            <div style={styles.summarySummary}>
+   
+  <div style={styles.summarySummary}>
   <span>Order Time:</span>
   <span style={{ fontWeight: "600", textAlign: "right" }}>
-    {orderSnapshot?.createdAt
-      ? new Date(
-          orderSnapshot.createdAt?.toDate
-            ? orderSnapshot.createdAt.toDate()
-            : orderSnapshot.createdAt
-        ).toLocaleString("en-IN", {
+    {orderCreatedAt?.toDate
+      ? orderCreatedAt.toDate().toLocaleString("en-IN", {
           day: "2-digit",
           month: "short",
           year: "numeric",
@@ -408,7 +402,10 @@ useEffect(() => {
         })
       : "—"}
   </span>
-</div>
+</div>          
+            
+            
+ 
 
 <div style={styles.summarySummary}>
   <span>Payment Method:</span>
