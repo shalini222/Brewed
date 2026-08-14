@@ -966,6 +966,106 @@ useEffect(() => {
                   </div>
                 </div>
 
+
+
+<div className="interactive-card">
+  <h3 style={styles.sectionTitle}>Ordered Items</h3>
+
+  <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+    {(orderSnapshot?.items || []).map((item, index) => (
+      <div
+        key={item.id || index}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "0.75rem",
+          paddingBottom: "0.75rem",
+          borderBottom:
+            index < orderSnapshot.items.length - 1
+              ? `1px solid ${THEME.colors.cardBorder}`
+              : "none",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
+          <div
+            style={{
+              width: "42px",
+              height: "42px",
+              borderRadius: "10px",
+              background: THEME.colors.accentLight,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "1.25rem",
+              flexShrink: 0,
+              overflow: "hidden",
+            }}
+          >
+            {item.img ? (
+              <img
+                src={item.img}
+                alt={item.name}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              "☕"
+            )}
+          </div>
+
+          <div style={{ minWidth: 0 }}>
+            <p
+              style={{
+                margin: 0,
+                fontSize: "0.9rem",
+                fontWeight: "600",
+                color: THEME.colors.textDark,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {item.name}
+            </p>
+
+            <p
+              style={{
+                margin: "0.2rem 0 0",
+                fontSize: "0.78rem",
+                color: THEME.colors.textMuted,
+              }}
+            >
+              Qty: {item.qty || item.quantity || 1}
+            </p>
+          </div>
+        </div>
+
+        <span
+          style={{
+            fontSize: "0.85rem",
+            fontWeight: "600",
+            color: THEME.colors.textDark,
+            whiteSpace: "nowrap",
+          }}
+        >
+          ₹{Number(item.price || 0) * (item.qty || item.quantity || 1)}
+        </span>
+      </div>
+    ))}
+  </div>
+</div>
+
+
+
+
+
+
+                
+
                 <OrderInformationCard />
               </>
             )}
