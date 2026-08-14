@@ -381,11 +381,9 @@ useEffect(() => {
           </div>
         ) : (
           <>
-            <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
-            
-          
-            
-            <div style={styles.summarySummary}>
+          <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
+
+<div style={styles.summarySummary}>
   <span>Order Time:</span>
   <span style={{ fontWeight: "600", textAlign: "right" }}>
     {orderSnapshot?.createdAt?.toDate
@@ -399,20 +397,39 @@ useEffect(() => {
       : "—"}
   </span>
 </div>
-            
-            
-            
-            
-            
-            <div style={styles.summarySummary}>
-              <span>Payment Method:</span>
-              <span style={{ fontWeight: "600" }}>{orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online"}</span>
-            </div>
-            
-            <div style={styles.summarySummary}>
-              <span>Amount Paid:</span>
-              <span style={{ fontWeight: "600" }}>₹{grandTotal}</span>
-            </div>
+
+<div style={styles.summarySummary}>
+  <span>Payment Method:</span>
+  <span style={{ fontWeight: "600", textAlign: "right" }}>
+    {orderSnapshot?.method === "cod"
+      ? "COD (Cash/QR)"
+      : "Paid Online"}
+  </span>
+</div>
+
+<div style={styles.summarySummary}>
+  <span>Payment Status:</span>
+  <span
+    style={{
+      fontWeight: "600",
+      color:
+        orderSnapshot?.paymentStatus === "REFUNDED"
+          ? THEME.colors.error
+          : THEME.colors.success,
+    }}
+  >
+    {orderSnapshot?.paymentStatus === "REFUNDED"
+      ? "Refunded"
+      : orderSnapshot?.method === "cod"
+      ? "Pending"
+      : "Paid"}
+  </span>
+</div>
+
+<div style={styles.summarySummary}>
+  <span>Amount Paid:</span>
+  <span style={{ fontWeight: "600" }}>₹{grandTotal}</span>
+</div>
 
             <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               <div style={styles.actionSplitRow}>
