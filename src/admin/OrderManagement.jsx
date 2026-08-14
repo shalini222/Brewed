@@ -42,6 +42,8 @@ export default function OrderManagement({ setPage, setActivePage }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [specialRequests, setSpecialRequests] = useState([]);
   const [newRequest, setNewRequest] = useState("");
+  const [riders, setRiders] = useState([]);
+  const [selectedRider, setSelectedRider] = useState("");
   const lastOrderId = useRef(null);
   const [userNotifications, setUserNotifications] = useState([]);
   const lastUserId = useRef(null);
@@ -188,6 +190,28 @@ export default function OrderManagement({ setPage, setActivePage }) {
 
     setTopProducts(ranked);
   }, [orders]);
+
+
+  useEffect(() => {
+  const loadRiders = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "riders"));
+
+      const activeRiders = snapshot.docs
+        .map((riderDoc) => ({
+          id: riderDoc.id,
+          ...riderDoc.data(),
+        }))
+        .filter((rider) => rider.status === "Active");
+
+      setRiders(activeRiders);
+    } catch (error) {
+      console.error("Error loading riders:", error);
+    }
+  };
+
+  loadRiders();
+}, []);
 
   async function getRewardSettings() {
     const settingsRef = doc(db, "rewardSettings", "default");
@@ -768,32 +792,96 @@ return (
     </button>
   )}
 
- {order.status === "Ready" && (
-  <button
-    onClick={async () => {
-      await updateDoc(doc(db, "orders", order.id), {
-        status: "Assigned to Rider",
-        deliveryPartnerName: "Rahul Kumar",
-        deliveryPartnerPhone: "9876543210",
-        deliveryPartnerMessage: "Your coffee is on the way! ☕",
-        estimatedDeliveryMinutes: 25,
-        trackingUpdatedAt: serverTimestamp(),
-      });
-    }}
+{order.status === "Ready" && (
+  <div
     style={{
       flex: 1,
-      background: "#1565C0",
-      color: "white",
-      border: "none",
-      padding: "14px 20px",
-      borderRadius: 12,
-      cursor: "pointer",
-      fontWeight: 600,
-      fontSize: 15,
+      display: "flex",
+      gap: 10,
+      alignItems: "stretch",
     }}
   >
-    🛵 Assign to Rider
-  </button>
+    <select
+      value={selectedRider}
+      onChange={(e) => setSelectedRider(e.target.value)}
+      style={{
+        flex: 1,
+        padding: "14px 16px",
+        borderRadius: 12,
+        border: "1px solid #D9D0C8",
+        background: "#FFFFFF",
+        color: "#3B1A08",
+        fontSize: 14,
+        fontWeight: 600,
+        outline: "none",
+      }}
+    >
+      <option value="">Select Rider</option>
+
+      {riders.map((rider) => (
+        <option key={rider.id} value={rider.id}>
+          {rider.name}
+          {rider.vehicleNumber
+            ? ` — ${rider.vehicleNumber}`
+            : ""}
+        </option>
+      ))}
+    </select>
+
+    <button
+      disabled={!selectedRider}
+      onClick={async () => {
+        const rider = riders.find(
+          (r) => r.id === selectedRider
+        );
+
+        if (!rider) {
+          alert("Please select a rider.");
+          return;
+        }
+
+        try {
+          await updateDoc(doc(db, "orders", order.id), {
+            status: "Assigned to Rider",
+
+            riderId: rider.id,
+            riderName: rider.name,
+            riderPhone: rider.phone || "",
+            riderEmail: rider.email || "",
+            riderVehicleType: rider.vehicleType || "",
+            riderVehicleNumber: rider.vehicleNumber || "",
+            riderAssignedAt: serverTimestamp(),
+
+            // Keep these for your existing tracking page
+            deliveryPartnerName: rider.name,
+            deliveryPartnerPhone: rider.phone || "",
+            deliveryPartnerMessage:
+              "Your coffee is on the way! ☕",
+            estimatedDeliveryMinutes: 25,
+            trackingUpdatedAt: serverTimestamp(),
+          });
+
+          setSelectedRider("");
+        } catch (error) {
+          console.error("Error assigning rider:", error);
+          alert("Failed to assign rider.");
+        }
+      }}
+      style={{
+        background: selectedRider ? "#1565C0" : "#B8B8B8",
+        color: "white",
+        border: "none",
+        padding: "14px 20px",
+        borderRadius: 12,
+        cursor: selectedRider ? "pointer" : "not-allowed",
+        fontWeight: 600,
+        fontSize: 15,
+        whiteSpace: "nowrap",
+      }}
+    >
+      🛵 Assign
+    </button>
+  </div>
 )}
 
   {order.status === "Assigned to Rider" && (
