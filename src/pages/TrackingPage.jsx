@@ -1081,9 +1081,9 @@ useEffect(() => {
               overflow: "hidden",
             }}
           >
-            {item.img ? (
+            {item.image || item.img ? (
               <img
-                src={item.img}
+                src={item.image || item.img}
                 alt={item.name}
                 style={{
                   width: "100%",
