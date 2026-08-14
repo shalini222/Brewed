@@ -600,7 +600,7 @@ return (
 
        {
           title: "🛵 Rider",
-          page: rideradmin",
+          page: "rideradmin",
         },
 
 
