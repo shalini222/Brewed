@@ -67,6 +67,7 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const [selectedTags, setSelectedTags] = useState([]);
   const [typedReview, setTypedReview] = useState("");
   const [orderCreatedAt, setOrderCreatedAt] = useState(null);
+  const [liveOrder, setLiveOrder] = useState(null);
 
 
 const STATUS_TO_STEP = {
@@ -124,6 +125,11 @@ useEffect(() => {
       const order = snapshot.data();
 
       console.log("🔥 LIVE ORDER UPDATE:", order);
+
+      setLiveOrder({
+  id: snapshot.id,
+  ...order,
+});
       
       setOrderCreatedAt(order.createdAt || null);
 
@@ -1014,36 +1020,47 @@ useEffect(() => {
                   <div style={styles.riderProfile}>
                     <div style={styles.avatar}>🛵</div>
                     <div style={{ flex: 1 }}>
-                      <strong style={{ fontSize: "0.95rem" }}>
-  {orderSnapshot?.deliveryPartnerName || "Delivery Partner"}
-</strong>
+         {liveOrder?.deliveryPartnerName ||
+  orderSnapshot?.deliveryPartnerName ||
+  "Delivery Partner"}
+                      
+                      
                       <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>Brewed Delivery Partner</p>
                     </div>
                   </div>
 
                   <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem" }}>
-                    <a
-  href={
-    orderSnapshot?.deliveryPartnerPhone
-      ? `tel:${orderSnapshot.deliveryPartnerPhone}`
-      : "#"
-  }
-  className="btn-action"
-  style={styles.commsBtn}
->
-  📞 Call
-</a>
-                    <a
-  href={
-    orderSnapshot?.deliveryPartnerPhone
-      ? `sms:${orderSnapshot.deliveryPartnerPhone}`
-      : "#"
-  }
-  className="btn-action"
-  style={styles.commsBtn}
->
-  💬 Text
-</a>
+
+
+ <a
+    href={
+      liveOrder?.deliveryPartnerPhone
+        ? `tel:${liveOrder.deliveryPartnerPhone}`
+        : orderSnapshot?.deliveryPartnerPhone
+        ? `tel:${orderSnapshot.deliveryPartnerPhone}`
+        : "#"
+    }
+    className="btn-action"
+    style={styles.commsBtn}
+  >
+    📞 Call
+  </a>
+ <a
+    href={
+      liveOrder?.deliveryPartnerPhone
+        ? `sms:${liveOrder.deliveryPartnerPhone}`
+        : orderSnapshot?.deliveryPartnerPhone
+        ? `sms:${orderSnapshot.deliveryPartnerPhone}`
+        : "#"
+    }
+    className="btn-action"
+    style={styles.commsBtn}
+  >
+    💬 Text
+  </a>
+
+
+   
                   </div>
 
                   <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, paddingTop: "1rem" }}>
