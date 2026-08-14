@@ -9,7 +9,7 @@ import OrderManagement from "../admin/OrderManagement";
 import LoyaltyManagement from "../admin/LoyaltyManagement";
 import SupportManagement from "../admin/SupportManagement";
 import EmployeeManagement from "../admin/EmployeeManagement";
-import RiderManagement from "./admin/RiderManagement";
+import RiderManagement from "../admin/RiderManagement";
 
 export default function AdminPage({ setPage }) {
   const [activePage, setActivePage] = useState("dashboard");
