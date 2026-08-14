@@ -68,16 +68,24 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const [typedReview, setTypedReview] = useState("");
 
 
-
 const STATUS_TO_STEP = {
   New: 1,
   Confirmed: 1,
+
+  Preparing: 2,
   Brewing: 2,
+  Ready: 2,
+
+  "Assigned to Rider": 3,
   "Out for Delivery": 3,
+
   Delivered: 4,
+
+  Cancelled: 5,
   "Delivery Failed": 5,
   Failed: 5,
 };
+
 
 
 
