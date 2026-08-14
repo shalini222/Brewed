@@ -1014,14 +1014,36 @@ useEffect(() => {
                   <div style={styles.riderProfile}>
                     <div style={styles.avatar}>🛵</div>
                     <div style={{ flex: 1 }}>
-                      <strong style={{ fontSize: "0.95rem" }}>Rahul Kumar</strong>
+                      <strong style={{ fontSize: "0.95rem" }}>
+  {orderSnapshot?.deliveryPartnerName || "Delivery Partner"}
+</strong>
                       <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem", color: THEME.colors.textMuted }}>Brewed Delivery Partner</p>
                     </div>
                   </div>
 
                   <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem" }}>
-                    <a href="tel:#" className="btn-action" style={styles.commsBtn}>📞 Call</a>
-                    <a href="sms:#" className="btn-action" style={styles.commsBtn}>💬 Text</a>
+                    <a
+  href={
+    orderSnapshot?.deliveryPartnerPhone
+      ? `tel:${orderSnapshot.deliveryPartnerPhone}`
+      : "#"
+  }
+  className="btn-action"
+  style={styles.commsBtn}
+>
+  📞 Call
+</a>
+                    <a
+  href={
+    orderSnapshot?.deliveryPartnerPhone
+      ? `sms:${orderSnapshot.deliveryPartnerPhone}`
+      : "#"
+  }
+  className="btn-action"
+  style={styles.commsBtn}
+>
+  💬 Text
+</a>
                   </div>
 
                   <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, paddingTop: "1rem" }}>
