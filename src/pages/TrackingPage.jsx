@@ -383,6 +383,27 @@ useEffect(() => {
           <>
             <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, margin: "0.75rem 0" }} />
             
+          
+            
+            <div style={styles.summarySummary}>
+  <span>Order Time:</span>
+  <span style={{ fontWeight: "600", textAlign: "right" }}>
+    {orderSnapshot?.createdAt?.toDate
+      ? orderSnapshot.createdAt.toDate().toLocaleString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "—"}
+  </span>
+</div>
+            
+            
+            
+            
+            
             <div style={styles.summarySummary}>
               <span>Payment Method:</span>
               <span style={{ fontWeight: "600" }}>{orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online"}</span>
