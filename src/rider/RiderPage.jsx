@@ -1,75 +1,125 @@
 import React, { useEffect, useState } from "react";
 import {
   collection,
-  onSnapshot,
   query,
   where,
+  onSnapshot,
   doc,
   updateDoc,
   serverTimestamp,
+  getDocs,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 import { db, auth } from "../firebase";
 
-export default function RiderPage({setPage, setActivePage}) {
+export default function RiderPage() {
+  const [currentUser, setCurrentUser] = useState(null);
   const [rider, setRider] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const [updatingOrder, setUpdatingOrder] = useState(null);
+  const [error, setError] = useState("");
 
-  // --------------------------------------------------
-  // Get logged-in rider
-  // --------------------------------------------------
+  // =====================================================
+  // FIND LOGGED-IN RIDER
+  // =====================================================
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        setRider(null);
-        setLoading(false);
-        return;
-      }
+    let unsubscribeRider = null;
 
-      // Rider document ID = Firebase Auth UID
-      const riderRef = doc(db, "riders", user.uid);
+    const unsubscribeAuth = onAuthStateChanged(
+      auth,
+      async (user) => {
+        if (!user) {
+          setCurrentUser(null);
+          setRider(null);
+          setLoading(false);
+          return;
+        }
 
-      const unsubscribeRider = onSnapshot(
-        riderRef,
-        (snapshot) => {
-          if (snapshot.exists()) {
-            setRider({
-              id: snapshot.id,
-              ...snapshot.data(),
-            });
-          } else {
-            // Fallback if rider document doesn't exist
-            setRider({
-              id: user.uid,
-              name: user.displayName || "Rider",
-              phone: user.phoneNumber || "",
-            });
+        setCurrentUser(user);
+        setLoading(true);
+        setError("");
+
+        try {
+          /*
+           * Your Rider Management creates random Firestore IDs:
+           *
+           * riders/{randomId}
+           *
+           * So we identify the rider using their email.
+           */
+
+          const ridersQuery = query(
+            collection(db, "riders"),
+            where("email", "==", user.email)
+          );
+
+          const snapshot = await getDocs(ridersQuery);
+
+          if (snapshot.empty) {
+            setError(
+              "No rider profile is linked to this login."
+            );
+            setRider(null);
+            setLoading(false);
+            return;
           }
 
+          const riderDoc = snapshot.docs[0];
+
+          setRider({
+            id: riderDoc.id,
+            ...riderDoc.data(),
+          });
+
           setLoading(false);
-        },
-        (error) => {
-          console.error("Rider listener error:", error);
+
+          /*
+           * Keep rider profile live.
+           */
+          unsubscribeRider = onSnapshot(
+            doc(db, "riders", riderDoc.id),
+            (riderSnapshot) => {
+              if (riderSnapshot.exists()) {
+                setRider({
+                  id: riderSnapshot.id,
+                  ...riderSnapshot.data(),
+                });
+              }
+            }
+          );
+        } catch (err) {
+          console.error("Error finding rider:", err);
+
+          setError(
+            "Unable to load your rider profile."
+          );
+
           setLoading(false);
         }
-      );
+      }
+    );
 
-      return () => unsubscribeRider();
-    });
+    return () => {
+      unsubscribeAuth();
 
-    return () => unsubscribeAuth();
+      if (unsubscribeRider) {
+        unsubscribeRider();
+      }
+    };
   }, []);
 
-  // --------------------------------------------------
-  // Listen for this rider's orders
-  // --------------------------------------------------
+  // =====================================================
+  // LOAD ASSIGNED ORDERS
+  // =====================================================
 
   useEffect(() => {
     if (!rider?.id) return;
+
+    setOrdersLoading(true);
 
     const ordersQuery = query(
       collection(db, "orders"),
@@ -79,7 +129,7 @@ export default function RiderPage({setPage, setActivePage}) {
     const unsubscribe = onSnapshot(
       ordersQuery,
       (snapshot) => {
-        const data = snapshot.docs
+        const riderOrders = snapshot.docs
           .map((orderDoc) => ({
             id: orderDoc.id,
             ...orderDoc.data(),
@@ -95,153 +145,291 @@ export default function RiderPage({setPage, setActivePage}) {
               (a.riderAssignedAt?.seconds || 0)
           );
 
-        setOrders(data);
+        setOrders(riderOrders);
+        setOrdersLoading(false);
       },
-      (error) => {
-        console.error("Rider orders listener error:", error);
+      (err) => {
+        console.error(
+          "Error loading rider orders:",
+          err
+        );
+
+        setOrdersLoading(false);
       }
     );
 
     return () => unsubscribe();
   }, [rider?.id]);
 
-  // --------------------------------------------------
-  // Update delivery status
-  // --------------------------------------------------
+  // =====================================================
+  // UPDATE DELIVERY STATUS
+  // =====================================================
 
-  async function updateDeliveryStatus(order, status) {
+  const updateDeliveryStatus = async (
+    order,
+    newStatus
+  ) => {
     try {
       setUpdatingOrder(order.id);
 
-      await updateDoc(doc(db, "orders", order.id), {
-        status,
+      const orderRef = doc(
+        db,
+        "orders",
+        order.id
+      );
 
-        ...(status === "Out for Delivery"
-          ? {
-              deliveryStartedAt: serverTimestamp(),
-              trackingUpdatedAt: serverTimestamp(),
-            }
-          : {}),
+      const updateData = {
+        status: newStatus,
+        trackingUpdatedAt: serverTimestamp(),
+      };
 
-        ...(status === "Delivered"
-          ? {
-              deliveredAt: serverTimestamp(),
-              trackingUpdatedAt: serverTimestamp(),
-            }
-          : {}),
-      });
-    } catch (error) {
-      console.error("Error updating delivery:", error);
-      alert("Failed to update delivery status.");
+      if (newStatus === "Out for Delivery") {
+        updateData.deliveryStartedAt =
+          serverTimestamp();
+
+        updateData.deliveryPartnerMessage =
+          "Your coffee is on the way! ☕";
+      }
+
+      if (newStatus === "Delivered") {
+        updateData.deliveredAt =
+          serverTimestamp();
+
+        updateData.deliveryPartnerMessage =
+          "Your order has been delivered. Enjoy! ☕";
+      }
+
+      await updateDoc(orderRef, updateData);
+    } catch (err) {
+      console.error(
+        "Error updating delivery status:",
+        err
+      );
+
+      alert(
+        "Failed to update delivery status."
+      );
     } finally {
       setUpdatingOrder(null);
     }
-  }
+  };
 
-  // --------------------------------------------------
-  // Loading
-  // --------------------------------------------------
+  // =====================================================
+  // LOADING
+  // =====================================================
 
   if (loading) {
     return (
       <div style={styles.page}>
-        <div style={styles.centerMessage}>
-          Loading rider dashboard...
+        <div style={styles.center}>
+          <div style={styles.loadingIcon}>
+            🛵
+          </div>
+
+          <p style={styles.muted}>
+            Loading rider dashboard...
+          </p>
         </div>
       </div>
     );
   }
 
-  // --------------------------------------------------
-  // Not logged in
-  // --------------------------------------------------
+  // =====================================================
+  // NOT LOGGED IN
+  // =====================================================
+
+  if (!currentUser) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.center}>
+          <div style={styles.emptyIcon}>
+            🔐
+          </div>
+
+          <h2 style={styles.emptyTitle}>
+            Rider Login Required
+          </h2>
+
+          <p style={styles.muted}>
+            Please log in to access your deliveries.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // =====================================================
+  // RIDER PROFILE NOT FOUND
+  // =====================================================
 
   if (!rider) {
     return (
       <div style={styles.page}>
-        <div style={styles.centerMessage}>
-          Please log in to access the rider dashboard.
+        <div style={styles.center}>
+          <div style={styles.emptyIcon}>
+            ⚠️
+          </div>
+
+          <h2 style={styles.emptyTitle}>
+            Rider Profile Not Found
+          </h2>
+
+          <p style={styles.muted}>
+            {error ||
+              "Your account is not linked to a rider profile."}
+          </p>
+
+          <p style={styles.emailText}>
+            Logged in as: {currentUser.email}
+          </p>
         </div>
       </div>
     );
   }
 
-  // --------------------------------------------------
-  // Dashboard
-  // --------------------------------------------------
+  // =====================================================
+  // INACTIVE RIDER
+  // =====================================================
+
+  if (rider.status !== "Active") {
+    return (
+      <div style={styles.page}>
+        <div style={styles.center}>
+          <div style={styles.emptyIcon}>
+            ⏸️
+          </div>
+
+          <h2 style={styles.emptyTitle}>
+            Account Inactive
+          </h2>
+
+          <p style={styles.muted}>
+            Your rider account is currently inactive.
+          </p>
+
+          <p style={styles.emailText}>
+            Please contact the café administrator.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // =====================================================
+  // DASHBOARD
+  // =====================================================
 
   return (
     <div style={styles.page}>
       <div style={styles.container}>
 
         {/* HEADER */}
-        <div style={styles.header}>
+
+        <header style={styles.header}>
           <div>
-            <p style={styles.eyebrow}>RIDER DASHBOARD</p>
+            <p style={styles.eyebrow}>
+              RIDER DASHBOARD
+            </p>
 
             <h1 style={styles.title}>
               Hello, {rider.name || "Rider"} 👋
             </h1>
 
             <p style={styles.subtitle}>
-              Your assigned deliveries
+              Manage your assigned deliveries.
             </p>
           </div>
 
-          <div style={styles.statusBadge}>
-            <span style={styles.statusDot} />
+          <div style={styles.activeBadge}>
+            <span style={styles.activeDot} />
             Active
+          </div>
+        </header>
+
+        {/* RIDER INFO */}
+
+        <div style={styles.riderCard}>
+          <div style={styles.riderIcon}>
+            🛵
+          </div>
+
+          <div style={{ flex: 1 }}>
+            <h3 style={styles.riderName}>
+              {rider.name}
+            </h3>
+
+            <p style={styles.riderDetails}>
+              {rider.vehicleType || "Vehicle"}
+              {rider.vehicleNumber
+                ? ` • ${rider.vehicleNumber}`
+                : ""}
+            </p>
+          </div>
+
+          <div style={styles.deliveryCount}>
+            <strong>
+              {orders.length}
+            </strong>
+
+            <span>
+              Active
+            </span>
           </div>
         </div>
 
-        {/* SUMMARY */}
-        <div style={styles.summaryCard}>
+        {/* DELIVERY SECTION */}
+
+        <div style={styles.sectionHeader}>
           <div>
-            <p style={styles.summaryLabel}>
-              ACTIVE DELIVERIES
+            <p style={styles.sectionEyebrow}>
+              TODAY
             </p>
 
-            <h2 style={styles.summaryNumber}>
-              {orders.length}
+            <h2 style={styles.sectionTitle}>
+              My Deliveries
             </h2>
           </div>
 
-          <div style={styles.summaryIcon}>
-            🛵
-          </div>
+          <span style={styles.countBadge}>
+            {orders.length}
+          </span>
         </div>
 
-        {/* ORDERS */}
-        {orders.length === 0 ? (
+        {ordersLoading ? (
+          <div style={styles.emptyCard}>
+            <p style={styles.muted}>
+              Loading deliveries...
+            </p>
+          </div>
+        ) : orders.length === 0 ? (
           <div style={styles.emptyCard}>
             <div style={styles.emptyIcon}>
-              🛵
+              ☕
             </div>
 
             <h2 style={styles.emptyTitle}>
               No deliveries assigned
             </h2>
 
-            <p style={styles.emptyText}>
-              New deliveries will appear here when they are assigned to you.
+            <p style={styles.muted}>
+              New deliveries will appear here
+              when they are assigned to you.
             </p>
           </div>
         ) : (
-          <div>
-            <h2 style={styles.sectionTitle}>
-              Deliveries
-            </h2>
-
-            <div style={styles.orders}>
-              {orders.map((order) => (
-                <DeliveryCard
-                  key={order.id}
-                  order={order}
-                  updating={updatingOrder === order.id}
-                  onUpdateStatus={updateDeliveryStatus}
-                />
-              ))}
-            </div>
+          <div style={styles.orderList}>
+            {orders.map((order) => (
+              <DeliveryCard
+                key={order.id}
+                order={order}
+                updating={
+                  updatingOrder === order.id
+                }
+                onUpdateStatus={
+                  updateDeliveryStatus
+                }
+              />
+            ))}
           </div>
         )}
       </div>
@@ -250,9 +438,9 @@ export default function RiderPage({setPage, setActivePage}) {
 }
 
 
-// ==================================================
+// =====================================================
 // DELIVERY CARD
-// ==================================================
+// =====================================================
 
 function DeliveryCard({
   order,
@@ -266,6 +454,7 @@ function DeliveryCard({
     <div style={styles.orderCard}>
 
       {/* ORDER HEADER */}
+
       <div style={styles.orderHeader}>
         <div>
           <p style={styles.orderLabel}>
@@ -275,11 +464,19 @@ function DeliveryCard({
           <h3 style={styles.orderId}>
             #{order.id.slice(0, 8)}
           </h3>
+
+          <p style={styles.orderTime}>
+            {order.createdAt?.toDate
+              ? order.createdAt
+                  .toDate()
+                  .toLocaleString()
+              : "Recently placed"}
+          </p>
         </div>
 
         <span
           style={{
-            ...styles.orderStatus,
+            ...styles.statusBadge,
             background: isOutForDelivery
               ? "#E3F2FD"
               : "#FFF3CD",
@@ -293,9 +490,11 @@ function DeliveryCard({
       </div>
 
       {/* CUSTOMER */}
+
       <div style={styles.customerBox}>
         <p style={styles.customerName}>
-          👤 {order.customer?.name || "Customer"}
+          👤 {order.customer?.name ||
+            "Customer"}
         </p>
 
         {order.customer?.phone && (
@@ -305,97 +504,179 @@ function DeliveryCard({
         )}
 
         {order.customer?.address && (
-          <p style={styles.customerDetail}>
+          <p style={styles.address}>
             📍 {order.customer.address}
           </p>
         )}
 
         {order.customer?.instructions && (
-          <p style={styles.instructions}>
-            💬 {order.customer.instructions}
-          </p>
+          <div style={styles.instructions}>
+            <strong>
+              Customer note
+            </strong>
+
+            <p>
+              {order.customer.instructions}
+            </p>
+          </div>
         )}
       </div>
 
       {/* ITEMS */}
+
       <h4 style={styles.itemsTitle}>
         Order Items
       </h4>
 
       <div style={styles.items}>
-        {order.items?.map((item, index) => {
-          const quantity =
-            item.qty || item.quantity || 1;
+        {order.items?.map(
+          (item, index) => {
+            const quantity =
+              item.qty ||
+              item.quantity ||
+              1;
 
-          return (
-            <div
-              key={index}
-              style={styles.item}
-            >
-              <div style={{ flex: 1 }}>
-                <p style={styles.itemName}>
-                  {quantity} × {item.name}
-                </p>
+            const itemTotal =
+              quantity *
+              Number(item.price || 0);
 
-                <p style={styles.itemDetails}>
-                  {item.size && `Size: ${item.size}`}
-                  {item.milk && ` • ${item.milk}`}
-                  {item.temperature &&
-                    ` • ${item.temperature}`}
-                </p>
+            return (
+              <div
+                key={index}
+                style={styles.item}
+              >
+                <div
+                  style={{
+                    flex: 1,
+                  }}
+                >
+                  <p
+                    style={
+                      styles.itemName
+                    }
+                  >
+                    {quantity} ×{" "}
+                    {item.name}
+                  </p>
+
+                  <div
+                    style={
+                      styles.itemOptions
+                    }
+                  >
+                    {item.size && (
+                      <span>
+                        Size: {item.size}
+                      </span>
+                    )}
+
+                    {item.milk && (
+                      <span>
+                        Milk: {item.milk}
+                      </span>
+                    )}
+
+                    {item.temperature &&
+                      typeof item.temperature ===
+                        "string" && (
+                        <span>
+                          {
+                            item.temperature
+                          }
+                        </span>
+                      )}
+
+                    {item.sweetness && (
+                      <span>
+                        Sweetness:{" "}
+                        {typeof item.sweetness ===
+                        "string"
+                          ? item.sweetness
+                          : item.sweetness
+                              .name}
+                      </span>
+                    )}
+
+                    {Array.isArray(
+                      item.extras
+                    ) &&
+                      item.extras.length >
+                        0 && (
+                        <span>
+                          Extras:{" "}
+                          {item.extras
+                            .map(
+                              (
+                                extra
+                              ) =>
+                                typeof extra ===
+                                "string"
+                                  ? extra
+                                  : extra.name
+                            )
+                            .join(
+                              ", "
+                            )}
+                        </span>
+                      )}
+                  </div>
+                </div>
+
+                <strong
+                  style={
+                    styles.itemPrice
+                  }
+                >
+                  ₹{itemTotal}
+                </strong>
               </div>
-
-              <span style={styles.itemPrice}>
-                ₹{quantity * Number(item.price || 0)}
-              </span>
-            </div>
-          );
-        })}
+            );
+          }
+        )}
       </div>
 
       {/* PAYMENT */}
+
       <div style={styles.paymentBox}>
         <div>
-          <span style={styles.paymentLabel}>
-            Payment
+          <span
+            style={
+              styles.paymentLabel
+            }
+          >
+            PAYMENT
           </span>
 
           <strong>
-            {order.paymentMethod || "N/A"}
+            {order.paymentMethod ||
+              "N/A"}
           </strong>
         </div>
 
-        <div style={{ textAlign: "right" }}>
-          <span style={styles.paymentLabel}>
-            Total
+        <div
+          style={{
+            textAlign: "right",
+          }}
+        >
+          <span
+            style={
+              styles.paymentLabel
+            }
+          >
+            TOTAL
           </span>
 
-          <strong style={styles.total}>
+          <strong
+            style={styles.total}
+          >
             ₹{order.total || 0}
           </strong>
         </div>
       </div>
 
       {/* ACTION */}
-      {!isOutForDelivery ? (
-        <button
-          disabled={updating}
-          onClick={() =>
-            onUpdateStatus(
-              order,
-              "Out for Delivery"
-            )
-          }
-          style={{
-            ...styles.primaryButton,
-            opacity: updating ? 0.6 : 1,
-          }}
-        >
-          {updating
-            ? "Starting..."
-            : "🛵 Start Delivery"}
-        </button>
-      ) : (
+
+      {isOutForDelivery ? (
         <button
           disabled={updating}
           onClick={() =>
@@ -406,12 +687,34 @@ function DeliveryCard({
           }
           style={{
             ...styles.deliveredButton,
-            opacity: updating ? 0.6 : 1,
+            opacity: updating
+              ? 0.6
+              : 1,
           }}
         >
           {updating
             ? "Updating..."
             : "✅ Mark Delivered"}
+        </button>
+      ) : (
+        <button
+          disabled={updating}
+          onClick={() =>
+            onUpdateStatus(
+              order,
+              "Out for Delivery"
+            )
+          }
+          style={{
+            ...styles.startButton,
+            opacity: updating
+              ? 0.6
+              : 1,
+          }}
+        >
+          {updating
+            ? "Starting..."
+            : "🛵 Start Delivery"}
         </button>
       )}
     </div>
@@ -419,9 +722,9 @@ function DeliveryCard({
 }
 
 
-// ==================================================
+// =====================================================
 // STYLES
-// ==================================================
+// =====================================================
 
 const styles = {
   page: {
@@ -436,32 +739,66 @@ const styles = {
     margin: "0 auto",
   },
 
-  centerMessage: {
+  center: {
+    maxWidth: 500,
+    margin: "0 auto",
     textAlign: "center",
-    padding: 60,
+    padding: "80px 20px",
+  },
+
+  loadingIcon: {
+    fontSize: 42,
+    marginBottom: 15,
+  },
+
+  emptyIcon: {
+    fontSize: 44,
+    marginBottom: 12,
+  },
+
+  emptyTitle: {
+    fontFamily:
+      "Playfair Display, serif",
+    fontSize: 24,
+    margin:
+      "0 0 10px",
+  },
+
+  muted: {
     color: "#70645C",
-    fontSize: 16,
+    fontSize: 14,
+    lineHeight: 1.6,
+  },
+
+  emailText: {
+    color: "#8C7B70",
+    fontSize: 13,
+    marginTop: 15,
   },
 
   header: {
     display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    justifyContent:
+      "space-between",
+    alignItems:
+      "flex-start",
     gap: 20,
-    marginBottom: 28,
+    marginBottom: 25,
   },
 
   eyebrow: {
     margin: 0,
     color: "#9E8E85",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 700,
-    letterSpacing: "1px",
+    letterSpacing: "1.2px",
   },
 
   title: {
-    margin: "6px 0 4px",
-    fontFamily: "Playfair Display",
+    margin:
+      "6px 0 5px",
+    fontFamily:
+      "Playfair Display, serif",
     fontSize: 30,
     color: "#3B1A08",
   },
@@ -472,98 +809,156 @@ const styles = {
     fontSize: 14,
   },
 
-  statusBadge: {
+  activeBadge: {
     display: "flex",
     alignItems: "center",
     gap: 7,
     background: "#E8F5E9",
     color: "#2E7D32",
-    padding: "8px 14px",
+    padding:
+      "8px 14px",
     borderRadius: 999,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 700,
   },
 
-  statusDot: {
+  activeDot: {
     width: 8,
     height: 8,
     borderRadius: "50%",
     background: "#2E7D32",
   },
 
-  summaryCard: {
+  riderCard: {
     background: "#3B1A08",
-    color: "white",
+    color: "#fff",
     borderRadius: 22,
-    padding: 24,
-    marginBottom: 32,
+    padding: 22,
     display: "flex",
-    justifyContent: "space-between",
     alignItems: "center",
+    gap: 15,
+    marginBottom: 32,
   },
 
-  summaryLabel: {
+  riderIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    background:
+      "rgba(255,255,255,0.1)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 27,
+  },
+
+  riderName: {
     margin: 0,
-    fontSize: 11,
-    letterSpacing: "1px",
+    fontSize: 17,
+  },
+
+  riderDetails: {
+    margin:
+      "5px 0 0",
+    fontSize: 13,
     opacity: 0.65,
-    fontWeight: 700,
   },
 
-  summaryNumber: {
-    margin: "4px 0 0",
-    fontSize: 32,
+  deliveryCount: {
+    textAlign: "right",
+    display: "flex",
+    flexDirection: "column",
   },
 
-  summaryIcon: {
-    fontSize: 38,
-  },
-
-  sectionTitle: {
-    fontFamily: "Playfair Display",
-    fontSize: 22,
+  sectionHeader: {
+    display: "flex",
+    justifyContent:
+      "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
 
-  orders: {
+  sectionEyebrow: {
+    margin: 0,
+    color: "#9E8E85",
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: "1px",
+  },
+
+  sectionTitle: {
+    margin:
+      "4px 0 0",
+    fontFamily:
+      "Playfair Display, serif",
+    fontSize: 23,
+  },
+
+  countBadge: {
+    background: "#3B1A08",
+    color: "#fff",
+    minWidth: 30,
+    height: 30,
+    borderRadius: 999,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 13,
+    fontWeight: 700,
+  },
+
+  orderList: {
     display: "flex",
     flexDirection: "column",
     gap: 20,
   },
 
   orderCard: {
-    background: "#FFFFFF",
+    background: "#fff",
     borderRadius: 24,
     padding: 24,
-    border: "1px solid #EEE6DD",
-    boxShadow: "0 8px 24px rgba(0,0,0,.05)",
+    border:
+      "1px solid #EEE6DD",
+    boxShadow:
+      "0 8px 24px rgba(0,0,0,.05)",
   },
 
   orderHeader: {
     display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    justifyContent:
+      "space-between",
+    alignItems:
+      "flex-start",
     marginBottom: 20,
   },
 
   orderLabel: {
     margin: 0,
-    fontSize: 11,
     color: "#9E8E85",
+    fontSize: 10,
     fontWeight: 700,
     letterSpacing: "1px",
   },
 
   orderId: {
-    margin: "4px 0 0",
-    fontFamily: "Playfair Display",
+    margin:
+      "4px 0 3px",
+    fontFamily:
+      "Playfair Display, serif",
     fontSize: 20,
   },
 
-  orderStatus: {
-    padding: "7px 12px",
+  orderTime: {
+    margin: 0,
+    color: "#9E8E85",
+    fontSize: 11,
+  },
+
+  statusBadge: {
+    padding:
+      "7px 12px",
     borderRadius: 999,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 700,
   },
 
@@ -572,31 +967,51 @@ const styles = {
     borderRadius: 16,
     padding: 18,
     marginBottom: 22,
-    border: "1px solid #F2ECE5",
+    border:
+      "1px solid #F2ECE5",
   },
 
   customerName: {
-    margin: "0 0 8px",
+    margin:
+      "0 0 9px",
     fontWeight: 700,
     fontSize: 16,
   },
 
   customerDetail: {
-    margin: "5px 0",
+    margin:
+      "5px 0",
     color: "#5C4F47",
     fontSize: 14,
   },
 
+  address: {
+    margin:
+      "8px 0 0",
+    color: "#3B1A08",
+    fontSize: 14,
+    lineHeight: 1.5,
+  },
+
   instructions: {
-    margin: "10px 0 0",
+    marginTop: 13,
+    paddingTop: 12,
+    borderTop:
+      "1px solid #E8DED5",
     color: "#8C7B70",
-    fontSize: 13,
-    fontStyle: "italic",
+    fontSize: 12,
+  },
+
+  instructions p: {
+    margin:
+      "5px 0 0",
   },
 
   itemsTitle: {
-    margin: "0 0 12px",
-    fontFamily: "Playfair Display",
+    margin:
+      "0 0 10px",
+    fontFamily:
+      "Playfair Display, serif",
     fontSize: 16,
   },
 
@@ -609,8 +1024,10 @@ const styles = {
   item: {
     display: "flex",
     gap: 12,
-    padding: "12px 0",
-    borderBottom: "1px solid #F2ECE5",
+    padding:
+      "12px 0",
+    borderBottom:
+      "1px solid #F2ECE5",
   },
 
   itemName: {
@@ -619,15 +1036,18 @@ const styles = {
     fontSize: 14,
   },
 
-  itemDetails: {
-    margin: "4px 0 0",
+  itemOptions: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 5,
+    marginTop: 5,
     color: "#8C7B70",
-    fontSize: 12,
+    fontSize: 11,
   },
 
   itemPrice: {
-    fontWeight: 600,
     fontSize: 14,
+    color: "#3B1A08",
   },
 
   paymentBox: {
@@ -635,27 +1055,30 @@ const styles = {
     borderRadius: 14,
     padding: 16,
     display: "flex",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     marginBottom: 18,
   },
 
   paymentLabel: {
     display: "block",
     color: "#8C7B70",
-    fontSize: 11,
+    fontSize: 10,
     marginBottom: 4,
+    letterSpacing: "0.5px",
   },
 
   total: {
     fontSize: 18,
   },
 
-  primaryButton: {
+  startButton: {
     width: "100%",
     background: "#1565C0",
-    color: "white",
+    color: "#fff",
     border: "none",
-    padding: "15px 20px",
+    padding:
+      "15px 20px",
     borderRadius: 13,
     fontWeight: 700,
     fontSize: 15,
@@ -665,9 +1088,10 @@ const styles = {
   deliveredButton: {
     width: "100%",
     background: "#27AE60",
-    color: "white",
+    color: "#fff",
     border: "none",
-    padding: "15px 20px",
+    padding:
+      "15px 20px",
     borderRadius: 13,
     fontWeight: 700,
     fontSize: 15,
@@ -675,28 +1099,12 @@ const styles = {
   },
 
   emptyCard: {
-    background: "#FFFFFF",
+    background: "#fff",
     borderRadius: 24,
-    padding: "50px 25px",
+    padding:
+      "55px 25px",
     textAlign: "center",
-    border: "1px solid #EEE6DD",
-  },
-
-  emptyIcon: {
-    fontSize: 42,
-    marginBottom: 12,
-  },
-
-  emptyTitle: {
-    fontFamily: "Playfair Display",
-    fontSize: 22,
-    margin: "0 0 8px",
-  },
-
-  emptyText: {
-    margin: 0,
-    color: "#70645C",
-    fontSize: 14,
-    lineHeight: 1.6,
+    border:
+      "1px solid #EEE6DD",
   },
 };
