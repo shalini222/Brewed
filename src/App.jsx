@@ -31,6 +31,8 @@ import WalletPage from "./pages/WalletPage";
 import DeliveryAdminPage from "./admin/DeliveryAdminPage";
 import SupportPage from "./pages/SupportPage";
 
+import RiderPage from "./rider/RiderPage";
+
 
 
 
@@ -75,6 +77,7 @@ export default function App() {
     "settingsAdmin",
     "address",
     "wallet",
+    "rider"
     
     
   ];
@@ -251,7 +254,9 @@ export default function App() {
 <WalletPage setPage={setPage}/>
 )}
           
-          
+ {page === "rider" && (
+  <RiderPage setPage={setPage} />
+)}         
           
           <Footer />
         </AuthProvider>
