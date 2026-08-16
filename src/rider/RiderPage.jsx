@@ -21,6 +21,7 @@ export default function RiderPage({setPage, setActivePage}) {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [updatingOrder, setUpdatingOrder] = useState(null);
   const [error, setError] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
 
   // =====================================================
   // FIND LOGGED-IN RIDER
@@ -44,14 +45,6 @@ export default function RiderPage({setPage, setActivePage}) {
         setError("");
 
         try {
-          /*
-           * Your Rider Management creates random Firestore IDs:
-           *
-           * riders/{randomId}
-           *
-           * So we identify the rider using their email.
-           */
-
           const ridersQuery = query(
             collection(db, "riders"),
             where("email", "==", user.email)
@@ -77,9 +70,6 @@ export default function RiderPage({setPage, setActivePage}) {
 
           setLoading(false);
 
-          /*
-           * Keep rider profile live.
-           */
           unsubscribeRider = onSnapshot(
             doc(db, "riders", riderDoc.id),
             (riderSnapshot) => {
@@ -306,18 +296,15 @@ export default function RiderPage({setPage, setActivePage}) {
     );
   }
 
-
-
   const activeOrders = orders.filter(
-  (order) =>
-    order.status === "Assigned to Rider" ||
-    order.status === "Out for Delivery"
-);
-
+    (order) =>
+      order.status === "Assigned to Rider" ||
+      order.status === "Out for Delivery"
+  );
 
   const deliveredOrders = orders.filter(
-  (order) => order.status === "Delivered"
-);
+    (order) => order.status === "Delivered"
+  );
 
   // =====================================================
   // DASHBOARD
@@ -371,115 +358,141 @@ export default function RiderPage({setPage, setActivePage}) {
           </div>
 
           <div style={styles.deliveryCount}>
-            <strong>
-              {activeOrders.length}
-            </strong>
+            <strong>{activeOrders.length}</strong>
 
-            <span>
-              Active
-               </span>
-               <small>
-    {deliveredOrders.length} Delivered
-  </small>
-           
+            <span>Active</span>
+
+            {deliveredOrders.length > 0 && (
+              <button
+                onClick={() => setShowHistory(true)}
+                style={styles.historyButton}
+              >
+                View History
+              </button>
+            )}
           </div>
         </div>
 
         {/* DELIVERY SECTION */}
-{/* DELIVERY SECTION */}
 
-<div style={styles.sectionHeader}>
-  <div>
-    <p style={styles.sectionEyebrow}>
-      TODAY
-    </p>
+        <div style={styles.sectionHeader}>
+          <div>
+            <p style={styles.sectionEyebrow}>
+              TODAY
+            </p>
 
-    <h2 style={styles.sectionTitle}>
-      My Deliveries
-    </h2>
-  </div>
+            <h2 style={styles.sectionTitle}>
+              My Deliveries
+            </h2>
+          </div>
 
-  <span style={styles.countBadge}>
-    {activeOrders.length}
-  </span>
-</div>
+          <span style={styles.countBadge}>
+            {activeOrders.length}
+          </span>
+        </div>
 
-{/* ACTIVE DELIVERIES */}
+        {/* ACTIVE DELIVERIES */}
 
-{ordersLoading ? (
-  <div style={styles.emptyCard}>
-    <p style={styles.muted}>
-      Loading deliveries...
-    </p>
-  </div>
-) : activeOrders.length === 0 ? (
-  <div style={styles.emptyCard}>
-    <div style={styles.emptyIcon}>
-      ☕
-    </div>
+        {ordersLoading ? (
+          <div style={styles.emptyCard}>
+            <p style={styles.muted}>
+              Loading deliveries...
+            </p>
+          </div>
+        ) : activeOrders.length === 0 ? (
+          <div style={styles.emptyCard}>
+            <div style={styles.emptyIcon}>
+              ☕
+            </div>
 
-    <h2 style={styles.emptyTitle}>
-      No deliveries assigned
-    </h2>
+            <h2 style={styles.emptyTitle}>
+              No deliveries assigned
+            </h2>
 
-    <p style={styles.muted}>
-      New deliveries will appear here
-      when they are assigned to you.
-    </p>
-  </div>
-) : (
-  <div style={styles.orderList}>
-    {activeOrders.map((order) => (
-      <DeliveryCard
-        key={order.id}
-        order={order}
-        updating={updatingOrder === order.id}
-        onUpdateStatus={updateDeliveryStatus}
-      />
-    ))}
-  </div>
-)}
+            <p style={styles.muted}>
+              New deliveries will appear here
+              when they are assigned to you.
+            </p>
+          </div>
+        ) : (
+          <div style={styles.orderList}>
+            {activeOrders.map((order) => (
+              <DeliveryCard
+                key={order.id}
+                order={order}
+                updating={updatingOrder === order.id}
+                onUpdateStatus={updateDeliveryStatus}
+              />
+            ))}
+          </div>
+        )}
 
-{/* DELIVERY HISTORY */}
+        {/* DELIVERY HISTORY DRAWER */}
 
-{deliveredOrders.length > 0 && (
-  <div style={{ marginTop: "40px" }}>
+        {showHistory && (
+          <>
+            {/* BACKDROP */}
+            <div
+              onClick={() => setShowHistory(false)}
+              style={styles.historyBackdrop}
+            />
 
-    <div style={styles.sectionHeader}>
-      <div>
-        <p style={styles.sectionEyebrow}>
-          COMPLETED
-        </p>
+            {/* DRAWER */}
+            <div style={styles.historyDrawer}>
 
-        <h2 style={styles.sectionTitle}>
-          Delivery History
-        </h2>
-      </div>
+              <div style={styles.historyHeader}>
+                <div>
+                  <p style={styles.sectionEyebrow}>
+                    COMPLETED
+                  </p>
 
-      <span style={styles.countBadge}>
-        {deliveredOrders.length}
-      </span>
-    </div>
+                  <h2 style={styles.sectionTitle}>
+                    Delivery History
+                  </h2>
+                </div>
 
-    <div style={styles.orderList}>
-      {deliveredOrders.map((order) => (
-        <DeliveryCard
-          key={order.id}
-          order={order}
-          updating={false}
-          onUpdateStatus={updateDeliveryStatus}
-        />
-      ))}
-    </div>
+                <button
+                  onClick={() => setShowHistory(false)}
+                  style={styles.closeHistoryButton}
+                >
+                  ×
+                </button>
+              </div>
 
-  </div>
-)}
-   
+              <p style={styles.historySubtitle}>
+                Your completed deliveries
+              </p>
+
+              <div style={styles.historyList}>
+                {deliveredOrders.length === 0 ? (
+                  <div style={styles.historyEmpty}>
+                    <div style={styles.emptyIcon}>
+                      ☕
+                    </div>
+
+                    <p style={styles.muted}>
+                      No completed deliveries yet.
+                    </p>
+                  </div>
+                ) : (
+                  deliveredOrders.map((order) => (
+                    <DeliveryCard
+                      key={order.id}
+                      order={order}
+                      updating={false}
+                      onUpdateStatus={updateDeliveryStatus}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
       </div>
     </div>
   );
 }
-
 
 // =====================================================
 // DELIVERY CARD
@@ -719,7 +732,21 @@ function DeliveryCard({
 
       {/* ACTION */}
 
-      {isOutForDelivery ? (
+      {order.status === "Delivered" ? (
+        <div
+          style={{
+            padding: "12px",
+            textAlign: "center",
+            background: "#E8F4EA",
+            color: "#397044",
+            borderRadius: "10px",
+            fontWeight: 600,
+            fontSize: "14px",
+          }}
+        >
+          ✅ Delivered
+        </div>
+      ) : isOutForDelivery ? (
         <button
           disabled={updating}
           onClick={() =>
@@ -763,6 +790,7 @@ function DeliveryCard({
     </div>
   );
 }
+
 
 
 // =====================================================
@@ -1045,8 +1073,6 @@ const styles = {
     fontSize: 12,
   },
 
-
-
   itemsTitle: {
     margin:
       "0 0 10px",
@@ -1147,4 +1173,76 @@ const styles = {
     border:
       "1px solid #EEE6DD",
   },
+
+  // Newly Added History Styles
+  historyButton: {
+    marginTop: "8px",
+    border: "none",
+    background: "transparent",
+    color: "#8A5A32",
+    fontSize: "12px",
+    fontWeight: 600,
+    cursor: "pointer",
+    padding: 0,
+  },
+
+  historyBackdrop: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.28)",
+    zIndex: 9998,
+  },
+
+  historyDrawer: {
+    position: "fixed",
+    top: 0,
+    right: 0,
+    width: "min(460px, 92vw)",
+    height: "100vh",
+    background: "#FDFAF5",
+    zIndex: 9999,
+    boxShadow: "-10px 0 40px rgba(0,0,0,0.15)",
+    padding: "28px",
+    overflowY: "auto",
+  },
+
+  historyHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingBottom: "18px",
+    borderBottom: "1px solid #E8E0D9",
+  },
+
+  historySubtitle: {
+    color: "#8A7D73",
+    fontSize: "14px",
+    margin: "14px 0 24px",
+  },
+
+  closeHistoryButton: {
+    width: "38px",
+    height: "38px",
+    borderRadius: "50%",
+    border: "1px solid #E1D8D0",
+    background: "#fff",
+    color: "#3B302A",
+    fontSize: "24px",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  historyList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "16px",
+  },
+
+  historyEmpty: {
+    textAlign: "center",
+    padding: "60px 20px",
+  },
 };
+
