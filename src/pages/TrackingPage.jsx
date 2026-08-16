@@ -63,6 +63,9 @@ export default function TrackingPage({ setPage, orderSnapshot }) {
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1100);
   const [copied, setCopied] = useState(false);
   const [selectedTip, setSelectedTip] = useState(null);
+  const [pendingTip, setPendingTip] = useState(null);
+const [showTipModal, setShowTipModal] = useState(false);
+const [tipConfirmed, setTipConfirmed] = useState(false);
   const [addingItemId, setAddingItemId] = useState(null);
   const [showPairMenuOverlay, setShowPairMenuOverlay] = useState(false);
   const [partnerMessage, setPartnerMessage] = useState("");
@@ -223,12 +226,20 @@ const handleTipSelection = async (amount) => {
     });
 
     setSelectedTip(newTip || null);
+
+    setShowTipModal(false);
+    setPendingTip(null);
+    setTipConfirmed(true);
+
+    setTimeout(() => {
+      setTipConfirmed(false);
+    }, 2500);
+
   } catch (error) {
     console.error("Failed to update tip:", error);
     alert("Unable to update tip. Please try again.");
   }
 };
-
 
 
   
@@ -839,6 +850,96 @@ const handleTipSelection = async (amount) => {
         </div>
       )}
 
+
+{showTipModal && (
+  <div style={styles.modalOverlay}>
+    <div style={styles.modalContent}>
+      <button
+        style={styles.modalCloseBtn}
+        onClick={() => {
+          setShowTipModal(false);
+          setPendingTip(null);
+        }}
+      >
+        ✕
+      </button>
+
+      <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>
+        🛵
+      </div>
+
+      <h2 style={styles.modalTitle}>
+        Thank Your Delivery Partner
+      </h2>
+
+      <p style={styles.modalText}>
+        You're about to add a ₹{pendingTip} tip to your delivery partner.
+      </p>
+
+      <p
+        style={{
+          ...styles.modalText,
+          fontSize: "0.8rem",
+          color: THEME.colors.textMuted,
+          marginTop: "0.5rem",
+        }}
+      >
+        This tip is separate from your order total.
+      </p>
+
+      <div
+        style={{
+          display: "flex",
+          gap: "0.75rem",
+          marginTop: "1.5rem",
+        }}
+      >
+        <button
+          onClick={() => {
+            setShowTipModal(false);
+            setPendingTip(null);
+          }}
+          style={styles.modalCancelActionBtn}
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={() => handleTipSelection(pendingTip)}
+          style={styles.modalSubmitActionBtn}
+        >
+          Confirm ₹{pendingTip}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+{tipConfirmed && (
+  <div style={styles.modalOverlay}>
+    <div style={styles.modalContent}>
+      <div style={{ fontSize: "2.8rem", marginBottom: "0.75rem" }}>
+        ☕
+      </div>
+
+      <h2 style={styles.modalTitle}>
+        Thank You!
+      </h2>
+
+      <p style={styles.modalText}>
+        Your ₹{selectedTip} tip has been added for your delivery partner.
+      </p>
+    </div>
+  </div>
+)}
+      
+
+
+
+
+      
+
       {/* FEEDBACK MODAL */}
       {showFeedbackModal && (
         <div style={styles.modalOverlay}>
@@ -1171,7 +1272,10 @@ const handleTipSelection = async (amount) => {
                       {[20, 30, 50].map((amount) => (
                         <button
                           key={amount}
-                          onClick={() => handleTipSelection(amount)}
+                          onClick={() => {
+  setPendingTip(amount);
+  setShowTipModal(true);
+}}
                           className={`tip-pill ${selectedTip === amount ? "active" : ""}`}
                         >
                           ₹{amount}
