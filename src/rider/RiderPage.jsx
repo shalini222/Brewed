@@ -116,50 +116,41 @@ export default function RiderPage({setPage, setActivePage}) {
   // LOAD ASSIGNED ORDERS
   // =====================================================
 
-  useEffect(() => {
-    if (!rider?.id) return;
+ useEffect(() => {
+  if (!rider?.id) return;
 
-    setOrdersLoading(true);
+  setOrdersLoading(true);
 
-    const ordersQuery = query(
-      collection(db, "orders"),
-      where("riderId", "==", rider.id)
-    );
+  const ordersQuery = query(
+    collection(db, "orders"),
+    where("riderId", "==", rider.id)
+  );
 
-    const unsubscribe = onSnapshot(
-      ordersQuery,
-      (snapshot) => {
-        const riderOrders = snapshot.docs
-          .map((orderDoc) => ({
-            id: orderDoc.id,
-            ...orderDoc.data(),
-          }))
-          .filter(
-            (order) =>
-              order.status === "Assigned to Rider" ||
-              order.status === "Out for Delivery"
-          )
-          .sort(
-            (a, b) =>
-              (b.riderAssignedAt?.seconds || 0) -
-              (a.riderAssignedAt?.seconds || 0)
-          );
-
-        setOrders(riderOrders);
-        setOrdersLoading(false);
-      },
-      (err) => {
-        console.error(
-          "Error loading rider orders:",
-          err
+  const unsubscribe = onSnapshot(
+    ordersQuery,
+    (snapshot) => {
+      const riderOrders = snapshot.docs
+        .map((orderDoc) => ({
+          id: orderDoc.id,
+          ...orderDoc.data(),
+        }))
+        .sort(
+          (a, b) =>
+            (b.riderAssignedAt?.seconds || 0) -
+            (a.riderAssignedAt?.seconds || 0)
         );
 
-        setOrdersLoading(false);
-      }
-    );
+      setOrders(riderOrders);
+      setOrdersLoading(false);
+    },
+    (err) => {
+      console.error("Error loading rider orders:", err);
+      setOrdersLoading(false);
+    }
+  );
 
-    return () => unsubscribe();
-  }, [rider?.id]);
+  return () => unsubscribe();
+}, [rider?.id]);
 
   // =====================================================
   // UPDATE DELIVERY STATUS
@@ -315,6 +306,19 @@ export default function RiderPage({setPage, setActivePage}) {
     );
   }
 
+
+
+  const activeOrders = orders.filter(
+  (order) =>
+    order.status === "Assigned to Rider" ||
+    order.status === "Out for Delivery"
+);
+
+
+  const deliveredOrders = orders.filter(
+  (order) => order.status === "Delivered"
+);
+
   // =====================================================
   // DASHBOARD
   // =====================================================
@@ -368,70 +372,109 @@ export default function RiderPage({setPage, setActivePage}) {
 
           <div style={styles.deliveryCount}>
             <strong>
-              {orders.length}
+              {activeOrders.length}
             </strong>
 
             <span>
               Active
-            </span>
+               </span>
+               <small>
+    {deliveredOrders.length} Delivered
+  </small>
+           
           </div>
         </div>
 
         {/* DELIVERY SECTION */}
+{/* DELIVERY SECTION */}
 
-        <div style={styles.sectionHeader}>
-          <div>
-            <p style={styles.sectionEyebrow}>
-              TODAY
-            </p>
+<div style={styles.sectionHeader}>
+  <div>
+    <p style={styles.sectionEyebrow}>
+      TODAY
+    </p>
 
-            <h2 style={styles.sectionTitle}>
-              My Deliveries
-            </h2>
-          </div>
+    <h2 style={styles.sectionTitle}>
+      My Deliveries
+    </h2>
+  </div>
 
-          <span style={styles.countBadge}>
-            {orders.length}
-          </span>
-        </div>
+  <span style={styles.countBadge}>
+    {activeOrders.length}
+  </span>
+</div>
 
-        {ordersLoading ? (
-          <div style={styles.emptyCard}>
-            <p style={styles.muted}>
-              Loading deliveries...
-            </p>
-          </div>
-        ) : orders.length === 0 ? (
-          <div style={styles.emptyCard}>
-            <div style={styles.emptyIcon}>
-              ☕
-            </div>
+{/* ACTIVE DELIVERIES */}
 
-            <h2 style={styles.emptyTitle}>
-              No deliveries assigned
-            </h2>
+{ordersLoading ? (
+  <div style={styles.emptyCard}>
+    <p style={styles.muted}>
+      Loading deliveries...
+    </p>
+  </div>
+) : activeOrders.length === 0 ? (
+  <div style={styles.emptyCard}>
+    <div style={styles.emptyIcon}>
+      ☕
+    </div>
 
-            <p style={styles.muted}>
-              New deliveries will appear here
-              when they are assigned to you.
-            </p>
-          </div>
-        ) : (
-          <div style={styles.orderList}>
-            {orders.map((order) => (
-              <DeliveryCard
-                key={order.id}
-                order={order}
-                updating={
-                  updatingOrder === order.id
-                }
-                onUpdateStatus={
-                  updateDeliveryStatus
-                }
-              />
-            ))}
-          </div>
-        )}
+    <h2 style={styles.emptyTitle}>
+      No deliveries assigned
+    </h2>
+
+    <p style={styles.muted}>
+      New deliveries will appear here
+      when they are assigned to you.
+    </p>
+  </div>
+) : (
+  <div style={styles.orderList}>
+    {activeOrders.map((order) => (
+      <DeliveryCard
+        key={order.id}
+        order={order}
+        updating={updatingOrder === order.id}
+        onUpdateStatus={updateDeliveryStatus}
+      />
+    ))}
+  </div>
+)}
+
+{/* DELIVERY HISTORY */}
+
+{deliveredOrders.length > 0 && (
+  <div style={{ marginTop: "40px" }}>
+
+    <div style={styles.sectionHeader}>
+      <div>
+        <p style={styles.sectionEyebrow}>
+          COMPLETED
+        </p>
+
+        <h2 style={styles.sectionTitle}>
+          Delivery History
+        </h2>
+      </div>
+
+      <span style={styles.countBadge}>
+        {deliveredOrders.length}
+      </span>
+    </div>
+
+    <div style={styles.orderList}>
+      {deliveredOrders.map((order) => (
+        <DeliveryCard
+          key={order.id}
+          order={order}
+          updating={false}
+          onUpdateStatus={updateDeliveryStatus}
+        />
+      ))}
+    </div>
+
+  </div>
+)}
+   
       </div>
     </div>
   );
