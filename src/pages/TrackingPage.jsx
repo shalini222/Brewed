@@ -241,8 +241,8 @@ const handleTipSelection = async (amount) => {
     });
 
     const { subtotal, calculatedTax, deliveryFee, codSurcharge, discount } = getCalculatedFees();
-    const driverTip = selectedTip || 0;
-    const grandTotal = subtotal + calculatedTax + deliveryFee + codSurcharge + driverTip - discount;
+    
+    const grandTotal = subtotal + calculatedTax + deliveryFee + codSurcharge - discount;
     
     const paymentMode = orderSnapshot?.method === "cod" ? "COD (Cash/QR)" : "Paid Online";
     const dateString = new Date().toLocaleDateString("en-IN", {
@@ -314,11 +314,7 @@ const handleTipSelection = async (amount) => {
       currentY += 5;
     }
 
-    if (driverTip > 0) {
-      doc.text("Driver / Partner Tip", 10, currentY);
-      doc.text(`INR ${driverTip}.00`, 95, currentY, { align: "right" });
-      currentY += 5;
-    }
+   
 
     if (discount > 0) {
       doc.setTextColor(186, 60, 60); 
@@ -397,8 +393,7 @@ const handleTipSelection = async (amount) => {
 
   const OrderInformationCard = () => {
     const { subtotal, calculatedTax, deliveryFee, codSurcharge, discount } = getCalculatedFees();
-    const driverTip = Number(liveOrder?.tipAmount || 0);
-    const grandTotal = subtotal + calculatedTax + deliveryFee + codSurcharge + driverTip - discount;
+   const grandTotal = subtotal + calculatedTax + deliveryFee + codSurcharge - discount;
 
     return (
       <div className="interactive-card" style={{ backgroundColor: THEME.colors.accentLight }}>
