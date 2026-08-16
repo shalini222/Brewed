@@ -80,6 +80,11 @@ const [tipConfirmed, setTipConfirmed] = useState(false);
   const [liveOrder, setLiveOrder] = useState(null);
 
 
+
+
+
+
+
 const STATUS_TO_STEP = {
   New: 1,
   Confirmed: 1,
@@ -186,6 +191,7 @@ setSelectedTip(order.tipAmount || null);
   const isMobile = windowWidth <= 880;
   const isDelivered = currentStep === 4;
   const isFailed = currentStep === 5;
+    const hasTipped = Number(liveOrder?.tipAmount || 0) > 0;
   const rawId = orderSnapshot?.id ? orderSnapshot.id.toString() : "938402";
   const displayId = rawId.startsWith("BRW-") ? rawId : `#BRW-${rawId.slice(-6)}`;
 
@@ -211,21 +217,25 @@ setSelectedTip(order.tipAmount || null);
 
 
 
+
 const handleTipSelection = async (amount) => {
-  if (!orderSnapshot?.id) return;
+  if (!orderSnapshot?.id || !amount) return;
+
+  // Prevent a second tip
+  if (Number(liveOrder?.tipAmount || 0) > 0) {
+    return;
+  }
 
   try {
     const orderRef = doc(db, "orders", orderSnapshot.id);
 
-    const newTip = selectedTip === amount ? 0 : amount;
-
     await updateDoc(orderRef, {
-      tipAmount: newTip,
-      tipStatus: newTip > 0 ? "added" : "removed",
-      tipAddedAt: newTip > 0 ? serverTimestamp() : null,
+      tipAmount: amount,
+      tipStatus: "added",
+      tipAddedAt: serverTimestamp(),
     });
 
-    setSelectedTip(newTip || null);
+    setSelectedTip(amount);
 
     setShowTipModal(false);
     setPendingTip(null);
@@ -237,10 +247,9 @@ const handleTipSelection = async (amount) => {
 
   } catch (error) {
     console.error("Failed to update tip:", error);
-    alert("Unable to update tip. Please try again.");
+    alert("Unable to add tip. Please try again.");
   }
 };
-
 
   
 
@@ -1266,28 +1275,69 @@ const handleTipSelection = async (amount) => {
    
                   </div>
 
-                  <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, paddingTop: "1rem" }}>
-                    <p style={{ ...styles.etaLabel, marginBottom: "0.5rem", fontWeight: "600" }}>Thank your partner with a tip</p>
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
-                      {[20, 30, 50].map((amount) => (
-                        <button
-                          key={amount}
-                          onClick={() => {
-  setPendingTip(amount);
-  setShowTipModal(true);
-}}
-                          className={`tip-pill ${selectedTip === amount ? "active" : ""}`}
-                        >
-                          ₹{amount}
-                        </button>
-                      ))}
-                    </div>
-                    {selectedTip && (
-                      <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: THEME.colors.success, fontWeight: "500" }}>
-                        ₹{selectedTip} will be added to your delivery partner's profile!
-                      </p>
-                    )}
-                  </div>
+                <div style={{ borderTop: `1px solid ${THEME.colors.cardBorder}`, paddingTop: "1rem" }}>
+  <p
+    style={{
+      ...styles.etaLabel,
+      marginBottom: "0.5rem",
+      fontWeight: "600"
+    }}
+  >
+    Thank your partner with a tip
+  </p>
+
+  {!hasTipped ? (
+    <>
+      <div style={{ display: "flex", gap: "0.5rem" }}>
+        {[20, 30, 50].map((amount) => (
+          <button
+            key={amount}
+            onClick={() => {
+              setPendingTip(amount);
+              setShowTipModal(true);
+            }}
+            className="tip-pill"
+          >
+            ₹{amount}
+          </button>
+        ))}
+      </div>
+
+      <p
+        style={{
+          margin: "0.5rem 0 0",
+          fontSize: "0.75rem",
+          color: THEME.colors.textMuted
+        }}
+      >
+        You can add one tip per order.
+      </p>
+    </>
+  ) : (
+    <div
+      style={{
+        padding: "0.75rem",
+        borderRadius: "10px",
+        background: THEME.colors.accentLight,
+        color: THEME.colors.success,
+        fontSize: "0.85rem",
+        fontWeight: "600"
+      }}
+    >
+      ✓ ₹{liveOrder.tipAmount} tip added
+      <div
+        style={{
+          marginTop: "0.25rem",
+          fontSize: "0.75rem",
+          fontWeight: "500",
+          color: THEME.colors.textMuted
+        }}
+      >
+        Thank you for supporting your delivery partner!
+      </div>
+    </div>
+  )}
+</div>
                 </div>
 
 
