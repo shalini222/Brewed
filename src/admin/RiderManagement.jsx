@@ -180,6 +180,12 @@ export default function RidersAdmin({ setPage, setActivePage }) {
     (rider) => rider.status !== "Active"
   ).length;
 
+  const availableRiders = riders.filter(
+  (rider) =>
+    rider.status === "Active" &&
+    rider.isOnDuty === true
+).length;
+
   const completedDeliveries = riders.reduce(
     (sum, rider) =>
       sum + getRiderStats(rider).completedOrders,
@@ -421,6 +427,13 @@ const toggleDutyStatus = async (rider) => {
             icon="●"
             positive
           />
+          
+          <StatCard
+  label="Available Riders"
+  value={availableRiders}
+  icon="🟢"
+  positive
+/>
 
           <StatCard
             label="Deliveries Completed"
@@ -779,12 +792,11 @@ const toggleDutyStatus = async (rider) => {
                       </span>
                     </div>
 
-                   {/* STATUS + DUTY */}
+     {/* STATUS */}
 
-<div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+<div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
 
   {/* ACCOUNT STATUS */}
-
   <span
     style={{
       ...styles.statusBadge,
@@ -807,34 +819,37 @@ const toggleDutyStatus = async (rider) => {
   </span>
 
   {/* DUTY STATUS */}
-
-  <span
-    style={{
-      ...styles.statusBadge,
-      background:
-        rider.dutyStatus === "On Duty"
-          ? "#E8F4EA"
-          : "#F1ECE8",
-      color:
-        rider.dutyStatus === "On Duty"
-          ? "#397044"
-          : "#7C7068",
-    }}
-  >
+  {rider.status === "Active" && (
     <span
       style={{
-        ...styles.statusDot,
-        background:
-          rider.dutyStatus === "On Duty"
+        ...styles.statusBadge,
+        background: rider.isOnDuty
+          ? "#E8F4EA"
+          : "#F1ECE8",
+        color: rider.isOnDuty
+          ? "#397044"
+          : "#7C7068",
+      }}
+    >
+      <span
+        style={{
+          ...styles.statusDot,
+          background: rider.isOnDuty
             ? "#397044"
             : "#8A7D73",
-      }}
-    />
+        }}
+      />
 
-    {rider.dutyStatus || "Off Duty"}
-  </span>
+      {rider.isOnDuty
+        ? "On Duty"
+        : "Off Duty"}
+    </span>
+  )}
 
 </div>
+
+
+                    
                     {/* ACTIONS */}
 
 <div style={styles.actions}>
@@ -946,17 +961,64 @@ const toggleDutyStatus = async (rider) => {
                     {selectedRider.phone}
                   </p>
 
-                  <span
-                    style={{
-                      ...styles.statusBadge,
-                      ...(selectedRider.status ===
-                      "Active"
-                        ? styles.activeStatus
-                        : styles.inactiveStatus),
-                    }}
-                  >
-                    {selectedRider.status}
-                  </span>
+                <div
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    gap: "7px",
+    marginTop: "8px",
+  }}
+>
+  {/* ACCOUNT STATUS */}
+  <span
+    style={{
+      ...styles.statusBadge,
+      ...(selectedRider.status === "Active"
+        ? styles.activeStatus
+        : styles.inactiveStatus),
+    }}
+  >
+    <span
+      style={{
+        ...styles.statusDot,
+        background:
+          selectedRider.status === "Active"
+            ? "#397044"
+            : "#8A7D73",
+      }}
+    />
+
+    {selectedRider.status || "Inactive"}
+  </span>
+
+  {/* DUTY STATUS */}
+  {selectedRider.status === "Active" && (
+    <span
+      style={{
+        ...styles.statusBadge,
+        background: selectedRider.isOnDuty
+          ? "#E8F4EA"
+          : "#F1ECE8",
+        color: selectedRider.isOnDuty
+          ? "#397044"
+          : "#7C7068",
+      }}
+    >
+      <span
+        style={{
+          ...styles.statusDot,
+          background: selectedRider.isOnDuty
+            ? "#397044"
+            : "#8A7D73",
+        }}
+      />
+
+      {selectedRider.isOnDuty
+        ? "On Duty"
+        : "Off Duty"}
+    </span>
+  )}
+</div>
                 </div>
 
               </div>
@@ -1002,6 +1064,16 @@ const toggleDutyStatus = async (rider) => {
                     0
                   }`}
                 />
+                <Detail
+  label="Availability"
+  value={
+    selectedRider.status !== "Active"
+      ? "Unavailable"
+      : selectedRider.isOnDuty
+      ? "On Duty"
+      : "Off Duty"
+  }
+/>
 
               </div>
 
