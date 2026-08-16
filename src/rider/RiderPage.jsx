@@ -8,15 +8,13 @@ import {
   updateDoc,
   serverTimestamp,
   getDocs,
+  addDoc,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 import { db, auth } from "../firebase";
 
-export default function RiderPage({
-  setPage,
-  setActivePage,
-}) {
+export default function RiderPage({ setPage, setActivePage }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [rider, setRider] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -26,8 +24,12 @@ export default function RiderPage({
   const [updatingOrder, setUpdatingOrder] = useState(null);
   const [error, setError] = useState("");
 
+  const [activeTab, setActiveTab] = useState("deliveries");
   const [showHistory, setShowHistory] = useState(false);
-  const [historyFilter, setHistoryFilter] = useState("Delivered");
+  const [showProfile, setShowProfile] = useState(false);
+
+  const [cancelOrder, setCancelOrder] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
 
   // =====================================================
   // FIND LOGGED-IN RIDER
@@ -59,9 +61,7 @@ export default function RiderPage({
           const snapshot = await getDocs(ridersQuery);
 
           if (snapshot.empty) {
-            setError(
-              "No rider profile is linked to this login."
-            );
+            setError("No rider profile is linked to this login.");
             setRider(null);
             setLoading(false);
             return;
@@ -88,15 +88,9 @@ export default function RiderPage({
             }
           );
         } catch (err) {
-          console.error(
-            "Error finding rider:",
-            err
-          );
+          console.error("Error finding rider:", err);
 
-          setError(
-            "Unable to load your rider profile."
-          );
-
+          setError("Unable to load your rider profile.");
           setLoading(false);
         }
       }
@@ -151,17 +145,84 @@ export default function RiderPage({
         setOrdersLoading(false);
       },
       (err) => {
-        console.error(
-          "Error loading rider orders:",
-          err
-        );
-
+        console.error("Error loading rider orders:", err);
         setOrdersLoading(false);
       }
     );
 
     return () => unsubscribe();
   }, [rider?.id]);
+
+  // =====================================================
+  // ORDER GROUPS
+  // =====================================================
+
+  const activeOrders = useMemo(() => {
+    return orders.filter(
+      (order) =>
+        order.status === "Assigned to Rider" ||
+        order.status === "Accepted by Rider" ||
+        order.status === "Out for Delivery"
+    );
+  }, [orders]);
+
+  const deliveredOrders = useMemo(() => {
+    return orders.filter(
+      (order) => order.status === "Delivered"
+    );
+  }, [orders]);
+
+  const cancelledOrders = useMemo(() => {
+    return orders.filter(
+      (order) =>
+        order.status === "Cancelled by Rider" ||
+        order.status === "Delivery Cancelled"
+    );
+  }, [orders]);
+
+  // =====================================================
+  // EARNINGS
+  // =====================================================
+
+  const deliveryRate = Number(rider?.deliveryRate || 0);
+
+  const totalDeliveryEarnings =
+    deliveredOrders.length * deliveryRate;
+
+  const totalTips = deliveredOrders.reduce(
+    (sum, order) => {
+      return (
+        sum +
+        Number(
+          order.tipAmount ||
+            order.tip ||
+            order.customerTip ||
+            0
+        )
+      );
+    },
+    0
+  );
+
+  const totalEarnings =
+    totalDeliveryEarnings + totalTips;
+
+  // =====================================================
+  // PERFORMANCE
+  // =====================================================
+
+  const completedCount = deliveredOrders.length;
+  const cancelledCount = cancelledOrders.length;
+
+  const totalFinished =
+    completedCount + cancelledCount;
+
+  const completionRate =
+    totalFinished > 0
+      ? Math.round(
+          (completedCount / totalFinished) * 100
+        )
+      : 100;
 
   // =====================================================
   // UPDATE DELIVERY STATUS
@@ -185,8 +246,11 @@ export default function RiderPage({
         trackingUpdatedAt: serverTimestamp(),
       };
 
-      // ACCEPTED
-      if (newStatus === "Accepted") {
+      // -----------------------------------------------
+      // ACCEPT
+      // -----------------------------------------------
+
+      if (newStatus === "Accepted by Rider") {
         updateData.riderAcceptedAt =
           serverTimestamp();
 
@@ -194,18 +258,10 @@ export default function RiderPage({
           "Your delivery partner has accepted the order.";
       }
 
-      // CANCELLED / REJECTED
-      if (newStatus === "Cancelled") {
-        updateData.riderCancelledAt =
-          serverTimestamp();
+      // -----------------------------------------------
+      // START DELIVERY
+      // -----------------------------------------------
 
-        updateData.cancelledBy = "rider";
-
-        updateData.deliveryPartnerMessage =
-          "Your delivery partner was unable to complete this delivery.";
-      }
-
-      // OUT FOR DELIVERY
       if (newStatus === "Out for Delivery") {
         updateData.deliveryStartedAt =
           serverTimestamp();
@@ -214,36 +270,42 @@ export default function RiderPage({
           "Your coffee is on the way! ☕";
       }
 
+      // -----------------------------------------------
       // DELIVERED
+      // -----------------------------------------------
+
       if (newStatus === "Delivered") {
         updateData.deliveredAt =
+          serverTimestamp();
+
+        updateData.trackingUpdatedAt =
           serverTimestamp();
 
         updateData.deliveryPartnerMessage =
           "Your order has been delivered. Enjoy! ☕";
 
-        /*
-         * If admin has already assigned a payout,
-         * preserve it.
-         *
-         * Otherwise use rider.defaultDeliveryPay
-         * if configured.
-         */
-        if (
-          order.riderPayout === undefined &&
-          rider.defaultDeliveryPay !== undefined
-        ) {
-          updateData.riderPayout =
-            Number(rider.defaultDeliveryPay) || 0;
-        }
+        // Save delivery earnings snapshot.
+        updateData.riderDeliveryPay =
+          Number(rider?.deliveryRate || 0);
 
-        /*
-         * Keep an explicit tip field.
-         * If no tip exists, use 0.
-         */
-        if (order.riderTip === undefined) {
-          updateData.riderTip = 0;
-        }
+        updateData.riderTipAmount =
+          Number(
+            order.tipAmount ||
+              order.tip ||
+              order.customerTip ||
+              0
+          );
+
+        updateData.riderTotalEarning =
+          Number(
+            rider?.deliveryRate || 0
+          ) +
+          Number(
+            order.tipAmount ||
+              order.tip ||
+              order.customerTip ||
+              0
+          );
       }
 
       await updateDoc(
@@ -265,154 +327,52 @@ export default function RiderPage({
   };
 
   // =====================================================
-  // DERIVED ORDER DATA
+  // CANCEL DELIVERY
   // =====================================================
 
-  const activeOrders = useMemo(
-    () =>
-      orders.filter(
-        (order) =>
-          order.status ===
-            "Assigned to Rider" ||
-          order.status === "Accepted" ||
-          order.status ===
-            "Out for Delivery"
-      ),
-    [orders]
-  );
+  const handleCancelDelivery = async () => {
+    if (!cancelOrder) return;
 
-  const deliveredOrders = useMemo(
-    () =>
-      orders.filter(
-        (order) =>
-          order.status === "Delivered"
-      ),
-    [orders]
-  );
+    if (!cancelReason.trim()) {
+      alert("Please enter a reason for cancelling this delivery.");
+      return;
+    }
 
-  const cancelledOrders = useMemo(
-    () =>
-      orders.filter(
-        (order) =>
-          order.status === "Cancelled" &&
-          order.cancelledBy === "rider"
-      ),
-    [orders]
-  );
+    try {
+      setUpdatingOrder(cancelOrder.id);
 
-  // =====================================================
-  // EARNINGS
-  // =====================================================
-
-  const earnings = useMemo(() => {
-    let deliveryPay = 0;
-    let tips = 0;
-
-    deliveredOrders.forEach((order) => {
-      deliveryPay += Number(
-        order.riderPayout ||
-          rider?.defaultDeliveryPay ||
-          0
+      const orderRef = doc(
+        db,
+        "orders",
+        cancelOrder.id
       );
 
-      tips += Number(
-        order.riderTip || 0
-      );
-    });
+      await updateDoc(orderRef, {
+        status: "Cancelled by Rider",
+        riderCancelledAt: serverTimestamp(),
+        riderCancellationReason:
+          cancelReason.trim(),
+        trackingUpdatedAt:
+          serverTimestamp(),
+        deliveryPartnerMessage:
+          "The delivery partner was unable to complete this delivery.",
+      });
 
-    return {
-      deliveryPay,
-      tips,
-      total: deliveryPay + tips,
-      deliveries: deliveredOrders.length,
-    };
-  }, [deliveredOrders, rider]);
-
-  // =====================================================
-  // TODAY'S EARNINGS
-  // =====================================================
-
-  const todaysEarnings = useMemo(() => {
-    const now = new Date();
-
-    let deliveryPay = 0;
-    let tips = 0;
-    let deliveries = 0;
-
-    deliveredOrders.forEach((order) => {
-      const timestamp =
-        order.deliveredAt ||
-        order.createdAt;
-
-      if (!timestamp?.toDate) return;
-
-      const date = timestamp.toDate();
-
-      const sameDay =
-        date.getDate() === now.getDate() &&
-        date.getMonth() === now.getMonth() &&
-        date.getFullYear() ===
-          now.getFullYear();
-
-      if (!sameDay) return;
-
-      deliveryPay += Number(
-        order.riderPayout ||
-          rider?.defaultDeliveryPay ||
-          0
+      setCancelOrder(null);
+      setCancelReason("");
+    } catch (err) {
+      console.error(
+        "Error cancelling delivery:",
+        err
       );
 
-      tips += Number(
-        order.riderTip || 0
+      alert(
+        "Failed to cancel delivery."
       );
-
-      deliveries++;
-    });
-
-    return {
-      deliveryPay,
-      tips,
-      total: deliveryPay + tips,
-      deliveries,
-    };
-  }, [deliveredOrders, rider]);
-
-  // =====================================================
-  // ACCEPTANCE / PERFORMANCE
-  // =====================================================
-
-  const assignedCount = orders.filter(
-    (order) =>
-      order.status ===
-        "Assigned to Rider" ||
-      order.status === "Accepted" ||
-      order.status ===
-        "Out for Delivery" ||
-      order.status === "Delivered" ||
-      (
-        order.status === "Cancelled" &&
-        order.cancelledBy === "rider"
-      )
-  ).length;
-
-  const acceptanceRate =
-    assignedCount > 0
-      ? Math.round(
-          ((assignedCount -
-            cancelledOrders.length) /
-            assignedCount) *
-            100
-        )
-      : 100;
-
-  // =====================================================
-  // HISTORY FILTER
-  // =====================================================
-
-  const historyOrders =
-    historyFilter === "Delivered"
-      ? deliveredOrders
-      : cancelledOrders;
+    } finally {
+      setUpdatingOrder(null);
+    }
+  };
 
   // =====================================================
   // LOADING
@@ -422,12 +382,16 @@ export default function RiderPage({
     return (
       <div style={styles.page}>
         <div style={styles.center}>
-          <div style={styles.loadingIcon}>
+          <div style={styles.loadingOrb}>
             🛵
           </div>
 
+          <h2 style={styles.loadingTitle}>
+            Preparing your dashboard
+          </h2>
+
           <p style={styles.muted}>
-            Loading rider dashboard...
+            Loading your rider profile...
           </p>
         </div>
       </div>
@@ -451,8 +415,7 @@ export default function RiderPage({
           </h2>
 
           <p style={styles.muted}>
-            Please log in to access your
-            deliveries.
+            Please log in to access your deliveries.
           </p>
         </div>
       </div>
@@ -460,7 +423,7 @@ export default function RiderPage({
   }
 
   // =====================================================
-  // RIDER NOT FOUND
+  // RIDER PROFILE NOT FOUND
   // =====================================================
 
   if (!rider) {
@@ -481,8 +444,7 @@ export default function RiderPage({
           </p>
 
           <p style={styles.emailText}>
-            Logged in as:{" "}
-            {currentUser.email}
+            Logged in as: {currentUser.email}
           </p>
         </div>
       </div>
@@ -506,13 +468,11 @@ export default function RiderPage({
           </h2>
 
           <p style={styles.muted}>
-            Your rider account is currently
-            inactive.
+            Your rider account is currently inactive.
           </p>
 
           <p style={styles.emailText}>
-            Please contact the café
-            administrator.
+            Please contact the café administrator.
           </p>
         </div>
       </div>
@@ -533,414 +493,269 @@ export default function RiderPage({
 
         <header style={styles.header}>
           <div>
-            <p style={styles.eyebrow}>
-              RIDER DASHBOARD
-            </p>
+            <div style={styles.headerEyebrow}>
+              BREWED DELIVERY
+            </div>
 
             <h1 style={styles.title}>
-              Hello,{" "}
-              {rider.name || "Rider"} 👋
+              Good day,{" "}
+              {rider.name?.split(" ")[0] ||
+                "Rider"}{" "}
+              👋
             </h1>
 
             <p style={styles.subtitle}>
-              Your deliveries, earnings and
-              performance.
+              Your delivery dashboard
             </p>
           </div>
 
-          <div style={styles.activeBadge}>
-            <span
-              style={styles.activeDot}
-            />
-            Active
-          </div>
+          <button
+            onClick={() =>
+              setShowProfile(true)
+            }
+            style={styles.profileButton}
+          >
+            <span>
+              {(rider.name || "R")
+                .charAt(0)
+                .toUpperCase()}
+            </span>
+          </button>
         </header>
 
         {/* =================================================
-            RIDER PROFILE CARD
+            RIDER HERO
         ================================================= */}
 
-        <div style={styles.riderCard}>
-          <div style={styles.riderIcon}>
-            🛵
+        <div style={styles.heroCard}>
+
+          <div style={styles.heroTop}>
+            <div style={styles.vehicleIcon}>
+              🛵
+            </div>
+
+            <div style={{ flex: 1 }}>
+              <p style={styles.heroLabel}>
+                DELIVERY PARTNER
+              </p>
+
+              <h2 style={styles.heroName}>
+                {rider.name}
+              </h2>
+
+              <p style={styles.heroVehicle}>
+                {rider.vehicleType ||
+                  "Vehicle"}
+                {rider.vehicleNumber
+                  ? ` • ${rider.vehicleNumber}`
+                  : ""}
+              </p>
+            </div>
+
+            <div style={styles.onlineBadge}>
+              <span style={styles.onlineDot} />
+              Online
+            </div>
           </div>
 
-          <div
+          <div style={styles.heroStats}>
+
+            <div style={styles.heroStat}>
+              <strong>
+                {activeOrders.length}
+              </strong>
+              <span>Active</span>
+            </div>
+
+            <div style={styles.heroDivider} />
+
+            <div style={styles.heroStat}>
+              <strong>
+                {completedCount}
+              </strong>
+              <span>Completed</span>
+            </div>
+
+            <div style={styles.heroDivider} />
+
+            <div style={styles.heroStat}>
+              ₹{totalEarnings}
+              <span>Earned</span>
+            </div>
+
+          </div>
+        </div>
+
+        {/* =================================================
+            QUICK STATS
+        ================================================= */}
+
+        <div style={styles.quickStats}>
+
+          <StatCard
+            icon="📦"
+            label="Deliveries"
+            value={completedCount}
+          />
+
+          <StatCard
+            icon="💰"
+            label="Delivery Pay"
+            value={`₹${totalDeliveryEarnings}`}
+          />
+
+          <StatCard
+            icon="❤️"
+            label="Tips"
+            value={`₹${totalTips}`}
+          />
+
+        </div>
+
+        {/* =================================================
+            TABS
+        ================================================= */}
+
+        <div style={styles.tabs}>
+
+          <button
+            onClick={() =>
+              setActiveTab("deliveries")
+            }
             style={{
-              flex: 1,
-              minWidth: 0,
+              ...styles.tab,
+              ...(activeTab === "deliveries"
+                ? styles.activeTab
+                : {}),
             }}
           >
-            <h3
-              style={styles.riderName}
-            >
-              {rider.name ||
-                "Rider"}
-            </h3>
-
-            <p
-              style={styles.riderDetails}
-            >
-              {rider.vehicleType ||
-                "Vehicle"}
-
-              {rider.vehicleNumber
-                ? ` • ${rider.vehicleNumber}`
-                : ""}
-            </p>
-          </div>
-
-          <div
-            style={
-              styles.deliveryCount
-            }
-          >
-            <strong>
+            Deliveries
+            <span style={styles.tabCount}>
               {activeOrders.length}
-            </strong>
-
-            <span>
-              Active
             </span>
+          </button>
 
-            {(deliveredOrders.length >
-              0 ||
-              cancelledOrders.length >
-                0) && (
+          <button
+            onClick={() =>
+              setActiveTab("earnings")
+            }
+            style={{
+              ...styles.tab,
+              ...(activeTab === "earnings"
+                ? styles.activeTab
+                : {}),
+            }}
+          >
+            Earnings
+          </button>
+
+          <button
+            onClick={() =>
+              setActiveTab("performance")
+            }
+            style={{
+              ...styles.tab,
+              ...(activeTab === "performance"
+                ? styles.activeTab
+                : {}),
+            }}
+          >
+            Performance
+          </button>
+
+        </div>
+
+        {/* =================================================
+            DELIVERIES TAB
+        ================================================= */}
+
+        {activeTab === "deliveries" && (
+          <>
+            <div style={styles.sectionHeader}>
+              <div>
+                <p style={styles.sectionEyebrow}>
+                  CURRENT QUEUE
+                </p>
+
+                <h2 style={styles.sectionTitle}>
+                  My Deliveries
+                </h2>
+              </div>
+
+              <span style={styles.countBadge}>
+                {activeOrders.length}
+              </span>
+            </div>
+
+            {ordersLoading ? (
+              <LoadingCard />
+            ) : activeOrders.length === 0 ? (
+              <EmptyDeliveries />
+            ) : (
+              <div style={styles.orderList}>
+                {activeOrders.map((order) => (
+                  <DeliveryCard
+                    key={order.id}
+                    order={order}
+                    updating={
+                      updatingOrder === order.id
+                    }
+                    onUpdateStatus={
+                      updateDeliveryStatus
+                    }
+                    onCancel={(order) =>
+                      setCancelOrder(order)
+                    }
+                  />
+                ))}
+              </div>
+            )}
+
+            {deliveredOrders.length > 0 && (
               <button
                 onClick={() =>
                   setShowHistory(true)
                 }
-                style={
-                  styles.historyButton
-                }
+                style={styles.historyLaunch}
               >
-                View History
+                <span>View delivery history</span>
+                <span>→</span>
               </button>
             )}
-          </div>
-        </div>
+          </>
+        )}
 
         {/* =================================================
-            EARNINGS OVERVIEW
+            EARNINGS TAB
         ================================================= */}
 
-        <div
-          style={
-            styles.earningsGrid
-          }
-        >
-          <div
-            style={
-              styles.earningsHero
+        {activeTab === "earnings" && (
+          <EarningsSection
+            deliveryEarnings={
+              totalDeliveryEarnings
             }
-          >
-            <div
-              style={
-                styles.earningsHeroTop
-              }
-            >
-              <span
-                style={
-                  styles.earningsLabel
-                }
-              >
-                TODAY'S EARNINGS
-              </span>
-
-              <span
-                style={
-                  styles.moneyIcon
-                }
-              >
-                ₹
-              </span>
-            </div>
-
-            <strong
-              style={
-                styles.earningsAmount
-              }
-            >
-              ₹
-              {todaysEarnings.total.toLocaleString(
-                "en-IN"
-              )}
-            </strong>
-
-            <p
-              style={
-                styles.earningsSubtext
-              }
-            >
-              {todaysEarnings.deliveries}{" "}
-              completed{" "}
-              {todaysEarnings.deliveries ===
-              1
-                ? "delivery"
-                : "deliveries"}
-            </p>
-          </div>
-
-          <div
-            style={
-              styles.statCard
-            }
-          >
-            <span
-              style={
-                styles.statLabel
-              }
-            >
-              DELIVERY PAY
-            </span>
-
-            <strong
-              style={
-                styles.statValue
-              }
-            >
-              ₹
-              {todaysEarnings.deliveryPay.toLocaleString(
-                "en-IN"
-              )}
-            </strong>
-
-            <span
-              style={
-                styles.statHint
-              }
-            >
-              Today
-            </span>
-          </div>
-
-          <div
-            style={
-              styles.statCard
-            }
-          >
-            <span
-              style={
-                styles.statLabel
-              }
-            >
-              TIPS
-            </span>
-
-            <strong
-              style={
-                styles.statValue
-              }
-            >
-              ₹
-              {todaysEarnings.tips.toLocaleString(
-                "en-IN"
-              )}
-            </strong>
-
-            <span
-              style={
-                styles.statHint
-              }
-            >
-              Today
-            </span>
-          </div>
-        </div>
+            tips={totalTips}
+            total={totalEarnings}
+            completed={completedCount}
+            rate={deliveryRate}
+          />
+        )}
 
         {/* =================================================
-            PERFORMANCE
+            PERFORMANCE TAB
         ================================================= */}
 
-        <div
-          style={
-            styles.performanceCard
-          }
-        >
-          <div
-            style={
-              styles.performanceItem
+        {activeTab === "performance" && (
+          <PerformanceSection
+            completed={completedCount}
+            cancelled={cancelledCount}
+            completionRate={
+              completionRate
             }
-          >
-            <strong>
-              {deliveredOrders.length}
-            </strong>
-
-            <span>
-              Completed
-            </span>
-          </div>
-
-          <div
-            style={
-              styles.performanceDivider
+            active={
+              activeOrders.length
             }
           />
-
-          <div
-            style={
-              styles.performanceItem
-            }
-          >
-            <strong>
-              {cancelledOrders.length}
-            </strong>
-
-            <span>
-              Cancelled
-            </span>
-          </div>
-
-          <div
-            style={
-              styles.performanceDivider
-            }
-          />
-
-          <div
-            style={
-              styles.performanceItem
-            }
-          >
-            <strong>
-              {acceptanceRate}%
-            </strong>
-
-            <span>
-              Acceptance
-            </span>
-          </div>
-
-          <div
-            style={
-              styles.performanceDivider
-            }
-          />
-
-          <div
-            style={
-              styles.performanceItem
-            }
-          >
-            <strong>
-              ₹
-              {earnings.total.toLocaleString(
-                "en-IN"
-              )}
-            </strong>
-
-            <span>
-              Lifetime
-            </span>
-          </div>
-        </div>
-
-        {/* =================================================
-            ACTIVE DELIVERIES
-        ================================================= */}
-
-        <div
-          style={
-            styles.sectionHeader
-          }
-        >
-          <div>
-            <p
-              style={
-                styles.sectionEyebrow
-              }
-            >
-              CURRENT WORK
-            </p>
-
-            <h2
-              style={
-                styles.sectionTitle
-              }
-            >
-              My Deliveries
-            </h2>
-          </div>
-
-          <span
-            style={
-              styles.countBadge
-            }
-          >
-            {activeOrders.length}
-          </span>
-        </div>
-
-        {ordersLoading ? (
-          <div
-            style={
-              styles.emptyCard
-            }
-          >
-            <p
-              style={
-                styles.muted
-              }
-            >
-              Loading deliveries...
-            </p>
-          </div>
-        ) : activeOrders.length ===
-          0 ? (
-          <div
-            style={
-              styles.emptyCard
-            }
-          >
-            <div
-              style={
-                styles.emptyIcon
-              }
-            >
-              ☕
-            </div>
-
-            <h2
-              style={
-                styles.emptyTitle
-              }
-            >
-              You're all caught up
-            </h2>
-
-            <p
-              style={
-                styles.muted
-              }
-            >
-              New deliveries will
-              appear here when they
-              are assigned to you.
-            </p>
-          </div>
-        ) : (
-          <div
-            style={
-              styles.orderList
-            }
-          >
-            {activeOrders.map(
-              (order) => (
-                <DeliveryCard
-                  key={order.id}
-                  order={order}
-                  updating={
-                    updatingOrder ===
-                    order.id
-                  }
-                  onUpdateStatus={
-                    updateDeliveryStatus
-                  }
-                />
-              )
-            )}
-          </div>
         )}
 
         {/* =================================================
@@ -950,38 +765,21 @@ export default function RiderPage({
         {showHistory && (
           <>
             <div
+              style={styles.overlay}
               onClick={() =>
                 setShowHistory(false)
               }
-              style={
-                styles.historyBackdrop
-              }
             />
 
-            <div
-              style={
-                styles.historyDrawer
-              }
-            >
-              <div
-                style={
-                  styles.historyHeader
-                }
-              >
+            <div style={styles.drawer}>
+
+              <div style={styles.drawerHeader}>
                 <div>
-                  <p
-                    style={
-                      styles.sectionEyebrow
-                    }
-                  >
-                    YOUR RECORD
+                  <p style={styles.sectionEyebrow}>
+                    COMPLETED
                   </p>
 
-                  <h2
-                    style={
-                      styles.sectionTitle
-                    }
-                  >
+                  <h2 style={styles.sectionTitle}>
                     Delivery History
                   </h2>
                 </div>
@@ -990,107 +788,217 @@ export default function RiderPage({
                   onClick={() =>
                     setShowHistory(false)
                   }
-                  style={
-                    styles.closeHistoryButton
-                  }
+                  style={styles.closeButton}
                 >
                   ×
                 </button>
               </div>
 
-              {/* HISTORY TABS */}
+              <p style={styles.drawerSubtitle}>
+                Your completed and cancelled deliveries.
+              </p>
 
-              <div
-                style={
-                  styles.historyTabs
-                }
-              >
-                <button
-                  onClick={() =>
-                    setHistoryFilter(
-                      "Delivered"
-                    )
-                  }
-                  style={{
-                    ...styles.historyTab,
-                    ...(historyFilter ===
-                    "Delivered"
-                      ? styles.historyTabActive
-                      : {}),
-                  }}
-                >
-                  Completed{" "}
-                  <span>
-                    {deliveredOrders.length}
-                  </span>
-                </button>
+              <div style={styles.historyList}>
 
-                <button
-                  onClick={() =>
-                    setHistoryFilter(
-                      "Cancelled"
-                    )
-                  }
-                  style={{
-                    ...styles.historyTab,
-                    ...(historyFilter ===
-                    "Cancelled"
-                      ? styles.historyTabActive
-                      : {}),
-                  }}
-                >
-                  Cancelled{" "}
-                  <span>
-                    {cancelledOrders.length}
-                  </span>
-                </button>
-              </div>
-
-              <div
-                style={
-                  styles.historyList
-                }
-              >
-                {historyOrders.length ===
-                0 ? (
-                  <div
-                    style={
-                      styles.historyEmpty
-                    }
-                  >
-                    <div
-                      style={
-                        styles.emptyIcon
-                      }
-                    >
-                      ☕
-                    </div>
-
-                    <p
-                      style={
-                        styles.muted
-                      }
-                    >
-                      No{" "}
-                      {historyFilter.toLowerCase()}{" "}
-                      deliveries yet.
-                    </p>
-                  </div>
-                ) : (
-                  historyOrders.map(
-                    (order) => (
-                      <HistoryCard
-                        key={order.id}
-                        order={order}
-                        rider={rider}
-                      />
-                    )
+                {orders
+                  .filter(
+                    (order) =>
+                      order.status ===
+                        "Delivered" ||
+                      order.status ===
+                        "Cancelled by Rider" ||
+                      order.status ===
+                        "Delivery Cancelled"
                   )
-                )}
+                  .map((order) => (
+                    <HistoryCard
+                      key={order.id}
+                      order={order}
+                      deliveryRate={
+                        Number(
+                          rider.deliveryRate ||
+                            0
+                        )
+                      }
+                    />
+                  ))}
+
               </div>
             </div>
           </>
         )}
+
+        {/* =================================================
+            PROFILE DRAWER
+        ================================================= */}
+
+        {showProfile && (
+          <>
+            <div
+              style={styles.overlay}
+              onClick={() =>
+                setShowProfile(false)
+              }
+            />
+
+            <div style={styles.profileDrawer}>
+
+              <div style={styles.drawerHeader}>
+                <div>
+                  <p style={styles.sectionEyebrow}>
+                    ACCOUNT
+                  </p>
+
+                  <h2 style={styles.sectionTitle}>
+                    My Profile
+                  </h2>
+                </div>
+
+                <button
+                  onClick={() =>
+                    setShowProfile(false)
+                  }
+                  style={styles.closeButton}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={styles.profileAvatar}>
+                {(rider.name || "R")
+                  .charAt(0)
+                  .toUpperCase()}
+              </div>
+
+              <h2 style={styles.profileName}>
+                {rider.name}
+              </h2>
+
+              <div style={styles.profileStatus}>
+                <span
+                  style={styles.onlineDot}
+                />
+                Active Rider
+              </div>
+
+              <div style={styles.profileInfo}>
+
+                <ProfileRow
+                  label="Phone"
+                  value={
+                    rider.phone ||
+                    "Not provided"
+                  }
+                />
+
+                <ProfileRow
+                  label="Email"
+                  value={
+                    rider.email ||
+                    currentUser.email
+                  }
+                />
+
+                <ProfileRow
+                  label="Vehicle"
+                  value={
+                    rider.vehicleType ||
+                    "Not provided"
+                  }
+                />
+
+                <ProfileRow
+                  label="Vehicle Number"
+                  value={
+                    rider.vehicleNumber ||
+                    "Not provided"
+                  }
+                />
+
+                <ProfileRow
+                  label="Delivery Rate"
+                  value={`₹${deliveryRate} / delivery`}
+                />
+
+              </div>
+
+            </div>
+          </>
+        )}
+
+        {/* =================================================
+            CANCEL MODAL
+        ================================================= */}
+
+        {cancelOrder && (
+          <>
+            <div
+              style={styles.modalOverlay}
+              onClick={() => {
+                if (!updatingOrder) {
+                  setCancelOrder(null);
+                  setCancelReason("");
+                }
+              }}
+            />
+
+            <div style={styles.cancelModal}>
+
+              <div style={styles.cancelIcon}>
+                !
+              </div>
+
+              <h2 style={styles.modalTitle}>
+                Cancel Delivery?
+              </h2>
+
+              <p style={styles.modalText}>
+                Tell the café why you cannot complete
+                this delivery.
+              </p>
+
+              <textarea
+                value={cancelReason}
+                onChange={(e) =>
+                  setCancelReason(
+                    e.target.value
+                  )
+                }
+                placeholder="Enter cancellation reason..."
+                style={styles.textarea}
+                rows={4}
+              />
+
+              <div style={styles.modalActions}>
+
+                <button
+                  disabled={!!updatingOrder}
+                  onClick={() => {
+                    setCancelOrder(null);
+                    setCancelReason("");
+                  }}
+                  style={styles.secondaryButton}
+                >
+                  Keep Delivery
+                </button>
+
+                <button
+                  disabled={!!updatingOrder}
+                  onClick={
+                    handleCancelDelivery
+                  }
+                  style={styles.cancelButton}
+                >
+                  {updatingOrder
+                    ? "Cancelling..."
+                    : "Cancel Delivery"}
+                </button>
+
+              </div>
+            </div>
+          </>
+        )}
+
       </div>
     </div>
   );
@@ -1104,161 +1012,109 @@ function DeliveryCard({
   order,
   updating,
   onUpdateStatus,
+  onCancel,
 }) {
   const isAssigned =
-    order.status ===
-    "Assigned to Rider";
+    order.status === "Assigned to Rider";
 
   const isAccepted =
-    order.status === "Accepted";
+    order.status === "Accepted by Rider";
 
   const isOutForDelivery =
-    order.status ===
-    "Out for Delivery";
-
-  const payout = Number(
-    order.riderPayout || 0
-  );
-
-  const tip = Number(
-    order.riderTip || 0
-  );
+    order.status === "Out for Delivery";
 
   return (
-    <div
-      style={
-        styles.orderCard
-      }
-    >
-      {/* ORDER HEADER */}
+    <div style={styles.orderCard}>
 
-      <div
-        style={
-          styles.orderHeader
-        }
-      >
+      {/* HEADER */}
+
+      <div style={styles.orderHeader}>
+
         <div>
-          <p
-            style={
-              styles.orderLabel
-            }
-          >
-            ORDER
-          </p>
+          <div style={styles.orderLabel}>
+            DELIVERY
+          </div>
 
-          <h3
-            style={
-              styles.orderId
-            }
-          >
-            #{order.id.slice(
-              0,
-              8
-            )}
+          <h3 style={styles.orderId}>
+            #{order.id.slice(0, 8).toUpperCase()}
           </h3>
 
-          <p
-            style={
-              styles.orderTime
-            }
-          >
-            {order.createdAt?.toDate
-              ? order.createdAt
-                  .toDate()
-                  .toLocaleString()
-              : "Recently placed"}
+          <p style={styles.orderTime}>
+            {formatTimestamp(
+              order.createdAt
+            )}
           </p>
         </div>
 
-        <span
-          style={{
-            ...styles.statusBadge,
-            ...(isAssigned
-              ? styles.statusAssigned
-              : isAccepted
-              ? styles.statusAccepted
-              : styles.statusOut),
-          }}
-        >
-          {order.status}
-        </span>
+        <StatusBadge
+          status={order.status}
+        />
+
       </div>
 
       {/* CUSTOMER */}
 
-      <div
-        style={
-          styles.customerBox
-        }
-      >
-        <p
-          style={
-            styles.customerName
-          }
-        >
-          👤{" "}
-          {order.customer?.name ||
-            "Customer"}
-        </p>
+      <div style={styles.customerBox}>
 
-        {order.customer?.phone && (
-          <p
-            style={
-              styles.customerDetail
-            }
-          >
-            📞{" "}
-            {order.customer.phone}
-          </p>
-        )}
+        <div style={styles.customerTop}>
+          <div style={styles.customerAvatar}>
+            {(order.customer?.name ||
+              "C")
+              .charAt(0)
+              .toUpperCase()}
+          </div>
+
+          <div>
+            <p style={styles.customerName}>
+              {order.customer?.name ||
+                "Customer"}
+            </p>
+
+            {order.customer?.phone && (
+              <p style={styles.customerDetail}>
+                {order.customer.phone}
+              </p>
+            )}
+          </div>
+        </div>
 
         {order.customer?.address && (
-          <p
-            style={
-              styles.address
-            }
-          >
-            📍{" "}
-            {order.customer.address}
-          </p>
+          <div style={styles.addressRow}>
+            <span style={styles.addressIcon}>
+              📍
+            </span>
+
+            <span>
+              {order.customer.address}
+            </span>
+          </div>
         )}
 
-        {order.customer
-          ?.instructions && (
-          <div
-            style={
-              styles.instructions
-            }
-          >
-            <strong>
-              Customer note
-            </strong>
+        {order.customer?.instructions && (
+          <div style={styles.instructions}>
+            <span>NOTE</span>
 
             <p>
-              {
-                order.customer
-                  .instructions
-              }
+              {order.customer.instructions}
             </p>
           </div>
         )}
+
       </div>
 
       {/* ITEMS */}
 
-      <h4
-        style={
-          styles.itemsTitle
-        }
-      >
-        Order Items
-      </h4>
+      <div style={styles.itemsHeader}>
+        <h4 style={styles.itemsTitle}>
+          Order
+        </h4>
 
-      <div
-        style={
-          styles.items
-        }
-      >
+        <span style={styles.itemCount}>
+          {order.items?.length || 0} items
+        </span>
+      </div>
+
+      <div style={styles.items}>
         {order.items?.map(
           (item, index) => {
             const quantity =
@@ -1268,46 +1124,29 @@ function DeliveryCard({
 
             const itemTotal =
               quantity *
-              Number(
-                item.price || 0
-              );
+              Number(item.price || 0);
 
             return (
               <div
                 key={index}
-                style={
-                  styles.item
-                }
+                style={styles.item}
               >
-                <div
-                  style={{
-                    flex: 1,
-                  }}
-                >
-                  <p
-                    style={
-                      styles.itemName
-                    }
-                  >
+                <div style={{ flex: 1 }}>
+                  <p style={styles.itemName}>
                     {quantity} ×{" "}
                     {item.name}
                   </p>
 
-                  <div
-                    style={
-                      styles.itemOptions
-                    }
-                  >
+                  <div style={styles.itemOptions}>
+
                     {item.size && (
                       <span>
-                        Size:{" "}
                         {item.size}
                       </span>
                     )}
 
                     {item.milk && (
                       <span>
-                        Milk:{" "}
                         {item.milk}
                       </span>
                     )}
@@ -1316,56 +1155,43 @@ function DeliveryCard({
                       typeof item.temperature ===
                         "string" && (
                         <span>
-                          {
-                            item.temperature
-                          }
+                          {item.temperature}
                         </span>
                       )}
 
                     {item.sweetness && (
                       <span>
-                        Sweetness:{" "}
                         {typeof item.sweetness ===
                         "string"
                           ? item.sweetness
-                          : item.sweetness
-                              .name}
+                          : item.sweetness.name}
                       </span>
                     )}
 
                     {Array.isArray(
                       item.extras
                     ) &&
-                      item.extras
-                        .length >
-                        0 && (
+                      item.extras.length > 0 && (
                         <span>
-                          Extras:{" "}
+                          +
+                          {" "}
                           {item.extras
                             .map(
-                              (
-                                extra
-                              ) =>
+                              (extra) =>
                                 typeof extra ===
                                 "string"
                                   ? extra
                                   : extra.name
                             )
-                            .join(
-                              ", "
-                            )}
+                            .join(", ")}
                         </span>
                       )}
+
                   </div>
                 </div>
 
-                <strong
-                  style={
-                    styles.itemPrice
-                  }
-                >
-                  ₹
-                  {itemTotal}
+                <strong style={styles.itemPrice}>
+                  ₹{itemTotal}
                 </strong>
               </div>
             );
@@ -1373,50 +1199,12 @@ function DeliveryCard({
         )}
       </div>
 
-      {/* EARNINGS PREVIEW */}
-
-      {(payout > 0 ||
-        tip > 0) && (
-        <div
-          style={
-            styles.orderEarnings
-          }
-        >
-          <div>
-            <span>
-              DELIVERY PAY
-            </span>
-
-            <strong>
-              ₹{payout}
-            </strong>
-          </div>
-
-          <div>
-            <span>
-              TIP
-            </span>
-
-            <strong>
-              ₹{tip}
-            </strong>
-          </div>
-        </div>
-      )}
-
       {/* PAYMENT */}
 
-      <div
-        style={
-          styles.paymentBox
-        }
-      >
+      <div style={styles.paymentBox}>
+
         <div>
-          <span
-            style={
-              styles.paymentLabel
-            }
-          >
+          <span style={styles.paymentLabel}>
             PAYMENT
           </span>
 
@@ -1426,114 +1214,195 @@ function DeliveryCard({
           </strong>
         </div>
 
-        <div
-          style={{
-            textAlign:
-              "right",
-          }}
-        >
-          <span
-            style={
-              styles.paymentLabel
-            }
-          >
+        <div style={styles.paymentRight}>
+          <span style={styles.paymentLabel}>
             ORDER TOTAL
           </span>
 
-          <strong
-            style={
-              styles.total
-            }
-          >
-            ₹
-            {order.total ||
-              0}
+          <strong style={styles.total}>
+            ₹{order.total || 0}
           </strong>
         </div>
+
       </div>
+
+      {/* TIP */}
+
+      {Number(
+        order.tipAmount ||
+          order.tip ||
+          order.customerTip ||
+          0
+      ) > 0 && (
+        <div style={styles.tipBox}>
+          <span>
+            ❤️ Customer tip
+          </span>
+
+          <strong>
+            ₹
+            {Number(
+              order.tipAmount ||
+                order.tip ||
+                order.customerTip ||
+                0
+            )}
+          </strong>
+        </div>
+      )}
 
       {/* ACTIONS */}
 
-      {isAssigned && (
-        <div
-          style={
-            styles.actionGroup
-          }
-        >
-          <button
-            disabled={updating}
-            onClick={() =>
-              onUpdateStatus(
-                order,
-                "Cancelled"
-              )
-            }
-            style={
-              styles.cancelButton
-            }
-          >
-            {updating
-              ? "Updating..."
-              : "Decline"}
-          </button>
+      <div style={styles.actions}>
 
-          <button
-            disabled={updating}
-            onClick={() =>
-              onUpdateStatus(
-                order,
-                "Accepted"
-              )
-            }
-            style={
-              styles.acceptButton
-            }
-          >
-            {updating
-              ? "Accepting..."
-              : "✓ Accept Delivery"}
-          </button>
-        </div>
-      )}
+        {isAssigned && (
+          <>
+            <button
+              disabled={updating}
+              onClick={() =>
+                onUpdateStatus(
+                  order,
+                  "Accepted by Rider"
+                )
+              }
+              style={{
+                ...styles.primaryAction,
+                opacity: updating
+                  ? 0.6
+                  : 1,
+              }}
+            >
+              {updating
+                ? "Accepting..."
+                : "✓ Accept Delivery"}
+            </button>
 
-      {isAccepted && (
-        <button
-          disabled={updating}
-          onClick={() =>
-            onUpdateStatus(
-              order,
-              "Out for Delivery"
-            )
-          }
-          style={
-            styles.startButton
-          }
-        >
-          {updating
-            ? "Starting..."
-            : "🛵 Start Delivery"}
-        </button>
-      )}
+            <button
+              disabled={updating}
+              onClick={() =>
+                onCancel(order)
+              }
+              style={styles.cancelOutline}
+            >
+              Cancel
+            </button>
+          </>
+        )}
 
-      {isOutForDelivery && (
-        <button
-          disabled={updating}
-          onClick={() =>
-            onUpdateStatus(
-              order,
-              "Delivered"
-            )
-          }
-          style={
-            styles.deliveredButton
-          }
-        >
-          {updating
-            ? "Updating..."
-            : "✓ Mark Delivered"}
-        </button>
-      )}
+        {isAccepted && (
+          <>
+            <button
+              disabled={updating}
+              onClick={() =>
+                onUpdateStatus(
+                  order,
+                  "Out for Delivery"
+                )
+              }
+              style={{
+                ...styles.primaryAction,
+                opacity: updating
+                  ? 0.6
+                  : 1,
+              }}
+            >
+              {updating
+                ? "Starting..."
+                : "🛵 Start Delivery"}
+            </button>
+
+            <button
+              disabled={updating}
+              onClick={() =>
+                onCancel(order)
+              }
+              style={styles.cancelOutline}
+            >
+              Cancel
+            </button>
+          </>
+        )}
+
+        {isOutForDelivery && (
+          <>
+            <button
+              disabled={updating}
+              onClick={() =>
+                onUpdateStatus(
+                  order,
+                  "Delivered"
+                )
+              }
+              style={{
+                ...styles.deliveredAction,
+                opacity: updating
+                  ? 0.6
+                  : 1,
+              }}
+            >
+              {updating
+                ? "Updating..."
+                : "✓ Mark Delivered"}
+            </button>
+
+            <button
+              disabled={updating}
+              onClick={() =>
+                onCancel(order)
+              }
+              style={styles.cancelOutline}
+            >
+              Cancel
+            </button>
+          </>
+        )}
+
+      </div>
     </div>
+  );
+}
+
+// =====================================================
+// STATUS BADGE
+// =====================================================
+
+function StatusBadge({ status }) {
+  let background = "#FFF4D6";
+  let color = "#856404";
+
+  if (status === "Accepted by Rider") {
+    background = "#EEE8FF";
+    color = "#6842B8";
+  }
+
+  if (status === "Out for Delivery") {
+    background = "#E6F1FF";
+    color = "#2165A6";
+  }
+
+  if (status === "Delivered") {
+    background = "#E7F5EA";
+    color = "#347044";
+  }
+
+  if (
+    status === "Cancelled by Rider" ||
+    status === "Delivery Cancelled"
+  ) {
+    background = "#FDECEC";
+    color = "#A94442";
+  }
+
+  return (
+    <span
+      style={{
+        ...styles.statusBadge,
+        background,
+        color,
+      }}
+    >
+      {status}
+    </span>
   );
 }
 
@@ -1543,141 +1412,360 @@ function DeliveryCard({
 
 function HistoryCard({
   order,
-  rider,
+  deliveryRate,
 }) {
-  const payout = Number(
-    order.riderPayout ||
-      rider?.defaultDeliveryPay ||
+  const tip = Number(
+    order.tipAmount ||
+      order.tip ||
+      order.customerTip ||
       0
   );
 
-  const tip = Number(
-    order.riderTip || 0
-  );
+  const pay =
+    Number(
+      order.riderDeliveryPay
+    ) || (
+      order.status === "Delivered"
+        ? deliveryRate
+        : 0
+    );
 
-  const totalEarned =
-    payout + tip;
-
-  const delivered =
-    order.status === "Delivered";
-
-  const timestamp =
-    order.deliveredAt ||
-    order.riderCancelledAt ||
-    order.createdAt;
+  const total =
+    Number(
+      order.riderTotalEarning
+    ) || pay + tip;
 
   return (
-    <div
-      style={
-        styles.historyCard
-      }
-    >
-      <div
-        style={
-          styles.historyCardTop
-        }
-      >
-        <div>
-          <span
-            style={
-              styles.historyOrderLabel
-            }
-          >
-            ORDER
-          </span>
+    <div style={styles.historyCard}>
 
+      <div style={styles.historyCardTop}>
+        <div>
           <strong>
-            #
-            {order.id.slice(
-              0,
-              8
-            )}
+            #{order.id.slice(0, 8).toUpperCase()}
           </strong>
+
+          <p>
+            {formatTimestamp(
+              order.deliveredAt ||
+                order.riderCancelledAt ||
+                order.createdAt
+            )}
+          </p>
         </div>
 
-        <span
-          style={{
-            ...styles.historyStatus,
-            background: delivered
-              ? "#E8F5E9"
-              : "#FCE8E6",
-            color: delivered
-              ? "#2E7D32"
-              : "#B42318",
-          }}
-        >
-          {delivered
-            ? "Delivered"
-            : "Cancelled"}
-        </span>
+        <StatusBadge
+          status={order.status}
+        />
       </div>
 
-      <p
-        style={
-          styles.historyDate
-        }
-      >
-        {timestamp?.toDate
-          ? timestamp
-              .toDate()
-              .toLocaleString()
-          : "Recently"}
-      </p>
+      <div style={styles.historyCustomer}>
+        {order.customer?.name ||
+          "Customer"}
+      </div>
 
-      {delivered && (
-        <div
-          style={
-            styles.historyEarnings
-          }
-        >
+      {order.status === "Delivered" && (
+        <div style={styles.historyEarnings}>
+
           <div>
-            <span>
-              Delivery
-            </span>
-
-            <strong>
-              ₹{payout}
-            </strong>
+            <span>Delivery</span>
+            <strong>₹{pay}</strong>
           </div>
 
           <div>
-            <span>
-              Tip
-            </span>
-
-            <strong>
-              ₹{tip}
-            </strong>
+            <span>Tip</span>
+            <strong>₹{tip}</strong>
           </div>
 
-          <div
-            style={
-              styles.historyTotal
-            }
-          >
-            <span>
-              Earned
-            </span>
-
-            <strong>
-              ₹{totalEarned}
-            </strong>
+          <div style={styles.historyTotal}>
+            <span>Total</span>
+            <strong>₹{total}</strong>
           </div>
+
         </div>
       )}
 
-      {order.customer?.name && (
-        <p
-          style={
-            styles.historyCustomer
-          }
-        >
-          👤{" "}
-          {order.customer.name}
-        </p>
+      {order.riderCancellationReason && (
+        <div style={styles.cancelReason}>
+          <span>Cancellation reason</span>
+
+          <p>
+            {order.riderCancellationReason}
+          </p>
+        </div>
       )}
     </div>
   );
+}
+
+// =====================================================
+// EARNINGS SECTION
+// =====================================================
+
+function EarningsSection({
+  deliveryEarnings,
+  tips,
+  total,
+  completed,
+  rate,
+}) {
+  return (
+    <div>
+
+      <div style={styles.earningsHero}>
+        <p>
+          TOTAL EARNED
+        </p>
+
+        <h2>
+          ₹{total}
+        </h2>
+
+        <span>
+          From {completed} completed deliveries
+        </span>
+      </div>
+
+      <div style={styles.earningsGrid}>
+
+        <EarningCard
+          icon="📦"
+          title="Delivery Pay"
+          value={`₹${deliveryEarnings}`}
+          description={
+            rate > 0
+              ? `₹${rate} per delivery`
+              : "Rate not configured"
+          }
+        />
+
+        <EarningCard
+          icon="❤️"
+          title="Customer Tips"
+          value={`₹${tips}`}
+          description="100% of recorded tips"
+        />
+
+      </div>
+
+      <div style={styles.infoCard}>
+        <div style={styles.infoIcon}>
+          ℹ️
+        </div>
+
+        <div>
+          <strong>
+            Earnings are calculated from completed deliveries.
+          </strong>
+
+          <p>
+            Your delivery rate and customer tips are
+            recorded with each completed order.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+// =====================================================
+// PERFORMANCE
+// =====================================================
+
+function PerformanceSection({
+  completed,
+  cancelled,
+  completionRate,
+  active,
+}) {
+  return (
+    <div>
+
+      <div style={styles.performanceHero}>
+        <div>
+          <p style={styles.sectionEyebrow}>
+            DELIVERY PERFORMANCE
+          </p>
+
+          <h2 style={styles.performanceTitle}>
+            {completionRate}%
+          </h2>
+
+          <p style={styles.muted}>
+            Completion rate
+          </p>
+        </div>
+
+        <div style={styles.performanceCircle}>
+          {completionRate}%
+        </div>
+      </div>
+
+      <div style={styles.performanceGrid}>
+
+        <PerformanceCard
+          icon="🛵"
+          label="Active"
+          value={active}
+        />
+
+        <PerformanceCard
+          icon="✓"
+          label="Completed"
+          value={completed}
+        />
+
+        <PerformanceCard
+          icon="×"
+          label="Cancelled"
+          value={cancelled}
+        />
+
+      </div>
+
+    </div>
+  );
+}
+
+// =====================================================
+// SUPPORT COMPONENTS
+// =====================================================
+
+function StatCard({
+  icon,
+  label,
+  value,
+}) {
+  return (
+    <div style={styles.statCard}>
+      <div style={styles.statIcon}>
+        {icon}
+      </div>
+
+      <div>
+        <span style={styles.statLabel}>
+          {label}
+        </span>
+
+        <strong style={styles.statValue}>
+          {value}
+        </strong>
+      </div>
+    </div>
+  );
+}
+
+function EarningCard({
+  icon,
+  title,
+  value,
+  description,
+}) {
+  return (
+    <div style={styles.earningCard}>
+
+      <div style={styles.earningIcon}>
+        {icon}
+      </div>
+
+      <span style={styles.earningTitle}>
+        {title}
+      </span>
+
+      <strong style={styles.earningValue}>
+        {value}
+      </strong>
+
+      <p>
+        {description}
+      </p>
+
+    </div>
+  );
+}
+
+function PerformanceCard({
+  icon,
+  label,
+  value,
+}) {
+  return (
+    <div style={styles.performanceCard}>
+      <div style={styles.performanceIcon}>
+        {icon}
+      </div>
+
+      <span>{label}</span>
+
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function ProfileRow({
+  label,
+  value,
+}) {
+  return (
+    <div style={styles.profileRow}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function LoadingCard() {
+  return (
+    <div style={styles.emptyCard}>
+      <div style={styles.loadingOrb}>
+        🛵
+      </div>
+
+      <p style={styles.muted}>
+        Loading deliveries...
+      </p>
+    </div>
+  );
+}
+
+function EmptyDeliveries() {
+  return (
+    <div style={styles.emptyCard}>
+
+      <div style={styles.emptyIllustration}>
+        ☕
+      </div>
+
+      <h2 style={styles.emptyTitle}>
+        You're all caught up
+      </h2>
+
+      <p style={styles.muted}>
+        No active deliveries right now.
+        New assignments will appear here.
+      </p>
+
+    </div>
+  );
+}
+
+// =====================================================
+// HELPERS
+// =====================================================
+
+function formatTimestamp(timestamp) {
+  if (!timestamp?.toDate) {
+    return "Recently";
+  }
+
+  return timestamp
+    .toDate()
+    .toLocaleString([], {
+      day: "numeric",
+      month: "short",
+      hour: "numeric",
+      minute: "2-digit",
+    });
 }
 
 // =====================================================
@@ -1687,13 +1775,10 @@ function HistoryCard({
 const styles = {
   page: {
     minHeight: "100vh",
-    background:
-      "linear-gradient(180deg, #F8F5F0 0%, #F4EFE8 100%)",
-    padding:
-      "34px 20px 60px",
-    color: "#32170B",
-    fontFamily:
-      "Inter, sans-serif",
+    background: "#F7F3EE",
+    color: "#30251F",
+    padding: "28px 18px 60px",
+    boxSizing: "border-box",
   },
 
   container: {
@@ -1705,114 +1790,113 @@ const styles = {
     maxWidth: 500,
     margin: "0 auto",
     textAlign: "center",
-    padding:
-      "100px 20px",
+    padding: "100px 20px",
   },
 
-  loadingIcon: {
-    fontSize: 42,
-    marginBottom: 15,
+  loadingOrb: {
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    background: "#3B2112",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    margin: "0 auto 18px",
+    fontSize: 28,
+  },
+
+  loadingTitle: {
+    fontFamily:
+      "Playfair Display, serif",
+    fontSize: 22,
+    margin: "0 0 6px",
+  },
+
+  muted: {
+    color: "#81736A",
+    fontSize: 14,
+    lineHeight: 1.6,
+  },
+
+  emailText: {
+    color: "#91837A",
+    fontSize: 13,
+    marginTop: 15,
   },
 
   emptyIcon: {
     fontSize: 42,
-    marginBottom: 12,
+    marginBottom: 14,
   },
 
   emptyTitle: {
     fontFamily:
       "Playfair Display, serif",
-    fontSize: 24,
-    margin:
-      "0 0 10px",
-    color: "#32170B",
-  },
-
-  muted: {
-    color: "#786D65",
-    fontSize: 14,
-    lineHeight: 1.65,
-  },
-
-  emailText: {
-    color: "#968980",
-    fontSize: 13,
-    marginTop: 15,
+    fontSize: 25,
+    margin: "0 0 8px",
   },
 
   header: {
     display: "flex",
-    justifyContent:
-      "space-between",
-    alignItems:
-      "flex-start",
-    gap: 20,
-    marginBottom: 25,
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
   },
 
-  eyebrow: {
-    margin: 0,
-    color: "#A29287",
+  headerEyebrow: {
     fontSize: 10,
     fontWeight: 800,
     letterSpacing: "1.5px",
+    color: "#A08F83",
+    marginBottom: 5,
   },
 
   title: {
-    margin:
-      "7px 0 5px",
+    margin: 0,
     fontFamily:
       "Playfair Display, serif",
     fontSize: 32,
-    letterSpacing:
-      "-0.5px",
-    color: "#32170B",
+    color: "#321A0D",
   },
 
   subtitle: {
-    margin: 0,
-    color: "#786D65",
+    margin: "5px 0 0",
+    color: "#81736A",
     fontSize: 14,
   },
 
-  activeBadge: {
-    display: "flex",
-    alignItems: "center",
-    gap: 7,
-    background: "#E9F5EA",
-    color: "#28733A",
-    padding:
-      "8px 14px",
-    borderRadius: 999,
-    fontSize: 11,
-    fontWeight: 800,
-  },
-
-  activeDot: {
-    width: 7,
-    height: 7,
+  profileButton: {
+    width: 45,
+    height: 45,
     borderRadius: "50%",
-    background: "#35A34A",
+    border: "1px solid #E3D8CF",
+    background: "#fff",
+    color: "#3B2112",
+    cursor: "pointer",
+    fontWeight: 800,
+    fontSize: 16,
   },
 
-  riderCard: {
+  heroCard: {
     background:
-      "linear-gradient(135deg, #3A1A0A, #522712)",
+      "linear-gradient(135deg, #3B2112, #542C17)",
     color: "#fff",
-    borderRadius: 24,
+    borderRadius: 26,
     padding: 23,
+    marginBottom: 16,
+    boxShadow:
+      "0 18px 40px rgba(59,33,18,.16)",
+  },
+
+  heroTop: {
     display: "flex",
     alignItems: "center",
-    gap: 15,
-    marginBottom: 18,
-    boxShadow:
-      "0 15px 35px rgba(59,26,8,.16)",
+    gap: 14,
   },
 
-  riderIcon: {
+  vehicleIcon: {
     width: 54,
     height: 54,
-    flexShrink: 0,
     borderRadius: 17,
     background:
       "rgba(255,255,255,.1)",
@@ -1822,187 +1906,176 @@ const styles = {
     fontSize: 27,
   },
 
-  riderName: {
+  heroLabel: {
     margin: 0,
-    fontSize: 17,
+    fontSize: 9,
+    letterSpacing: "1.3px",
+    opacity: 0.55,
+    fontWeight: 800,
   },
 
-  riderDetails: {
-    margin:
-      "5px 0 0",
+  heroName: {
+    margin: "3px 0",
+    fontFamily:
+      "Playfair Display, serif",
+    fontSize: 21,
+  },
+
+  heroVehicle: {
+    margin: 0,
     fontSize: 12,
     opacity: 0.65,
   },
 
-  deliveryCount: {
-    textAlign: "right",
+  onlineBadge: {
     display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-end",
-  },
-
-  historyButton: {
-    marginTop: 8,
-    border: "none",
+    alignItems: "center",
+    gap: 6,
     background:
       "rgba(255,255,255,.1)",
-    color: "#fff",
-    padding:
-      "6px 10px",
-    borderRadius: 8,
-    fontSize: 10,
+    borderRadius: 999,
+    padding: "7px 10px",
+    fontSize: 11,
     fontWeight: 700,
-    cursor: "pointer",
   },
 
-  earningsGrid: {
+  onlineDot: {
+    width: 7,
+    height: 7,
+    borderRadius: "50%",
+    background: "#63C174",
+    display: "inline-block",
+  },
+
+  heroStats: {
+    display: "flex",
+    alignItems: "center",
+    marginTop: 24,
+    paddingTop: 19,
+    borderTop:
+      "1px solid rgba(255,255,255,.12)",
+  },
+
+  heroStat: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 18,
+    fontWeight: 800,
+  },
+
+  heroDivider: {
+    width: 1,
+    height: 30,
+    background:
+      "rgba(255,255,255,.12)",
+  },
+
+  heroStatSpan: {
+    display: "block",
+  },
+
+  quickStats: {
     display: "grid",
     gridTemplateColumns:
-      "2fr 1fr 1fr",
-    gap: 12,
-    marginBottom: 12,
-  },
-
-  earningsHero: {
-    background: "#fff",
-    border:
-      "1px solid #EDE5DC",
-    borderRadius: 20,
-    padding: 20,
-    boxShadow:
-      "0 8px 25px rgba(59,26,8,.04)",
-  },
-
-  earningsHeroTop: {
-    display: "flex",
-    justifyContent:
-      "space-between",
-    alignItems: "center",
-  },
-
-  earningsLabel: {
-    fontSize: 10,
-    fontWeight: 800,
-    letterSpacing: "1px",
-    color: "#988A81",
-  },
-
-  moneyIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: "50%",
-    background: "#F5EBDD",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontWeight: 800,
-    color: "#8A5A32",
-  },
-
-  earningsAmount: {
-    display: "block",
-    fontFamily:
-      "Playfair Display, serif",
-    fontSize: 30,
-    marginTop: 12,
-    color: "#32170B",
-  },
-
-  earningsSubtext: {
-    margin:
-      "5px 0 0",
-    color: "#968980",
-    fontSize: 11,
+      "repeat(3, 1fr)",
+    gap: 10,
+    marginBottom: 25,
   },
 
   statCard: {
     background: "#fff",
-    border:
-      "1px solid #EDE5DC",
-    borderRadius: 20,
-    padding: 18,
+    border: "1px solid #E9E0D8",
+    borderRadius: 17,
+    padding: 14,
     display: "flex",
-    flexDirection: "column",
-    justifyContent:
-      "space-between",
-    minHeight: 100,
+    alignItems: "center",
+    gap: 10,
+  },
+
+  statIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    background: "#F8F1E9",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   statLabel: {
-    color: "#A09289",
-    fontSize: 9,
-    fontWeight: 800,
-    letterSpacing: "1px",
+    display: "block",
+    fontSize: 10,
+    color: "#93857B",
+    marginBottom: 2,
   },
 
   statValue: {
-    fontSize: 20,
-    marginTop: 8,
+    fontSize: 16,
+    color: "#342319",
   },
 
-  statHint: {
-    color: "#A09289",
-    fontSize: 10,
-  },
-
-  performanceCard: {
-    background: "#FBF8F4",
-    border:
-      "1px solid #E9E0D7",
-    borderRadius: 18,
-    padding:
-      "17px 20px",
+  tabs: {
     display: "flex",
-    alignItems: "center",
-    justifyContent:
-      "space-around",
-    marginBottom: 35,
+    gap: 5,
+    background: "#EDE5DD",
+    borderRadius: 13,
+    padding: 4,
+    marginBottom: 27,
   },
 
-  performanceItem: {
-    display: "flex",
-    flexDirection: "column",
-    textAlign: "center",
-    gap: 3,
+  tab: {
+    flex: 1,
+    border: "none",
+    background: "transparent",
+    color: "#806F64",
+    padding: "10px 8px",
+    borderRadius: 10,
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 700,
   },
 
-  performanceDivider: {
-    height: 30,
-    width: 1,
-    background: "#E3D9D0",
+  activeTab: {
+    background: "#fff",
+    color: "#3B2112",
+    boxShadow:
+      "0 2px 8px rgba(0,0,0,.05)",
+  },
+
+  tabCount: {
+    marginLeft: 5,
+    opacity: 0.6,
   },
 
   sectionHeader: {
     display: "flex",
-    justifyContent:
-      "space-between",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 15,
   },
 
   sectionEyebrow: {
     margin: 0,
-    color: "#A09289",
+    color: "#A08F83",
     fontSize: 9,
     fontWeight: 800,
-    letterSpacing: "1.4px",
+    letterSpacing: "1.2px",
   },
 
   sectionTitle: {
-    margin:
-      "4px 0 0",
+    margin: "4px 0 0",
     fontFamily:
       "Playfair Display, serif",
     fontSize: 24,
-    color: "#32170B",
+    color: "#352319",
   },
 
   countBadge: {
-    background: "#32170B",
+    minWidth: 31,
+    height: 31,
+    borderRadius: "50%",
+    background: "#3B2112",
     color: "#fff",
-    minWidth: 30,
-    height: 30,
-    borderRadius: 999,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -2013,144 +2086,156 @@ const styles = {
   orderList: {
     display: "flex",
     flexDirection: "column",
-    gap: 18,
+    gap: 17,
   },
 
   orderCard: {
     background: "#fff",
+    border: "1px solid #E8DED5",
     borderRadius: 24,
-    padding: 24,
-    border:
-      "1px solid #EDE5DC",
+    padding: 21,
     boxShadow:
-      "0 10px 30px rgba(59,26,8,.055)",
+      "0 8px 25px rgba(52,35,25,.045)",
   },
 
   orderHeader: {
     display: "flex",
-    justifyContent:
-      "space-between",
-    alignItems:
-      "flex-start",
-    marginBottom: 20,
-    gap: 15,
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 17,
   },
 
   orderLabel: {
-    margin: 0,
-    color: "#A09289",
+    color: "#A08F83",
     fontSize: 9,
-    fontWeight: 800,
     letterSpacing: "1.2px",
+    fontWeight: 800,
   },
 
   orderId: {
-    margin:
-      "4px 0 3px",
+    margin: "3px 0",
     fontFamily:
       "Playfair Display, serif",
-    fontSize: 21,
+    fontSize: 19,
   },
 
   orderTime: {
     margin: 0,
-    color: "#9A8C83",
+    color: "#9B8D83",
     fontSize: 10,
   },
 
   statusBadge: {
-    padding:
-      "7px 11px",
+    padding: "7px 10px",
     borderRadius: 999,
     fontSize: 10,
     fontWeight: 800,
-    whiteSpace:
-      "nowrap",
-  },
-
-  statusAssigned: {
-    background: "#FFF3D9",
-    color: "#9A6800",
-  },
-
-  statusAccepted: {
-    background: "#EDE8FF",
-    color: "#6247A8",
-  },
-
-  statusOut: {
-    background: "#E5F1FF",
-    color: "#1761A0",
+    maxWidth: 150,
+    textAlign: "center",
   },
 
   customerBox: {
-    background: "#FCF8F3",
+    background: "#FBF7F2",
+    border: "1px solid #F0E8DF",
     borderRadius: 17,
-    padding: 18,
-    marginBottom: 22,
-    border:
-      "1px solid #F1E9E0",
+    padding: 15,
+    marginBottom: 19,
+  },
+
+  customerTop: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  customerAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: "50%",
+    background: "#E9DCD0",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: 800,
+    color: "#5A3926",
   },
 
   customerName: {
-    margin:
-      "0 0 9px",
-    fontWeight: 700,
-    fontSize: 15,
+    margin: 0,
+    fontSize: 14,
+    fontWeight: 800,
   },
 
   customerDetail: {
-    margin:
-      "5px 0",
-    color: "#62564E",
-    fontSize: 13,
+    margin: "3px 0 0",
+    color: "#84766C",
+    fontSize: 12,
   },
 
-  address: {
-    margin:
-      "8px 0 0",
-    color: "#3E2B20",
+  addressRow: {
+    display: "flex",
+    gap: 8,
+    marginTop: 13,
+    color: "#4D4038",
     fontSize: 13,
     lineHeight: 1.5,
+  },
+
+  addressIcon: {
+    flexShrink: 0,
   },
 
   instructions: {
     marginTop: 13,
-    paddingTop: 12,
+    paddingTop: 11,
     borderTop:
-      "1px solid #E8DED5",
-    color: "#8C7B70",
-    fontSize: 11,
-    lineHeight: 1.5,
+      "1px solid #E9DED4",
+  },
+
+  instructionsSpan: {
+    fontSize: 9,
+  },
+
+  instructions p: {
+    margin: "4px 0 0",
+    color: "#796A60",
+    fontSize: 12,
+  },
+
+  itemsHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
 
   itemsTitle: {
-    margin:
-      "0 0 8px",
+    margin: 0,
     fontFamily:
       "Playfair Display, serif",
     fontSize: 16,
   },
 
+  itemCount: {
+    color: "#9A8B81",
+    fontSize: 10,
+  },
+
   items: {
-    display: "flex",
-    flexDirection: "column",
-    marginBottom: 18,
+    marginBottom: 16,
   },
 
   item: {
     display: "flex",
     gap: 12,
-    padding:
-      "11px 0",
+    padding: "11px 0",
     borderBottom:
-      "1px solid #F2ECE5",
+      "1px solid #F0EAE4",
   },
 
   itemName: {
     margin: 0,
-    fontWeight: 600,
     fontSize: 13,
+    fontWeight: 700,
   },
 
   itemOptions: {
@@ -2158,199 +2243,196 @@ const styles = {
     flexWrap: "wrap",
     gap: 5,
     marginTop: 5,
-    color: "#8C7B70",
+    color: "#96877D",
     fontSize: 10,
+  },
+
+  itemOptionsSpan: {
+    background: "#F6F0EA",
+    padding: "3px 6px",
+    borderRadius: 5,
   },
 
   itemPrice: {
     fontSize: 13,
-  },
-
-  orderEarnings: {
-    display: "flex",
-    justifyContent:
-      "space-between",
-    background: "#F5F1EB",
-    borderRadius: 13,
-    padding:
-      "12px 14px",
-    marginBottom: 12,
-  },
-
-  orderEarnings: {
-    display: "flex",
-    gap: 30,
-    background: "#F4F8F1",
-    borderRadius: 13,
-    padding:
-      "12px 14px",
-    marginBottom: 12,
+    whiteSpace: "nowrap",
   },
 
   paymentBox: {
-    background: "#F8F3ED",
-    borderRadius: 14,
-    padding: 15,
     display: "flex",
-    justifyContent:
-      "space-between",
-    marginBottom: 17,
+    justifyContent: "space-between",
+    alignItems: "center",
+    background: "#F7F1EA",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 9,
   },
 
   paymentLabel: {
     display: "block",
-    color: "#8C7B70",
+    color: "#9A8B81",
     fontSize: 9,
-    marginBottom: 4,
+    fontWeight: 700,
     letterSpacing: ".6px",
+    marginBottom: 3,
+  },
+
+  paymentRight: {
+    textAlign: "right",
   },
 
   total: {
     fontSize: 17,
   },
 
-  actionGroup: {
-    display: "grid",
-    gridTemplateColumns:
-      "110px 1fr",
-    gap: 10,
+  tipBox: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    background: "#FFF8E9",
+    color: "#806326",
+    borderRadius: 12,
+    padding: "10px 13px",
+    marginBottom: 12,
+    fontSize: 12,
   },
 
-  cancelButton: {
-    border:
-      "1px solid #E4D8D1",
+  actions: {
+    display: "flex",
+    gap: 9,
+    marginTop: 13,
+  },
+
+  primaryAction: {
+    flex: 1,
+    border: "none",
+    background: "#3B2112",
+    color: "#fff",
+    padding: "14px",
+    borderRadius: 12,
+    fontWeight: 800,
+    cursor: "pointer",
+    fontSize: 13,
+  },
+
+  deliveredAction: {
+    flex: 1,
+    border: "none",
+    background: "#39824A",
+    color: "#fff",
+    padding: "14px",
+    borderRadius: 12,
+    fontWeight: 800,
+    cursor: "pointer",
+    fontSize: 13,
+  },
+
+  cancelOutline: {
+    border: "1px solid #E1D4CC",
     background: "#fff",
-    color: "#8A4B3D",
-    padding:
-      "14px 15px",
-    borderRadius: 13,
+    color: "#9B4A45",
+    padding: "14px 16px",
+    borderRadius: 12,
     fontWeight: 700,
-    cursor: "pointer",
-  },
-
-  acceptButton: {
-    border: "none",
-    background: "#3B1A08",
-    color: "#fff",
-    padding:
-      "14px 15px",
-    borderRadius: 13,
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-
-  startButton: {
-    width: "100%",
-    background: "#1765A5",
-    color: "#fff",
-    border: "none",
-    padding:
-      "15px 20px",
-    borderRadius: 13,
-    fontWeight: 700,
-    fontSize: 14,
-    cursor: "pointer",
-  },
-
-  deliveredButton: {
-    width: "100%",
-    background: "#278B52",
-    color: "#fff",
-    border: "none",
-    padding:
-      "15px 20px",
-    borderRadius: 13,
-    fontWeight: 700,
-    fontSize: 14,
     cursor: "pointer",
   },
 
   emptyCard: {
     background: "#fff",
+    border: "1px solid #E8DED5",
     borderRadius: 24,
-    padding:
-      "60px 25px",
+    padding: "60px 25px",
     textAlign: "center",
-    border:
-      "1px solid #EDE5DC",
   },
 
-  historyBackdrop: {
+  emptyIllustration: {
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    background: "#F7EEE5",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    margin: "0 auto 17px",
+    fontSize: 27,
+  },
+
+  historyLaunch: {
+    width: "100%",
+    marginTop: 17,
+    padding: 14,
+    borderRadius: 13,
+    border: "1px solid #E3D8CF",
+    background: "#fff",
+    display: "flex",
+    justifyContent: "space-between",
+    cursor: "pointer",
+    color: "#4B392D",
+    fontWeight: 700,
+  },
+
+  overlay: {
     position: "fixed",
     inset: 0,
-    background:
-      "rgba(25,15,10,.38)",
-    backdropFilter:
-      "blur(3px)",
+    background: "rgba(30,20,14,.38)",
+    backdropFilter: "blur(3px)",
     zIndex: 9998,
   },
 
-  historyDrawer: {
+  drawer: {
     position: "fixed",
-    top: 0,
     right: 0,
-    width:
-      "min(470px, 94vw)",
+    top: 0,
+    width: "min(470px, 94vw)",
     height: "100vh",
     background: "#FCF9F5",
     zIndex: 9999,
-    boxShadow:
-      "-15px 0 50px rgba(0,0,0,.18)",
-    padding: "28px",
+    padding: 26,
+    boxSizing: "border-box",
     overflowY: "auto",
+    boxShadow:
+      "-15px 0 45px rgba(0,0,0,.16)",
   },
 
-  historyHeader: {
+  profileDrawer: {
+    position: "fixed",
+    right: 0,
+    top: 0,
+    width: "min(420px, 94vw)",
+    height: "100vh",
+    background: "#FCF9F5",
+    zIndex: 9999,
+    padding: 26,
+    boxSizing: "border-box",
+    overflowY: "auto",
+    boxShadow:
+      "-15px 0 45px rgba(0,0,0,.16)",
+  },
+
+  drawerHeader: {
     display: "flex",
-    justifyContent:
-      "space-between",
-    alignItems:
-      "flex-start",
-    paddingBottom: 20,
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingBottom: 18,
     borderBottom:
-      "1px solid #E8E0D9",
+      "1px solid #E6DDD5",
+    marginBottom: 20,
   },
 
-  closeHistoryButton: {
+  drawerSubtitle: {
+    color: "#88796F",
+    fontSize: 13,
+    marginBottom: 20,
+  },
+
+  closeButton: {
     width: 38,
     height: 38,
     borderRadius: "50%",
-    border:
-      "1px solid #E1D8D0",
+    border: "1px solid #DED3CB",
     background: "#fff",
-    color: "#3B302A",
-    fontSize: 24,
+    fontSize: 23,
     cursor: "pointer",
-  },
-
-  historyTabs: {
-    display: "flex",
-    gap: 8,
-    margin:
-      "20px 0",
-    background: "#F0EAE3",
-    padding: 5,
-    borderRadius: 12,
-  },
-
-  historyTab: {
-    flex: 1,
-    border: "none",
-    background: "transparent",
-    padding:
-      "10px 8px",
-    borderRadius: 9,
-    color: "#806F64",
-    fontSize: 11,
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-
-  historyTabActive: {
-    background: "#fff",
-    color: "#32170B",
-    boxShadow:
-      "0 2px 8px rgba(0,0,0,.05)",
   },
 
   historyList: {
@@ -2361,81 +2443,363 @@ const styles = {
 
   historyCard: {
     background: "#fff",
-    border:
-      "1px solid #EDE5DC",
+    border: "1px solid #E9DFD7",
     borderRadius: 17,
-    padding: 16,
+    padding: 15,
   },
 
   historyCardTop: {
     display: "flex",
-    justifyContent:
-      "space-between",
-    alignItems: "center",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
 
-  historyOrderLabel: {
+  historyCardTopP: {
+    margin: "4px 0 0",
+    color: "#998A80",
+    fontSize: 10,
+  },
+
+  historyCustomer: {
+    marginTop: 12,
+    fontSize: 13,
+    fontWeight: 700,
+  },
+
+  historyEarnings: {
+    display: "grid",
+    gridTemplateColumns:
+      "1fr 1fr 1fr",
+    gap: 8,
+    marginTop: 13,
+    paddingTop: 12,
+    borderTop:
+      "1px solid #EFE8E2",
+  },
+
+  historyEarningsSpan: {
     display: "block",
-    fontSize: 8,
-    color: "#A09289",
-    fontWeight: 800,
-    letterSpacing: 1,
+    color: "#9A8C82",
+    fontSize: 9,
     marginBottom: 3,
   },
 
-  historyStatus: {
-    padding:
-      "5px 9px",
-    borderRadius: 999,
-    fontSize: 9,
-    fontWeight: 800,
-  },
-
-  historyDate: {
-    color: "#9A8C83",
-    fontSize: 10,
-    margin:
-      "8px 0 13px",
-  },
-
-  historyEarnings: {
-    display: "grid",
-    gridTemplateColumns:
-      "1fr 1fr 1.2fr",
-    gap: 8,
-    paddingTop: 12,
-    borderTop:
-      "1px solid #F0E9E2",
-  },
-
-  historyEarnings: {
-    display: "grid",
-    gridTemplateColumns:
-      "1fr 1fr 1.2fr",
-    gap: 8,
-    paddingTop: 12,
-    borderTop:
-      "1px solid #F0E9E2",
+  historyEarningsStrong: {
+    fontSize: 13,
   },
 
   historyTotal: {
     textAlign: "right",
   },
 
- 
-  historyCustomer: {
-    margin:
-      "13px 0 0",
-    paddingTop: 11,
-    borderTop:
-      "1px solid #F0E9E2",
-    color: "#62564E",
+  cancelReason: {
+    marginTop: 12,
+    padding: 10,
+    borderRadius: 10,
+    background: "#FDF0EF",
+    color: "#87524D",
     fontSize: 11,
   },
 
-  historyEmpty: {
+  cancelReasonSpan: {
+    fontWeight: 800,
+    fontSize: 9,
+    textTransform: "uppercase",
+  },
+
+  cancelReasonP: {
+    margin: "4px 0 0",
+  },
+
+  earningsHero: {
+    background:
+      "linear-gradient(135deg,#3B2112,#5A3019)",
+    color: "#fff",
+    borderRadius: 24,
+    padding: 27,
+    marginBottom: 14,
+  },
+
+  earningsHeroP: {
+    margin: 0,
+    fontSize: 9,
+    letterSpacing: "1.2px",
+    opacity: .6,
+  },
+
+  earningsHeroH2: {
+    fontFamily:
+      "Playfair Display, serif",
+    fontSize: 40,
+    margin: "8px 0",
+  },
+
+  earningsHeroSpan: {
+    fontSize: 12,
+    opacity: .65,
+  },
+
+  earningsGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 12,
+  },
+
+  earningCard: {
+    background: "#fff",
+    border: "1px solid #E8DED5",
+    borderRadius: 18,
+    padding: 18,
+  },
+
+  earningIcon: {
+    fontSize: 22,
+    marginBottom: 14,
+  },
+
+  earningTitle: {
+    display: "block",
+    color: "#87786E",
+    fontSize: 11,
+  },
+
+  earningValue: {
+    display: "block",
+    fontSize: 23,
+    marginTop: 4,
+  },
+
+  earningCardP: {
+    color: "#9A8B81",
+    fontSize: 10,
+    marginBottom: 0,
+  },
+
+  infoCard: {
+    display: "flex",
+    gap: 11,
+    marginTop: 13,
+    background: "#F8F1E9",
+    borderRadius: 15,
+    padding: 15,
+    color: "#67554A",
+    fontSize: 11,
+  },
+
+  infoCardP: {
+    margin: "4px 0 0",
+    color: "#8C7C72",
+    lineHeight: 1.5,
+  },
+
+  performanceHero: {
+    background: "#fff",
+    border: "1px solid #E8DED5",
+    borderRadius: 23,
+    padding: 23,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 13,
+  },
+
+  performanceTitle: {
+    fontFamily:
+      "Playfair Display, serif",
+    fontSize: 38,
+    margin: "5px 0 0",
+  },
+
+  performanceCircle: {
+    width: 82,
+    height: 82,
+    borderRadius: "50%",
+    border: "7px solid #E4D5C7",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: 800,
+    color: "#3B2112",
+  },
+
+  performanceGrid: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(3,1fr)",
+    gap: 10,
+  },
+
+  performanceCard: {
+    background: "#fff",
+    border: "1px solid #E8DED5",
+    borderRadius: 17,
+    padding: 16,
+  },
+
+  performanceIcon: {
+    fontSize: 18,
+    marginBottom: 10,
+  },
+
+  performanceCardSpan: {
+    display: "block",
+    color: "#8F8076",
+    fontSize: 10,
+  },
+
+  performanceCardStrong: {
+    display: "block",
+    fontSize: 22,
+    marginTop: 3,
+  },
+
+  profileAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: "50%",
+    background: "#3B2112",
+    color: "#fff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    margin: "25px auto 12px",
+    fontSize: 30,
+    fontWeight: 800,
+  },
+
+  profileName: {
     textAlign: "center",
-    padding:
-      "70px 20px",
+    fontFamily:
+      "Playfair Display, serif",
+    fontSize: 25,
+    margin: 0,
+  },
+
+  profileStatus: {
+    width: "fit-content",
+    margin: "9px auto 25px",
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    color: "#39824A",
+    fontSize: 11,
+    fontWeight: 700,
+  },
+
+  profileInfo: {
+    background: "#fff",
+    border: "1px solid #E8DED5",
+    borderRadius: 18,
+    overflow: "hidden",
+  },
+
+  profileRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 20,
+    padding: "15px 16px",
+    borderBottom:
+      "1px solid #F0EAE5",
+    fontSize: 12,
+  },
+
+  profileRowSpan: {
+    color: "#95867C",
+  },
+
+  profileRowStrong: {
+    textAlign: "right",
+  },
+
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(30,20,14,.45)",
+    backdropFilter: "blur(4px)",
+    zIndex: 10000,
+  },
+
+  cancelModal: {
+    position: "fixed",
+    width: "min(430px, 90vw)",
+    left: "50%",
+    top: "50%",
+    transform:
+      "translate(-50%, -50%)",
+    background: "#fff",
+    borderRadius: 24,
+    padding: 25,
+    zIndex: 10001,
+    boxShadow:
+      "0 25px 70px rgba(0,0,0,.2)",
+  },
+
+  cancelIcon: {
+    width: 45,
+    height: 45,
+    borderRadius: "50%",
+    background: "#FCEAE8",
+    color: "#A94442",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: 900,
+    fontSize: 20,
+  },
+
+  modalTitle: {
+    fontFamily:
+      "Playfair Display, serif",
+    fontSize: 25,
+    margin: "17px 0 7px",
+  },
+
+  modalText: {
+    color: "#81736A",
+    fontSize: 13,
+    lineHeight: 1.5,
+  },
+
+  textarea: {
+    width: "100%",
+    boxSizing: "border-box",
+    resize: "vertical",
+    border:
+      "1px solid #DED3CA",
+    borderRadius: 12,
+    padding: 12,
+    outline: "none",
+    fontFamily: "inherit",
+    fontSize: 13,
+    marginTop: 8,
+  },
+
+  modalActions: {
+    display: "flex",
+    gap: 9,
+    marginTop: 14,
+  },
+
+  secondaryButton: {
+    flex: 1,
+    border:
+      "1px solid #DED3CA",
+    background: "#fff",
+    color: "#4D4037",
+    padding: 13,
+    borderRadius: 11,
+    cursor: "pointer",
+    fontWeight: 700,
+  },
+
+  cancelButton: {
+    flex: 1,
+    border: "none",
+    background: "#A94442",
+    color: "#fff",
+    padding: 13,
+    borderRadius: 11,
+    cursor: "pointer",
+    fontWeight: 700,
   },
 };
