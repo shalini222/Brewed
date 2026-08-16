@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import {
+  doc,
+  onSnapshot,
+  updateDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+
+
 import { db } from "../firebase";
 import { jsPDF } from "jspdf"; 
 import { useCart } from "../context/CartContext"; 
@@ -130,8 +137,11 @@ useEffect(() => {
   id: snapshot.id,
   ...order,
 });
+
+setOrderCreatedAt(order.createdAt || null);
+setSelectedTip(order.tipAmount || null);
       
-      setOrderCreatedAt(order.createdAt || null);
+      
 
       const step = STATUS_TO_STEP[order.status] || 1;
 
@@ -195,6 +205,33 @@ useEffect(() => {
 
     return { subtotal, calculatedTax, deliveryFee, codSurcharge, discount };
   };
+
+
+
+const handleTipSelection = async (amount) => {
+  if (!orderSnapshot?.id) return;
+
+  try {
+    const orderRef = doc(db, "orders", orderSnapshot.id);
+
+    const newTip = selectedTip === amount ? 0 : amount;
+
+    await updateDoc(orderRef, {
+      tipAmount: newTip,
+      tipStatus: newTip > 0 ? "added" : "removed",
+      tipAddedAt: newTip > 0 ? serverTimestamp() : null,
+    });
+
+    setSelectedTip(newTip || null);
+  } catch (error) {
+    console.error("Failed to update tip:", error);
+    alert("Unable to update tip. Please try again.");
+  }
+};
+
+
+
+  
 
   const handleDownloadReceipt = () => {
     const doc = new jsPDF({
@@ -360,7 +397,7 @@ useEffect(() => {
 
   const OrderInformationCard = () => {
     const { subtotal, calculatedTax, deliveryFee, codSurcharge, discount } = getCalculatedFees();
-    const driverTip = selectedTip || 0;
+    const driverTip = Number(liveOrder?.tipAmount || 0);
     const grandTotal = subtotal + calculatedTax + deliveryFee + codSurcharge + driverTip - discount;
 
     return (
@@ -1139,7 +1176,7 @@ useEffect(() => {
                       {[20, 30, 50].map((amount) => (
                         <button
                           key={amount}
-                          onClick={() => setSelectedTip(selectedTip === amount ? null : amount)}
+                          onClick={() => handleTipSelection(amount)}
                           className={`tip-pill ${selectedTip === amount ? "active" : ""}`}
                         >
                           ₹{amount}
