@@ -607,19 +607,46 @@ const toggleDutyStatus = async () => {
               </p>
             </div>
 
-            <button
+      <button
   onClick={toggleDutyStatus}
   disabled={updatingDuty}
   style={{
     ...styles.onlineBadge,
+
+    background:
+      rider.dutyStatus === "On Duty"
+        ? "#D9FF8A"
+        : "#E8E3DD",
+
+    color:
+      rider.dutyStatus === "On Duty"
+        ? "#294000"
+        : "#6F675F",
+
     cursor: updatingDuty
       ? "default"
       : "pointer",
+
     border: "none",
+
     opacity: updatingDuty ? 0.6 : 1,
   }}
 >
-  <span style={styles.onlineDot} />
+  <span
+    style={{
+      ...styles.onlineDot,
+
+      background:
+        rider.dutyStatus === "On Duty"
+          ? "#8CFF00"
+          : "#9B948C",
+
+      boxShadow:
+        rider.dutyStatus === "On Duty"
+          ? "0 0 8px #8CFF00"
+          : "none",
+    }}
+  />
 
   {updatingDuty
     ? "Updating..."
