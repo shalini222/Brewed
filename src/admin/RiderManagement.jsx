@@ -618,33 +618,37 @@ export default function RidersAdmin({ setPage, setActivePage }) {
                 </div>
               </div>
 
-              <div style={formActions}>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  style={{
-                    ...styles.primaryButton,
-                    opacity: saving ? 0.6 : 1,
-                  }}
-                >
-                  {saving
-                    ? "Saving..."
-                    : editingRider
-                    ? "Save Changes"
-                    : "Add Rider"}
-                </button>
+             <div style={styles.formActions}>
+  <button
+    type="submit"
+    disabled={saving}
+    style={{
+      ...styles.primaryButton,
+      opacity: saving ? 0.6 : 1,
+    }}
+  >
+    {saving
+      ? "Saving..."
+      : editingRider
+      ? "Save Changes"
+      : "Add Rider"}
+  </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(false);
-                    setEditingRider(null);
-                  }}
-                  style={styles.secondaryButton}
-                >
-                  Cancel
-                </button>
-              </div>
+  <button
+    type="button"
+    onClick={() => {
+      setShowForm(false);
+      setEditingRider(null);
+    }}
+    style={styles.secondaryButton}
+  >
+    Cancel
+  </button>
+</div>
+              
+
+               
+              
 
             </form>
           </div>
@@ -1282,6 +1286,15 @@ const styles = {
     fontSize: 10,
     fontWeight: 700,
     letterSpacing: "1.3px",
+  },
+
+
+
+  
+  formActions: {
+    display: "flex",
+    gap: 10,
+    marginTop: 22,
   },
 
   title: {
