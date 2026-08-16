@@ -1002,10 +1002,7 @@ const styles = {
     fontSize: 12,
   },
 
-  instructions p: {
-    margin:
-      "5px 0 0",
-  },
+
 
   itemsTitle: {
     margin:
