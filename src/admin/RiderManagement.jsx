@@ -819,32 +819,39 @@ const toggleDutyStatus = async (rider) => {
   </span>
 
   {/* DUTY STATUS */}
-  {rider.status === "Active" && (
+{rider.status === "Active" && (
+  <span
+    style={{
+      ...styles.statusBadge,
+      background:
+        rider.dutyStatus === "On Duty"
+          ? "#D9FF8A"
+          : "#E8E3DD",
+      color:
+        rider.dutyStatus === "On Duty"
+          ? "#294000"
+          : "#6F675F",
+    }}
+  >
     <span
       style={{
-        ...styles.statusBadge,
-        background: rider.isOnDuty
-          ? "#E8F4EA"
-          : "#F1ECE8",
-        color: rider.isOnDuty
-          ? "#397044"
-          : "#7C7068",
+        ...styles.statusDot,
+        background:
+          rider.dutyStatus === "On Duty"
+            ? "#8CFF00"
+            : "#9B948C",
+        boxShadow:
+          rider.dutyStatus === "On Duty"
+            ? "0 0 7px #8CFF00"
+            : "none",
       }}
-    >
-      <span
-        style={{
-          ...styles.statusDot,
-          background: rider.isOnDuty
-            ? "#397044"
-            : "#8A7D73",
-        }}
-      />
+    />
 
-      {rider.isOnDuty
-        ? "On Duty"
-        : "Off Duty"}
-    </span>
-  )}
+    {rider.dutyStatus === "On Duty"
+      ? "On Duty"
+      : "Off Duty"}
+  </span>
+)}
 
 </div>
 
