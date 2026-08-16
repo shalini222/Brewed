@@ -265,6 +265,7 @@ export default function RidersAdmin({ setPage, setActivePage }) {
         vehicleType: form.vehicleType,
         vehicleNumber: form.vehicleNumber.trim(),
         deliveryPay,
+        deliveryRate: deliveryPay,
       };
 
       if (editingRider) {
