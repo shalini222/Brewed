@@ -275,39 +275,43 @@ export default function RiderPage({ setPage, setActivePage }) {
       // DELIVERED
       // -----------------------------------------------
 
-      if (newStatus === "Delivered") {
-        updateData.deliveredAt =
-          serverTimestamp();
+     if (newStatus === "Delivered") {
+  const deliveryPay = Number(
+    rider?.deliveryRate || 0
+  );
 
-        updateData.trackingUpdatedAt =
-          serverTimestamp();
+  const tipAmount = Number(
+    order.tipAmount ||
+      order.tip ||
+      order.customerTip ||
+      0
+  );
 
-        updateData.deliveryPartnerMessage =
-          "Your order has been delivered. Enjoy! ☕";
+  const totalEarning =
+    deliveryPay + tipAmount;
 
-        // Save delivery earnings snapshot.
-        updateData.riderDeliveryPay =
-          Number(rider?.deliveryRate || 0);
+  updateData.deliveredAt =
+    serverTimestamp();
 
-        updateData.riderTipAmount =
-          Number(
-            order.tipAmount ||
-              order.tip ||
-              order.customerTip ||
-              0
-          );
+  updateData.trackingUpdatedAt =
+    serverTimestamp();
 
-        updateData.riderTotalEarning =
-          Number(
-            rider?.deliveryRate || 0
-          ) +
-          Number(
-            order.tipAmount ||
-              order.tip ||
-              order.customerTip ||
-              0
-          );
-      }
+  updateData.deliveryPartnerMessage =
+    "Your order has been delivered. Enjoy! ☕";
+
+  // ==============================
+  // RIDER EARNINGS SNAPSHOT
+  // ==============================
+
+  updateData.riderDeliveryPay =
+    deliveryPay;
+
+  updateData.riderTipAmount =
+    tipAmount;
+
+  updateData.riderTotalEarning =
+    totalEarning;
+}
 
       await updateDoc(
         orderRef,
