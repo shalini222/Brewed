@@ -6,7 +6,17 @@ import {
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth, googleProvider, db } from "../firebase";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+
 import walletService from "../service/walletService";
 import rewardService from "../service/rewardService";
 
@@ -55,15 +65,49 @@ export default function Login({setPage}) {
     }
 
     const user = userCredential.user;
-    alert("AUTH SUCCESS");
+  
 
+
+   // ==========================================
+// CHECK IF THIS ACCOUNT IS A RIDER
+// ==========================================
+
+const riderQuery = query(
+  collection(db, "riders"),
+  where("email", "==", user.email)
+);
+
+const riderSnapshot = await getDocs(riderQuery);
+
+if (!riderSnapshot.empty) {
+  const riderDoc = riderSnapshot.docs[0];
+  const riderData = riderDoc.data();
+
+  if (riderData.status !== "Active") {
+    setMessage(
+      "Your rider account is currently inactive. Please contact the administrator."
+    );
+    setLoading(false);
+    return;
+  }
+
+  // This is a rider account.
+  // Do NOT run customer wallet/reward setup.
+  setPage("rider");
+
+  return;
+}
+
+
+
+    
 
     const userRef = doc(db, "users", user.uid);
 
     
-   alert("🔥 BEFORE FIRESTORE READ");
-const userSnap = await getDoc(userRef);
-     alert("🔥 AFTER FIRESTORE READ");
+
+    const userSnap = await getDoc(userRef);
+     
     
 
 if (!userSnap.exists()) {
