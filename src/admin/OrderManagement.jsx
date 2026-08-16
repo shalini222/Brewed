@@ -192,11 +192,10 @@ export default function OrderManagement({ setPage, setActivePage }) {
   }, [orders]);
 
 
- useEffect(() => {
-  const loadRiders = async () => {
-    try {
-      const snapshot = await getDocs(collection(db, "riders"));
-
+useEffect(() => {
+  const unsubscribe = onSnapshot(
+    collection(db, "riders"),
+    (snapshot) => {
       const activeRiders = snapshot.docs
         .map((riderDoc) => ({
           id: riderDoc.id,
@@ -209,12 +208,13 @@ export default function OrderManagement({ setPage, setActivePage }) {
         );
 
       setRiders(activeRiders);
-    } catch (error) {
+    },
+    (error) => {
       console.error("Error loading riders:", error);
     }
-  };
+  );
 
-  loadRiders();
+  return () => unsubscribe();
 }, []);
 
 
