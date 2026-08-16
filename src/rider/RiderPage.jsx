@@ -1,937 +1,702 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   collection,
-  getDocs,
-  addDoc,
-  deleteDoc,
-  updateDoc,
-  doc,
   onSnapshot,
-  serverTimestamp,
   query,
-  orderBy,
-  getDoc,
-  setDoc,
+  where,
+  doc,
+  updateDoc,
+  serverTimestamp,
 } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 
-import { db } from "../firebase";
-import walletService from "../service/walletService";
+import { db, auth } from "../firebase";
 
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  BarChart,
-  Bar,
-} from "recharts";
-
-export default function OrderManagement({ setPage, setActivePage }) {
-  const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("All");
+export default function RiderPage() {
+  const [rider, setRider] = useState(null);
   const [orders, setOrders] = useState([]);
-  const [orderLoading, setOrderLoading] = useState(true);
-  const [orderSearch, setOrderSearch] = useState("");
-  const [orderFilter, setOrderFilter] = useState("All");
-  const [analytics, setAnalytics] = useState([]);
-  const [range, setRange] = useState(7);
-  const [topProducts, setTopProducts] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [specialRequests, setSpecialRequests] = useState([]);
-  const [newRequest, setNewRequest] = useState("");
-  const [riders, setRiders] = useState([]);
-  const [selectedRider, setSelectedRider] = useState("");
-  const lastOrderId = useRef(null);
-  const [userNotifications, setUserNotifications] = useState([]);
-  const lastUserId = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [updatingOrder, setUpdatingOrder] = useState(null);
+
+  // --------------------------------------------------
+  // Get logged-in rider
+  // --------------------------------------------------
 
   useEffect(() => {
-    // Orders listener
-    const unsubscribe = onSnapshot(
-      collection(db, "orders"),
-      (snapshot) => {
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setRider(null);
+        setLoading(false);
+        return;
+      }
 
-        setOrders(data);
-        setOrderLoading(false);
+      // Rider document ID = Firebase Auth UID
+      const riderRef = doc(db, "riders", user.uid);
 
-        if (data.length > 0) {
-          const newest = [...data].sort(
-            (a, b) =>
-              (b.createdAt?.seconds || 0) -
-              (a.createdAt?.seconds || 0)
-          )[0];
-
-          if (
-            lastOrderId.current &&
-            newest.id !== lastOrderId.current
-          ) {
-            setNotifications((prev) => [
-              {
-                id: newest.id,
-                text: `🛎️ New order from ${newest.customer?.name}`,
-              },
-              ...prev,
-            ]);
+      const unsubscribeRider = onSnapshot(
+        riderRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            setRider({
+              id: snapshot.id,
+              ...snapshot.data(),
+            });
+          } else {
+            // Fallback if rider document doesn't exist
+            setRider({
+              id: user.uid,
+              name: user.displayName || "Rider",
+              phone: user.phoneNumber || "",
+            });
           }
 
-          lastOrderId.current = newest.id;
+          setLoading(false);
+        },
+        (error) => {
+          console.error("Rider listener error:", error);
+          setLoading(false);
         }
-      },
-      (error) => {
-        console.error("Orders listener error:", error);
-        setOrderLoading(false);
-      }
-    );
+      );
 
-    // User registration listener
-    const unsubscribeUsers = onSnapshot(
-      query(
-        collection(db, "users"),
-        orderBy("createdAt", "desc")
-      ),
-      (snapshot) => {
-        if (snapshot.empty) return;
+      return () => unsubscribeRider();
+    });
 
-        const newest = snapshot.docs[0];
-        const user = newest.data();
-
-        if (
-          lastUserId.current &&
-          newest.id !== lastUserId.current
-        ) {
-          setUserNotifications((prev) => [
-            {
-              id: newest.id,
-              text: `👤 ${user.name || "New user"} has joined Brewed`,
-            },
-            ...prev,
-          ]);
-        }
-
-        lastUserId.current = newest.id;
-      },
-      (error) => {
-        console.error("Users listener error:", error);
-      }
-    );
-
-    return () => {
-      unsubscribe();
-      unsubscribeUsers();
-    };
+    return () => unsubscribeAuth();
   }, []);
 
+  // --------------------------------------------------
+  // Listen for this rider's orders
+  // --------------------------------------------------
+
   useEffect(() => {
-    const today = new Date();
-    const data = [];
+    if (!rider?.id) return;
 
-    for (let i = range - 1; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
+    const ordersQuery = query(
+      collection(db, "orders"),
+      where("riderId", "==", rider.id)
+    );
 
-      data.push({
-        key: d.toDateString(),
-        day: d.toLocaleDateString("en-US", {
-          weekday: "short",
-        }),
-        revenue: 0,
-        orders: 0,
-      });
-    }
+    const unsubscribe = onSnapshot(
+      ordersQuery,
+      (snapshot) => {
+        const data = snapshot.docs
+          .map((orderDoc) => ({
+            id: orderDoc.id,
+            ...orderDoc.data(),
+          }))
+          .filter(
+            (order) =>
+              order.status === "Assigned to Rider" ||
+              order.status === "Out for Delivery"
+          )
+          .sort(
+            (a, b) =>
+              (b.riderAssignedAt?.seconds || 0) -
+              (a.riderAssignedAt?.seconds || 0)
+          );
 
-    orders.forEach((order) => {
-      if (!order.createdAt?.toDate) return;
-
-      const date = order.createdAt.toDate().toDateString();
-      const item = data.find((d) => d.key === date);
-
-      if (item) {
-        item.orders += 1;
-        item.revenue += Number(order.total || 0);
+        setOrders(data);
+      },
+      (error) => {
+        console.error("Rider orders listener error:", error);
       }
-    });
+    );
 
-    setAnalytics(data);
-  }, [orders, range]);
-  
-  useEffect(() => {
-    const stats = {};
+    return () => unsubscribe();
+  }, [rider?.id]);
 
-    orders.forEach((order) => {
-      order.items?.forEach((item) => {
-        const name = item.name;
+  // --------------------------------------------------
+  // Update delivery status
+  // --------------------------------------------------
 
-        if (!stats[name]) {
-          stats[name] = {
-            name,
-            img: item.img || "",
-            sold: 0,
-            revenue: 0,
-          };
-        }
-
-        const qty = item.qty || item.quantity || 1;
-
-        stats[name].sold += qty;
-        stats[name].revenue += qty * Number(item.price || 0);
-      });
-    });
-
-    const ranked = Object.values(stats)
-      .sort((a, b) => b.sold - a.sold)
-      .slice(0, 3);
-
-    setTopProducts(ranked);
-  }, [orders]);
-
-
-  useEffect(() => {
-  const loadRiders = async () => {
+  async function updateDeliveryStatus(order, status) {
     try {
-      const snapshot = await getDocs(collection(db, "riders"));
+      setUpdatingOrder(order.id);
 
-      const activeRiders = snapshot.docs
-        .map((riderDoc) => ({
-          id: riderDoc.id,
-          ...riderDoc.data(),
-        }))
-        .filter((rider) => rider.status === "Active");
-
-      setRiders(activeRiders);
-    } catch (error) {
-      console.error("Error loading riders:", error);
-    }
-  };
-
-  loadRiders();
-}, []);
-
-  async function getRewardSettings() {
-    const settingsRef = doc(db, "rewardSettings", "default");
-    const snapshot = await getDoc(settingsRef);
-
-    if (!snapshot.exists()) {
-      const defaults = {
-        cashbackEnabled: true,
-        cashbackPercent: 5,
-        minimumOrder: 200,
-        maximumCashback: 150,
-        birthdayReward: 200,
-        referralReward: 100,
-        signupReward: 50,
-        rewardExpiryDays: 365,
-      };
-
-      await setDoc(settingsRef, defaults);
-      return defaults;
-    }
-
-    return snapshot.data();
-  }
-
-async function restoreLoyaltyPoints(order) {
-  const pointsUsed = order.loyaltyPointsUsed || 0;
-
-  if (pointsUsed <= 0) return;
-
-  const userRef = doc(db, "users", order.userId);
-  const userSnap = await getDoc(userRef);
-
-  if (!userSnap.exists()) return;
-
-  const currentPoints = userSnap.data().loyaltyPoints || 0;
-
-  await updateDoc(userRef, {
-    loyaltyPoints: currentPoints + pointsUsed,
-  });
-
-  await addDoc(collection(db, "loyaltyTransactions"), {
-    userId: order.userId,
-    orderId: order.id,
-    points: pointsUsed,
-    type: "refund",
-    description: "Points restored for cancelled order",
-    createdAt: serverTimestamp(),
-  });
-
-  console.log("Restored", pointsUsed, "points");
-}
-
-  async function updateOrderStatus(id, status) {
-    const order = orders.find((o) => o.id === id);
-    if (!order) return;
-
-    const rewardSettings = await getRewardSettings();
-
-    if (!rewardSettings.cashbackEnabled) {
-      return updateDoc(doc(db, "orders", id), {
+      await updateDoc(doc(db, "orders", order.id), {
         status,
-        ...(status === "Cancelled" && order.loyaltyPointsUsed > 0
+
+        ...(status === "Out for Delivery"
           ? {
-              loyaltyRestored: true,
+              deliveryStartedAt: serverTimestamp(),
+              trackingUpdatedAt: serverTimestamp(),
+            }
+          : {}),
+
+        ...(status === "Delivered"
+          ? {
+              deliveredAt: serverTimestamp(),
+              trackingUpdatedAt: serverTimestamp(),
             }
           : {}),
       });
+    } catch (error) {
+      console.error("Error updating delivery:", error);
+      alert("Failed to update delivery status.");
+    } finally {
+      setUpdatingOrder(null);
     }
-
-    const cashbackPercentage = rewardSettings.cashbackPercent;
-    let cashback = Math.floor(
-      (Number(order.total || 0) * cashbackPercentage) / 100
-    );
-
-    // Minimum order check
-    if (Number(order.total || 0) < rewardSettings.minimumOrder) {
-      cashback = 0;
-    }
-
-    // Maximum cashback limit
-    cashback = Math.min(cashback, rewardSettings.maximumCashback);
-
-    if (status === "Cancelled") {
-      const confirmed = window.confirm(
-        "Are you sure you want to cancel this order?"
-      );
-
-      if (!confirmed) return;
-
-      // Refund wallet
-      if (
-        order.usedWallet &&
-        order.walletPaid > 0 &&
-        order.walletStatus !== "REFUNDED"
-      ) {
-        await walletService.refundMoney({
-          userId: order.userId,
-          amount: order.walletPaid,
-          orderId: order.id,
-          description: `Refund for cancelled order #${order.id}`,
-        });
-      }
-
-      // Restore loyalty points
-      if (
-        order.loyaltyPointsUsed > 0 &&
-        order.loyaltyRestored !== true
-      ) {
-        await restoreLoyaltyPoints(order);
-      }
-    }
-
-    // Handle cashback reward if delivered
-    if (
-      status === "Delivered" &&
-      order.rewardStatus === "PENDING"
-    ) {
-      try {
-        await walletService.addReward({
-          userId: order.userId,
-          amount: cashback,
-          orderId: order.id,
-          description: `Cashback for order #${order.id}`,
-        });
-      } catch (err) {
-        console.error(err);
-        alert(err.message);
-      }
-    }
-
-    // Update Firestore document
-    await updateDoc(doc(db, "orders", id), {
-      status,
-
-      ...(status === "Delivered" &&
-      order.rewardStatus === "PENDING"
-        ? {
-            rewardStatus: "CREDITED",
-            rewardAmount: cashback,
-            rewardCreditedAt: new Date(),
-            cashbackPercent: rewardSettings.cashbackPercent,
-          }
-        : {}),
-
-      ...(status === "Cancelled" &&
-      order.usedWallet &&
-      order.walletPaid > 0 &&
-      order.walletStatus !== "REFUNDED"
-        ? {
-            walletStatus: "REFUNDED",
-            paymentStatus: "REFUNDED",
-          }
-        : {}),
-    });
   }
 
-  const totalOrders = orders.length;
+  // --------------------------------------------------
+  // Loading
+  // --------------------------------------------------
 
-  const pendingOrders = orders.filter(
-    (o) =>
-      o.status === "New" ||
-      o.status === "Preparing" ||
-      o.status === "Ready" ||
-      o.status === "Assigned to Rider"
-  ).length;
+  if (loading) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.centerMessage}>
+          Loading rider dashboard...
+        </div>
+      </div>
+    );
+  }
 
-  const totalRevenue = orders
-    .filter((o) => o.status === "Delivered")
-    .reduce((sum, o) => sum + (o.total || 0), 0);
+  // --------------------------------------------------
+  // Not logged in
+  // --------------------------------------------------
 
-  const today = new Date().toDateString();
+  if (!rider) {
+    return (
+      <div style={styles.page}>
+        <div style={styles.centerMessage}>
+          Please log in to access the rider dashboard.
+        </div>
+      </div>
+    );
+  }
 
-  const todaySales = orders
-    .filter(
-      (order) =>
-        order.createdAt?.toDate &&
-        order.createdAt.toDate().toDateString() === today &&
-        order.status !== "Cancelled"
-    )
-    .reduce((sum, order) => sum + (order.total || 0), 0);
+  // --------------------------------------------------
+  // Dashboard
+  // --------------------------------------------------
 
-  const todayOrders = orders.filter(
-    (order) =>
-      order.createdAt?.toDate &&
-      order.createdAt.toDate().toDateString() === today &&
-      order.status !== "Cancelled"
-  ).length;
+  return (
+    <div style={styles.page}>
+      <div style={styles.container}>
 
-  const chipStyle = {
-    background: "#F2ECE5",
-    color: "#5C4F47",
-    padding: "4px 10px",
-    borderRadius: 8,
-    fontSize: 12,
-    fontWeight: 500,
-  };
+        {/* HEADER */}
+        <div style={styles.header}>
+          <div>
+            <p style={styles.eyebrow}>RIDER DASHBOARD</p>
 
- 
-  // Safety fallback: If loading takes more than 3 seconds, force it to render anyway
-          
-
-
-return (
-    <div style={{ padding: "30px 20px", background: "#F7F4EF", minHeight: "100vh" }}>
-      {orderLoading ? (
-        <p style={{ textAlign: "center", color: "#70645C", fontSize: 16 }}>Loading orders...</p>
-      ) : (
-        <>
-          <div style={{ maxWidth: 800, margin: "0 auto" }}>
-            <h1
-              style={{
-                marginBottom: 16,
-                fontFamily: "Playfair Display",
-                fontSize: 28,
-                color: "#3B1A08",
-              }}
-            >
-              📦 Orders ({orders.length})
+            <h1 style={styles.title}>
+              Hello, {rider.name || "Rider"} 👋
             </h1>
 
-            <input
-              type="text"
-              placeholder="🔍 Search by customer name or order ID..."
-              value={orderSearch}
-              onChange={(e) => setOrderSearch(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "16px 20px",
-                borderRadius: 16,
-                border: "1px solid #E6DDD5",
-                fontSize: 16,
-                marginBottom: 24,
-                outline: "none",
-                background: "#FFFFFF",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
-                color: "#3B1A08",
-              }}
-            />
+            <p style={styles.subtitle}>
+              Your assigned deliveries
+            </p>
+          </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: 12,
-                flexWrap: "wrap",
-                marginBottom: 32,
-              }}
-            >
-              {["All", "New", "Preparing", "Ready", "Assigned to Rider","Delivered", "Cancelled"].map((status) => (
-                <button
-                  key={status}
-                  onClick={() => setOrderFilter(status)}
-                  style={{
-                    padding: "12px 22px",
-                    borderRadius: 999,
-                    border: "none",
-                    cursor: "pointer",
-                    background:
-                      orderFilter === status
-                      ? "#3B1A08"
-                      : "#FFFFFF",
-                    color:
-                      orderFilter === status
-                      ? "white"
-                      : "#3B1A08",
-                    fontWeight: 600,
-                    fontSize: 14,
-                    boxShadow: orderFilter === status ? "0 4px 12px rgba(59,26,8,0.2)" : "0 2px 6px rgba(0,0,0,0.04)",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  {status}
-                </button>
-              ))}
+          <div style={styles.statusBadge}>
+            <span style={styles.statusDot} />
+            Active
+          </div>
+        </div>
+
+        {/* SUMMARY */}
+        <div style={styles.summaryCard}>
+          <div>
+            <p style={styles.summaryLabel}>
+              ACTIVE DELIVERIES
+            </p>
+
+            <h2 style={styles.summaryNumber}>
+              {orders.length}
+            </h2>
+          </div>
+
+          <div style={styles.summaryIcon}>
+            🛵
+          </div>
+        </div>
+
+        {/* ORDERS */}
+        {orders.length === 0 ? (
+          <div style={styles.emptyCard}>
+            <div style={styles.emptyIcon}>
+              🛵
             </div>
 
-            {orders.length === 0 ? (
-              <p style={{ textAlign: "center", color: "#70645C", padding: 40 }}>No orders yet.</p>
-            ) : (
-              orders
-                .sort((a, b) =>
-                  (b.createdAt?.seconds || 0) -
-                  (a.createdAt?.seconds || 0)
-                )
-                .filter((order) => {
-                  const matchesStatus =
-                    orderFilter === "All" ||
-                    order.status === orderFilter;
+            <h2 style={styles.emptyTitle}>
+              No deliveries assigned
+            </h2>
 
-                  const searchText = orderSearch.toLowerCase();
-
-                  const matchesSearch =
-                    order.customer?.name
-                      ?.toLowerCase()
-                      .includes(searchText) ||
-                    order.id.toLowerCase().includes(searchText);
-
-                  return matchesStatus && matchesSearch;
-                })
-                .map((order) => {
-                  const getStatusColor = (status) => {
-                    switch (status) {
-                      case "New": return { bg: "#FFF3CD", color: "#856404" };
-                      case "Preparing": return { bg: "#FFE5D0", color: "#A04000" };
-                      case "Ready": return { bg: "#D1ECF1", color: "#0C5460" };
-                        case "Assigned to Rider":
-  return {
-    bg: "#E3F2FD",
-    color: "#1565C0",
-  };
-                      case "Delivered": return { bg: "#D4EDDA", color: "#155724" };
-                      case "Cancelled": return { bg: "#F8D7DA", color: "#721C24" };
-                      default: return { bg: "#E2E3E5", color: "#383D41" };
-                    }
-                  };
-                  const statusStyle = getStatusColor(order.status);
-
-                  return (
-                    <div
-                      key={order.id}
-                      style={{
-                        background: "#FFFFFF",
-                        borderRadius: 24,
-                        padding: 28,
-                        marginBottom: 24,
-                        border: "1px solid #EEE6DD",
-                        boxShadow: "0 8px 24px rgba(0,0,0,.06)",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-                        <div>
-                          <span style={{ fontSize: 13, color: "#9E8E85", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                            Order #{order.id.slice(0, 8)}
-                          </span>
-                          <p style={{ color: "#70645C", fontSize: 13, marginTop: 4 }}>
-                            {order.createdAt?.toDate
-                              ? order.createdAt.toDate().toLocaleString()
-                              : "Just now"}
-                          </p>
-                        </div>
-
-                        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                          <span
-                            style={{
-                              background: statusStyle.bg,
-                              color: statusStyle.color,
-                              padding: "6px 14px",
-                              borderRadius: 999,
-                              fontSize: 13,
-                              fontWeight: 700,
-                            }}
-                          >
-                            {order.status}
-                          </span>
-                          <span
-                            style={{
-                              background: order.paymentMethod === "COD" ? "#FFF9E6" : "#E8F5E9",
-                              color: order.paymentMethod === "COD" ? "#8A6D3B" : "#2E7D32",
-                              padding: "6px 14px",
-                              borderRadius: 999,
-                              fontSize: 13,
-                              fontWeight: 700,
-                            }}
-                          >
-                            {order.paymentMethod}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          background: "#FCF8F3",
-                          borderRadius: 16,
-                          padding: 18,
-                          marginBottom: 24,
-                          border: "1px solid #F2ECE5",
-                        }}
-                      >
-                        <p style={{ margin: "0 0 6px", fontSize: 15, color: "#3B1A08" }}>
-                          👤 <strong>{order.customer?.name}</strong>
-                        </p>
-                        <p style={{ margin: "0 0 6px", fontSize: 14, color: "#5C4F47" }}>
-                          📞 {order.customer?.phone}
-                        </p>
-                        <p style={{ margin: "0 0 6px", fontSize: 14, color: "#5C4F47" }}>
-                          📍 {order.customer?.address}
-                        </p>
-                        {order.customer?.instructions && (
-                          <p style={{ margin: "6px 0 0", fontSize: 13, color: "#8C7B70", fontStyle: "italic" }}>
-                            💬 Note: {order.customer.instructions}
-                          </p>
-                        )}
-                      </div>
-
-                      <h3 style={{ fontSize: 16, color: "#3B1A08", marginBottom: 16, fontFamily: "Playfair Display" }}>Items</h3>
-
-                      <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 24 }}>
-                        {order.items?.map((item, index) => (
-                          <div
-                            key={index}
-                            style={{
-                              display: "flex",
-                              gap: 16,
-                              paddingBottom: 16,
-                              borderBottom: index === order.items.length - 1 ? "none" : "1px solid #F2ECE5",
-                              alignItems: "center",
-                            }}
-                          >
-                            {item.img && (
-                              <img
-                                src={item.img}
-                                alt={item.name}
-                                style={{
-                                  width: 70,
-                                  height: 70,
-                                  borderRadius: 12,
-                                  objectFit: "cover",
-                                  flexShrink: 0,
-                                }}
-                              />
-                            )}
-
-                            <div style={{ flex: 1 }}>
-                              <h4
-                                style={{
-                                  margin: "0 0 4px",
-                                  fontFamily: "Playfair Display",
-                                  fontSize: 16,
-                                  color: "#3B1A08",
-                                }}
-                              >
-                                ☕ {item.name}
-                              </h4>
-
-                              <p style={{ margin: "0 0 6px", fontSize: 14, color: "#70645C" }}>
-                                <strong>{item.qty || item.quantity || 1}</strong> × ₹{item.price}
-                              </p>
-
-                              <div
-                                style={{
-                                  display: "flex",
-                                  flexWrap: "wrap",
-                                  gap: 6,
-                                  marginTop: 6,
-                                }}
-                              >
-                                {item.size && (
-                                  <span style={chipStyle}>
-                                    Size: {item.size}
-                                  </span>
-                                )}
-
-                                {item.milk && (
-                                  <span style={chipStyle}>
-                                    Milk: {item.milk}
-                                  </span>
-                                )}
-
-                               {item.temperature && typeof item.temperature === "string" && (
-  <span style={chipStyle}>
-    {item.temperature}
-  </span>
-)}
-
-{item.sweetness && (
-  <span style={chipStyle}>
-    Sweetness:{" "}
-    {typeof item.sweetness === "string"
-      ? item.sweetness
-      : item.sweetness.name}
-  </span>
-)}
-
-
-
-
-
-                                
-                              
-            {Array.isArray(item.extras) && item.extras.length > 0 && (
-  <span style={chipStyle}>
-    Extras: {item.extras
-      .map(extra => typeof extra === "string" ? extra : extra.name)
-      .join(", ")}
-  </span>
-)}
-
-
-                          {Array.isArray(item.specialRequests) &&
- item.specialRequests.length > 0 && (
-  <span style={chipStyle}>
-    Requests: {item.specialRequests.join(", ")}
-  </span>
-)}
-
-                                
-                                                   
-                              </div>
-                            </div>
-                            
-                            <div style={{ fontWeight: 600, color: "#3B1A08", fontSize: 15 }}>
-                              ₹{(item.qty || item.quantity || 1) * item.price}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div
-                        style={{
-                          background: "#F8F3ED",
-                          padding: 20,
-                          borderRadius: 16,
-                          marginBottom: 24,
-                          fontSize: 14,
-                          color: "#5C4F47",
-                        }}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                          <span>Subtotal</span>
-                          <span>₹{order.subtotal}</span>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                          <span>Tax</span>
-                          <span>₹{order.tax}</span>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                          <span>Delivery Fee</span>
-                          <span>₹{order.delivery}</span>
-                        </div>
-                        {order.walletUsed > 0 && (
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, color: "#C0392B" }}>
-                            <span>Wallet Used</span>
-                            <span>-₹{order.walletUsed}</span>
-                          </div>
-                        )}
-                        <hr style={{ border: "none", borderTop: "1px solid #E6DDD5", margin: "12px 0" }} />
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 16, fontWeight: 700, color: "#3B1A08" }}>Amount Paid</span>
-                          <span style={{ fontSize: 18, fontWeight: 700, color: "#3B1A08" }}>₹{order.total}</span>
-                        </div>
-                      </div>
-<div style={{ display: "flex", gap: 12 }}>
-  {order.status === "New" && (
-    <button
-      onClick={() => updateOrderStatus(order.id, "Preparing")}
-      style={{
-        flex: 1,
-        background: "#3B1A08",
-        color: "white",
-        border: "none",
-        padding: "14px 20px",
-        borderRadius: 12,
-        cursor: "pointer",
-        fontWeight: 600,
-        fontSize: 15,
-        boxShadow: "0 4px 12px rgba(59,26,8,0.2)",
-      }}
-    >
-      🟤 Accept Order
-    </button>
-  )}
-
-  {order.status === "Preparing" && (
-    <button
-      onClick={() => updateOrderStatus(order.id, "Ready")}
-      style={{
-        flex: 1,
-        background: "#3B1A08",
-        color: "white",
-        border: "none",
-        padding: "14px 20px",
-        borderRadius: 12,
-        cursor: "pointer",
-        fontWeight: 600,
-        fontSize: 15,
-      }}
-    >
-      ☕ Mark Ready
-    </button>
-  )}
-
-{order.status === "Ready" && (
-  <div
-    style={{
-      flex: 1,
-      display: "flex",
-      gap: 10,
-      alignItems: "stretch",
-    }}
-  >
-    <select
-      value={selectedRider}
-      onChange={(e) => setSelectedRider(e.target.value)}
-      style={{
-        flex: 1,
-        padding: "14px 16px",
-        borderRadius: 12,
-        border: "1px solid #D9D0C8",
-        background: "#FFFFFF",
-        color: "#3B1A08",
-        fontSize: 14,
-        fontWeight: 600,
-        outline: "none",
-      }}
-    >
-      <option value="">Select Rider</option>
-
-      {riders.map((rider) => (
-        <option key={rider.id} value={rider.id}>
-          {rider.name}
-          {rider.vehicleNumber
-            ? ` — ${rider.vehicleNumber}`
-            : ""}
-        </option>
-      ))}
-    </select>
-
-    <button
-      disabled={!selectedRider}
-      onClick={async () => {
-        const rider = riders.find(
-          (r) => r.id === selectedRider
-        );
-
-        if (!rider) {
-          alert("Please select a rider.");
-          return;
-        }
-
-        try {
-          await updateDoc(doc(db, "orders", order.id), {
-            status: "Assigned to Rider",
-
-            riderId: rider.id,
-            riderName: rider.name,
-            riderPhone: rider.phone || "",
-            riderEmail: rider.email || "",
-            riderVehicleType: rider.vehicleType || "",
-            riderVehicleNumber: rider.vehicleNumber || "",
-            riderAssignedAt: serverTimestamp(),
-
-            // Keep these for your existing tracking page
-            deliveryPartnerName: rider.name,
-            deliveryPartnerPhone: rider.phone || "",
-            deliveryPartnerMessage:
-              "Your coffee is on the way! ☕",
-            estimatedDeliveryMinutes: 25,
-            trackingUpdatedAt: serverTimestamp(),
-          });
-
-          setSelectedRider("");
-        } catch (error) {
-          console.error("Error assigning rider:", error);
-          alert("Failed to assign rider.");
-        }
-      }}
-      style={{
-        background: selectedRider ? "#1565C0" : "#B8B8B8",
-        color: "white",
-        border: "none",
-        padding: "14px 20px",
-        borderRadius: 12,
-        cursor: selectedRider ? "pointer" : "not-allowed",
-        fontWeight: 600,
-        fontSize: 15,
-        whiteSpace: "nowrap",
-      }}
-    >
-      🛵 Assign
-    </button>
-  </div>
-)}
-
-  {order.status === "Assigned to Rider" && (
-    <button
-      onClick={() => updateOrderStatus(order.id, "Delivered")}
-      style={{
-        flex: 1,
-        background: "#27AE60",
-        color: "white",
-        border: "none",
-        padding: "14px 20px",
-        borderRadius: 12,
-        cursor: "pointer",
-        fontWeight: 600,
-        fontSize: 15,
-      }}
-    >
-      🚚 Mark Delivered
-    </button>
-  )}
-
-  {order.status !== "Delivered" &&
-    order.status !== "Cancelled" && (
-      <button
-        onClick={() => updateOrderStatus(order.id, "Cancelled")}
-        style={{
-          flex: 1,
-          background: "#FFFFFF",
-          color: "#C0392B",
-          border: "1px solid #F5C6CB",
-          padding: "14px 20px",
-          borderRadius: 12,
-          cursor: "pointer",
-          fontWeight: 600,
-          fontSize: 15,
-        }}
-      >
-        ❌ Cancel Order
-      </button>
-    )}
-</div>
-                   
-                    </div>
-                  );
-                })
-            )}
+            <p style={styles.emptyText}>
+              New deliveries will appear here when they are assigned to you.
+            </p>
           </div>
-        </>
+        ) : (
+          <div>
+            <h2 style={styles.sectionTitle}>
+              Deliveries
+            </h2>
+
+            <div style={styles.orders}>
+              {orders.map((order) => (
+                <DeliveryCard
+                  key={order.id}
+                  order={order}
+                  updating={updatingOrder === order.id}
+                  onUpdateStatus={updateDeliveryStatus}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+// ==================================================
+// DELIVERY CARD
+// ==================================================
+
+function DeliveryCard({
+  order,
+  updating,
+  onUpdateStatus,
+}) {
+  const isOutForDelivery =
+    order.status === "Out for Delivery";
+
+  return (
+    <div style={styles.orderCard}>
+
+      {/* ORDER HEADER */}
+      <div style={styles.orderHeader}>
+        <div>
+          <p style={styles.orderLabel}>
+            ORDER
+          </p>
+
+          <h3 style={styles.orderId}>
+            #{order.id.slice(0, 8)}
+          </h3>
+        </div>
+
+        <span
+          style={{
+            ...styles.orderStatus,
+            background: isOutForDelivery
+              ? "#E3F2FD"
+              : "#FFF3CD",
+            color: isOutForDelivery
+              ? "#1565C0"
+              : "#856404",
+          }}
+        >
+          {order.status}
+        </span>
+      </div>
+
+      {/* CUSTOMER */}
+      <div style={styles.customerBox}>
+        <p style={styles.customerName}>
+          👤 {order.customer?.name || "Customer"}
+        </p>
+
+        {order.customer?.phone && (
+          <p style={styles.customerDetail}>
+            📞 {order.customer.phone}
+          </p>
+        )}
+
+        {order.customer?.address && (
+          <p style={styles.customerDetail}>
+            📍 {order.customer.address}
+          </p>
+        )}
+
+        {order.customer?.instructions && (
+          <p style={styles.instructions}>
+            💬 {order.customer.instructions}
+          </p>
+        )}
+      </div>
+
+      {/* ITEMS */}
+      <h4 style={styles.itemsTitle}>
+        Order Items
+      </h4>
+
+      <div style={styles.items}>
+        {order.items?.map((item, index) => {
+          const quantity =
+            item.qty || item.quantity || 1;
+
+          return (
+            <div
+              key={index}
+              style={styles.item}
+            >
+              <div style={{ flex: 1 }}>
+                <p style={styles.itemName}>
+                  {quantity} × {item.name}
+                </p>
+
+                <p style={styles.itemDetails}>
+                  {item.size && `Size: ${item.size}`}
+                  {item.milk && ` • ${item.milk}`}
+                  {item.temperature &&
+                    ` • ${item.temperature}`}
+                </p>
+              </div>
+
+              <span style={styles.itemPrice}>
+                ₹{quantity * Number(item.price || 0)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* PAYMENT */}
+      <div style={styles.paymentBox}>
+        <div>
+          <span style={styles.paymentLabel}>
+            Payment
+          </span>
+
+          <strong>
+            {order.paymentMethod || "N/A"}
+          </strong>
+        </div>
+
+        <div style={{ textAlign: "right" }}>
+          <span style={styles.paymentLabel}>
+            Total
+          </span>
+
+          <strong style={styles.total}>
+            ₹{order.total || 0}
+          </strong>
+        </div>
+      </div>
+
+      {/* ACTION */}
+      {!isOutForDelivery ? (
+        <button
+          disabled={updating}
+          onClick={() =>
+            onUpdateStatus(
+              order,
+              "Out for Delivery"
+            )
+          }
+          style={{
+            ...styles.primaryButton,
+            opacity: updating ? 0.6 : 1,
+          }}
+        >
+          {updating
+            ? "Starting..."
+            : "🛵 Start Delivery"}
+        </button>
+      ) : (
+        <button
+          disabled={updating}
+          onClick={() =>
+            onUpdateStatus(
+              order,
+              "Delivered"
+            )
+          }
+          style={{
+            ...styles.deliveredButton,
+            opacity: updating ? 0.6 : 1,
+          }}
+        >
+          {updating
+            ? "Updating..."
+            : "✅ Mark Delivered"}
+        </button>
       )}
     </div>
-);
+  );
 }
-       
+
+
+// ==================================================
+// STYLES
+// ==================================================
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "#F7F4EF",
+    padding: "30px 20px",
+    color: "#3B1A08",
+  },
+
+  container: {
+    maxWidth: 800,
+    margin: "0 auto",
+  },
+
+  centerMessage: {
+    textAlign: "center",
+    padding: 60,
+    color: "#70645C",
+    fontSize: 16,
+  },
+
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 20,
+    marginBottom: 28,
+  },
+
+  eyebrow: {
+    margin: 0,
+    color: "#9E8E85",
+    fontSize: 12,
+    fontWeight: 700,
+    letterSpacing: "1px",
+  },
+
+  title: {
+    margin: "6px 0 4px",
+    fontFamily: "Playfair Display",
+    fontSize: 30,
+    color: "#3B1A08",
+  },
+
+  subtitle: {
+    margin: 0,
+    color: "#70645C",
+    fontSize: 14,
+  },
+
+  statusBadge: {
+    display: "flex",
+    alignItems: "center",
+    gap: 7,
+    background: "#E8F5E9",
+    color: "#2E7D32",
+    padding: "8px 14px",
+    borderRadius: 999,
+    fontSize: 13,
+    fontWeight: 700,
+  },
+
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: "50%",
+    background: "#2E7D32",
+  },
+
+  summaryCard: {
+    background: "#3B1A08",
+    color: "white",
+    borderRadius: 22,
+    padding: 24,
+    marginBottom: 32,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  summaryLabel: {
+    margin: 0,
+    fontSize: 11,
+    letterSpacing: "1px",
+    opacity: 0.65,
+    fontWeight: 700,
+  },
+
+  summaryNumber: {
+    margin: "4px 0 0",
+    fontSize: 32,
+  },
+
+  summaryIcon: {
+    fontSize: 38,
+  },
+
+  sectionTitle: {
+    fontFamily: "Playfair Display",
+    fontSize: 22,
+    marginBottom: 16,
+  },
+
+  orders: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 20,
+  },
+
+  orderCard: {
+    background: "#FFFFFF",
+    borderRadius: 24,
+    padding: 24,
+    border: "1px solid #EEE6DD",
+    boxShadow: "0 8px 24px rgba(0,0,0,.05)",
+  },
+
+  orderHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 20,
+  },
+
+  orderLabel: {
+    margin: 0,
+    fontSize: 11,
+    color: "#9E8E85",
+    fontWeight: 700,
+    letterSpacing: "1px",
+  },
+
+  orderId: {
+    margin: "4px 0 0",
+    fontFamily: "Playfair Display",
+    fontSize: 20,
+  },
+
+  orderStatus: {
+    padding: "7px 12px",
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: 700,
+  },
+
+  customerBox: {
+    background: "#FCF8F3",
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 22,
+    border: "1px solid #F2ECE5",
+  },
+
+  customerName: {
+    margin: "0 0 8px",
+    fontWeight: 700,
+    fontSize: 16,
+  },
+
+  customerDetail: {
+    margin: "5px 0",
+    color: "#5C4F47",
+    fontSize: 14,
+  },
+
+  instructions: {
+    margin: "10px 0 0",
+    color: "#8C7B70",
+    fontSize: 13,
+    fontStyle: "italic",
+  },
+
+  itemsTitle: {
+    margin: "0 0 12px",
+    fontFamily: "Playfair Display",
+    fontSize: 16,
+  },
+
+  items: {
+    display: "flex",
+    flexDirection: "column",
+    marginBottom: 20,
+  },
+
+  item: {
+    display: "flex",
+    gap: 12,
+    padding: "12px 0",
+    borderBottom: "1px solid #F2ECE5",
+  },
+
+  itemName: {
+    margin: 0,
+    fontWeight: 600,
+    fontSize: 14,
+  },
+
+  itemDetails: {
+    margin: "4px 0 0",
+    color: "#8C7B70",
+    fontSize: 12,
+  },
+
+  itemPrice: {
+    fontWeight: 600,
+    fontSize: 14,
+  },
+
+  paymentBox: {
+    background: "#F8F3ED",
+    borderRadius: 14,
+    padding: 16,
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: 18,
+  },
+
+  paymentLabel: {
+    display: "block",
+    color: "#8C7B70",
+    fontSize: 11,
+    marginBottom: 4,
+  },
+
+  total: {
+    fontSize: 18,
+  },
+
+  primaryButton: {
+    width: "100%",
+    background: "#1565C0",
+    color: "white",
+    border: "none",
+    padding: "15px 20px",
+    borderRadius: 13,
+    fontWeight: 700,
+    fontSize: 15,
+    cursor: "pointer",
+  },
+
+  deliveredButton: {
+    width: "100%",
+    background: "#27AE60",
+    color: "white",
+    border: "none",
+    padding: "15px 20px",
+    borderRadius: 13,
+    fontWeight: 700,
+    fontSize: 15,
+    cursor: "pointer",
+  },
+
+  emptyCard: {
+    background: "#FFFFFF",
+    borderRadius: 24,
+    padding: "50px 25px",
+    textAlign: "center",
+    border: "1px solid #EEE6DD",
+  },
+
+  emptyIcon: {
+    fontSize: 42,
+    marginBottom: 12,
+  },
+
+  emptyTitle: {
+    fontFamily: "Playfair Display",
+    fontSize: 22,
+    margin: "0 0 8px",
+  },
+
+  emptyText: {
+    margin: 0,
+    color: "#70645C",
+    fontSize: 14,
+    lineHeight: 1.6,
+  },
+};
