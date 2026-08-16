@@ -2422,10 +2422,7 @@ const styles = {
     textAlign: "right",
   },
 
-  historyEarnings span: {
-    display: "block",
-  },
-
+ 
   historyCustomer: {
     margin:
       "13px 0 0",
