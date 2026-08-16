@@ -192,7 +192,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
   }, [orders]);
 
 
-  useEffect(() => {
+ useEffect(() => {
   const loadRiders = async () => {
     try {
       const snapshot = await getDocs(collection(db, "riders"));
@@ -202,7 +202,11 @@ export default function OrderManagement({ setPage, setActivePage }) {
           id: riderDoc.id,
           ...riderDoc.data(),
         }))
-        .filter((rider) => rider.status === "Active");
+        .filter(
+          (rider) =>
+            rider.status === "Active" &&
+            rider.isOnDuty === true
+        );
 
       setRiders(activeRiders);
     } catch (error) {
@@ -213,6 +217,8 @@ export default function OrderManagement({ setPage, setActivePage }) {
   loadRiders();
 }, []);
 
+
+  
   async function getRewardSettings() {
     const settingsRef = doc(db, "rewardSettings", "default");
     const snapshot = await getDoc(settingsRef);
