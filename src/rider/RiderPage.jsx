@@ -13,7 +13,7 @@ import { onAuthStateChanged } from "firebase/auth";
 
 import { db, auth } from "../firebase";
 
-export default function RiderPage() {
+export default function RiderPage({setPage, setActivePage}) {
   const [currentUser, setCurrentUser] = useState(null);
   const [rider, setRider] = useState(null);
   const [orders, setOrders] = useState([]);
