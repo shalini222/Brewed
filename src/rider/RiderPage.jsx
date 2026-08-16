@@ -382,8 +382,25 @@ export default function RiderPage({ setPage, setActivePage }) {
 // ON DUTY / OFF DUTY
 // =====================================================
 
+// =====================================================
+// ON DUTY / OFF DUTY
+// =====================================================
+
 const toggleDutyStatus = async () => {
   if (!rider?.id || updatingDuty) return;
+
+  const hasActiveDeliveries = activeOrders.length > 0;
+
+  // Don't allow rider to go off duty with active deliveries
+  if (
+    rider.dutyStatus === "On Duty" &&
+    hasActiveDeliveries
+  ) {
+    alert(
+      "You cannot go Off Duty while you have active deliveries."
+    );
+    return;
+  }
 
   try {
     setUpdatingDuty(true);
@@ -397,7 +414,8 @@ const toggleDutyStatus = async () => {
       doc(db, "riders", rider.id),
       {
         dutyStatus: newDutyStatus,
-        dutyStatusUpdatedAt: serverTimestamp(),
+        dutyStatusUpdatedAt:
+          serverTimestamp(),
       }
     );
   } catch (err) {
@@ -411,7 +429,6 @@ const toggleDutyStatus = async () => {
     setUpdatingDuty(false);
   }
 };
-
   // =====================================================
   // LOADING
   // =====================================================
