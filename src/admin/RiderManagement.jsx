@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   collection,
   addDoc,
-  getDocs,
   updateDoc,
   doc,
   serverTimestamp,
@@ -16,7 +15,6 @@ export default function RidersAdmin({ setPage, setActivePage }) {
   const [orders, setOrders] = useState([]);
 
   const [loading, setLoading] = useState(true);
-  const [ordersLoading, setOrdersLoading] = useState(true);
 
   const [showForm, setShowForm] = useState(false);
   const [editingRider, setEditingRider] = useState(null);
@@ -75,11 +73,9 @@ export default function RidersAdmin({ setPage, setActivePage }) {
         }));
 
         setOrders(orderList);
-        setOrdersLoading(false);
       },
       (error) => {
         console.error("Error loading orders:", error);
-        setOrdersLoading(false);
       }
     );
 
@@ -122,17 +118,7 @@ export default function RidersAdmin({ setPage, setActivePage }) {
       0
     );
 
-    const totalEarnings =
-      completedOrders.reduce(
-        (sum, order) =>
-          sum +
-          Number(
-            order.riderTotalEarning ??
-              order.riderEarning ??
-              deliveryPay
-          ),
-        0
-      ) || deliveryEarnings + tips;
+    const totalEarnings = deliveryEarnings + tips;
 
     return {
       totalOrders: riderOrders.length,
@@ -176,15 +162,11 @@ export default function RidersAdmin({ setPage, setActivePage }) {
     (rider) => rider.status === "Active"
   ).length;
 
-  const inactiveRiders = riders.filter(
-    (rider) => rider.status !== "Active"
-  ).length;
-
   const availableRiders = riders.filter(
-  (rider) =>
-    rider.status === "Active" &&
-    rider.isOnDuty === true
-).length;
+    (rider) =>
+      rider.status === "Active" &&
+      rider.dutyStatus === "On Duty"
+  ).length;
 
   const completedDeliveries = riders.reduce(
     (sum, rider) =>
@@ -304,11 +286,18 @@ export default function RidersAdmin({ setPage, setActivePage }) {
           ? "Inactive"
           : "Active";
 
+      const updates = {
+        status: newStatus,
+      };
+
+      if (newStatus === "Inactive") {
+        updates.dutyStatus = "Off Duty";
+        updates.dutyUpdatedAt = serverTimestamp();
+      }
+
       await updateDoc(
         doc(db, "riders", rider.id),
-        {
-          status: newStatus,
-        }
+        updates
       );
 
       if (
@@ -316,7 +305,8 @@ export default function RidersAdmin({ setPage, setActivePage }) {
       ) {
         setSelectedRider({
           ...selectedRider,
-          status: newStatus,
+          ...updates,
+          dutyStatus: newStatus === "Inactive" ? "Off Duty" : selectedRider.dutyStatus,
         });
       }
     } catch (error) {
@@ -329,44 +319,46 @@ export default function RidersAdmin({ setPage, setActivePage }) {
     }
   };
 
-
-
-
-
   // =====================================================
-// TOGGLE DUTY STATUS
-// =====================================================
+  // TOGGLE DUTY STATUS
+  // =====================================================
 
-const toggleDutyStatus = async (rider) => {
-  try {
-    const newDutyStatus =
-      rider.dutyStatus === "On Duty"
-        ? "Off Duty"
-        : "On Duty";
-
-    await updateDoc(
-      doc(db, "riders", rider.id),
-      {
-        dutyStatus: newDutyStatus,
-        dutyUpdatedAt: serverTimestamp(),
-      }
-    );
-
-    if (selectedRider?.id === rider.id) {
-      setSelectedRider({
-        ...selectedRider,
-        dutyStatus: newDutyStatus,
-      });
+  const toggleDutyStatus = async (rider) => {
+    if (rider.status !== "Active") {
+      alert("Activate the rider before putting them On Duty.");
+      return;
     }
-  } catch (error) {
-    console.error(
-      "Error updating duty status:",
-      error
-    );
 
-    alert("Failed to update duty status.");
-  }
-};
+    try {
+      const newDutyStatus =
+        rider.dutyStatus === "On Duty"
+          ? "Off Duty"
+          : "On Duty";
+
+      await updateDoc(
+        doc(db, "riders", rider.id),
+        {
+          dutyStatus: newDutyStatus,
+          dutyUpdatedAt: serverTimestamp(),
+        }
+      );
+
+      if (selectedRider?.id === rider.id) {
+        setSelectedRider({
+          ...selectedRider,
+          dutyStatus: newDutyStatus,
+        });
+      }
+    } catch (error) {
+      console.error(
+        "Error updating duty status:",
+        error
+      );
+
+      alert("Failed to update duty status.");
+    }
+  };
+
   // =====================================================
   // RIDER DETAILS
   // =====================================================
@@ -430,11 +422,11 @@ const toggleDutyStatus = async (rider) => {
           />
           
           <StatCard
-  label="Available Riders"
-  value={availableRiders}
-  icon="🟢"
-  positive
-/>
+            label="Available Riders"
+            value={availableRiders}
+            icon="🟢"
+            positive
+          />
 
           <StatCard
             label="Deliveries Completed"
@@ -793,116 +785,114 @@ const toggleDutyStatus = async (rider) => {
                       </span>
                     </div>
 
-     {/* STATUS */}
+                    {/* STATUS */}
 
-<div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
 
-  {/* ACCOUNT STATUS */}
-  <span
-    style={{
-      ...styles.statusBadge,
-      ...(rider.status === "Active"
-        ? styles.activeStatus
-        : styles.inactiveStatus),
-    }}
-  >
-    <span
-      style={{
-        ...styles.statusDot,
-        background:
-          rider.status === "Active"
-            ? "#397044"
-            : "#8A7D73",
-      }}
-    />
+                      {/* ACCOUNT STATUS */}
+                      <span
+                        style={{
+                          ...styles.statusBadge,
+                          ...(rider.status === "Active"
+                            ? styles.activeStatus
+                            : styles.inactiveStatus),
+                        }}
+                      >
+                        <span
+                          style={{
+                            ...styles.statusDot,
+                            background:
+                              rider.status === "Active"
+                                ? "#397044"
+                                : "#8A7D73",
+                          }}
+                        />
 
-    {rider.status || "Inactive"}
-  </span>
+                        {rider.status || "Inactive"}
+                      </span>
 
-  {/* DUTY STATUS */}
-{rider.status === "Active" && (
-  <span
-    style={{
-      ...styles.statusBadge,
-      background:
-        rider.dutyStatus === "On Duty"
-          ? "#D9FF8A"
-          : "#E8E3DD",
-      color:
-        rider.dutyStatus === "On Duty"
-          ? "#294000"
-          : "#6F675F",
-    }}
-  >
-    <span
-      style={{
-        ...styles.statusDot,
-        background:
-          rider.dutyStatus === "On Duty"
-            ? "#8CFF00"
-            : "#9B948C",
-        boxShadow:
-          rider.dutyStatus === "On Duty"
-            ? "0 0 7px #8CFF00"
-            : "none",
-      }}
-    />
+                      {/* DUTY STATUS */}
+                      {rider.status === "Active" && (
+                        <span
+                          style={{
+                            ...styles.statusBadge,
+                            background:
+                              rider.dutyStatus === "On Duty"
+                                ? "#D9FF8A"
+                                : "#E8E3DD",
+                            color:
+                              rider.dutyStatus === "On Duty"
+                                ? "#294000"
+                                : "#6F675F",
+                          }}
+                        >
+                          <span
+                            style={{
+                              ...styles.statusDot,
+                              background:
+                                rider.dutyStatus === "On Duty"
+                                  ? "#8CFF00"
+                                  : "#9B948C",
+                              boxShadow:
+                                rider.dutyStatus === "On Duty"
+                                  ? "0 0 7px #8CFF00"
+                                  : "none",
+                            }}
+                          />
 
-    {rider.dutyStatus === "On Duty"
-      ? "On Duty"
-      : "Off Duty"}
-  </span>
-)}
+                          {rider.dutyStatus === "On Duty"
+                            ? "On Duty"
+                            : "Off Duty"}
+                        </span>
+                      )}
 
-</div>
-
-
+                    </div>
                     
                     {/* ACTIONS */}
 
-<div style={styles.actions}>
+                    <div style={styles.actions}>
 
-  <button
-    onClick={() =>
-      openDetails(rider)
-    }
-    style={styles.viewButton}
-  >
-    View
-  </button>
+                      <button
+                        onClick={() =>
+                          openDetails(rider)
+                        }
+                        style={styles.viewButton}
+                      >
+                        View
+                      </button>
 
-  <button
-    onClick={() =>
-      openEditForm(rider)
-    }
-    style={styles.editButton}
-  >
-    Edit
-  </button>
+                      <button
+                        onClick={() =>
+                          openEditForm(rider)
+                        }
+                        style={styles.editButton}
+                      >
+                        Edit
+                      </button>
 
-  <button
-    onClick={() =>
-      toggleDutyStatus(rider)
-    }
-    style={styles.moreButton}
-  >
-    {rider.dutyStatus === "On Duty"
-      ? "Go Off Duty"
-      : "Go On Duty"}
-  </button>
+                      <button
+                        onClick={() =>
+                          toggleDutyStatus(rider)
+                        }
+                        style={styles.moreButton}
+                      >
+                        {rider.dutyStatus === "On Duty"
+                          ? "Go Off Duty"
+                          : "Go On Duty"}
+                      </button>
 
-  <button
-    onClick={() =>
-      toggleStatus(rider)
-    }
-    style={styles.moreButton}
-  >
-    {rider.status === "Active"
-      ? "Deactivate"
-      : "Activate"}
-  </button>
+                      <button
+                        onClick={() =>
+                          toggleStatus(rider)
+                        }
+                        style={styles.moreButton}
+                      >
+                        {rider.status === "Active"
+                          ? "Deactivate"
+                          : "Activate"}
+                      </button>
 
-</div>
+                    </div>
 
                   </div>
                 );
@@ -969,64 +959,56 @@ const toggleDutyStatus = async (rider) => {
                     {selectedRider.phone}
                   </p>
 
-                <div
-  style={{
-    display: "flex",
-    flexDirection: "column",
-    gap: "7px",
-    marginTop: "8px",
-  }}
->
-  {/* ACCOUNT STATUS */}
-  <span
-    style={{
-      ...styles.statusBadge,
-      ...(selectedRider.status === "Active"
-        ? styles.activeStatus
-        : styles.inactiveStatus),
-    }}
-  >
-    <span
-      style={{
-        ...styles.statusDot,
-        background:
-          selectedRider.status === "Active"
-            ? "#397044"
-            : "#8A7D73",
-      }}
-    />
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "7px",
+                      marginTop: "8px",
+                    }}
+                  >
+                    {/* ACCOUNT STATUS */}
+                    <span
+                      style={{
+                        ...styles.statusBadge,
+                        ...(selectedRider.status === "Active"
+                          ? styles.activeStatus
+                          : styles.inactiveStatus),
+                      }}
+                    >
+                      <span
+                        style={{
+                          ...styles.statusDot,
+                          background:
+                            selectedRider.status === "Active"
+                              ? "#397044"
+                              : "#8A7D73",
+                        }}
+                      />
 
-    {selectedRider.status || "Inactive"}
-  </span>
+                      {selectedRider.status || "Inactive"}
+                    </span>
 
-  {/* DUTY STATUS */}
-  {selectedRider.status === "Active" && (
-    <span
-      style={{
-        ...styles.statusBadge,
-        background: selectedRider.isOnDuty
-          ? "#E8F4EA"
-          : "#F1ECE8",
-        color: selectedRider.isOnDuty
-          ? "#397044"
-          : "#7C7068",
-      }}
-    >
-      <span
-        style={{
-          ...styles.statusDot,
-          background: selectedRider.isOnDuty
-            ? "#397044"
-            : "#8A7D73",
-        }}
-      />
+                    {/* DUTY STATUS */}
+                    {selectedRider.status === "Active" && (
+                      <span
+                        style={{
+                          ...styles.statusBadge,
+                          background: selectedRider.dutyStatus === "On Duty" ? "#E8F4EA" : "#F1ECE8",
+                          color: selectedRider.dutyStatus === "On Duty" ? "#397044" : "#7C7068",
+                        }}
+                      >
+                        <span
+                          style={{
+                            ...styles.statusDot,
+                            background: selectedRider.dutyStatus === "On Duty" ? "#397044" : "#8A7D73",
+                          }}
+                        />
 
-      {selectedRider.isOnDuty
-        ? "On Duty"
-        : "Off Duty"}
-    </span>
-  )}
-</div>
+                        {selectedRider.dutyStatus === "On Duty" ? "On Duty" : "Off Duty"}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
               </div>
@@ -1072,16 +1054,17 @@ const toggleDutyStatus = async (rider) => {
                     0
                   }`}
                 />
+                
                 <Detail
-  label="Availability"
-  value={
-    selectedRider.status !== "Active"
-      ? "Unavailable"
-      : selectedRider.isOnDuty
-      ? "On Duty"
-      : "Off Duty"
-  }
-/>
+                  label="Availability"
+                  value={
+                    selectedRider.status !== "Active"
+                      ? "Unavailable"
+                      : selectedRider.dutyStatus === "On Duty"
+                      ? "On Duty"
+                      : "Off Duty"
+                  }
+                />
 
               </div>
 
@@ -1266,6 +1249,7 @@ function MiniStat({ label, value }) {
     </div>
   );
 }
+
 
 // =====================================================
 // STYLES
