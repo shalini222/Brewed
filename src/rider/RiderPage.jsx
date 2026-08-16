@@ -2196,11 +2196,7 @@ const styles = {
     fontSize: 9,
   },
 
-  instructions p: {
-    margin: "4px 0 0",
-    color: "#796A60",
-    fontSize: 12,
-  },
+
 
   itemsHeader: {
     display: "flex",
