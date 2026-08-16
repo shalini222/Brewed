@@ -205,7 +205,7 @@ export default function OrderManagement({ setPage, setActivePage }) {
         .filter(
           (rider) =>
             rider.status === "Active" &&
-            rider.isOnDuty === true
+            rider.dutyStatus === "On Duty"
         );
 
       setRiders(activeRiders);
