@@ -30,6 +30,7 @@ export default function RiderPage({ setPage, setActivePage }) {
 
   const [cancelOrder, setCancelOrder] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
+  const [updatingDuty, setUpdatingDuty] = useState(false);
 
   // =====================================================
   // FIND LOGGED-IN RIDER
@@ -374,6 +375,43 @@ export default function RiderPage({ setPage, setActivePage }) {
     }
   };
 
+
+
+
+  // =====================================================
+// ON DUTY / OFF DUTY
+// =====================================================
+
+const toggleDutyStatus = async () => {
+  if (!rider?.id || updatingDuty) return;
+
+  try {
+    setUpdatingDuty(true);
+
+    const newDutyStatus =
+      rider.dutyStatus === "On Duty"
+        ? "Off Duty"
+        : "On Duty";
+
+    await updateDoc(
+      doc(db, "riders", rider.id),
+      {
+        dutyStatus: newDutyStatus,
+        dutyStatusUpdatedAt: serverTimestamp(),
+      }
+    );
+  } catch (err) {
+    console.error(
+      "Error updating duty status:",
+      err
+    );
+
+    alert("Failed to update duty status.");
+  } finally {
+    setUpdatingDuty(false);
+  }
+};
+
   // =====================================================
   // LOADING
   // =====================================================
@@ -552,10 +590,26 @@ export default function RiderPage({ setPage, setActivePage }) {
               </p>
             </div>
 
-            <div style={styles.onlineBadge}>
-              <span style={styles.onlineDot} />
-              Online
-            </div>
+            <button
+  onClick={toggleDutyStatus}
+  disabled={updatingDuty}
+  style={{
+    ...styles.onlineBadge,
+    cursor: updatingDuty
+      ? "default"
+      : "pointer",
+    border: "none",
+    opacity: updatingDuty ? 0.6 : 1,
+  }}
+>
+  <span style={styles.onlineDot} />
+
+  {updatingDuty
+    ? "Updating..."
+    : rider.dutyStatus === "On Duty"
+    ? "On Duty"
+    : "Off Duty"}
+</button>
           </div>
 
           <div style={styles.heroStats}>
