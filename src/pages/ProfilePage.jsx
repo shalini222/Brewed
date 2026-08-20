@@ -11,10 +11,10 @@ import {
 import {
   updateEmail,
   updateProfile,
+  updatePhoneNumber,
   sendPasswordResetEmail,
   RecaptchaVerifier,
   PhoneAuthProvider,
-  linkWithCredential,
 } from "firebase/auth";
 
 import {
@@ -63,6 +63,8 @@ const [otp, setOtp] = useState("");
 const [otpSent, setOtpSent] = useState(false);
 const [isPhoneProcessing, setIsPhoneProcessing] = useState(false);
 const [verificationId, setVerificationId] = useState(null);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+const [originalPhone, setOriginalPhone] = useState("");
 
   // ---------------------------------------------------------
   // GOOGLE API KEY
@@ -125,6 +127,7 @@ const [verificationId, setVerificationId] = useState(null);
         const data = snapshot.data();
 
         setPhone(data.phone || "");
+        setOriginalPhone(data.phone || "");
         setPhoneVerified(data.phoneVerified === true);
         setAddressType(
           data.addressType || "home"
@@ -370,8 +373,14 @@ const [verificationId, setVerificationId] = useState(null);
   };
 
 
+  // ---------------------------------------------------------
+  // PHONE SELECTION
+  // ---------------------------------------------------------
 
-const handleVerifyPhoneOTP = async () => {
+
+
+
+  const handleVerifyPhoneOTP = async () => {
   if (!currentUser || !verificationId) return;
 
   if (!/^\d{6}$/.test(otp.trim())) {
@@ -384,12 +393,17 @@ const handleVerifyPhoneOTP = async () => {
   setErrorMessage("");
 
   try {
+    // ADD THIS
     const credential = PhoneAuthProvider.credential(
       verificationId,
       otp.trim()
     );
 
-    await linkWithCredential(currentUser, credential);
+    // ADD THIS
+    await updatePhoneNumber(currentUser, credential);
+
+    // OTP successfully verified
+    setPhoneVerified(true);
 
     await setDoc(
       doc(db, "users", currentUser.uid),
@@ -403,25 +417,21 @@ const handleVerifyPhoneOTP = async () => {
     );
 
     setPhone(pendingPhone);
-    setPhoneVerified(true);
+    setOriginalPhone(pendingPhone);
+
     setOtp("");
     setOtpSent(false);
-    setVerificationId(null);
-    setPendingPhone("");
+    setVerificationId("");
 
     setMessage("Phone number verified successfully.");
 
-    if (window.recaptchaVerifier) {
-      window.recaptchaVerifier.clear();
-      window.recaptchaVerifier = null;
-    }
   } catch (error) {
-    console.error("Phone verification error:", error);
+    console.error("Phone OTP verification error:", error);
+
+    setPhoneVerified(false);
 
     setErrorMessage(
-      error.code === "auth/invalid-verification-code"
-        ? "Incorrect verification code. Please try again."
-        : error.message || "Phone verification failed."
+      error.message || "Invalid verification code."
     );
   } finally {
     setIsPhoneProcessing(false);
@@ -512,6 +522,15 @@ const handleSendPhoneOTP = async () => {
     e.preventDefault();
 
     if (!currentUser) return;
+     if (!phone) {
+    setErrorMessage("Phone number is required.");
+    return;
+  }
+
+  if (!phoneVerified) {
+    setErrorMessage("Please verify your phone number before saving.");
+    return;
+  }
 
     setIsProcessing(true);
     setMessage("");
@@ -548,11 +567,11 @@ const handleSendPhoneOTP = async () => {
       // FIRESTORE
       // -----------------------------------------------------
 
-      const updateData = {
+   const updateData = {
   fullName,
   email,
   phone,
-  phoneVerified: true,
+  phoneVerified,
   address,
   addressType,
   updatedAt: serverTimestamp(),
@@ -908,6 +927,23 @@ const handleSendPhoneOTP = async () => {
           gap: 15px;
         }
 
+
+         .phone-status {
+  margin-top: 7px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.phone-status.verified {
+  color: #2E6B38;
+}
+
+.phone-status.unverified {
+  color: #9B3333;
+}
+
+
+
         .save-btn,
         .password-btn {
           flex: 1;
@@ -1146,17 +1182,19 @@ const handleSendPhoneOTP = async () => {
   </label>
 
   <div className="phone-input-row">
-    <input
-      type="tel"
-      value={phone}
-      onChange={(e) => {
-        setPhone(e.target.value);
-        setPhoneVerified(false);
-      }}
-      placeholder="+919876543210"
-      disabled={phoneVerified}
-      required
-    />
+  <input
+  type="tel"
+  value={phone}
+  onChange={(e) => {
+    const newPhone = e.target.value;
+    setPhone(newPhone);
+
+    if (newPhone !== originalPhone) {
+      setPhoneVerified(false);
+    }
+  }}
+  required
+/>
 
     {phoneVerified ? (
       <div className="verified-badge">
