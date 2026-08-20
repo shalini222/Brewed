@@ -795,30 +795,38 @@ export default function ProfilePage({ setPage }) {
               <div className="form-group full">
                 <label>Address</label>
 
+  
+              
                 
-                
-   <GooglePlacesAutocomplete
+
+
+
+
+
+
+
+
+    <GooglePlacesAutocomplete
   apiKey="YOUR_GOOGLE_API_KEY"
   selectProps={{
     value: address
       ? {
           label: address.formatted || "",
-          value: {
-            place_id: address.placeId || "",
-            description: address.formatted || "",
-          },
+          value: address.placeId || "",
         }
       : null,
 
-    onChange: (selected) => {
+    onChange: async (selected) => {
       if (!selected) {
         setAddress(null);
         return;
       }
 
+      const placeId = selected.value?.place_id;
+
       setAddress({
         formatted: selected.label || "",
-        placeId: selected.value?.place_id || "",
+        placeId: placeId || "",
         lat: null,
         lng: null,
       });
@@ -848,12 +856,7 @@ export default function ProfilePage({ setPage }) {
       }),
     },
   }}
-/>     
-  
-
-              
-                
-                
+/>            
                 
                 
                 
