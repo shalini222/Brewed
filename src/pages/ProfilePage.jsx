@@ -17,7 +17,7 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 import { db, storage, auth } from "../firebase";
-//import GooglePlacesAutocomplete from "react-google-places-autocomplete";
+import GooglePlacesAutocomplete from "react-google-places-autocomplete";
 
 export default function ProfilePage({ setPage }) {
   const { currentUser } = useAuth();
@@ -798,21 +798,57 @@ export default function ProfilePage({ setPage }) {
                 
                 
                 
+   <GooglePlacesAutocomplete
+  apiKey="YOUR_EXISTING_GOOGLE_API_KEY"
+  selectProps={{
+    value: address
+      ? {
+          label: address.formatted || "",
+          value: address.placeId || address.formatted || "",
+        }
+      : null,
+
+    onChange: (selected) => {
+      if (!selected) {
+        setAddress(null);
+        return;
+      }
+
+      setAddress({
+        formatted: selected.label || "",
+        placeId: selected.value?.place_id || "",
+        lat: null,
+        lng: null,
+      });
+    },
+
+    placeholder: "Start typing your address...",
+
+    styles: {
+      control: (provided, state) => ({
+        ...provided,
+        padding: "5px",
+        borderRadius: "12px",
+        borderColor: state.isFocused ? "#C4956A" : "#DDD",
+        boxShadow: state.isFocused
+          ? "0 0 0 3px rgba(196,149,106,.15)"
+          : "none",
+      }),
+
+      input: (provided) => ({
+        ...provided,
+        fontSize: "15px",
+      }),
+
+      placeholder: (provided) => ({
+        ...provided,
+        color: "#999",
+      }),
+    },
+  }}
+/>             
                 
-                
-                <input
-  type="text"
-  value={address?.formatted || ""}
-  onChange={(e) =>
-    setAddress({
-      formatted: e.target.value,
-      placeId: "",
-      lat: null,
-      lng: null,
-    })
-  }
-  placeholder="Enter your address..."
-/>
+  
 
               
                 
