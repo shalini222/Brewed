@@ -16,7 +16,7 @@ import {
   uploadBytes,
   getDownloadURL,
 } from "firebase/storage";
-import { db, storage } from "../firebase";
+import { db, storage, auth } from "../firebase";
 import GooglePlacesAutocomplete from "react-google-places-autocomplete";
 
 export default function ProfilePage({ setPage }) {
@@ -347,7 +347,7 @@ export default function ProfilePage({ setPage }) {
 
     try {
       await sendPasswordResetEmail(
-        currentUser.auth,
+         auth,
         currentUser.email
       );
 
