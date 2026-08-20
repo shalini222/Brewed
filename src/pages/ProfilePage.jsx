@@ -12,6 +12,9 @@ import {
   updateEmail,
   updateProfile,
   sendPasswordResetEmail,
+  RecaptchaVerifier,
+  PhoneAuthProvider,
+  linkWithCredential,
 } from "firebase/auth";
 
 import {
@@ -52,6 +55,14 @@ export default function ProfilePage({ setPage }) {
 
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+
+  const [phoneVerified, setPhoneVerified] = useState(false);
+const [pendingPhone, setPendingPhone] = useState("");
+const [otp, setOtp] = useState("");
+const [otpSent, setOtpSent] = useState(false);
+const [isPhoneProcessing, setIsPhoneProcessing] = useState(false);
+const [verificationId, setVerificationId] = useState(null);
 
   // ---------------------------------------------------------
   // GOOGLE API KEY
@@ -114,6 +125,7 @@ export default function ProfilePage({ setPage }) {
         const data = snapshot.data();
 
         setPhone(data.phone || "");
+        setPhoneVerified(data.phoneVerified === true);
         setAddressType(
           data.addressType || "home"
         );
@@ -357,6 +369,141 @@ export default function ProfilePage({ setPage }) {
     }
   };
 
+
+
+const handleVerifyPhoneOTP = async () => {
+  if (!currentUser || !verificationId) return;
+
+  if (!/^\d{6}$/.test(otp.trim())) {
+    setErrorMessage("Enter the 6-digit verification code.");
+    return;
+  }
+
+  setIsPhoneProcessing(true);
+  setMessage("");
+  setErrorMessage("");
+
+  try {
+    const credential = PhoneAuthProvider.credential(
+      verificationId,
+      otp.trim()
+    );
+
+    await linkWithCredential(currentUser, credential);
+
+    await setDoc(
+      doc(db, "users", currentUser.uid),
+      {
+        phone: pendingPhone,
+        phoneVerified: true,
+        phoneVerifiedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    setPhone(pendingPhone);
+    setPhoneVerified(true);
+    setOtp("");
+    setOtpSent(false);
+    setVerificationId(null);
+    setPendingPhone("");
+
+    setMessage("Phone number verified successfully.");
+
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
+      window.recaptchaVerifier = null;
+    }
+  } catch (error) {
+    console.error("Phone verification error:", error);
+
+    setErrorMessage(
+      error.code === "auth/invalid-verification-code"
+        ? "Incorrect verification code. Please try again."
+        : error.message || "Phone verification failed."
+    );
+  } finally {
+    setIsPhoneProcessing(false);
+  }
+};
+  
+  
+  
+  
+  
+  const setupRecaptcha = () => {
+  if (window.recaptchaVerifier) {
+    return window.recaptchaVerifier;
+  }
+
+  window.recaptchaVerifier = new RecaptchaVerifier(
+    auth,
+    "phone-recaptcha",
+    {
+      size: "invisible",
+      callback: () => {
+        // reCAPTCHA completed
+      },
+      "expired-callback": () => {
+        window.recaptchaVerifier?.clear();
+        window.recaptchaVerifier = null;
+      },
+    }
+  );
+
+  return window.recaptchaVerifier;
+};
+
+const handleSendPhoneOTP = async () => {
+  if (!currentUser) return;
+
+  const cleanedPhone = phone.trim();
+
+  if (!/^\+[1-9]\d{7,14}$/.test(cleanedPhone)) {
+    setErrorMessage(
+      "Enter your phone number with country code, e.g. +919876543210."
+    );
+    return;
+  }
+
+  setIsPhoneProcessing(true);
+  setMessage("");
+  setErrorMessage("");
+
+  try {
+    const verifier = setupRecaptcha();
+
+    const provider = new PhoneAuthProvider(auth);
+
+    const verificationId = await provider.verifyPhoneNumber(
+      cleanedPhone,
+      verifier
+    );
+
+    setVerificationId(verificationId);
+    setPendingPhone(cleanedPhone);
+    setOtpSent(true);
+
+    setMessage("Verification code sent to your phone.");
+  } catch (error) {
+    console.error("Phone OTP error:", error);
+
+    window.recaptchaVerifier?.clear();
+    window.recaptchaVerifier = null;
+
+    setErrorMessage(
+      error.message || "Unable to send verification code."
+    );
+  } finally {
+    setIsPhoneProcessing(false);
+  }
+};
+
+
+
+  
+
   // ---------------------------------------------------------
   // SAVE PROFILE
   // ---------------------------------------------------------
@@ -402,13 +549,14 @@ export default function ProfilePage({ setPage }) {
       // -----------------------------------------------------
 
       const updateData = {
-        fullName: fullName.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-        address: address || null,
-        addressType,
-        updatedAt: serverTimestamp(),
-      };
+  fullName,
+  email,
+  phone,
+  phoneVerified: true,
+  address,
+  addressType,
+  updatedAt: serverTimestamp(),
+};
 
       // Birthday can only be saved once
       if (
@@ -801,6 +949,80 @@ export default function ProfilePage({ setPage }) {
           padding: 0;
         }
 
+
+        .phone-input-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.phone-input-row input {
+  flex: 1;
+}
+
+.verify-phone-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 0 18px;
+  background: #3B1A08;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.verify-phone-btn:hover {
+  background: #C4956A;
+}
+
+.verify-phone-btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.verified-badge {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: #EEF8F0;
+  color: #2E6B38;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.otp-box {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.otp-box input {
+  flex: 1;
+}
+
+.phone-note {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #8A7770;
+}
+
+@media(max-width: 600px) {
+  .phone-input-row {
+    flex-direction: column;
+  }
+
+  .verify-phone-btn,
+  .verified-badge {
+    min-height: 48px;
+    justify-content: center;
+  }
+
+  .otp-box {
+    flex-direction: column;
+  }
+}
+
         @media(max-width: 768px) {
           .profile-card {
             padding: 30px 22px;
@@ -918,22 +1140,72 @@ export default function ProfilePage({ setPage }) {
 
               {/* PHONE */}
 
-              <div className="form-group">
+             <div className="form-group">
+  <label>
+    Phone Number <span style={{ color: "#C4956A" }}>*</span>
+  </label>
 
-                <label>
-                  Phone Number
-                </label>
+  <div className="phone-input-row">
+    <input
+      type="tel"
+      value={phone}
+      onChange={(e) => {
+        setPhone(e.target.value);
+        setPhoneVerified(false);
+      }}
+      placeholder="+919876543210"
+      disabled={phoneVerified}
+      required
+    />
 
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) =>
-                    setPhone(e.target.value)
-                  }
-                  placeholder="+91 XXXXX XXXXX"
-                />
+    {phoneVerified ? (
+      <div className="verified-badge">
+        ✓ Verified
+      </div>
+    ) : (
+      <button
+        type="button"
+        className="verify-phone-btn"
+        onClick={handleSendPhoneOTP}
+        disabled={isPhoneProcessing || !phone}
+      >
+        {isPhoneProcessing ? "Sending..." : "Verify"}
+      </button>
+    )}
+  </div>
 
-              </div>
+  {otpSent && (
+    <div className="otp-box">
+      <input
+        type="text"
+        inputMode="numeric"
+        maxLength="6"
+        value={otp}
+        onChange={(e) =>
+          setOtp(e.target.value.replace(/\D/g, ""))
+        }
+        placeholder="Enter 6-digit OTP"
+      />
+
+      <button
+        type="button"
+        className="verify-phone-btn"
+        onClick={handleVerifyPhoneOTP}
+        disabled={isPhoneProcessing || otp.length !== 6}
+      >
+        {isPhoneProcessing ? "Verifying..." : "Verify OTP"}
+      </button>
+    </div>
+  )}
+
+  <div id="phone-recaptcha"></div>
+
+  <div className="phone-note">
+    {phoneVerified
+      ? "Your phone number is verified."
+      : "A verification code is required to use this phone number."}
+  </div>
+</div>
 
               {/* ADDRESS TYPE */}
 
