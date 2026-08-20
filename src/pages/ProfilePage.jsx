@@ -807,7 +807,7 @@ export default function ProfilePage({ setPage }) {
 
 
     <GooglePlacesAutocomplete
-  apiKey="YOUR_GOOGLE_API_KEY"
+  apiKey="AIzaSyAZXXMZOvmUviZqgDoljAhSllaQLxelvfY"
   selectProps={{
     value: address
       ? {
