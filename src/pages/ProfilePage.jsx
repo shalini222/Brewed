@@ -17,7 +17,7 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 import { db, storage, auth } from "../firebase";
-import GooglePlacesAutocomplete from "react-google-places-autocomplete";
+//import GooglePlacesAutocomplete from "react-google-places-autocomplete";
 
 export default function ProfilePage({ setPage }) {
   const { currentUser } = useAuth();
@@ -795,50 +795,32 @@ export default function ProfilePage({ setPage }) {
               <div className="form-group full">
                 <label>Address</label>
 
-                <GooglePlacesAutocomplete
-                  apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
-                  selectProps={{
-                    value: address
-                      ? {
-                          label: address.formatted,
-                          value: address.placeId,
-                        }
-                      : null,
+                
+                
+                
+                
+                
+                <input
+  type="text"
+  value={address?.formatted || ""}
+  onChange={(e) =>
+    setAddress({
+      formatted: e.target.value,
+      placeId: "",
+      lat: null,
+      lng: null,
+    })
+  }
+  placeholder="Enter your address..."
+/>
 
-                    onChange: handleAddressChange,
-
-                    placeholder:
-                      "Start typing your address...",
-
-                    styles: {
-                      control: (provided, state) => ({
-                        ...provided,
-                        padding: "5px",
-                        borderRadius: "12px",
-                        borderColor: state.isFocused
-                          ? "#C4956A"
-                          : "#DDD",
-                        boxShadow: state.isFocused
-                          ? "0 0 0 3px rgba(196,149,106,.15)"
-                          : "none",
-                        "&:hover": {
-                          borderColor: "#C4956A",
-                        },
-                      }),
-
-                      input: (provided) => ({
-                        ...provided,
-                        fontSize: "15px",
-                      }),
-
-                      placeholder: (provided) => ({
-                        ...provided,
-                        color: "#999",
-                      }),
-                    },
-                  }}
-                />
-
+              
+                
+                
+                
+                
+                
+                
                 <div className="address-note">
                   Select your address from the suggestions.
                 </div>
