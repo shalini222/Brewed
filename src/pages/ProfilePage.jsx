@@ -797,14 +797,16 @@ export default function ProfilePage({ setPage }) {
 
                 
                 
-                
    <GooglePlacesAutocomplete
-  apiKey="AIzaSyBYw0b8SR-lJPdg1qvjDL9qaYshuhDhfuA"
+  apiKey="YOUR_GOOGLE_API_KEY"
   selectProps={{
     value: address
       ? {
           label: address.formatted || "",
-          value: address.placeId || address.formatted || "",
+          value: {
+            place_id: address.placeId || "",
+            description: address.formatted || "",
+          },
         }
       : null,
 
@@ -846,8 +848,7 @@ export default function ProfilePage({ setPage }) {
       }),
     },
   }}
-/>             
-                
+/>     
   
 
               
