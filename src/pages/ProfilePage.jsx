@@ -27,7 +27,6 @@ export default function ProfilePage({ setPage }) {
   const [phone, setPhone] = useState("");
   const [birthday, setBirthday] = useState("");
 
-  // Address is now stored as an object
   const [address, setAddress] = useState(null);
   const [addressType, setAddressType] = useState("home");
 
@@ -37,6 +36,7 @@ export default function ProfilePage({ setPage }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPasswordProcessing, setIsPasswordProcessing] = useState(false);
+  const [isPhotoProcessing, setIsPhotoProcessing] = useState(false);
 
   const [isBirthdayLocked, setIsBirthdayLocked] = useState(false);
 
@@ -60,7 +60,6 @@ export default function ProfilePage({ setPage }) {
       setErrorMessage("");
 
       try {
-        // Firebase Auth data
         setFullName(currentUser.displayName || "");
         setEmail(currentUser.email || "");
 
@@ -79,31 +78,20 @@ export default function ProfilePage({ setPage }) {
           );
         }
 
-        // Firestore profile data
         const docRef = doc(db, "users", currentUser.uid);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
           const data = docSnap.data();
 
+          setFullName(data.fullName || currentUser.displayName || "");
+          setEmail(data.email || currentUser.email || "");
           setPhone(data.phone || "");
           setAddressType(data.addressType || "home");
 
           /*
-           * Supports both:
-           *
-           * New:
-           * address: {
-           *   formatted,
-           *   placeId,
-           *   lat,
-           *   lng
-           * }
-           *
-           * Old:
-           * address: "some address"
-           *
-           * This prevents existing Brewed users from breaking.
+           * Support old address string format
+           * and new structured address format.
            */
           if (data.address) {
             if (typeof data.address === "string") {
@@ -134,7 +122,9 @@ export default function ProfilePage({ setPage }) {
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
-        setErrorMessage("Unable to load your profile. Please try again.");
+        setErrorMessage(
+          "Unable to load your profile. Please try again."
+        );
       } finally {
         setIsLoading(false);
       }
@@ -154,7 +144,6 @@ export default function ProfilePage({ setPage }) {
 
     if (!file || !currentUser) return;
 
-    // Basic validation
     if (!file.type.startsWith("image/")) {
       setErrorMessage("Please select a valid image.");
       return;
@@ -165,16 +154,11 @@ export default function ProfilePage({ setPage }) {
       return;
     }
 
-    setIsProcessing(true);
+    setIsPhotoProcessing(true);
     setMessage("");
     setErrorMessage("");
 
     try {
-      /*
-       * Upload directly to Firebase Storage.
-       *
-       * users/{uid}/profile.jpg
-       */
       const storageRef = ref(
         storage,
         `users/${currentUser.uid}/profile.jpg`
@@ -186,12 +170,10 @@ export default function ProfilePage({ setPage }) {
 
       const downloadURL = await getDownloadURL(storageRef);
 
-      // Update Firebase Auth profile
       await updateProfile(currentUser, {
         photoURL: downloadURL,
       });
 
-      // Update Firestore profile
       await setDoc(
         doc(db, "users", currentUser.uid),
         {
@@ -205,20 +187,19 @@ export default function ProfilePage({ setPage }) {
       setMessage("Profile photo updated successfully.");
     } catch (error) {
       console.error("Profile photo upload failed:", error);
+
       setErrorMessage(
         error.message || "Failed to upload profile photo."
       );
     } finally {
-      setIsProcessing(false);
-
-      // Allows selecting the same image again
+      setIsPhotoProcessing(false);
       e.target.value = "";
     }
   };
 
   /*
    * ---------------------------------------------------------
-   * GOOGLE PLACES
+   * ADDRESS
    * ---------------------------------------------------------
    */
 
@@ -228,21 +209,21 @@ export default function ProfilePage({ setPage }) {
       return;
     }
 
-    /*
-     * react-google-places-autocomplete gives us
-     * place_id through selected.value.place_id.
-     *
-     * We initially store the formatted label.
-     *
-     * Coordinates can be populated when the Places
-     * details API is configured/available.
-     */
     setAddress({
       formatted: selected.label || "",
       placeId: selected.value?.place_id || "",
       lat: null,
       lng: null,
     });
+
+    setMessage("");
+    setErrorMessage("");
+  };
+
+  const clearAddress = () => {
+    setAddress(null);
+    setMessage("");
+    setErrorMessage("");
   };
 
   /*
@@ -277,21 +258,17 @@ export default function ProfilePage({ setPage }) {
         await updateEmail(currentUser, email);
       }
 
-      /*
-       * Firestore profile.
-       */
       const updateData = {
-        fullName,
-        email,
-        phone,
-        address,
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        address: address || null,
         addressType,
         updatedAt: serverTimestamp(),
       };
 
       /*
-       * Birthday is permanently locked after
-       * the first successful save.
+       * Birthday can only be saved once.
        */
       if (!isBirthdayLocked && birthday) {
         updateData.birthday = birthday;
@@ -307,17 +284,21 @@ export default function ProfilePage({ setPage }) {
         setIsBirthdayLocked(true);
       }
 
-      setMessage("Profile saved successfully.");
+      setMessage("Your profile has been updated.");
     } catch (error) {
       console.error("Failed to save profile:", error);
 
-      /*
-       * Firebase email updates can require recent
-       * authentication.
-       */
       if (error.code === "auth/requires-recent-login") {
         setErrorMessage(
-          "Please sign in again before changing your email."
+          "For security, please sign in again before changing your email."
+        );
+      } else if (error.code === "auth/email-already-in-use") {
+        setErrorMessage(
+          "That email address is already associated with another account."
+        );
+      } else if (error.code === "auth/invalid-email") {
+        setErrorMessage(
+          "Please enter a valid email address."
         );
       } else {
         setErrorMessage(
@@ -331,13 +312,15 @@ export default function ProfilePage({ setPage }) {
 
   /*
    * ---------------------------------------------------------
-   * CHANGE PASSWORD
+   * PASSWORD RESET
    * ---------------------------------------------------------
    */
 
   const handleChangePassword = async () => {
     if (!currentUser?.email) {
-      setErrorMessage("No email address is associated with this account.");
+      setErrorMessage(
+        "No email address is associated with this account."
+      );
       return;
     }
 
@@ -347,18 +330,19 @@ export default function ProfilePage({ setPage }) {
 
     try {
       await sendPasswordResetEmail(
-         auth,
+        auth,
         currentUser.email
       );
 
       setMessage(
-        `Password reset instructions have been sent to ${currentUser.email}.`
+        `Password reset instructions were sent to ${currentUser.email}.`
       );
     } catch (error) {
       console.error("Password reset failed:", error);
 
       setErrorMessage(
-        error.message || "Unable to send password reset email."
+        error.message ||
+          "Unable to send password reset instructions."
       );
     } finally {
       setIsPasswordProcessing(false);
@@ -367,19 +351,19 @@ export default function ProfilePage({ setPage }) {
 
   /*
    * ---------------------------------------------------------
-   * AVATAR FALLBACK
+   * AVATAR
    * ---------------------------------------------------------
    */
 
   const avatar =
     avatarUrl ||
-    `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(
+    `https://ui-avatars.com/api/?background=3B1A08&color=fff&name=${encodeURIComponent(
       fullName || "User"
     )}`;
 
   /*
    * ---------------------------------------------------------
-   * LOADING STATE
+   * LOADING
    * ---------------------------------------------------------
    */
 
@@ -387,11 +371,6 @@ export default function ProfilePage({ setPage }) {
     return (
       <>
         <style>{`
-          body {
-            margin: 0;
-            background: #FDFAF5;
-          }
-
           .profile-loading {
             min-height: 100vh;
             display: flex;
@@ -400,11 +379,28 @@ export default function ProfilePage({ setPage }) {
             background: #FDFAF5;
             color: #3B1A08;
             font-family: Inter, sans-serif;
-            font-size: 16px;
+            font-size: 15px;
+          }
+
+          .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #E8DED4;
+            border-top-color: #C4956A;
+            border-radius: 50%;
+            animation: profileSpin .7s linear infinite;
+            margin-right: 10px;
+          }
+
+          @keyframes profileSpin {
+            to {
+              transform: rotate(360deg);
+            }
           }
         `}</style>
 
         <div className="profile-loading">
+          <div className="loading-spinner" />
           Loading your profile...
         </div>
       </>
@@ -428,55 +424,155 @@ export default function ProfilePage({ setPage }) {
 
         .profile-page {
           min-height: 100vh;
-          background: #FDFAF5;
-          display: flex;
-          justify-content: center;
-          padding: 120px 20px 60px;
+          background:
+            radial-gradient(
+              circle at top center,
+              rgba(196,149,106,.08),
+              transparent 420px
+            ),
+            #FDFAF5;
+
+          padding: 105px 20px 70px;
         }
 
-        .profile-card {
+        .profile-container {
           width: 100%;
-          max-width: 760px;
-          background: white;
-          border-radius: 24px;
-          box-shadow: 0 15px 40px rgba(0,0,0,.08);
-          padding: 50px;
+          max-width: 820px;
+          margin: 0 auto;
         }
 
-        .profile-header {
-          display: flex;
-          flex-direction: column;
+        /* BACK */
+
+        .back-button {
+          display: inline-flex;
           align-items: center;
-          text-align: center;
-          margin-bottom: 45px;
+          gap: 7px;
+          background: transparent;
+          border: none;
+          color: #3B1A08;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          padding: 8px 0;
+          margin-bottom: 20px;
+        }
+
+        .back-button:hover {
+          color: #C4956A;
+        }
+
+        /* HERO */
+
+        .profile-hero {
+          background: #FFFFFF;
+          border-radius: 26px;
+          padding: 38px 40px;
+          box-shadow: 0 18px 45px rgba(59,26,8,.07);
+          border: 1px solid rgba(196,149,106,.12);
+          display: flex;
+          align-items: center;
+          gap: 26px;
+          margin-bottom: 22px;
+        }
+
+        .avatar-wrapper {
+          position: relative;
+          flex-shrink: 0;
         }
 
         .profile-avatar {
-          width: 120px;
-          height: 120px;
+          width: 112px;
+          height: 112px;
           border-radius: 50%;
           object-fit: cover;
-          border: 5px solid #C4956A;
+          border: 4px solid #C4956A;
+          display: block;
+          background: #F8F4EE;
+        }
+
+        .avatar-edit {
+          position: absolute;
+          right: 0;
+          bottom: 2px;
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          border: 3px solid white;
+          background: #3B1A08;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           cursor: pointer;
+          font-size: 14px;
+          transition: .2s;
+        }
+
+        .avatar-edit:hover {
+          background: #C4956A;
+          transform: scale(1.05);
+        }
+
+        .profile-hero-info {
+          min-width: 0;
         }
 
         .profile-title {
           font-family: 'Playfair Display', serif;
-          font-size: 2.3rem;
+          font-size: 2.35rem;
           color: #3B1A08;
-          margin-top: 22px;
+          margin: 0 0 6px;
+          line-height: 1.15;
         }
 
-        .profile-subtitle {
+        .profile-email {
           color: #7A675C;
-          margin-top: 8px;
+          font-size: 14px;
+          word-break: break-word;
         }
 
-        .section-title {
+        .member-since {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          margin-top: 13px;
+          padding: 7px 11px;
+          border-radius: 999px;
+          background: #F8F4EE;
+          color: #6B5144;
+          font-size: 12px;
+          font-weight: 600;
+        }
+
+        /* SECTIONS */
+
+        .profile-section {
+          background: white;
+          border-radius: 24px;
+          padding: 32px 36px;
+          margin-bottom: 20px;
+          box-shadow: 0 12px 35px rgba(59,26,8,.055);
+          border: 1px solid rgba(196,149,106,.10);
+        }
+
+        .section-heading {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 25px;
+        }
+
+        .section-heading h2 {
           font-family: 'Playfair Display', serif;
-          font-size: 1.4rem;
           color: #3B1A08;
-          margin: 40px 0 18px;
+          font-size: 1.5rem;
+          margin: 0;
+        }
+
+        .section-heading p {
+          margin: 6px 0 0;
+          color: #8A7770;
+          font-size: 13px;
         }
 
         .form-grid {
@@ -494,460 +590,871 @@ export default function ProfilePage({ setPage }) {
           grid-column: 1 / 3;
         }
 
-        label {
+        .form-label {
           margin-bottom: 8px;
-          font-weight: 600;
           color: #5A453A;
+          font-size: 13px;
+          font-weight: 600;
         }
 
-        input {
+        .form-input {
           width: 100%;
-          padding: 15px;
+          padding: 14px 15px;
           border-radius: 12px;
-          border: 1px solid #DDD;
-          font-size: 15px;
-          transition: .3s;
+          border: 1px solid #DDD7D1;
+          background: white;
+          color: #33241D;
+          font-family: inherit;
+          font-size: 14px;
+          transition: .2s;
         }
 
-        input:focus {
+        .form-input:focus {
           outline: none;
           border-color: #C4956A;
-          box-shadow: 0 0 0 3px rgba(196,149,106,.15);
+          box-shadow: 0 0 0 3px rgba(196,149,106,.13);
         }
 
-        .radio-group {
-          display: flex;
-          gap: 20px;
-          margin-top: 5px;
+        .form-input::placeholder {
+          color: #A59A93;
         }
 
-        .radio-option {
-          display: flex;
-          align-items: center;
-          cursor: pointer;
-          font-weight: 500;
-          color: #5A453A;
-        }
-
-        .radio-circle {
-          width: 20px;
-          height: 20px;
-          border: 2px solid #C4956A;
-          border-radius: 50%;
-          margin-right: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .radio-dot {
-          width: 10px;
-          height: 10px;
-          background: #C4956A;
-          border-radius: 50%;
-          display: none;
-        }
-
-        input[type="radio"]:checked + .radio-circle .radio-dot {
-          display: block;
-        }
-
-        input[readonly]::-webkit-calendar-picker-indicator {
-          display: none;
-        }
-
-        .member-box {
-          margin-top: 25px;
-          padding: 18px;
+        .form-input:read-only {
           background: #F8F4EE;
-          border-radius: 14px;
+          color: #6D5D54;
         }
 
-        .member-value {
-          margin-top: 5px;
-          font-size: 1.1rem;
+        /* ADDRESS TYPE */
+
+        .address-type-group {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .address-type-option {
+          cursor: pointer;
+        }
+
+        .address-type-option input {
+          display: none;
+        }
+
+        .address-type-pill {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          padding: 10px 16px;
+          border: 1px solid #DDD7D1;
+          border-radius: 999px;
+          color: #6B5A51;
+          background: white;
+          font-size: 13px;
           font-weight: 600;
+          transition: .2s;
+        }
+
+        .address-type-option input:checked + .address-type-pill {
+          border-color: #C4956A;
+          background: #F8F4EE;
           color: #3B1A08;
         }
 
-        .status-message {
-          margin-top: 25px;
-          padding: 14px 16px;
+        .address-type-pill:hover {
+          border-color: #C4956A;
+        }
+
+        /* ADDRESS */
+
+        .address-wrapper {
+          position: relative;
+        }
+
+        .address-note {
+          margin-top: 8px;
+          color: #96867E;
+          font-size: 11px;
+        }
+
+        .selected-address {
+          margin-top: 12px;
+          padding: 13px 15px;
           border-radius: 12px;
-          font-size: 14px;
+          background: #F8F4EE;
+          border: 1px solid #EEE5DC;
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 15px;
+        }
+
+        .selected-address-content {
+          display: flex;
+          gap: 10px;
+          min-width: 0;
+        }
+
+        .address-icon {
+          flex-shrink: 0;
+          font-size: 17px;
+        }
+
+        .selected-address-text {
+          color: #4D3A30;
+          font-size: 13px;
           line-height: 1.5;
+        }
+
+        .selected-address-label {
+          color: #967F70;
+          font-size: 11px;
+          margin-bottom: 2px;
+          text-transform: uppercase;
+          letter-spacing: .05em;
+          font-weight: 600;
+        }
+
+        .clear-address {
+          flex-shrink: 0;
+          border: none;
+          background: transparent;
+          color: #92796B;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 600;
+          padding: 3px;
+        }
+
+        .clear-address:hover {
+          color: #9B3333;
+        }
+
+        /* SECURITY */
+
+        .security-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+          padding: 18px 0;
+          border-bottom: 1px solid #EEE8E2;
+        }
+
+        .security-row:last-child {
+          border-bottom: none;
+          padding-bottom: 0;
+        }
+
+        .security-row:first-child {
+          padding-top: 0;
+        }
+
+        .security-info {
+          min-width: 0;
+        }
+
+        .security-label {
+          font-size: 13px;
+          font-weight: 600;
+          color: #5A453A;
+        }
+
+        .security-value {
+          margin-top: 5px;
+          color: #8A7770;
+          font-size: 13px;
+          word-break: break-word;
+        }
+
+        .security-action {
+          flex-shrink: 0;
+          border: 1px solid #DCCFC4;
+          background: white;
+          color: #3B1A08;
+          border-radius: 10px;
+          padding: 9px 14px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: .2s;
+        }
+
+        .security-action:hover {
+          border-color: #C4956A;
+          background: #F8F4EE;
+        }
+
+        .security-action:disabled {
+          opacity: .55;
+          cursor: not-allowed;
+        }
+
+        /* MEMBERSHIP */
+
+        .membership-card {
+          background:
+            linear-gradient(
+              135deg,
+              #3B1A08 0%,
+              #5A2E16 100%
+            );
+          border-radius: 20px;
+          padding: 25px;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+        }
+
+        .membership-left {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        }
+
+        .membership-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          background: rgba(255,255,255,.10);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 22px;
+        }
+
+        .membership-label {
+          font-size: 11px;
+          color: #D8BBA4;
+          text-transform: uppercase;
+          letter-spacing: .08em;
+          font-weight: 600;
+        }
+
+        .membership-value {
+          margin-top: 4px;
+          font-family: 'Playfair Display', serif;
+          font-size: 1.25rem;
+        }
+
+        .membership-date {
+          margin-top: 3px;
+          color: #D6C2B4;
+          font-size: 11px;
+        }
+
+        .rewards-button {
+          border: 1px solid rgba(255,255,255,.25);
+          background: rgba(255,255,255,.08);
+          color: white;
+          padding: 10px 15px;
+          border-radius: 10px;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 600;
+          white-space: nowrap;
+          transition: .2s;
+        }
+
+        .rewards-button:hover {
+          background: rgba(255,255,255,.16);
+        }
+
+        /* STATUS */
+
+        .status-message {
+          margin-bottom: 20px;
+          padding: 13px 16px;
+          border-radius: 12px;
+          font-size: 13px;
+          line-height: 1.45;
         }
 
         .success-message {
           background: #EEF8F0;
           color: #2E6B38;
+          border: 1px solid #D6ECD9;
         }
 
         .error-message {
           background: #FBEDED;
           color: #9B3333;
+          border: 1px solid #F0D5D5;
         }
 
-        .actions {
-          margin-top: 45px;
+        /* ACTIONS */
+
+        .bottom-actions {
           display: flex;
-          gap: 15px;
+          justify-content: flex-end;
+          gap: 12px;
+          margin-top: 10px;
         }
 
         .save-btn {
-          flex: 1;
-          padding: 15px;
+          min-width: 190px;
+          padding: 14px 22px;
           border: none;
-          border-radius: 14px;
-          cursor: pointer;
-          font-weight: 600;
+          border-radius: 13px;
           background: #3B1A08;
           color: white;
-          transition: .3s;
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 13px;
+          font-weight: 600;
+          transition: .2s;
         }
 
         .save-btn:hover {
           background: #C4956A;
         }
 
-        .save-btn:disabled,
-        .password-btn:disabled {
+        .save-btn:disabled {
           opacity: .6;
           cursor: not-allowed;
         }
 
-        .password-btn {
-          flex: 1;
-          padding: 15px;
-          border: none;
-          border-radius: 14px;
-          cursor: pointer;
-          font-weight: 600;
-          background: #F8F4EE;
-          color: #3B1A08;
+        .save-btn.saved {
+          background: #4C7A52;
         }
 
-        .back-button {
-          background: none;
-          border: none;
-          color: #3B1A08;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          margin-bottom: 20px;
-          padding: 0;
-        }
+        /* MOBILE */
 
-        .address-note {
-          margin-top: 8px;
-          font-size: 12px;
-          color: #8A7770;
-        }
+        @media(max-width: 700px) {
+          .profile-page {
+            padding: 85px 14px 45px;
+          }
 
-        .birthday-note {
-          margin-top: 8px;
-          font-size: 12px;
-          color: #8A7770;
-        }
+          .profile-hero {
+            padding: 28px 22px;
+            flex-direction: column;
+            text-align: center;
+          }
 
-        @media(max-width: 768px) {
-          .profile-card {
-            padding: 30px 22px;
+          .profile-hero-info {
+            width: 100%;
+          }
+
+          .profile-title {
+            font-size: 2rem;
+          }
+
+          .member-since {
+            margin-top: 12px;
+          }
+
+          .profile-section {
+            padding: 25px 20px;
+            border-radius: 20px;
           }
 
           .form-grid {
             grid-template-columns: 1fr;
+            gap: 17px;
           }
 
           .form-group.full {
             grid-column: auto;
           }
 
-          .actions {
+          .section-heading h2 {
+            font-size: 1.35rem;
+          }
+
+          .security-row {
+            align-items: flex-start;
             flex-direction: column;
+            gap: 10px;
+          }
+
+          .security-action {
+            width: 100%;
+          }
+
+          .membership-card {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .rewards-button {
+            width: 100%;
+          }
+
+          .bottom-actions {
+            justify-content: stretch;
+          }
+
+          .save-btn {
+            width: 100%;
           }
         }
       `}</style>
 
       <div className="profile-page">
-        <div className="profile-card">
+        <div className="profile-container">
+
+          {/* BACK */}
 
           <button
             className="back-button"
             onClick={() => setPage("menu")}
           >
-            ← Back
+            ← Back to Menu
           </button>
 
-          <div className="profile-header">
+          {/* HERO */}
 
-            <label style={{ cursor: "pointer" }}>
+          <div className="profile-hero">
+
+            <div className="avatar-wrapper">
+
               <img
                 src={avatar}
                 alt="Profile"
                 className="profile-avatar"
               />
 
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                style={{ display: "none" }}
-                disabled={isProcessing}
-              />
-            </label>
+              <label
+                className="avatar-edit"
+                title="Change profile photo"
+              >
+                {isPhotoProcessing ? "..." : "✎"}
 
-            <div className="profile-title">
-              My Profile
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  style={{ display: "none" }}
+                  disabled={isPhotoProcessing}
+                />
+              </label>
+
             </div>
 
-            <div className="profile-subtitle">
-              {isProcessing
-                ? "Saving..."
-                : "Manage your Brewed account."}
+            <div className="profile-hero-info">
+
+              <h1 className="profile-title">
+                {fullName || "My Profile"}
+              </h1>
+
+              <div className="profile-email">
+                {email || "No email address"}
+              </div>
+
+              <div className="member-since">
+                ☕ Member since {memberSince || "Today"}
+              </div>
+
             </div>
 
           </div>
 
+          {/* STATUS */}
+
+          {message && (
+            <div className="status-message success-message">
+              ✓ {message}
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="status-message error-message">
+              {errorMessage}
+            </div>
+          )}
+
           <form onSubmit={handleSave}>
 
-            <div className="section-title">
-              Personal Information
-            </div>
+            {/* PERSONAL INFORMATION */}
 
-            <div className="form-grid">
+            <section className="profile-section">
 
-              {/* FULL NAME */}
-
-              <div className="form-group full">
-                <label>Full Name</label>
-
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                />
+              <div className="section-heading">
+                <div>
+                  <h2>Personal Information</h2>
+                  <p>Keep your account details up to date.</p>
+                </div>
               </div>
 
-              {/* EMAIL */}
+              <div className="form-grid">
+
+                <div className="form-group full">
+                  <label className="form-label">
+                    Full Name
+                  </label>
+
+                  <input
+                    className="form-input"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) =>
+                      setFullName(e.target.value)
+                    }
+                    placeholder="Enter your full name"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">
+                    Email Address
+                  </label>
+
+                  <input
+                    className="form-input"
+                    type="email"
+                    value={email}
+                    onChange={(e) =>
+                      setEmail(e.target.value)
+                    }
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">
+                    Phone Number
+                  </label>
+
+                  <input
+                    className="form-input"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) =>
+                      setPhone(e.target.value)
+                    }
+                    placeholder="+91 XXXXX XXXXX"
+                  />
+                </div>
+
+                <div className="form-group full">
+                  <label className="form-label">
+                    Birthday
+                  </label>
+
+                  <input
+                    className="form-input"
+                    type={isBirthdayLocked ? "text" : "date"}
+                    value={birthday}
+                    onChange={(e) =>
+                      setBirthday(e.target.value)
+                    }
+                    required
+                    readOnly={isBirthdayLocked}
+                  />
+
+                  {isBirthdayLocked && (
+                    <div className="address-note">
+                      Your birthday is locked after being saved.
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+            </section>
+
+            {/* DELIVERY ADDRESS */}
+
+            <section className="profile-section">
+
+              <div className="section-heading">
+                <div>
+                  <h2>Delivery Address</h2>
+                  <p>
+                    Choose where you would like your Brewed
+                    orders delivered.
+                  </p>
+                </div>
+              </div>
 
               <div className="form-group">
-                <label>Email</label>
 
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
+                <label className="form-label">
+                  Address Type
+                </label>
 
-              {/* PHONE */}
+                <div className="address-type-group">
 
-              <div className="form-group">
-                <label>Phone Number</label>
-
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </div>
-
-              {/* ADDRESS TYPE */}
-
-              <div className="form-group full">
-                <label>Address Type</label>
-
-                <div className="radio-group">
-
-                  {["home", "work", "other"].map((type) => (
+                  {[
+                    { value: "home", icon: "⌂", label: "Home" },
+                    { value: "work", icon: "▣", label: "Work" },
+                    { value: "other", icon: "♡", label: "Other" },
+                  ].map((type) => (
                     <label
-                      key={type}
-                      className="radio-option"
+                      key={type.value}
+                      className="address-type-option"
                     >
                       <input
                         type="radio"
                         name="addressType"
-                        value={type}
-                        checked={addressType === type}
+                        value={type.value}
+                        checked={addressType === type.value}
                         onChange={(e) =>
                           setAddressType(e.target.value)
                         }
-                        style={{ display: "none" }}
                       />
 
-                      <div className="radio-circle">
-                        <div className="radio-dot" />
-                      </div>
-
-                      {type.charAt(0).toUpperCase() +
-                        type.slice(1)}
+                      <span className="address-type-pill">
+                        <span>{type.icon}</span>
+                        {type.label}
+                      </span>
                     </label>
                   ))}
 
                 </div>
+
               </div>
 
-              {/* ADDRESS */}
+              <div
+                className="form-group"
+                style={{ marginTop: "22px" }}
+              >
 
-              <div className="form-group full">
-                <label>Address</label>
+                <label className="form-label">
+                  Search Address
+                </label>
 
-  
-              
-                
+                <div className="address-wrapper">
 
+                  <GooglePlacesAutocomplete
+                    apiKey="AIzaSyAZXXMZOvmUviZqgDoljAhSllaQLxelvfY"
+                    selectProps={{
+                      value: address
+                        ? {
+                            label:
+                              address.formatted || "",
+                            value:
+                              address.placeId ||
+                              address.formatted ||
+                              "",
+                          }
+                        : null,
 
+                      onChange: handleAddressChange,
 
+                      placeholder:
+                        "Start typing your address...",
 
+                      styles: {
+                        control: (
+                          provided,
+                          state
+                        ) => ({
+                          ...provided,
+                          minHeight: "52px",
+                          padding: "3px 5px",
+                          borderRadius: "12px",
+                          borderColor:
+                            state.isFocused
+                              ? "#C4956A"
+                              : "#DDD7D1",
+                          boxShadow:
+                            state.isFocused
+                              ? "0 0 0 3px rgba(196,149,106,.13)"
+                              : "none",
+                          "&:hover": {
+                            borderColor: "#C4956A",
+                          },
+                        }),
 
+                        input: (provided) => ({
+                          ...provided,
+                          fontSize: "14px",
+                          color: "#33241D",
+                        }),
 
+                        placeholder: (provided) => ({
+                          ...provided,
+                          color: "#A59A93",
+                        }),
 
+                        singleValue: (provided) => ({
+                          ...provided,
+                          color: "#33241D",
+                          fontSize: "14px",
+                        }),
 
-    <GooglePlacesAutocomplete
-  apiKey="AIzaSyAZXXMZOvmUviZqgDoljAhSllaQLxelvfY"
-  selectProps={{
-    value: address
-      ? {
-          label: address.formatted || "",
-          value: address.placeId || "",
-        }
-      : null,
+                        menu: (provided) => ({
+                          ...provided,
+                          zIndex: 20,
+                          borderRadius: "12px",
+                          overflow: "hidden",
+                        }),
+                      },
+                    }}
+                  />
 
-    onChange: async (selected) => {
-      if (!selected) {
-        setAddress(null);
-        return;
-      }
+                </div>
 
-      const placeId = selected.value?.place_id;
-
-      setAddress({
-        formatted: selected.label || "",
-        placeId: placeId || "",
-        lat: null,
-        lng: null,
-      });
-    },
-
-    placeholder: "Start typing your address...",
-
-    styles: {
-      control: (provided, state) => ({
-        ...provided,
-        padding: "5px",
-        borderRadius: "12px",
-        borderColor: state.isFocused ? "#C4956A" : "#DDD",
-        boxShadow: state.isFocused
-          ? "0 0 0 3px rgba(196,149,106,.15)"
-          : "none",
-      }),
-
-      input: (provided) => ({
-        ...provided,
-        fontSize: "15px",
-      }),
-
-      placeholder: (provided) => ({
-        ...provided,
-        color: "#999",
-      }),
-    },
-  }}
-/>            
-                
-                
-                
-                
                 <div className="address-note">
-                  Select your address from the suggestions.
+                  Select a suggested address for the most
+                  accurate delivery information.
+                </div>
+
+                {address?.formatted && (
+                  <div className="selected-address">
+
+                    <div className="selected-address-content">
+
+                      <div className="address-icon">
+                        {addressType === "home"
+                          ? "⌂"
+                          : addressType === "work"
+                          ? "▣"
+                          : "♡"}
+                      </div>
+
+                      <div>
+                        <div className="selected-address-label">
+                          {addressType} address
+                        </div>
+
+                        <div className="selected-address-text">
+                          {address.formatted}
+                        </div>
+                      </div>
+
+                    </div>
+
+                    <button
+                      type="button"
+                      className="clear-address"
+                      onClick={clearAddress}
+                    >
+                      Clear
+                    </button>
+
+                  </div>
+                )}
+
+              </div>
+
+            </section>
+
+            {/* ACCOUNT & SECURITY */}
+
+            <section className="profile-section">
+
+              <div className="section-heading">
+                <div>
+                  <h2>Account & Security</h2>
+                  <p>
+                    Manage your login information and account
+                    security.
+                  </p>
                 </div>
               </div>
 
-              {/* BIRTHDAY */}
+              <div className="security-row">
 
-              <div className="form-group full">
-                <label>
-                  Birthday{" "}
-                  <span style={{ color: "#C4956A" }}>
-                    *
-                  </span>
-                </label>
-
-                <input
-                  type={isBirthdayLocked ? "text" : "date"}
-                  value={birthday}
-                  onChange={(e) =>
-                    setBirthday(e.target.value)
-                  }
-                  required
-                  readOnly={isBirthdayLocked}
-                  style={{
-                    backgroundColor: isBirthdayLocked
-                      ? "#F8F4EE"
-                      : "white",
-
-                    cursor: isBirthdayLocked
-                      ? "default"
-                      : "text",
-                  }}
-                />
-
-                {isBirthdayLocked && (
-                  <div className="birthday-note">
-                    Your birthday cannot be changed after it
-                    has been saved.
+                <div className="security-info">
+                  <div className="security-label">
+                    Email address
                   </div>
-                )}
+
+                  <div className="security-value">
+                    {email}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#4C7A52",
+                    fontWeight: 600,
+                  }}
+                >
+                  ● Active
+                </div>
+
               </div>
 
-            </div>
+              <div className="security-row">
+
+                <div className="security-info">
+                  <div className="security-label">
+                    Password
+                  </div>
+
+                  <div className="security-value">
+                    Reset your password through your email.
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="security-action"
+                  onClick={handleChangePassword}
+                  disabled={
+                    isPasswordProcessing ||
+                    isProcessing
+                  }
+                >
+                  {isPasswordProcessing
+                    ? "Sending..."
+                    : "Reset Password"}
+                </button>
+
+              </div>
+
+            </section>
 
             {/* MEMBERSHIP */}
 
-            <div className="section-title">
-              Membership
-            </div>
+            <section className="profile-section">
 
-            <div className="member-box">
-              <div className="member-value">
-                ☕ {memberSince || "Today"}
+              <div className="section-heading">
+                <div>
+                  <h2>Membership</h2>
+                  <p>Your Brewed membership information.</p>
+                </div>
               </div>
-            </div>
 
-            {/* MESSAGES */}
+              <div className="membership-card">
 
-            {message && (
-              <div className="status-message success-message">
-                {message}
+                <div className="membership-left">
+
+                  <div className="membership-icon">
+                    ☕
+                  </div>
+
+                  <div>
+
+                    <div className="membership-label">
+                      Brewed
+                    </div>
+
+                    <div className="membership-value">
+                      Brewed Member
+                    </div>
+
+                    <div className="membership-date">
+                      Member since{" "}
+                      {memberSince || "Today"}
+                    </div>
+
+                  </div>
+
+                </div>
+
+                <button
+                  type="button"
+                  className="rewards-button"
+                  onClick={() => setPage("rewards")}
+                >
+                  View Rewards →
+                </button>
+
               </div>
-            )}
 
-            {errorMessage && (
-              <div className="status-message error-message">
-                {errorMessage}
-              </div>
-            )}
+            </section>
 
-            {/* ACTIONS */}
+            {/* SAVE */}
 
-            <div className="actions">
-
-              <button
-                type="button"
-                className="password-btn"
-                onClick={handleChangePassword}
-                disabled={
-                  isPasswordProcessing ||
-                  isProcessing
-                }
-              >
-                {isPasswordProcessing
-                  ? "Sending..."
-                  : "Change Password"}
-              </button>
+            <div className="bottom-actions">
 
               <button
                 type="submit"
@@ -955,13 +1462,14 @@ export default function ProfilePage({ setPage }) {
                 disabled={isProcessing}
               >
                 {isProcessing
-                  ? "Saving..."
+                  ? "Saving changes..."
                   : "Save Changes"}
               </button>
 
             </div>
 
           </form>
+
         </div>
       </div>
     </>
