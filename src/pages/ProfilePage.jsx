@@ -1,26 +1,35 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+
 import {
   doc,
   setDoc,
   getDoc,
   serverTimestamp,
 } from "firebase/firestore";
+
 import {
   updateEmail,
   updateProfile,
   sendPasswordResetEmail,
 } from "firebase/auth";
+
 import {
   ref,
   uploadBytes,
   getDownloadURL,
 } from "firebase/storage";
+
 import { db, storage, auth } from "../firebase";
+
 import GooglePlacesAutocomplete from "react-google-places-autocomplete";
 
 export default function ProfilePage({ setPage }) {
   const { currentUser } = useAuth();
+
+  // ---------------------------------------------------------
+  // STATE
+  // ---------------------------------------------------------
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -35,19 +44,25 @@ export default function ProfilePage({ setPage }) {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isPasswordProcessing, setIsPasswordProcessing] = useState(false);
-  const [isPhotoProcessing, setIsPhotoProcessing] = useState(false);
+  const [isPasswordProcessing, setIsPasswordProcessing] =
+    useState(false);
 
-  const [isBirthdayLocked, setIsBirthdayLocked] = useState(false);
+  const [isBirthdayLocked, setIsBirthdayLocked] =
+    useState(false);
 
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  /*
-   * ---------------------------------------------------------
-   * LOAD PROFILE
-   * ---------------------------------------------------------
-   */
+  // ---------------------------------------------------------
+  // GOOGLE API KEY
+  // ---------------------------------------------------------
+
+  const googleApiKey = "AIzaSyAZXXMZOvmUviZqgDoljAhSllaQLxelvfY";
+  
+
+  // ---------------------------------------------------------
+  // LOAD PROFILE
+  // ---------------------------------------------------------
 
   useEffect(() => {
     if (!currentUser) {
@@ -60,6 +75,7 @@ export default function ProfilePage({ setPage }) {
       setErrorMessage("");
 
       try {
+        // Firebase Auth
         setFullName(currentUser.displayName || "");
         setEmail(currentUser.email || "");
 
@@ -67,8 +83,11 @@ export default function ProfilePage({ setPage }) {
           setAvatarUrl(currentUser.photoURL);
         }
 
+        // Membership date
         if (currentUser.metadata?.creationTime) {
-          const joined = new Date(currentUser.metadata.creationTime);
+          const joined = new Date(
+            currentUser.metadata.creationTime
+          );
 
           setMemberSince(
             joined.toLocaleDateString("en-US", {
@@ -78,50 +97,73 @@ export default function ProfilePage({ setPage }) {
           );
         }
 
-        const docRef = doc(db, "users", currentUser.uid);
-        const docSnap = await getDoc(docRef);
+        // Firestore
+        const userRef = doc(
+          db,
+          "users",
+          currentUser.uid
+        );
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
+        const snapshot = await getDoc(userRef);
 
-          setFullName(data.fullName || currentUser.displayName || "");
-          setEmail(data.email || currentUser.email || "");
-          setPhone(data.phone || "");
-          setAddressType(data.addressType || "home");
+        if (!snapshot.exists()) {
+          setIsLoading(false);
+          return;
+        }
 
-          /*
-           * Support old address string format
-           * and new structured address format.
-           */
-          if (data.address) {
-            if (typeof data.address === "string") {
-              setAddress({
-                formatted: data.address,
-                placeId: "",
-                lat: null,
-                lng: null,
-              });
-            } else {
-              setAddress({
-                formatted: data.address.formatted || "",
-                placeId: data.address.placeId || "",
-                lat: data.address.lat ?? null,
-                lng: data.address.lng ?? null,
-              });
-            }
+        const data = snapshot.data();
+
+        setPhone(data.phone || "");
+        setAddressType(
+          data.addressType || "home"
+        );
+
+        // ---------------------------------------------------
+        // ADDRESS
+        // ---------------------------------------------------
+
+        if (data.address) {
+          // Old Brewed address format
+          if (typeof data.address === "string") {
+            setAddress({
+              formatted: data.address,
+              placeId: "",
+              lat: null,
+              lng: null,
+            });
           }
 
-          if (data.birthday) {
-            setBirthday(data.birthday);
-            setIsBirthdayLocked(true);
-          }
-
-          if (data.photoURL) {
-            setAvatarUrl(data.photoURL);
+          // New Brewed address format
+          else {
+            setAddress({
+              formatted:
+                data.address.formatted || "",
+              placeId:
+                data.address.placeId || "",
+              lat:
+                data.address.lat ?? null,
+              lng:
+                data.address.lng ?? null,
+            });
           }
         }
+
+        // Birthday
+        if (data.birthday) {
+          setBirthday(data.birthday);
+          setIsBirthdayLocked(true);
+        }
+
+        // Photo
+        if (data.photoURL) {
+          setAvatarUrl(data.photoURL);
+        }
       } catch (error) {
-        console.error("Error fetching profile:", error);
+        console.error(
+          "Error loading profile:",
+          error
+        );
+
         setErrorMessage(
           "Unable to load your profile. Please try again."
         );
@@ -133,30 +175,34 @@ export default function ProfilePage({ setPage }) {
     fetchProfile();
   }, [currentUser]);
 
-  /*
-   * ---------------------------------------------------------
-   * PROFILE PHOTO
-   * ---------------------------------------------------------
-   */
+  // ---------------------------------------------------------
+  // PROFILE PHOTO
+  // ---------------------------------------------------------
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
 
     if (!file || !currentUser) return;
 
+    setMessage("");
+    setErrorMessage("");
+
+    // Validate file
     if (!file.type.startsWith("image/")) {
-      setErrorMessage("Please select a valid image.");
+      setErrorMessage(
+        "Please select a valid image."
+      );
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage("Profile photo must be smaller than 5MB.");
+      setErrorMessage(
+        "Profile photo must be smaller than 5MB."
+      );
       return;
     }
 
-    setIsPhotoProcessing(true);
-    setMessage("");
-    setErrorMessage("");
+    setIsProcessing(true);
 
     try {
       const storageRef = ref(
@@ -168,69 +214,152 @@ export default function ProfilePage({ setPage }) {
         contentType: file.type,
       });
 
-      const downloadURL = await getDownloadURL(storageRef);
+      const downloadURL =
+        await getDownloadURL(storageRef);
 
+      // Firebase Auth
       await updateProfile(currentUser, {
         photoURL: downloadURL,
       });
 
+      // Firestore
       await setDoc(
         doc(db, "users", currentUser.uid),
         {
           photoURL: downloadURL,
           updatedAt: serverTimestamp(),
         },
-        { merge: true }
+        {
+          merge: true,
+        }
       );
 
       setAvatarUrl(downloadURL);
-      setMessage("Profile photo updated successfully.");
+
+      setMessage(
+        "Profile photo updated successfully."
+      );
     } catch (error) {
-      console.error("Profile photo upload failed:", error);
+      console.error(
+        "Profile photo upload failed:",
+        error
+      );
 
       setErrorMessage(
-        error.message || "Failed to upload profile photo."
+        error.message ||
+          "Failed to upload profile photo."
       );
     } finally {
-      setIsPhotoProcessing(false);
+      setIsProcessing(false);
+
+      // Allows selecting same file again
       e.target.value = "";
     }
   };
 
-  /*
-   * ---------------------------------------------------------
-   * ADDRESS
-   * ---------------------------------------------------------
-   */
+  // ---------------------------------------------------------
+  // GET PLACE COORDINATES
+  // ---------------------------------------------------------
 
-  const handleAddressChange = (selected) => {
+  const getPlaceCoordinates = (placeId) => {
+    return new Promise((resolve) => {
+      if (
+        !placeId ||
+        !window.google?.maps?.Geocoder
+      ) {
+        resolve({
+          lat: null,
+          lng: null,
+        });
+
+        return;
+      }
+
+      const geocoder =
+        new window.google.maps.Geocoder();
+
+      geocoder.geocode(
+        {
+          placeId,
+        },
+        (results, status) => {
+          if (
+            status === "OK" &&
+            results?.[0]?.geometry?.location
+          ) {
+            const location =
+              results[0].geometry.location;
+
+            resolve({
+              lat: location.lat(),
+              lng: location.lng(),
+            });
+          } else {
+            resolve({
+              lat: null,
+              lng: null,
+            });
+          }
+        }
+      );
+    });
+  };
+
+  // ---------------------------------------------------------
+  // ADDRESS SELECTION
+  // ---------------------------------------------------------
+
+  const handleAddressChange = async (
+    selected
+  ) => {
     if (!selected) {
       setAddress(null);
       return;
     }
 
+    const placeId =
+      selected.value?.place_id || "";
+
+    const formatted =
+      selected.label || "";
+
+    // Immediately show selected address
     setAddress({
-      formatted: selected.label || "",
-      placeId: selected.value?.place_id || "",
+      formatted,
+      placeId,
       lat: null,
       lng: null,
     });
 
-    setMessage("");
-    setErrorMessage("");
+    // Get coordinates
+    if (placeId) {
+      try {
+        const coordinates =
+          await getPlaceCoordinates(
+            placeId
+          );
+
+        setAddress((previous) => {
+          if (!previous) return previous;
+
+          return {
+            ...previous,
+            lat: coordinates.lat,
+            lng: coordinates.lng,
+          };
+        });
+      } catch (error) {
+        console.error(
+          "Unable to retrieve address coordinates:",
+          error
+        );
+      }
+    }
   };
 
-  const clearAddress = () => {
-    setAddress(null);
-    setMessage("");
-    setErrorMessage("");
-  };
-
-  /*
-   * ---------------------------------------------------------
-   * SAVE PROFILE
-   * ---------------------------------------------------------
-   */
+  // ---------------------------------------------------------
+  // SAVE PROFILE
+  // ---------------------------------------------------------
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -242,21 +371,35 @@ export default function ProfilePage({ setPage }) {
     setErrorMessage("");
 
     try {
-      /*
-       * Update Firebase Auth name.
-       */
-      if (fullName !== currentUser.displayName) {
+      // -----------------------------------------------------
+      // NAME
+      // -----------------------------------------------------
+
+      if (
+        fullName.trim() !==
+        (currentUser.displayName || "")
+      ) {
         await updateProfile(currentUser, {
-          displayName: fullName,
+          displayName: fullName.trim(),
         });
       }
 
-      /*
-       * Update Firebase Auth email.
-       */
-      if (email !== currentUser.email) {
-        await updateEmail(currentUser, email);
+      // -----------------------------------------------------
+      // EMAIL
+      // -----------------------------------------------------
+
+      if (
+        email.trim() !== currentUser.email
+      ) {
+        await updateEmail(
+          currentUser,
+          email.trim()
+        );
       }
+
+      // -----------------------------------------------------
+      // FIRESTORE
+      // -----------------------------------------------------
 
       const updateData = {
         fullName: fullName.trim(),
@@ -267,42 +410,63 @@ export default function ProfilePage({ setPage }) {
         updatedAt: serverTimestamp(),
       };
 
-      /*
-       * Birthday can only be saved once.
-       */
-      if (!isBirthdayLocked && birthday) {
+      // Birthday can only be saved once
+      if (
+        !isBirthdayLocked &&
+        birthday
+      ) {
         updateData.birthday = birthday;
       }
 
       await setDoc(
         doc(db, "users", currentUser.uid),
         updateData,
-        { merge: true }
+        {
+          merge: true,
+        }
       );
 
-      if (!isBirthdayLocked && birthday) {
+      if (
+        !isBirthdayLocked &&
+        birthday
+      ) {
         setIsBirthdayLocked(true);
       }
 
-      setMessage("Your profile has been updated.");
+      setMessage(
+        "Profile saved successfully."
+      );
     } catch (error) {
-      console.error("Failed to save profile:", error);
+      console.error(
+        "Failed to save profile:",
+        error
+      );
 
-      if (error.code === "auth/requires-recent-login") {
+      if (
+        error.code ===
+        "auth/requires-recent-login"
+      ) {
         setErrorMessage(
-          "For security, please sign in again before changing your email."
+          "Please sign in again before changing your email."
         );
-      } else if (error.code === "auth/email-already-in-use") {
+      } else if (
+        error.code ===
+        "auth/email-already-in-use"
+      ) {
         setErrorMessage(
-          "That email address is already associated with another account."
+          "That email address is already in use."
         );
-      } else if (error.code === "auth/invalid-email") {
+      } else if (
+        error.code ===
+        "auth/invalid-email"
+      ) {
         setErrorMessage(
           "Please enter a valid email address."
         );
       } else {
         setErrorMessage(
-          error.message || "Failed to save your profile."
+          error.message ||
+            "Failed to save your profile."
         );
       }
     } finally {
@@ -310,17 +474,16 @@ export default function ProfilePage({ setPage }) {
     }
   };
 
-  /*
-   * ---------------------------------------------------------
-   * PASSWORD RESET
-   * ---------------------------------------------------------
-   */
+  // ---------------------------------------------------------
+  // CHANGE PASSWORD
+  // ---------------------------------------------------------
 
   const handleChangePassword = async () => {
     if (!currentUser?.email) {
       setErrorMessage(
         "No email address is associated with this account."
       );
+
       return;
     }
 
@@ -335,37 +498,36 @@ export default function ProfilePage({ setPage }) {
       );
 
       setMessage(
-        `Password reset instructions were sent to ${currentUser.email}.`
+        `Password reset instructions have been sent to ${currentUser.email}.`
       );
     } catch (error) {
-      console.error("Password reset failed:", error);
+      console.error(
+        "Password reset failed:",
+        error
+      );
 
       setErrorMessage(
         error.message ||
-          "Unable to send password reset instructions."
+          "Unable to send password reset email."
       );
     } finally {
       setIsPasswordProcessing(false);
     }
   };
 
-  /*
-   * ---------------------------------------------------------
-   * AVATAR
-   * ---------------------------------------------------------
-   */
+  // ---------------------------------------------------------
+  // AVATAR
+  // ---------------------------------------------------------
 
   const avatar =
     avatarUrl ||
-    `https://ui-avatars.com/api/?background=3B1A08&color=fff&name=${encodeURIComponent(
+    `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(
       fullName || "User"
     )}`;
 
-  /*
-   * ---------------------------------------------------------
-   * LOADING
-   * ---------------------------------------------------------
-   */
+  // ---------------------------------------------------------
+  // LOADING
+  // ---------------------------------------------------------
 
   if (isLoading) {
     return (
@@ -379,33 +541,19 @@ export default function ProfilePage({ setPage }) {
             background: #FDFAF5;
             color: #3B1A08;
             font-family: Inter, sans-serif;
-            font-size: 15px;
-          }
-
-          .loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #E8DED4;
-            border-top-color: #C4956A;
-            border-radius: 50%;
-            animation: profileSpin .7s linear infinite;
-            margin-right: 10px;
-          }
-
-          @keyframes profileSpin {
-            to {
-              transform: rotate(360deg);
-            }
           }
         `}</style>
 
         <div className="profile-loading">
-          <div className="loading-spinner" />
           Loading your profile...
         </div>
       </>
     );
   }
+
+  // ---------------------------------------------------------
+  // UI
+  // ---------------------------------------------------------
 
   return (
     <>
@@ -424,155 +572,75 @@ export default function ProfilePage({ setPage }) {
 
         .profile-page {
           min-height: 100vh;
-          background:
-            radial-gradient(
-              circle at top center,
-              rgba(196,149,106,.08),
-              transparent 420px
-            ),
-            #FDFAF5;
-
-          padding: 105px 20px 70px;
-        }
-
-        .profile-container {
-          width: 100%;
-          max-width: 820px;
-          margin: 0 auto;
-        }
-
-        /* BACK */
-
-        .back-button {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          background: transparent;
-          border: none;
-          color: #3B1A08;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          padding: 8px 0;
-          margin-bottom: 20px;
-        }
-
-        .back-button:hover {
-          color: #C4956A;
-        }
-
-        /* HERO */
-
-        .profile-hero {
-          background: #FFFFFF;
-          border-radius: 26px;
-          padding: 38px 40px;
-          box-shadow: 0 18px 45px rgba(59,26,8,.07);
-          border: 1px solid rgba(196,149,106,.12);
+          background: #FDFAF5;
           display: flex;
+          justify-content: center;
+          padding: 120px 20px 60px;
+        }
+
+        .profile-card {
+          width: 100%;
+          max-width: 760px;
+          background: white;
+          border-radius: 24px;
+          box-shadow: 0 15px 40px rgba(0,0,0,.08);
+          padding: 50px;
+        }
+
+        .profile-header {
+          display: flex;
+          flex-direction: column;
           align-items: center;
-          gap: 26px;
-          margin-bottom: 22px;
+          text-align: center;
+          margin-bottom: 45px;
         }
 
         .avatar-wrapper {
           position: relative;
-          flex-shrink: 0;
         }
 
         .profile-avatar {
-          width: 112px;
-          height: 112px;
+          width: 120px;
+          height: 120px;
           border-radius: 50%;
           object-fit: cover;
-          border: 4px solid #C4956A;
-          display: block;
-          background: #F8F4EE;
+          border: 5px solid #C4956A;
+          cursor: pointer;
         }
 
-        .avatar-edit {
+        .avatar-hint {
           position: absolute;
+          bottom: 5px;
           right: 0;
-          bottom: 2px;
           width: 34px;
           height: 34px;
           border-radius: 50%;
-          border: 3px solid white;
           background: #3B1A08;
           color: white;
           display: flex;
           align-items: center;
           justify-content: center;
-          cursor: pointer;
-          font-size: 14px;
-          transition: .2s;
-        }
-
-        .avatar-edit:hover {
-          background: #C4956A;
-          transform: scale(1.05);
-        }
-
-        .profile-hero-info {
-          min-width: 0;
+          font-size: 15px;
+          pointer-events: none;
         }
 
         .profile-title {
           font-family: 'Playfair Display', serif;
-          font-size: 2.35rem;
+          font-size: 2.3rem;
           color: #3B1A08;
-          margin: 0 0 6px;
-          line-height: 1.15;
+          margin-top: 22px;
         }
 
-        .profile-email {
+        .profile-subtitle {
           color: #7A675C;
-          font-size: 14px;
-          word-break: break-word;
+          margin-top: 8px;
         }
 
-        .member-since {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          margin-top: 13px;
-          padding: 7px 11px;
-          border-radius: 999px;
-          background: #F8F4EE;
-          color: #6B5144;
-          font-size: 12px;
-          font-weight: 600;
-        }
-
-        /* SECTIONS */
-
-        .profile-section {
-          background: white;
-          border-radius: 24px;
-          padding: 32px 36px;
-          margin-bottom: 20px;
-          box-shadow: 0 12px 35px rgba(59,26,8,.055);
-          border: 1px solid rgba(196,149,106,.10);
-        }
-
-        .section-heading {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 25px;
-        }
-
-        .section-heading h2 {
+        .section-title {
           font-family: 'Playfair Display', serif;
+          font-size: 1.4rem;
           color: #3B1A08;
-          font-size: 1.5rem;
-          margin: 0;
-        }
-
-        .section-heading p {
-          margin: 6px 0 0;
-          color: #8A7770;
-          font-size: 13px;
+          margin: 40px 0 18px;
         }
 
         .form-grid {
@@ -590,424 +658,183 @@ export default function ProfilePage({ setPage }) {
           grid-column: 1 / 3;
         }
 
-        .form-label {
+        label {
           margin-bottom: 8px;
-          color: #5A453A;
-          font-size: 13px;
           font-weight: 600;
+          color: #5A453A;
         }
 
-        .form-input {
+        input {
           width: 100%;
-          padding: 14px 15px;
+          padding: 15px;
           border-radius: 12px;
-          border: 1px solid #DDD7D1;
-          background: white;
-          color: #33241D;
-          font-family: inherit;
-          font-size: 14px;
-          transition: .2s;
+          border: 1px solid #DDD;
+          font-size: 15px;
+          transition: .3s;
         }
 
-        .form-input:focus {
+        input:focus {
           outline: none;
           border-color: #C4956A;
-          box-shadow: 0 0 0 3px rgba(196,149,106,.13);
+          box-shadow: 0 0 0 3px rgba(196,149,106,.15);
         }
 
-        .form-input::placeholder {
-          color: #A59A93;
-        }
-
-        .form-input:read-only {
-          background: #F8F4EE;
-          color: #6D5D54;
-        }
-
-        /* ADDRESS TYPE */
-
-        .address-type-group {
+        .radio-group {
           display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-
-        .address-type-option {
-          cursor: pointer;
-        }
-
-        .address-type-option input {
-          display: none;
-        }
-
-        .address-type-pill {
-          display: flex;
-          align-items: center;
-          gap: 7px;
-          padding: 10px 16px;
-          border: 1px solid #DDD7D1;
-          border-radius: 999px;
-          color: #6B5A51;
-          background: white;
-          font-size: 13px;
-          font-weight: 600;
-          transition: .2s;
-        }
-
-        .address-type-option input:checked + .address-type-pill {
-          border-color: #C4956A;
-          background: #F8F4EE;
-          color: #3B1A08;
-        }
-
-        .address-type-pill:hover {
-          border-color: #C4956A;
-        }
-
-        /* ADDRESS */
-
-        .address-wrapper {
-          position: relative;
-        }
-
-        .address-note {
-          margin-top: 8px;
-          color: #96867E;
-          font-size: 11px;
-        }
-
-        .selected-address {
-          margin-top: 12px;
-          padding: 13px 15px;
-          border-radius: 12px;
-          background: #F8F4EE;
-          border: 1px solid #EEE5DC;
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 15px;
-        }
-
-        .selected-address-content {
-          display: flex;
-          gap: 10px;
-          min-width: 0;
-        }
-
-        .address-icon {
-          flex-shrink: 0;
-          font-size: 17px;
-        }
-
-        .selected-address-text {
-          color: #4D3A30;
-          font-size: 13px;
-          line-height: 1.5;
-        }
-
-        .selected-address-label {
-          color: #967F70;
-          font-size: 11px;
-          margin-bottom: 2px;
-          text-transform: uppercase;
-          letter-spacing: .05em;
-          font-weight: 600;
-        }
-
-        .clear-address {
-          flex-shrink: 0;
-          border: none;
-          background: transparent;
-          color: #92796B;
-          cursor: pointer;
-          font-size: 12px;
-          font-weight: 600;
-          padding: 3px;
-        }
-
-        .clear-address:hover {
-          color: #9B3333;
-        }
-
-        /* SECURITY */
-
-        .security-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
           gap: 20px;
-          padding: 18px 0;
-          border-bottom: 1px solid #EEE8E2;
+          margin-top: 5px;
         }
 
-        .security-row:last-child {
-          border-bottom: none;
-          padding-bottom: 0;
-        }
-
-        .security-row:first-child {
-          padding-top: 0;
-        }
-
-        .security-info {
-          min-width: 0;
-        }
-
-        .security-label {
-          font-size: 13px;
-          font-weight: 600;
+        .radio-option {
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+          font-weight: 500;
           color: #5A453A;
         }
 
-        .security-value {
-          margin-top: 5px;
-          color: #8A7770;
-          font-size: 13px;
-          word-break: break-word;
-        }
-
-        .security-action {
-          flex-shrink: 0;
-          border: 1px solid #DCCFC4;
-          background: white;
-          color: #3B1A08;
-          border-radius: 10px;
-          padding: 9px 14px;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: .2s;
-        }
-
-        .security-action:hover {
-          border-color: #C4956A;
-          background: #F8F4EE;
-        }
-
-        .security-action:disabled {
-          opacity: .55;
-          cursor: not-allowed;
-        }
-
-        /* MEMBERSHIP */
-
-        .membership-card {
-          background:
-            linear-gradient(
-              135deg,
-              #3B1A08 0%,
-              #5A2E16 100%
-            );
-          border-radius: 20px;
-          padding: 25px;
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 20px;
-        }
-
-        .membership-left {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-        }
-
-        .membership-icon {
-          width: 48px;
-          height: 48px;
-          border-radius: 14px;
-          background: rgba(255,255,255,.10);
+        .radio-circle {
+          width: 20px;
+          height: 20px;
+          border: 2px solid #C4956A;
+          border-radius: 50%;
+          margin-right: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 22px;
         }
 
-        .membership-label {
-          font-size: 11px;
-          color: #D8BBA4;
-          text-transform: uppercase;
-          letter-spacing: .08em;
+        .radio-dot {
+          width: 10px;
+          height: 10px;
+          background: #C4956A;
+          border-radius: 50%;
+          display: none;
+        }
+
+        input[type="radio"]:checked + .radio-circle .radio-dot {
+          display: block;
+        }
+
+        .member-box {
+          margin-top: 25px;
+          padding: 18px;
+          background: #F8F4EE;
+          border-radius: 14px;
+        }
+
+        .member-value {
+          font-size: 1.1rem;
           font-weight: 600;
+          color: #3B1A08;
         }
 
-        .membership-value {
-          margin-top: 4px;
-          font-family: 'Playfair Display', serif;
-          font-size: 1.25rem;
-        }
-
-        .membership-date {
-          margin-top: 3px;
-          color: #D6C2B4;
-          font-size: 11px;
-        }
-
-        .rewards-button {
-          border: 1px solid rgba(255,255,255,.25);
-          background: rgba(255,255,255,.08);
-          color: white;
-          padding: 10px 15px;
-          border-radius: 10px;
-          cursor: pointer;
+        .address-note,
+        .birthday-note {
+          margin-top: 8px;
           font-size: 12px;
-          font-weight: 600;
-          white-space: nowrap;
-          transition: .2s;
+          color: #8A7770;
         }
-
-        .rewards-button:hover {
-          background: rgba(255,255,255,.16);
-        }
-
-        /* STATUS */
 
         .status-message {
-          margin-bottom: 20px;
-          padding: 13px 16px;
+          margin-top: 25px;
+          padding: 14px 16px;
           border-radius: 12px;
-          font-size: 13px;
-          line-height: 1.45;
+          font-size: 14px;
+          line-height: 1.5;
         }
 
         .success-message {
           background: #EEF8F0;
           color: #2E6B38;
-          border: 1px solid #D6ECD9;
         }
 
         .error-message {
           background: #FBEDED;
           color: #9B3333;
-          border: 1px solid #F0D5D5;
         }
 
-        /* ACTIONS */
-
-        .bottom-actions {
+        .actions {
+          margin-top: 45px;
           display: flex;
-          justify-content: flex-end;
-          gap: 12px;
-          margin-top: 10px;
+          gap: 15px;
+        }
+
+        .save-btn,
+        .password-btn {
+          flex: 1;
+          padding: 15px;
+          border: none;
+          border-radius: 14px;
+          cursor: pointer;
+          font-weight: 600;
         }
 
         .save-btn {
-          min-width: 190px;
-          padding: 14px 22px;
-          border: none;
-          border-radius: 13px;
           background: #3B1A08;
           color: white;
-          cursor: pointer;
-          font-family: inherit;
-          font-size: 13px;
-          font-weight: 600;
-          transition: .2s;
         }
 
         .save-btn:hover {
           background: #C4956A;
         }
 
-        .save-btn:disabled {
+        .password-btn {
+          background: #F8F4EE;
+          color: #3B1A08;
+        }
+
+        .save-btn:disabled,
+        .password-btn:disabled {
           opacity: .6;
           cursor: not-allowed;
         }
 
-        .save-btn.saved {
-          background: #4C7A52;
+        .back-button {
+          background: none;
+          border: none;
+          color: #3B1A08;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          margin-bottom: 20px;
+          padding: 0;
         }
 
-        /* MOBILE */
-
-        @media(max-width: 700px) {
-          .profile-page {
-            padding: 85px 14px 45px;
-          }
-
-          .profile-hero {
-            padding: 28px 22px;
-            flex-direction: column;
-            text-align: center;
-          }
-
-          .profile-hero-info {
-            width: 100%;
-          }
-
-          .profile-title {
-            font-size: 2rem;
-          }
-
-          .member-since {
-            margin-top: 12px;
-          }
-
-          .profile-section {
-            padding: 25px 20px;
-            border-radius: 20px;
+        @media(max-width: 768px) {
+          .profile-card {
+            padding: 30px 22px;
           }
 
           .form-grid {
             grid-template-columns: 1fr;
-            gap: 17px;
           }
 
           .form-group.full {
             grid-column: auto;
           }
 
-          .section-heading h2 {
-            font-size: 1.35rem;
-          }
-
-          .security-row {
-            align-items: flex-start;
+          .actions {
             flex-direction: column;
-            gap: 10px;
-          }
-
-          .security-action {
-            width: 100%;
-          }
-
-          .membership-card {
-            align-items: flex-start;
-            flex-direction: column;
-          }
-
-          .rewards-button {
-            width: 100%;
-          }
-
-          .bottom-actions {
-            justify-content: stretch;
-          }
-
-          .save-btn {
-            width: 100%;
           }
         }
       `}</style>
 
       <div className="profile-page">
-        <div className="profile-container">
-
-          {/* BACK */}
+        <div className="profile-card">
 
           <button
             className="back-button"
             onClick={() => setPage("menu")}
           >
-            ← Back to Menu
+            ← Back
           </button>
 
-          {/* HERO */}
+          {/* HEADER */}
 
-          <div className="profile-hero">
+          <div className="profile-header">
 
-            <div className="avatar-wrapper">
+            <label className="avatar-wrapper">
 
               <img
                 src={avatar}
@@ -1015,446 +842,358 @@ export default function ProfilePage({ setPage }) {
                 className="profile-avatar"
               />
 
-              <label
-                className="avatar-edit"
-                title="Change profile photo"
-              >
-                {isPhotoProcessing ? "..." : "✎"}
+              <span className="avatar-hint">
+                ✎
+              </span>
 
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  style={{ display: "none" }}
-                  disabled={isPhotoProcessing}
-                />
-              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{ display: "none" }}
+                disabled={isProcessing}
+              />
 
+            </label>
+
+            <div className="profile-title">
+              My Profile
             </div>
 
-            <div className="profile-hero-info">
-
-              <h1 className="profile-title">
-                {fullName || "My Profile"}
-              </h1>
-
-              <div className="profile-email">
-                {email || "No email address"}
-              </div>
-
-              <div className="member-since">
-                ☕ Member since {memberSince || "Today"}
-              </div>
-
+            <div className="profile-subtitle">
+              {isProcessing
+                ? "Saving your changes..."
+                : "Manage your Brewed account."}
             </div>
 
           </div>
-
-          {/* STATUS */}
-
-          {message && (
-            <div className="status-message success-message">
-              ✓ {message}
-            </div>
-          )}
-
-          {errorMessage && (
-            <div className="status-message error-message">
-              {errorMessage}
-            </div>
-          )}
 
           <form onSubmit={handleSave}>
 
             {/* PERSONAL INFORMATION */}
 
-            <section className="profile-section">
+            <div className="section-title">
+              Personal Information
+            </div>
 
-              <div className="section-heading">
-                <div>
-                  <h2>Personal Information</h2>
-                  <p>Keep your account details up to date.</p>
-                </div>
-              </div>
+            <div className="form-grid">
 
-              <div className="form-grid">
+              {/* NAME */}
 
-                <div className="form-group full">
-                  <label className="form-label">
-                    Full Name
-                  </label>
+              <div className="form-group full">
 
-                  <input
-                    className="form-input"
-                    type="text"
-                    value={fullName}
-                    onChange={(e) =>
-                      setFullName(e.target.value)
-                    }
-                    placeholder="Enter your full name"
-                    required
-                  />
-                </div>
+                <label>
+                  Full Name
+                </label>
 
-                <div className="form-group">
-                  <label className="form-label">
-                    Email Address
-                  </label>
-
-                  <input
-                    className="form-input"
-                    type="email"
-                    value={email}
-                    onChange={(e) =>
-                      setEmail(e.target.value)
-                    }
-                    placeholder="you@example.com"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">
-                    Phone Number
-                  </label>
-
-                  <input
-                    className="form-input"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) =>
-                      setPhone(e.target.value)
-                    }
-                    placeholder="+91 XXXXX XXXXX"
-                  />
-                </div>
-
-                <div className="form-group full">
-                  <label className="form-label">
-                    Birthday
-                  </label>
-
-                  <input
-                    className="form-input"
-                    type={isBirthdayLocked ? "text" : "date"}
-                    value={birthday}
-                    onChange={(e) =>
-                      setBirthday(e.target.value)
-                    }
-                    required
-                    readOnly={isBirthdayLocked}
-                  />
-
-                  {isBirthdayLocked && (
-                    <div className="address-note">
-                      Your birthday is locked after being saved.
-                    </div>
-                  )}
-                </div>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) =>
+                    setFullName(e.target.value)
+                  }
+                  required
+                />
 
               </div>
 
-            </section>
-
-            {/* DELIVERY ADDRESS */}
-
-            <section className="profile-section">
-
-              <div className="section-heading">
-                <div>
-                  <h2>Delivery Address</h2>
-                  <p>
-                    Choose where you would like your Brewed
-                    orders delivered.
-                  </p>
-                </div>
-              </div>
+              {/* EMAIL */}
 
               <div className="form-group">
 
-                <label className="form-label">
+                <label>
+                  Email
+                </label>
+
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) =>
+                    setEmail(e.target.value)
+                  }
+                  required
+                />
+
+              </div>
+
+              {/* PHONE */}
+
+              <div className="form-group">
+
+                <label>
+                  Phone Number
+                </label>
+
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) =>
+                    setPhone(e.target.value)
+                  }
+                  placeholder="+91 XXXXX XXXXX"
+                />
+
+              </div>
+
+              {/* ADDRESS TYPE */}
+
+              <div className="form-group full">
+
+                <label>
                   Address Type
                 </label>
 
-                <div className="address-type-group">
+                <div className="radio-group">
 
                   {[
-                    { value: "home", icon: "⌂", label: "Home" },
-                    { value: "work", icon: "▣", label: "Work" },
-                    { value: "other", icon: "♡", label: "Other" },
+                    "home",
+                    "work",
+                    "other",
                   ].map((type) => (
+
                     <label
-                      key={type.value}
-                      className="address-type-option"
+                      key={type}
+                      className="radio-option"
                     >
+
                       <input
                         type="radio"
                         name="addressType"
-                        value={type.value}
-                        checked={addressType === type.value}
-                        onChange={(e) =>
-                          setAddressType(e.target.value)
+                        value={type}
+                        checked={
+                          addressType === type
                         }
+                        onChange={(e) =>
+                          setAddressType(
+                            e.target.value
+                          )
+                        }
+                        style={{
+                          display: "none",
+                        }}
                       />
 
-                      <span className="address-type-pill">
-                        <span>{type.icon}</span>
-                        {type.label}
-                      </span>
+                      <div className="radio-circle">
+                        <div className="radio-dot" />
+                      </div>
+
+                      {type
+                        .charAt(0)
+                        .toUpperCase() +
+                        type.slice(1)}
+
                     </label>
+
                   ))}
 
                 </div>
 
               </div>
 
-              <div
-                className="form-group"
-                style={{ marginTop: "22px" }}
-              >
+              {/* ADDRESS */}
 
-                <label className="form-label">
-                  Search Address
+              <div className="form-group full">
+
+                <label>
+                  Delivery Address
                 </label>
 
-                <div className="address-wrapper">
+                {googleApiKey ? (
 
                   <GooglePlacesAutocomplete
-                    apiKey="AIzaSyAZXXMZOvmUviZqgDoljAhSllaQLxelvfY"
+                    apiKey={googleApiKey}
+
                     selectProps={{
                       value: address
                         ? {
                             label:
-                              address.formatted || "",
+                              address.formatted ||
+                              "",
                             value:
                               address.placeId ||
-                              address.formatted ||
                               "",
                           }
                         : null,
 
-                      onChange: handleAddressChange,
+                      onChange:
+                        handleAddressChange,
 
                       placeholder:
-                        "Start typing your address...",
+                        "Search for your delivery address...",
+
+                      isClearable: true,
 
                       styles: {
+
                         control: (
                           provided,
                           state
                         ) => ({
                           ...provided,
                           minHeight: "52px",
-                          padding: "3px 5px",
+                          padding: "3px",
                           borderRadius: "12px",
                           borderColor:
                             state.isFocused
                               ? "#C4956A"
-                              : "#DDD7D1",
+                              : "#DDD",
                           boxShadow:
                             state.isFocused
-                              ? "0 0 0 3px rgba(196,149,106,.13)"
+                              ? "0 0 0 3px rgba(196,149,106,.15)"
                               : "none",
-                          "&:hover": {
-                            borderColor: "#C4956A",
-                          },
                         }),
 
-                        input: (provided) => ({
+                        input: (
+                          provided
+                        ) => ({
                           ...provided,
-                          fontSize: "14px",
-                          color: "#33241D",
+                          fontSize: "15px",
                         }),
 
-                        placeholder: (provided) => ({
+                        placeholder: (
+                          provided
+                        ) => ({
                           ...provided,
-                          color: "#A59A93",
+                          color: "#999",
                         }),
 
-                        singleValue: (provided) => ({
+                        singleValue: (
+                          provided
+                        ) => ({
                           ...provided,
-                          color: "#33241D",
-                          fontSize: "14px",
+                          color: "#3B1A08",
                         }),
 
-                        menu: (provided) => ({
+                        menu: (
+                          provided
+                        ) => ({
                           ...provided,
-                          zIndex: 20,
+                          zIndex: 9999,
                           borderRadius: "12px",
                           overflow: "hidden",
                         }),
+
                       },
                     }}
                   />
 
-                </div>
+                ) : (
+
+                  <div className="error-message">
+                    Google Maps API key is not configured.
+                  </div>
+
+                )}
 
                 <div className="address-note">
-                  Select a suggested address for the most
-                  accurate delivery information.
+                  Search and select your exact delivery
+                  address from the suggestions.
                 </div>
 
-                {address?.formatted && (
-                  <div className="selected-address">
+              </div>
 
-                    <div className="selected-address-content">
+              {/* BIRTHDAY */}
 
-                      <div className="address-icon">
-                        {addressType === "home"
-                          ? "⌂"
-                          : addressType === "work"
-                          ? "▣"
-                          : "♡"}
-                      </div>
+              <div className="form-group full">
 
-                      <div>
-                        <div className="selected-address-label">
-                          {addressType} address
-                        </div>
+                <label>
+                  Birthday{" "}
+                  <span
+                    style={{
+                      color: "#C4956A",
+                    }}
+                  >
+                    *
+                  </span>
+                </label>
 
-                        <div className="selected-address-text">
-                          {address.formatted}
-                        </div>
-                      </div>
+                <input
+                  type={
+                    isBirthdayLocked
+                      ? "text"
+                      : "date"
+                  }
+                  value={birthday}
+                  onChange={(e) =>
+                    setBirthday(
+                      e.target.value
+                    )
+                  }
+                  required
+                  readOnly={
+                    isBirthdayLocked
+                  }
+                  style={{
+                    backgroundColor:
+                      isBirthdayLocked
+                        ? "#F8F4EE"
+                        : "white",
+                    cursor:
+                      isBirthdayLocked
+                        ? "default"
+                        : "text",
+                  }}
+                />
 
-                    </div>
-
-                    <button
-                      type="button"
-                      className="clear-address"
-                      onClick={clearAddress}
-                    >
-                      Clear
-                    </button>
-
+                {isBirthdayLocked && (
+                  <div className="birthday-note">
+                    Your birthday cannot be changed
+                    after it has been saved.
                   </div>
                 )}
 
               </div>
 
-            </section>
-
-            {/* ACCOUNT & SECURITY */}
-
-            <section className="profile-section">
-
-              <div className="section-heading">
-                <div>
-                  <h2>Account & Security</h2>
-                  <p>
-                    Manage your login information and account
-                    security.
-                  </p>
-                </div>
-              </div>
-
-              <div className="security-row">
-
-                <div className="security-info">
-                  <div className="security-label">
-                    Email address
-                  </div>
-
-                  <div className="security-value">
-                    {email}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    fontSize: "11px",
-                    color: "#4C7A52",
-                    fontWeight: 600,
-                  }}
-                >
-                  ● Active
-                </div>
-
-              </div>
-
-              <div className="security-row">
-
-                <div className="security-info">
-                  <div className="security-label">
-                    Password
-                  </div>
-
-                  <div className="security-value">
-                    Reset your password through your email.
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="security-action"
-                  onClick={handleChangePassword}
-                  disabled={
-                    isPasswordProcessing ||
-                    isProcessing
-                  }
-                >
-                  {isPasswordProcessing
-                    ? "Sending..."
-                    : "Reset Password"}
-                </button>
-
-              </div>
-
-            </section>
+            </div>
 
             {/* MEMBERSHIP */}
 
-            <section className="profile-section">
+            <div className="section-title">
+              Membership
+            </div>
 
-              <div className="section-heading">
-                <div>
-                  <h2>Membership</h2>
-                  <p>Your Brewed membership information.</p>
-                </div>
+            <div className="member-box">
+
+              <div className="member-value">
+                ☕ Member since{" "}
+                {memberSince || "Today"}
               </div>
 
-              <div className="membership-card">
+            </div>
 
-                <div className="membership-left">
+            {/* MESSAGES */}
 
-                  <div className="membership-icon">
-                    ☕
-                  </div>
-
-                  <div>
-
-                    <div className="membership-label">
-                      Brewed
-                    </div>
-
-                    <div className="membership-value">
-                      Brewed Member
-                    </div>
-
-                    <div className="membership-date">
-                      Member since{" "}
-                      {memberSince || "Today"}
-                    </div>
-
-                  </div>
-
-                </div>
-
-                <button
-                  type="button"
-                  className="rewards-button"
-                  onClick={() => setPage("rewards")}
-                >
-                  View Rewards →
-                </button>
-
+            {message && (
+              <div className="status-message success-message">
+                {message}
               </div>
+            )}
 
-            </section>
+            {errorMessage && (
+              <div className="status-message error-message">
+                {errorMessage}
+              </div>
+            )}
 
-            {/* SAVE */}
+            {/* ACTIONS */}
 
-            <div className="bottom-actions">
+            <div className="actions">
+
+              <button
+                type="button"
+                className="password-btn"
+                onClick={
+                  handleChangePassword
+                }
+                disabled={
+                  isPasswordProcessing ||
+                  isProcessing
+                }
+              >
+                {isPasswordProcessing
+                  ? "Sending..."
+                  : "Change Password"}
+              </button>
 
               <button
                 type="submit"
@@ -1462,7 +1201,7 @@ export default function ProfilePage({ setPage }) {
                 disabled={isProcessing}
               >
                 {isProcessing
-                  ? "Saving changes..."
+                  ? "Saving..."
                   : "Save Changes"}
               </button>
 
