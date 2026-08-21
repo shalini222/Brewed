@@ -63,7 +63,6 @@ const [otp, setOtp] = useState("");
 const [otpSent, setOtpSent] = useState(false);
 const [isPhoneProcessing, setIsPhoneProcessing] = useState(false);
 const [verificationId, setVerificationId] = useState(null);
-  const [phoneVerified, setPhoneVerified] = useState(false);
 const [originalPhone, setOriginalPhone] = useState("");
 
   // ---------------------------------------------------------
