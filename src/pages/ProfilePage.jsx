@@ -378,70 +378,11 @@ const [originalPhone, setOriginalPhone] = useState("");
 
 
 
+// ---------------------------------------------------------
+// PHONE OTP / VERIFICATION
+// ---------------------------------------------------------
 
-  const handleVerifyPhoneOTP = async () => {
-  if (!currentUser || !verificationId) return;
-
-  if (!/^\d{6}$/.test(otp.trim())) {
-    setErrorMessage("Enter the 6-digit verification code.");
-    return;
-  }
-
-  setIsPhoneProcessing(true);
-  setMessage("");
-  setErrorMessage("");
-
-  try {
-    // ADD THIS
-    const credential = PhoneAuthProvider.credential(
-      verificationId,
-      otp.trim()
-    );
-
-    // ADD THIS
-    await updatePhoneNumber(currentUser, credential);
-
-    // OTP successfully verified
-    setPhoneVerified(true);
-
-    await setDoc(
-      doc(db, "users", currentUser.uid),
-      {
-        phone: pendingPhone,
-        phoneVerified: true,
-        phoneVerifiedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
-
-    setPhone(pendingPhone);
-    setOriginalPhone(pendingPhone);
-
-    setOtp("");
-    setOtpSent(false);
-    setVerificationId("");
-
-    setMessage("Phone number verified successfully.");
-
-  } catch (error) {
-    console.error("Phone OTP verification error:", error);
-
-  
-
-    setErrorMessage(
-      error.message || "Invalid verification code."
-    );
-  } finally {
-    setIsPhoneProcessing(false);
-  }
-};
-  
-  
-  
-  
-  
-  const setupRecaptcha = () => {
+const setupRecaptcha = () => {
   if (window.recaptchaVerifier) {
     return window.recaptchaVerifier;
   }
@@ -451,12 +392,16 @@ const [originalPhone, setOriginalPhone] = useState("");
     "phone-recaptcha",
     {
       size: "invisible",
+
       callback: () => {
-        // reCAPTCHA completed
+        console.log("reCAPTCHA completed");
       },
+
       "expired-callback": () => {
-        window.recaptchaVerifier?.clear();
-        window.recaptchaVerifier = null;
+        if (window.recaptchaVerifier) {
+          window.recaptchaVerifier.clear();
+          window.recaptchaVerifier = null;
+        }
       },
     }
   );
@@ -464,11 +409,13 @@ const [originalPhone, setOriginalPhone] = useState("");
   return window.recaptchaVerifier;
 };
 
+
 const handleSendPhoneOTP = async () => {
   if (!currentUser) return;
 
   const cleanedPhone = phone.trim();
 
+  // E.164 format
   if (!/^\+[1-9]\d{7,14}$/.test(cleanedPhone)) {
     setErrorMessage(
       "Enter your phone number with country code, e.g. +919876543210."
@@ -485,32 +432,159 @@ const handleSendPhoneOTP = async () => {
 
     const provider = new PhoneAuthProvider(auth);
 
-    const verificationId = await provider.verifyPhoneNumber(
+    const id = await provider.verifyPhoneNumber(
       cleanedPhone,
       verifier
     );
 
-    setVerificationId(verificationId);
+    setVerificationId(id);
     setPendingPhone(cleanedPhone);
     setOtpSent(true);
 
-    setMessage("Verification code sent to your phone.");
+    setMessage(
+      `Verification code sent to ${cleanedPhone}.`
+    );
+
   } catch (error) {
     console.error("Phone OTP error:", error);
 
-    window.recaptchaVerifier?.clear();
-    window.recaptchaVerifier = null;
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
+      window.recaptchaVerifier = null;
+    }
 
-    setErrorMessage(
-      error.message || "Unable to send verification code."
-    );
+    if (error.code === "auth/invalid-phone-number") {
+      setErrorMessage("Please enter a valid phone number.");
+    } else if (error.code === "auth/too-many-requests") {
+      setErrorMessage(
+        "Too many verification attempts. Please try again later."
+      );
+    } else if (error.code === "auth/quota-exceeded") {
+      setErrorMessage(
+        "SMS verification limit reached. Please try again later."
+      );
+    } else {
+      setErrorMessage(
+        error.message ||
+        "Unable to send verification code."
+      );
+    }
+
   } finally {
     setIsPhoneProcessing(false);
   }
 };
 
 
+const handleVerifyPhoneOTP = async () => {
+  if (!currentUser || !verificationId) {
+    setErrorMessage(
+      "Please request a new verification code."
+    );
+    return;
+  }
 
+  const cleanOTP = otp.trim();
+
+  if (!/^\d{6}$/.test(cleanOTP)) {
+    setErrorMessage(
+      "Enter the 6-digit verification code."
+    );
+    return;
+  }
+
+  setIsPhoneProcessing(true);
+  setMessage("");
+  setErrorMessage("");
+
+  try {
+
+    // Create phone credential from OTP
+    const credential =
+      PhoneAuthProvider.credential(
+        verificationId,
+        cleanOTP
+      );
+
+    // Attach the verified phone number
+    // to the currently signed-in Firebase user
+    await updatePhoneNumber(
+      currentUser,
+      credential
+    );
+
+    // Update local state
+    setPhone(pendingPhone);
+    setOriginalPhone(pendingPhone);
+    setPhoneVerified(true);
+
+    // Save verified state to Firestore
+    await setDoc(
+      doc(db, "users", currentUser.uid),
+      {
+        phone: pendingPhone,
+        phoneVerified: true,
+        phoneVerifiedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+      {
+        merge: true,
+      }
+    );
+
+    // Reset OTP state
+    setOtp("");
+    setOtpSent(false);
+    setVerificationId(null);
+    setPendingPhone("");
+
+    setMessage(
+      "Phone number verified successfully."
+    );
+
+  } catch (error) {
+    console.error(
+      "Phone OTP verification error:",
+      error
+    );
+
+    if (error.code === "auth/invalid-verification-code") {
+      setErrorMessage(
+        "Incorrect verification code. Please try again."
+      );
+    } else if (
+      error.code === "auth/code-expired"
+    ) {
+      setErrorMessage(
+        "This verification code has expired. Please request a new one."
+      );
+
+      setOtpSent(false);
+      setVerificationId(null);
+
+    } else if (
+      error.code === "auth/phone-number-already-exists"
+    ) {
+      setErrorMessage(
+        "This phone number is already associated with another account."
+      );
+    } else if (
+      error.code === "auth/requires-recent-login"
+    ) {
+      setErrorMessage(
+        "Please sign in again before changing your phone number."
+      );
+    } else {
+      setErrorMessage(
+        error.message ||
+        "Unable to verify phone number."
+      );
+    }
+
+  } finally {
+    setIsPhoneProcessing(false);
+  }
+};
   
 
   // ---------------------------------------------------------
@@ -1184,14 +1258,21 @@ const handleSendPhoneOTP = async () => {
   <input
   type="tel"
   value={phone}
-  onChange={(e) => {
-    const newPhone = e.target.value;
-    setPhone(newPhone);
+ onChange={(e) => {
+  const newPhone = e.target.value;
 
-    if (newPhone !== originalPhone) {
-      setPhoneVerified(false);
-    }
-  }}
+  setPhone(newPhone);
+
+  // Changing the number immediately invalidates
+  // the previous verification.
+  if (newPhone.trim() !== originalPhone.trim()) {
+    setPhoneVerified(false);
+    setOtpSent(false);
+    setOtp("");
+    setVerificationId(null);
+    setPendingPhone("");
+  }
+}}
   required
 />
 
