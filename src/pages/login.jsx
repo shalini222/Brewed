@@ -1,14 +1,13 @@
-      import React, { useState } from "react";
+import React, { useState } from "react";
 
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
   sendPasswordResetEmail,
-  getMultiFactorResolver,
   PhoneAuthProvider,
-  PhoneMultiFactorGenerator,
   RecaptchaVerifier,
+  linkWithCredential,
 } from "firebase/auth";
 
 import { auth, googleProvider, db } from "../firebase";
@@ -28,6 +27,7 @@ import walletService from "../service/walletService";
 import rewardService from "../service/rewardService";
 
 export default function Login({ setPage }) {
+
   const [isLogin, setIsLogin] = useState(true);
 
   const [name, setName] = useState("");
@@ -41,24 +41,35 @@ export default function Login({ setPage }) {
   const [userName, setUserName] = useState("");
 
   // =========================================================
-  // MFA STATE
+  // PHONE VERIFICATION STATE
   // =========================================================
 
-  const [showOtp, setShowOtp] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [otpLoading, setOtpLoading] = useState(false);
+  const [showPhoneVerification, setShowPhoneVerification] =
+    useState(false);
 
-  const [mfaResolver, setMfaResolver] = useState(null);
-  const [mfaVerificationId, setMfaVerificationId] =
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+
+  const [otpSent, setOtpSent] = useState(false);
+
+  const [phoneLoading, setPhoneLoading] =
+    useState(false);
+
+  const [verificationId, setVerificationId] =
     useState(null);
 
-  const [mfaPhone, setMfaPhone] = useState("");
+  const [pendingUser, setPendingUser] =
+    useState(null);
+
+  const [isNewAccount, setIsNewAccount] =
+    useState(false);
 
   // =========================================================
   // GREETING
   // =========================================================
 
   function getGreeting() {
+
     const hour = new Date().getHours();
 
     if (hour < 12) return "Good Morning";
@@ -71,12 +82,13 @@ export default function Login({ setPage }) {
   // RECAPTCHA
   // =========================================================
 
-  function setupMfaRecaptcha() {
-    if (window.loginRecaptchaVerifier) {
-      return window.loginRecaptchaVerifier;
+  function setupPhoneRecaptcha() {
+
+    if (window.loginPhoneRecaptcha) {
+      return window.loginPhoneRecaptcha;
     }
 
-    window.loginRecaptchaVerifier =
+    window.loginPhoneRecaptcha =
       new RecaptchaVerifier(
         auth,
         "login-phone-recaptcha",
@@ -84,225 +96,28 @@ export default function Login({ setPage }) {
           size: "invisible",
 
           callback: () => {
-            console.log("Login reCAPTCHA completed.");
+            console.log(
+              "Phone reCAPTCHA completed."
+            );
           },
 
           "expired-callback": () => {
-            window.loginRecaptchaVerifier?.clear();
-            window.loginRecaptchaVerifier = null;
+
+            window.loginPhoneRecaptcha?.clear();
+
+            window.loginPhoneRecaptcha = null;
           },
         }
       );
 
-    return window.loginRecaptchaVerifier;
+    return window.loginPhoneRecaptcha;
   }
 
   // =========================================================
-  // SEND MFA OTP
+  // CHECK CUSTOMER PHONE STATUS
   // =========================================================
 
-  async function sendMfaOTP(resolver) {
-    try {
-      const hint = resolver.hints?.[0];
-
-      if (!hint) {
-        throw new Error(
-          "No phone verification method is available for this account."
-        );
-      }
-
-      if (
-        hint.factorId !==
-        PhoneMultiFactorGenerator.FACTOR_ID
-      ) {
-        throw new Error(
-          "This account does not have SMS verification configured."
-        );
-      }
-
-      const verifier = setupMfaRecaptcha();
-
-      const phoneInfoOptions = {
-        multiFactorHint: hint,
-        session: resolver.session,
-      };
-
-      const phoneAuthProvider =
-        new PhoneAuthProvider(auth);
-
-      const verificationId =
-        await phoneAuthProvider.verifyPhoneNumber(
-          phoneInfoOptions,
-          verifier
-        );
-
-      setMfaVerificationId(verificationId);
-
-      // Firebase provides a masked phone number.
-      setMfaPhone(
-        hint.phoneNumber ||
-          hint.displayName ||
-          "your phone"
-      );
-
-      setMfaResolver(resolver);
-      setShowOtp(true);
-
-      setMessage(
-        "A verification code has been sent to your phone."
-      );
-    } catch (error) {
-      console.error(
-        "MFA OTP send error:",
-        error
-      );
-
-      window.loginRecaptchaVerifier?.clear();
-      window.loginRecaptchaVerifier = null;
-
-      setMessage(
-        error.message ||
-          "Unable to send verification code."
-      );
-    }
-  }
-
-  // =========================================================
-  // VERIFY MFA OTP
-  // =========================================================
-
-  async function handleVerifyMfaOTP() {
-    if (!mfaResolver || !mfaVerificationId) {
-      setMessage(
-        "Your verification session has expired. Please log in again."
-      );
-
-      return;
-    }
-
-    const cleanOtp = otp.trim();
-
-    if (!/^\d{6}$/.test(cleanOtp)) {
-      setMessage(
-        "Enter the 6-digit verification code."
-      );
-
-      return;
-    }
-
-    setOtpLoading(true);
-    setMessage("");
-
-    try {
-      const credential =
-        PhoneAuthProvider.credential(
-          mfaVerificationId,
-          cleanOtp
-        );
-
-      const assertion =
-        PhoneMultiFactorGenerator.assertion(
-          credential
-        );
-
-      // THIS COMPLETES THE LOGIN
-      const userCredential =
-        await mfaResolver.resolveSignIn(
-          assertion
-        );
-
-      const user = userCredential.user;
-
-      console.log(
-        "MFA login successful:",
-        user.uid
-      );
-
-      // Clean MFA state
-      setShowOtp(false);
-      setOtp("");
-      setMfaResolver(null);
-      setMfaVerificationId(null);
-
-      window.loginRecaptchaVerifier?.clear();
-      window.loginRecaptchaVerifier = null;
-
-      // Continue with normal Brewed login flow
-      await finishLogin(user);
-
-    } catch (error) {
-      console.error(
-        "MFA OTP verification error:",
-        error
-      );
-
-      if (
-        error.code ===
-        "auth/invalid-verification-code"
-      ) {
-        setMessage(
-          "Incorrect verification code. Please try again."
-        );
-      } else if (
-        error.code === "auth/code-expired"
-      ) {
-        setMessage(
-          "That verification code has expired. Please log in again."
-        );
-      } else {
-        setMessage(
-          error.message ||
-            "Unable to verify the code."
-        );
-      }
-    } finally {
-      setOtpLoading(false);
-    }
-  }
-
-  // =========================================================
-  // FINISH NORMAL BREWED LOGIN
-  // =========================================================
-
-  async function finishLogin(user) {
-    // ==========================================
-    // CHECK IF THIS ACCOUNT IS A RIDER
-    // ==========================================
-
-    const riderQuery = query(
-      collection(db, "riders"),
-      where("email", "==", user.email)
-    );
-
-    const riderSnapshot =
-      await getDocs(riderQuery);
-
-    if (!riderSnapshot.empty) {
-      const riderDoc =
-        riderSnapshot.docs[0];
-
-      const riderData =
-        riderDoc.data();
-
-      if (riderData.status !== "Active") {
-        setMessage(
-          "Your rider account is currently inactive. Please contact the administrator."
-        );
-
-        setLoading(false);
-
-        return;
-      }
-
-      // Rider account
-      setPage("rider");
-
-      return;
-    }
-
-    // ==========================================
-    // CUSTOMER ACCOUNT
-    // ==========================================
+  async function checkPhoneStatus(user) {
 
     const userRef = doc(
       db,
@@ -314,18 +129,384 @@ export default function Login({ setPage }) {
       await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      await setDoc(userRef, {
+
+      return {
+        exists: false,
+        phoneVerified: false,
+        phone: "",
+      };
+    }
+
+    const data = userSnap.data();
+
+    return {
+      exists: true,
+      phoneVerified:
+        data.phoneVerified === true,
+      phone:
+        data.phone || "",
+    };
+  }
+
+  // =========================================================
+  // START PHONE VERIFICATION
+  // =========================================================
+
+  async function startPhoneVerification(
+    user,
+    newAccount = false
+  ) {
+
+    if (!user) return;
+
+    setPendingUser(user);
+    setIsNewAccount(newAccount);
+
+    const status =
+      await checkPhoneStatus(user);
+
+    // Already verified
+    if (status.phoneVerified) {
+
+      await finishCustomerLogin(
+        user,
+        false
+      );
+
+      return;
+    }
+
+    // Existing phone number
+    if (status.phone) {
+      setPhone(status.phone);
+    }
+
+    setOtp("");
+    setOtpSent(false);
+    setVerificationId(null);
+
+    setShowPhoneVerification(true);
+  }
+
+  // =========================================================
+  // SEND PHONE OTP
+  // =========================================================
+
+  async function handleSendPhoneOTP() {
+
+    if (!pendingUser) {
+      setMessage(
+        "Your login session has expired. Please log in again."
+      );
+
+      return;
+    }
+
+    const cleanedPhone =
+      phone.trim();
+
+    if (
+      !/^\+[1-9]\d{7,14}$/.test(
+        cleanedPhone
+      )
+    ) {
+
+      setMessage(
+        "Enter your phone number with country code, e.g. +919876543210."
+      );
+
+      return;
+    }
+
+    setPhoneLoading(true);
+    setMessage("");
+
+    try {
+
+      const verifier =
+        setupPhoneRecaptcha();
+
+      const provider =
+        new PhoneAuthProvider(auth);
+
+      const id =
+        await provider.verifyPhoneNumber(
+          cleanedPhone,
+          verifier
+        );
+
+      setVerificationId(id);
+
+      setOtpSent(true);
+
+      setMessage(
+        "A verification code has been sent to your phone."
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Phone OTP send error:",
+        error
+      );
+
+      window.loginPhoneRecaptcha?.clear();
+
+      window.loginPhoneRecaptcha = null;
+
+      setMessage(
+        error.message ||
+          "Unable to send verification code."
+      );
+
+    } finally {
+
+      setPhoneLoading(false);
+    }
+  }
+
+  // =========================================================
+  // VERIFY PHONE OTP
+  // =========================================================
+
+  async function handleVerifyPhoneOTP() {
+
+    if (
+      !pendingUser ||
+      !verificationId
+    ) {
+
+      setMessage(
+        "Your verification session has expired. Please try again."
+      );
+
+      return;
+    }
+
+    const cleanOtp =
+      otp.trim();
+
+    if (
+      !/^\d{6}$/.test(cleanOtp)
+    ) {
+
+      setMessage(
+        "Enter the 6-digit verification code."
+      );
+
+      return;
+    }
+
+    setPhoneLoading(true);
+    setMessage("");
+
+    try {
+
+      // -----------------------------------------------------
+      // CREATE PHONE CREDENTIAL
+      // -----------------------------------------------------
+
+      const credential =
+        PhoneAuthProvider.credential(
+          verificationId,
+          cleanOtp
+        );
+
+      // -----------------------------------------------------
+      // LINK PHONE TO THIS FIREBASE ACCOUNT
+      // -----------------------------------------------------
+
+      await linkWithCredential(
+        pendingUser,
+        credential
+      );
+
+      // -----------------------------------------------------
+      // SAVE PHONE VERIFICATION
+      // -----------------------------------------------------
+
+      await setDoc(
+        doc(
+          db,
+          "users",
+          pendingUser.uid
+        ),
+        {
+          phone: phone.trim(),
+          phoneVerified: true,
+          phoneVerifiedAt:
+            serverTimestamp(),
+          updatedAt:
+            serverTimestamp(),
+        },
+        {
+          merge: true,
+        }
+      );
+
+      // -----------------------------------------------------
+      // CLEANUP
+      // -----------------------------------------------------
+
+      setShowPhoneVerification(false);
+
+      setOtp("");
+
+      setOtpSent(false);
+
+      setVerificationId(null);
+
+      window.loginPhoneRecaptcha?.clear();
+
+      window.loginPhoneRecaptcha = null;
+
+      setMessage("");
+
+      // -----------------------------------------------------
+      // NOW FINISH LOGIN
+      // -----------------------------------------------------
+
+      await finishCustomerLogin(
+        pendingUser,
+        isNewAccount
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Phone OTP verification error:",
+        error
+      );
+
+      if (
+        error.code ===
+        "auth/invalid-verification-code"
+      ) {
+
+        setMessage(
+          "Incorrect verification code."
+        );
+
+      } else if (
+        error.code ===
+        "auth/code-expired"
+      ) {
+
+        setMessage(
+          "That code has expired. Please request a new code."
+        );
+
+      } else if (
+        error.code ===
+        "auth/credential-already-in-use"
+      ) {
+
+        setMessage(
+          "This phone number is already linked to another Brewed account."
+        );
+
+      } else {
+
+        setMessage(
+          error.message ||
+            "Unable to verify your phone number."
+        );
+      }
+
+    } finally {
+
+      setPhoneLoading(false);
+    }
+  }
+
+  // =========================================================
+  // FINISH CUSTOMER LOGIN
+  // =========================================================
+
+  async function finishCustomerLogin(
+    user,
+    shouldGiveSignupReward = false
+  ) {
+
+    // =======================================================
+    // CHECK RIDER
+    // =======================================================
+
+    const riderQuery = query(
+      collection(db, "riders"),
+      where(
+        "email",
+        "==",
+        user.email
+      )
+    );
+
+    const riderSnapshot =
+      await getDocs(riderQuery);
+
+    if (!riderSnapshot.empty) {
+
+      const riderDoc =
+        riderSnapshot.docs[0];
+
+      const riderData =
+        riderDoc.data();
+
+      if (
+        riderData.status !==
+        "Active"
+      ) {
+
+        setMessage(
+          "Your rider account is currently inactive. Please contact the administrator."
+        );
+
+        return;
+      }
+
+      setPage("rider");
+
+      return;
+    }
+
+    // =======================================================
+    // CUSTOMER
+    // =======================================================
+
+    const userRef = doc(
+      db,
+      "users",
+      user.uid
+    );
+
+    const userSnap =
+      await getDoc(userRef);
+
+    let userData;
+
+    if (!userSnap.exists()) {
+
+      userData = {
+
         name:
           user.displayName ||
           user.email?.split("@")[0] ||
           "User",
 
-        email: user.email,
+        email:
+          user.email,
 
         birthday: "",
 
         photoURL:
           user.photoURL || "",
+
+        phone: phone.trim(),
+
+        phoneVerified: true,
+
+        phoneVerifiedAt:
+          serverTimestamp(),
 
         createdAt:
           serverTimestamp(),
@@ -356,105 +537,110 @@ export default function Login({ setPage }) {
             serverTimestamp(),
           birthdayRewardClaimed: false,
         },
-      });
+      };
+
+      await setDoc(
+        userRef,
+        userData
+      );
+
+    } else {
+
+      userData =
+        userSnap.data();
     }
 
-    // Wallet
+    // =======================================================
+    // WALLET
+    // =======================================================
+
     await walletService.createWallet(
       user.uid
     );
 
-    // Signup reward
-    try {
-      await rewardService.giveSignupReward(
-        user.uid
-      );
-    } catch (error) {
-      console.error(
-        "Signup reward failed:",
-        error
-      );
+    // =======================================================
+    // SIGNUP REWARD
+    // ONLY AFTER PHONE VERIFICATION
+    // =======================================================
+
+    if (
+      shouldGiveSignupReward &&
+      userData?.signupRewardClaimed !== true
+    ) {
+
+      try {
+
+        await rewardService.giveSignupReward(
+          user.uid
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Signup reward failed:",
+          error
+        );
+      }
     }
 
-    // ==========================================
+    // =======================================================
     // GREETING
-    // ==========================================
+    // =======================================================
 
     const displayName =
       user.displayName ||
+      name ||
       user.email?.split("@")[0] ||
       "User";
 
-    setUserName(displayName);
+    setUserName(
+      displayName
+    );
+
     setShowGreeting(true);
 
     setTimeout(() => {
+
       setPage("menu");
+
     }, 2200);
   }
 
   // =========================================================
-  // EMAIL / PASSWORD LOGIN + MFA
+  // EMAIL / PASSWORD
   // =========================================================
 
   async function handleSubmit(e) {
+
     e.preventDefault();
 
     setLoading(true);
     setMessage("");
 
     try {
+
       // =====================================================
       // LOGIN
       // =====================================================
 
       if (isLogin) {
-        try {
-          const userCredential =
-            await signInWithEmailAndPassword(
-              auth,
-              email.trim(),
-              password
-            );
 
-          // No MFA required
-          const user =
-            userCredential.user;
+        const userCredential =
+          await signInWithEmailAndPassword(
+            auth,
+            email.trim(),
+            password
+          );
 
-          await finishLogin(user);
+        const user =
+          userCredential.user;
 
-          return;
+        await startPhoneVerification(
+          user,
+          false
+        );
 
-        } catch (error) {
-
-          // =================================================
-          // MFA REQUIRED
-          // =================================================
-
-          if (
-            error.code ===
-            "auth/multi-factor-auth-required"
-          ) {
-            console.log(
-              "MFA required for login."
-            );
-
-            const resolver =
-              getMultiFactorResolver(
-                auth,
-                error
-              );
-
-            await sendMfaOTP(
-              resolver
-            );
-
-            return;
-          }
-
-          // Normal login error
-          throw error;
-        }
+        return;
       }
 
       // =====================================================
@@ -471,214 +657,32 @@ export default function Login({ setPage }) {
       const user =
         userCredential.user;
 
-      // Create customer document
-      const userRef = doc(
-        db,
-        "users",
-        user.uid
-      );
+      // -----------------------------------------------------
+      // CREATE BASIC CUSTOMER DOCUMENT
+      // -----------------------------------------------------
 
-      await setDoc(userRef, {
-        name:
-          name ||
-          user.email?.split("@")[0] ||
-          "User",
-
-        email: user.email,
-
-        birthday: "",
-
-        photoURL:
-          user.photoURL || "",
-
-        createdAt:
-          serverTimestamp(),
-
-        loyaltyPoints: 0,
-
-        lifetimePoints: 0,
-
-        signupRewardClaimed: false,
-
-        birthdayRewardYear: null,
-
-        referredBy: null,
-
-        referralRewardClaimed: false,
-
-        settings: {
-          notifications: true,
-          darkMode: false,
-          reduceMotion: false,
-        },
-
-        rewards: {
-          beans: 0,
-          lifetimeBeans: 0,
-          tier: "Bronze",
-          memberSince:
-            serverTimestamp(),
-          birthdayRewardClaimed: false,
-        },
-      });
-
-      // Wallet
-      await walletService.createWallet(
-        user.uid
-      );
-
-      // Signup reward
-      try {
-        await rewardService.giveSignupReward(
+      await setDoc(
+        doc(
+          db,
+          "users",
           user.uid
-        );
-      } catch (error) {
-        console.error(
-          "Signup reward failed:",
-          error
-        );
-      }
-
-      const displayName =
-        user.displayName ||
-        name ||
-        user.email?.split("@")[0] ||
-        "User";
-
-      setUserName(displayName);
-      setShowGreeting(true);
-
-      setTimeout(() => {
-        setPage("menu");
-      }, 2200);
-
-    } catch (error) {
-      console.error(
-        "Login error:",
-        error
-      );
-
-      if (
-        error.code ===
-        "auth/invalid-credential"
-      ) {
-        setMessage(
-          "Incorrect email or password."
-        );
-      } else if (
-        error.code ===
-        "auth/user-not-found"
-      ) {
-        setMessage(
-          "No account was found with this email."
-        );
-      } else if (
-        error.code ===
-        "auth/wrong-password"
-      ) {
-        setMessage(
-          "Incorrect password."
-        );
-      } else if (
-        error.code ===
-        "auth/too-many-requests"
-      ) {
-        setMessage(
-          "Too many attempts. Please try again later."
-        );
-      } else {
-        setMessage(
-          error.message ||
-            "Unable to complete login."
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // =========================================================
-  // GOOGLE LOGIN
-  // =========================================================
-
-  async function handleGoogleLogin() {
-    setLoading(true);
-    setMessage("");
-
-    try {
-      const result =
-        await signInWithPopup(
-          auth,
-          googleProvider
-        );
-
-      const user = result.user;
-
-      // =====================================================
-      // CHECK RIDER
-      // =====================================================
-
-      const riderQuery = query(
-        collection(db, "riders"),
-        where(
-          "email",
-          "==",
-          user.email
-        )
-      );
-
-      const riderSnapshot =
-        await getDocs(riderQuery);
-
-      if (!riderSnapshot.empty) {
-        const riderDoc =
-          riderSnapshot.docs[0];
-
-        const riderData =
-          riderDoc.data();
-
-        if (
-          riderData.status !==
-          "Active"
-        ) {
-          setMessage(
-            "Your rider account is currently inactive. Please contact the administrator."
-          );
-
-          return;
-        }
-
-        setPage("rider");
-
-        return;
-      }
-
-      // =====================================================
-      // CUSTOMER
-      // =====================================================
-
-      const userRef = doc(
-        db,
-        "users",
-        user.uid
-      );
-
-      const userSnap =
-        await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        await setDoc(userRef, {
+        ),
+        {
           name:
-            user.displayName ||
-            user.email?.split("@")[0] ||
-            "User",
+            name.trim() ||
+            email.split("@")[0],
 
-          email: user.email,
+          email:
+            user.email,
 
           birthday: "",
 
           photoURL:
             user.photoURL || "",
+
+          phone: "",
+
+          phoneVerified: false,
 
           createdAt:
             serverTimestamp(),
@@ -709,37 +713,240 @@ export default function Login({ setPage }) {
               serverTimestamp(),
             birthdayRewardClaimed: false,
           },
-        });
-      }
-
-      await walletService.createWallet(
-        user.uid
+        }
       );
 
-      try {
-        await rewardService.giveSignupReward(
-          user.uid
-        );
-      } catch (error) {
-        console.error(
-          "Signup reward failed:",
-          error
-        );
-      }
+      // -----------------------------------------------------
+      // FORCE PHONE VERIFICATION
+      // -----------------------------------------------------
 
-      setUserName(
-        user.displayName ||
-          user.email?.split("@")[0] ||
-          "User"
+      await startPhoneVerification(
+        user,
+        true
       );
-
-      setShowGreeting(true);
-
-      setTimeout(() => {
-        setPage("menu");
-      }, 2200);
 
     } catch (error) {
+
+      console.error(
+        "Login error:",
+        error
+      );
+
+      if (
+        error.code ===
+        "auth/invalid-credential"
+      ) {
+
+        setMessage(
+          "Incorrect email or password."
+        );
+
+      } else if (
+        error.code ===
+        "auth/user-not-found"
+      ) {
+
+        setMessage(
+          "No account was found with this email."
+        );
+
+      } else if (
+        error.code ===
+        "auth/wrong-password"
+      ) {
+
+        setMessage(
+          "Incorrect password."
+        );
+
+      } else if (
+        error.code ===
+        "auth/email-already-in-use"
+      ) {
+
+        setMessage(
+          "An account already exists with this email."
+        );
+
+      } else if (
+        error.code ===
+        "auth/too-many-requests"
+      ) {
+
+        setMessage(
+          "Too many attempts. Please try again later."
+        );
+
+      } else {
+
+        setMessage(
+          error.message ||
+            "Unable to complete login."
+        );
+      }
+
+    } finally {
+
+      setLoading(false);
+    }
+  }
+
+  // =========================================================
+  // GOOGLE LOGIN
+  // =========================================================
+
+  async function handleGoogleLogin() {
+
+    setLoading(true);
+    setMessage("");
+
+    try {
+
+      const result =
+        await signInWithPopup(
+          auth,
+          googleProvider
+        );
+
+      const user =
+        result.user;
+
+      // -----------------------------------------------------
+      // RIDER CHECK
+      // -----------------------------------------------------
+
+      const riderQuery = query(
+        collection(db, "riders"),
+        where(
+          "email",
+          "==",
+          user.email
+        )
+      );
+
+      const riderSnapshot =
+        await getDocs(riderQuery);
+
+      if (!riderSnapshot.empty) {
+
+        const riderDoc =
+          riderSnapshot.docs[0];
+
+        const riderData =
+          riderDoc.data();
+
+        if (
+          riderData.status !==
+          "Active"
+        ) {
+
+          setMessage(
+            "Your rider account is currently inactive. Please contact the administrator."
+          );
+
+          return;
+        }
+
+        setPage("rider");
+
+        return;
+      }
+
+      // -----------------------------------------------------
+      // CUSTOMER
+      // -----------------------------------------------------
+
+      const userRef =
+        doc(
+          db,
+          "users",
+          user.uid
+        );
+
+      const userSnap =
+        await getDoc(userRef);
+
+      // -----------------------------------------------------
+      // NEW GOOGLE ACCOUNT
+      // -----------------------------------------------------
+
+      if (!userSnap.exists()) {
+
+        await setDoc(
+          userRef,
+          {
+            name:
+              user.displayName ||
+              user.email?.split("@")[0] ||
+              "User",
+
+            email:
+              user.email,
+
+            birthday: "",
+
+            photoURL:
+              user.photoURL || "",
+
+            phone: "",
+
+            phoneVerified: false,
+
+            createdAt:
+              serverTimestamp(),
+
+            loyaltyPoints: 0,
+
+            lifetimePoints: 0,
+
+            signupRewardClaimed: false,
+
+            birthdayRewardYear: null,
+
+            referredBy: null,
+
+            referralRewardClaimed: false,
+
+            settings: {
+              notifications: true,
+              darkMode: false,
+              reduceMotion: false,
+            },
+
+            rewards: {
+              beans: 0,
+              lifetimeBeans: 0,
+              tier: "Bronze",
+              memberSince:
+                serverTimestamp(),
+              birthdayRewardClaimed: false,
+            },
+          }
+        );
+
+        // ---------------------------------------------------
+        // FORCE PHONE VERIFICATION
+        // ---------------------------------------------------
+
+        await startPhoneVerification(
+          user,
+          true
+        );
+
+        return;
+      }
+
+      // -----------------------------------------------------
+      // EXISTING GOOGLE ACCOUNT
+      // -----------------------------------------------------
+
+      await startPhoneVerification(
+        user,
+        false
+      );
+
+    } catch (error) {
+
       console.error(
         "Google login error:",
         error
@@ -749,7 +956,9 @@ export default function Login({ setPage }) {
         error.message ||
           "Unable to sign in with Google."
       );
+
     } finally {
+
       setLoading(false);
     }
   }
@@ -759,7 +968,9 @@ export default function Login({ setPage }) {
   // =========================================================
 
   async function forgotPassword() {
+
     if (!email) {
+
       setMessage(
         "Enter your email first."
       );
@@ -768,6 +979,7 @@ export default function Login({ setPage }) {
     }
 
     try {
+
       await sendPasswordResetEmail(
         auth,
         email.trim()
@@ -776,7 +988,9 @@ export default function Login({ setPage }) {
       setMessage(
         "Password reset email sent!"
       );
+
     } catch (error) {
+
       setMessage(
         error.message
       );
@@ -784,22 +998,34 @@ export default function Login({ setPage }) {
   }
 
   // =========================================================
-  // CANCEL OTP
+  // CANCEL PHONE VERIFICATION
   // =========================================================
 
-  function cancelOtp() {
-    setShowOtp(false);
-    setOtp("");
-    setMfaResolver(null);
-    setMfaVerificationId(null);
-    setMfaPhone("");
+  function cancelPhoneVerification() {
 
-    window.loginRecaptchaVerifier?.clear();
-    window.loginRecaptchaVerifier = null;
+    setShowPhoneVerification(false);
+
+    setOtp("");
+
+    setOtpSent(false);
+
+    setVerificationId(null);
+
+    setPendingUser(null);
+
+    setPhone("");
+
+    window.loginPhoneRecaptcha?.clear();
+
+    window.loginPhoneRecaptcha = null;
 
     setMessage("");
 
     setLoading(false);
+
+    // Sign the user out so they cannot bypass
+    // phone verification by going back.
+    auth.signOut();
   }
 
   // =========================================================
@@ -809,7 +1035,10 @@ export default function Login({ setPage }) {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap');
+
+        @import url(
+          'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap'
+        );
 
         * {
           box-sizing: border-box;
@@ -827,12 +1056,16 @@ export default function Login({ setPage }) {
           justify-content: center;
           align-items: center;
           padding: 40px 20px;
+
           background:
             linear-gradient(
               rgba(26,10,0,.45),
               rgba(26,10,0,.45)
             ),
-            url("https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1500&q=80");
+            url(
+              "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1500&q=80"
+            );
+
           background-size: cover;
           background-position: center;
         }
@@ -840,38 +1073,61 @@ export default function Login({ setPage }) {
         .login-card {
           width: 100%;
           max-width: 430px;
-          background: rgba(253,250,245,.95);
+
+          background:
+            rgba(253,250,245,.95);
+
           backdrop-filter: blur(12px);
+
           border-radius: 22px;
+
           padding: 45px;
-          box-shadow: 0 25px 60px rgba(0,0,0,.25);
+
+          box-shadow:
+            0 25px 60px rgba(0,0,0,.25);
         }
 
         .logo {
-          font-family: 'Playfair Display', serif;
+          font-family:
+            'Playfair Display', serif;
+
           font-size: 2.2rem;
+
           color: #3B1A08;
+
           text-align: center;
+
           margin-bottom: 10px;
         }
 
         .subtitle {
           text-align: center;
+
           color: #6B5C53;
+
           margin-bottom: 30px;
         }
 
         form {
           display: flex;
+
           flex-direction: column;
+
           gap: 16px;
         }
 
         input {
+          width: 100%;
+
           padding: 15px;
+
           border-radius: 12px;
-          border: 1px solid #DDD;
+
+          border:
+            1px solid #DDD;
+
           font-size: 15px;
+
           outline: none;
         }
 
@@ -881,165 +1137,242 @@ export default function Login({ setPage }) {
 
         button {
           padding: 15px;
+
           border: none;
+
           border-radius: 12px;
+
           cursor: pointer;
+
           font-weight: 600;
+
           transition: .3s;
         }
 
         button:disabled {
           opacity: .6;
+
           cursor: not-allowed;
         }
 
         .primary {
           background: #3B1A08;
+
           color: white;
         }
 
         .primary:hover {
           background: #C4956A;
+
           color: #3B1A08;
         }
 
         .google {
           background: white;
-          border: 1px solid #DDD;
+
+          border:
+            1px solid #DDD;
         }
 
         .message {
           margin-top: 15px;
+
           text-align: center;
+
           color: #8A5A32;
+
           line-height: 1.5;
         }
 
         .switch {
           margin-top: 25px;
+
           text-align: center;
         }
 
         .switch span {
           color: #8A5A32;
+
           cursor: pointer;
+
           font-weight: 600;
         }
 
         .forgot {
           text-align: right;
+
           font-size: 14px;
+
           color: #8A5A32;
+
           cursor: pointer;
         }
 
-        /* =========================
-           OTP SCREEN
-        ========================= */
+        /* PHONE VERIFICATION */
 
-        .otp-title {
-          font-family: 'Playfair Display', serif;
+        .phone-title {
+          font-family:
+            'Playfair Display', serif;
+
           font-size: 1.8rem;
+
           color: #3B1A08;
+
           text-align: center;
+
           margin-bottom: 10px;
         }
 
-        .otp-description {
+        .phone-description {
           text-align: center;
+
           color: #6B5C53;
+
           font-size: 14px;
+
           line-height: 1.6;
+
           margin-bottom: 25px;
         }
 
-        .otp-input {
-          width: 100%;
-          text-align: center;
-          letter-spacing: 8px;
-          font-size: 22px;
+        .phone-label {
+          display: block;
+
+          color: #5A453A;
+
+          font-size: 14px;
+
           font-weight: 600;
+
+          margin-bottom: 8px;
         }
 
-        .otp-actions {
+        .phone-input {
+          margin-bottom: 14px;
+        }
+
+        .otp-input {
+          text-align: center;
+
+          letter-spacing: 8px;
+
+          font-size: 22px;
+
+          font-weight: 600;
+
+          margin-top: 12px;
+        }
+
+        .phone-actions {
           display: flex;
+
           gap: 10px;
-          margin-top: 5px;
+
+          margin-top: 12px;
         }
 
-        .otp-actions button {
+        .phone-actions button {
           flex: 1;
         }
 
-        .cancel-otp {
+        .secondary {
           background: #F8F4EE;
+
           color: #3B1A08;
         }
 
         .recaptcha-container {
           height: 0;
+
           overflow: hidden;
         }
 
-        /* =========================
-           GREETING
-        ========================= */
+        /* GREETING */
 
         .greeting-screen {
           position: fixed;
+
           inset: 0;
+
           background: #FDFAF5;
+
           display: flex;
+
           justify-content: center;
+
           align-items: center;
+
           flex-direction: column;
+
           z-index: 9999;
+
           animation: fadeIn .7s ease;
         }
 
         .greeting-logo {
-          font-family: 'Playfair Display', serif;
+          font-family:
+            'Playfair Display', serif;
+
           font-size: 3rem;
+
           color: #3B1A08;
+
           margin-bottom: 40px;
         }
 
         .greeting-title {
           font-size: 2.4rem;
+
           color: #3B1A08;
+
           font-weight: 600;
         }
 
         .greeting-name {
           margin-top: 12px;
+
           font-size: 3rem;
+
           color: #C4956A;
-          font-family: 'Playfair Display', serif;
+
+          font-family:
+            'Playfair Display', serif;
         }
 
         .greeting-sub {
           margin-top: 18px;
+
           color: #6B5C53;
+
           font-size: 1.2rem;
         }
 
         @keyframes fadeIn {
+
           from {
             opacity: 0;
+
             transform: scale(.98);
           }
 
           to {
             opacity: 1;
+
             transform: scale(1);
           }
         }
 
         @media(max-width: 500px) {
+
           .login-card {
             padding: 30px 22px;
           }
+
+          .phone-actions {
+            flex-direction: column;
+          }
         }
+
       `}</style>
 
       {/* =====================================================
@@ -1047,6 +1380,7 @@ export default function Login({ setPage }) {
       ===================================================== */}
 
       {showGreeting && (
+
         <div className="greeting-screen">
 
           <div className="greeting-logo">
@@ -1069,7 +1403,7 @@ export default function Login({ setPage }) {
       )}
 
       {/* =====================================================
-          LOGIN PAGE
+          LOGIN
       ===================================================== */}
 
       <div className="login-page">
@@ -1081,75 +1415,150 @@ export default function Login({ setPage }) {
           </div>
 
           {/* =================================================
-              MFA OTP SCREEN
+              PHONE VERIFICATION
           ================================================= */}
 
-          {showOtp ? (
+          {showPhoneVerification ? (
+
             <>
-              <div className="otp-title">
+
+              <div className="phone-title">
                 Verify your phone
               </div>
 
-              <div className="otp-description">
-                We sent a 6-digit verification
-                code to{" "}
-                <strong>
-                  {mfaPhone}
-                </strong>
-                .
+              <div className="phone-description">
+
+                Phone verification is required
+                to access your Brewed account.
+
                 <br />
-                Enter the code to complete
-                your login.
-              </div>
 
-              <input
-                className="otp-input"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                placeholder="000000"
-                value={otp}
-                onChange={(e) =>
-                  setOtp(
-                    e.target.value
-                      .replace(/\D/g, "")
-                  )
-                }
-                autoFocus
-              />
-
-              <div className="otp-actions">
-
-                <button
-                  type="button"
-                  className="cancel-otp"
-                  onClick={cancelOtp}
-                  disabled={otpLoading}
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  className="primary"
-                  onClick={handleVerifyMfaOTP}
-                  disabled={
-                    otpLoading ||
-                    otp.length !== 6
-                  }
-                >
-                  {otpLoading
-                    ? "Verifying..."
-                    : "Verify & Login"}
-                </button>
+                This helps keep accounts,
+                rewards and loyalty points secure.
 
               </div>
 
-              {message && (
-                <div className="message">
-                  {message}
-                </div>
+              {!otpSent ? (
+
+                <>
+
+                  <label className="phone-label">
+                    Phone Number
+                  </label>
+
+                  <input
+                    className="phone-input"
+                    type="tel"
+                    placeholder="+919876543210"
+                    value={phone}
+                    onChange={(e) =>
+                      setPhone(
+                        e.target.value
+                      )
+                    }
+                    autoFocus
+                  />
+
+                  <button
+                    type="button"
+                    className="primary"
+                    onClick={
+                      handleSendPhoneOTP
+                    }
+                    disabled={
+                      phoneLoading ||
+                      !phone
+                    }
+                  >
+
+                    {phoneLoading
+                      ? "Sending..."
+                      : "Send Verification Code"}
+
+                  </button>
+
+                </>
+
+              ) : (
+
+                <>
+
+                  <div className="phone-description">
+
+                    Enter the 6-digit code
+                    sent to:
+
+                    <br />
+
+                    <strong>
+                      {phone}
+                    </strong>
+
+                  </div>
+
+                  <input
+                    className="otp-input"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    placeholder="000000"
+                    value={otp}
+                    onChange={(e) =>
+                      setOtp(
+                        e.target.value
+                          .replace(/\D/g, "")
+                      )
+                    }
+                    autoFocus
+                  />
+
+                  <div className="phone-actions">
+
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => {
+
+                        setOtpSent(false);
+
+                        setOtp("");
+
+                        setVerificationId(null);
+
+                        window.loginPhoneRecaptcha?.clear();
+
+                        window.loginPhoneRecaptcha =
+                          null;
+                      }}
+                      disabled={
+                        phoneLoading
+                      }
+                    >
+                      Change Number
+                    </button>
+
+                    <button
+                      type="button"
+                      className="primary"
+                      onClick={
+                        handleVerifyPhoneOTP
+                      }
+                      disabled={
+                        phoneLoading ||
+                        otp.length !== 6
+                      }
+                    >
+
+                      {phoneLoading
+                        ? "Verifying..."
+                        : "Verify & Continue"}
+
+                    </button>
+
+                  </div>
+
+                </>
               )}
 
               <div
@@ -1157,26 +1566,55 @@ export default function Login({ setPage }) {
                 className="recaptcha-container"
               />
 
+              {message && (
+
+                <div className="message">
+                  {message}
+                </div>
+
+              )}
+
+              <button
+                type="button"
+                className="secondary"
+                onClick={
+                  cancelPhoneVerification
+                }
+                disabled={phoneLoading}
+                style={{
+                  width: "100%",
+                  marginTop: "12px",
+                }}
+              >
+                Cancel
+              </button>
+
             </>
 
           ) : (
 
             /* =================================================
-               NORMAL LOGIN / SIGNUP
+               NORMAL LOGIN
             ================================================= */
 
             <>
+
               <div className="subtitle">
+
                 {isLogin
                   ? "Welcome back."
                   : "Create your Brewed account"}
+
               </div>
 
               <form
-                onSubmit={handleSubmit}
+                onSubmit={
+                  handleSubmit
+                }
               >
 
                 {!isLogin && (
+
                   <input
                     type="text"
                     placeholder="Full Name"
@@ -1186,7 +1624,9 @@ export default function Login({ setPage }) {
                         e.target.value
                       )
                     }
+                    required
                   />
+
                 )}
 
                 <input
@@ -1214,6 +1654,7 @@ export default function Login({ setPage }) {
                 />
 
                 {isLogin && (
+
                   <div
                     className="forgot"
                     onClick={
@@ -1222,6 +1663,7 @@ export default function Login({ setPage }) {
                   >
                     Forgot Password?
                   </div>
+
                 )}
 
                 <button
@@ -1229,11 +1671,13 @@ export default function Login({ setPage }) {
                   type="submit"
                   disabled={loading}
                 >
+
                   {loading
                     ? "Please wait..."
                     : isLogin
                     ? "Login"
                     : "Create Account"}
+
                 </button>
 
                 <button
@@ -1250,39 +1694,51 @@ export default function Login({ setPage }) {
               </form>
 
               {message && (
+
                 <div className="message">
                   {message}
                 </div>
+
               )}
 
               <div className="switch">
 
                 {isLogin ? (
+
                   <>
                     Don't have an account?{" "}
 
                     <span
                       onClick={() => {
+
                         setIsLogin(false);
+
                         setMessage("");
+
                       }}
                     >
                       Sign Up
                     </span>
                   </>
+
                 ) : (
+
                   <>
                     Already have an account?{" "}
 
                     <span
                       onClick={() => {
+
                         setIsLogin(true);
+
                         setMessage("");
+
                       }}
                     >
                       Login
                     </span>
                   </>
+
                 )}
 
               </div>
@@ -1295,4 +1751,4 @@ export default function Login({ setPage }) {
       </div>
     </>
   );
-}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+}
