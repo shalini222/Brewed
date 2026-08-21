@@ -427,7 +427,7 @@ const [originalPhone, setOriginalPhone] = useState("");
   } catch (error) {
     console.error("Phone OTP verification error:", error);
 
-    setPhoneVerified(false);
+  
 
     setErrorMessage(
       error.message || "Invalid verification code."
