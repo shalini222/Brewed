@@ -36,7 +36,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+const GOOGLE_API_KEY = "AIzaSyAZXXMZOvmUviZqgDoljAhSllaQLxelvfY";
 
 const DEFAULT_MAP_CENTER = {
   lat: 20.5937,
