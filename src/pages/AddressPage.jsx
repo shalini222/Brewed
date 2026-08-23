@@ -24,7 +24,6 @@ import {
   Briefcase,
   MapPin,
   Star,
-  Navigation,
   Search,
   X,
   Check,
@@ -39,12 +38,11 @@ import {
 | Configuration
 |--------------------------------------------------------------------------
 |
-| The default map location is intentionally NOT hard-coded to Brewed's
-| latitude/longitude.
+| Brewed's default delivery AREA is configured by pincode rather than
+| hard-coded coordinates.
 |
-| Google will geocode the configured default pincode when the map loads.
-| This gives the map an immediate useful starting area while keeping
-| Brewed's actual location configurable for Brewed Lite / future clients.
+| For Brewed Lite / client deployments, change the pincode through
+| configuration rather than changing map coordinates in the component.
 |
 */
 
@@ -54,6 +52,9 @@ const MAP_CONFIG = {
 };
 
 const GOOGLE_API_KEY = "AIzaSyAZXXMZOvmUviZqgDoljAhSllaQLxelvfY";
+
+const FALLBACK_MAP_ZOOM = 14;
+const SELECTED_MAP_ZOOM = 17;
 
 const EMPTY_FORM = {
   name: "",
@@ -70,54 +71,137 @@ const EMPTY_FORM = {
   formattedAddress: "",
 };
 
-const FALLBACK_MAP_ZOOM = 14;
-const SELECTED_MAP_ZOOM = 17;
-
 export default function AddressPage({ setPage }) {
   const { currentUser } = useAuth();
 
-  const mapRef = useRef(null);
+  /*
+  |--------------------------------------------------------------------------
+  | Map refs
+  |--------------------------------------------------------------------------
+  */
+
+  const mapContainerRef = useRef(null);
+  const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
+
   const autocompleteServiceRef = useRef(null);
   const placesServiceRef = useRef(null);
   const geocoderRef = useRef(null);
+
   const debounceRef = useRef(null);
+  const mountedRef = useRef(true);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Address state
+  |--------------------------------------------------------------------------
+  */
 
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  const [googleReady, setGoogleReady] = useState(false);
-  const [mapReady, setMapReady] = useState(false);
-
-  const [cleanedForm, setCleanedForm] = useState(EMPTY_FORM);
-
-  const [locationLoading, setLocationLoading] = useState(false);
-  const [locationError, setLocationError] = useState("");
-
-  const [searchText, setSearchText] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-
-  const [checkingDelivery, setCheckingDelivery] = useState(false);
-  const [deliveryAvailable, setDeliveryAvailable] = useState(null);
-  const [deliveryInfo, setDeliveryInfo] = useState(null);
-
-  const [mapCenter, setMapCenter] = useState(null);
-  const [mapZoom, setMapZoom] = useState(FALLBACK_MAP_ZOOM);
-  const [mapLocationLoading, setMapLocationLoading] = useState(true);
-  const [mapError, setMapError] = useState("");
-
-  const [selectedLocation, setSelectedLocation] = useState(null);
-  const [mapAddressLoading, setMapAddressLoading] = useState(false);
+  const [cleanedForm, setCleanedForm] =
+    useState(EMPTY_FORM);
 
   /*
   |--------------------------------------------------------------------------
-  | Load addresses
+  | Google Maps state
+  |--------------------------------------------------------------------------
+  */
+
+  const [googleReady, setGoogleReady] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
+
+  const [mapCenter, setMapCenter] = useState(null);
+  const [mapZoom, setMapZoom] =
+    useState(FALLBACK_MAP_ZOOM);
+
+  const [mapLocationLoading, setMapLocationLoading] =
+    useState(true);
+
+  const [mapError, setMapError] = useState("");
+
+  const [selectedLocation, setSelectedLocation] =
+    useState(null);
+
+  const [mapAddressLoading, setMapAddressLoading] =
+    useState(false);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Search state
+  |--------------------------------------------------------------------------
+  */
+
+  const [searchText, setSearchText] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] =
+    useState(false);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Location state
+  |--------------------------------------------------------------------------
+  */
+
+  const [locationLoading, setLocationLoading] =
+    useState(false);
+
+  const [locationError, setLocationError] =
+    useState("");
+
+  /*
+  |--------------------------------------------------------------------------
+  | Delivery state
+  |--------------------------------------------------------------------------
+  */
+
+  const [checkingDelivery, setCheckingDelivery] =
+    useState(false);
+
+  const [deliveryAvailable, setDeliveryAvailable] =
+    useState(null);
+
+  const [deliveryInfo, setDeliveryInfo] =
+    useState(null);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Lifecycle
+  |--------------------------------------------------------------------------
+  */
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+
+      if (markerRef.current) {
+        markerRef.current.setMap(null);
+      }
+
+      markerRef.current = null;
+      mapInstanceRef.current = null;
+      placesServiceRef.current = null;
+      autocompleteServiceRef.current = null;
+      geocoderRef.current = null;
+    };
+  }, []);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Load saved addresses
   |--------------------------------------------------------------------------
   */
 
@@ -138,7 +222,12 @@ export default function AddressPage({ setPage }) {
       setLoading(true);
 
       const snapshot = await getDocs(
-        collection(db, "users", currentUser.uid, "addresses")
+        collection(
+          db,
+          "users",
+          currentUser.uid,
+          "addresses"
+        )
       );
 
       const data = snapshot.docs.map((addressDoc) => ({
@@ -146,11 +235,18 @@ export default function AddressPage({ setPage }) {
         ...addressDoc.data(),
       }));
 
-      setAddresses(sortAddresses(data));
+      if (mountedRef.current) {
+        setAddresses(sortAddresses(data));
+      }
     } catch (error) {
-      console.error("Failed to load addresses:", error);
+      console.error(
+        "Failed to load addresses:",
+        error
+      );
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   }
 
@@ -163,12 +259,24 @@ export default function AddressPage({ setPage }) {
   useEffect(() => {
     if (!currentUser) return;
 
+    let cancelled = false;
+
     async function loadUserDetails() {
       try {
-        const userRef = doc(db, "users", currentUser.uid);
+        const userRef = doc(
+          db,
+          "users",
+          currentUser.uid
+        );
+
         const userSnap = await getDoc(userRef);
 
-        if (!userSnap.exists()) return;
+        if (
+          cancelled ||
+          !userSnap.exists()
+        ) {
+          return;
+        }
 
         const userData = userSnap.data();
 
@@ -178,16 +286,23 @@ export default function AddressPage({ setPage }) {
           phone: userData.phone || "",
         }));
       } catch (error) {
-        console.error("Failed to load user details:", error);
+        console.error(
+          "Failed to load user details:",
+          error
+        );
       }
     }
 
     loadUserDetails();
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentUser]);
 
   /*
   |--------------------------------------------------------------------------
-  | Google Maps
+  | Load Google Maps
   |--------------------------------------------------------------------------
   */
 
@@ -196,6 +311,7 @@ export default function AddressPage({ setPage }) {
       setMapError(
         "Google Maps is not configured. Add VITE_GOOGLE_MAPS_API_KEY to your environment."
       );
+
       setMapLocationLoading(false);
       return;
     }
@@ -207,15 +323,24 @@ export default function AddressPage({ setPage }) {
         if (cancelled) return;
 
         if (!window.google?.maps) {
-          throw new Error("Google Maps failed to initialize.");
+          throw new Error(
+            "Google Maps failed to initialize."
+          );
         }
 
         setGoogleReady(true);
       })
       .catch((error) => {
-        console.error("Google Maps loading failed:", error);
+        console.error(
+          "Google Maps loading failed:",
+          error
+        );
+
         if (!cancelled) {
-          setMapError("Unable to load Google Maps.");
+          setMapError(
+            "Unable to load Google Maps. Please try again later."
+          );
+
           setMapLocationLoading(false);
         }
       });
@@ -227,32 +352,45 @@ export default function AddressPage({ setPage }) {
 
   /*
   |--------------------------------------------------------------------------
-  | Google services
+  | Initialize Google services
   |--------------------------------------------------------------------------
   */
 
   useEffect(() => {
-    if (!googleReady || !window.google?.maps) return;
+    if (
+      !googleReady ||
+      !window.google?.maps
+    ) {
+      return;
+    }
 
     try {
       autocompleteServiceRef.current =
         new window.google.maps.places.AutocompleteService();
 
-      geocoderRef.current = new window.google.maps.Geocoder();
+      geocoderRef.current =
+        new window.google.maps.Geocoder();
 
       setMapLocationLoading(true);
 
       /*
-       * Resolve the configured default pincode.
-       * This prevents a blank map without hard-coding Brewed coordinates.
+       * Geocode configured default pincode.
+       * No Brewed latitude/longitude is hard-coded.
        */
+
       geocoderRef.current.geocode(
         {
           address: `${MAP_CONFIG.defaultPincode}, ${MAP_CONFIG.defaultCountry}`,
         },
         (results, status) => {
-          if (status === "OK" && results?.[0]?.geometry?.location) {
-            const location = results[0].geometry.location;
+          if (!mountedRef.current) return;
+
+          if (
+            status === "OK" &&
+            results?.[0]?.geometry?.location
+          ) {
+            const location =
+              results[0].geometry.location;
 
             const center = {
               lat: location.lat(),
@@ -262,10 +400,15 @@ export default function AddressPage({ setPage }) {
             setMapCenter(center);
             setSelectedLocation(center);
             setMapZoom(FALLBACK_MAP_ZOOM);
+            setMapError("");
           } else {
-            console.error("Default pincode geocoding failed:", status);
+            console.error(
+              "Default pincode geocoding failed:",
+              status
+            );
+
             setMapError(
-              "Unable to determine the default delivery area on the map."
+              "Unable to determine the default delivery area."
             );
           }
 
@@ -273,154 +416,290 @@ export default function AddressPage({ setPage }) {
         }
       );
     } catch (error) {
-      console.error("Google services initialization failed:", error);
+      console.error(
+        "Google services initialization failed:",
+        error
+      );
+
       setMapLocationLoading(false);
-      setMapError("Unable to initialize Google Maps.");
+      setMapError(
+        "Unable to initialize Google Maps."
+      );
     }
   }, [googleReady]);
 
   /*
   |--------------------------------------------------------------------------
-  | Initialize / update map
+  | Initialize map
+  |--------------------------------------------------------------------------
+  |
+  | IMPORTANT:
+  | The map is initialized only after:
+  |
+  | 1. Google Maps is loaded
+  | 2. The form is actually open
+  | 3. The map DOM element exists
+  | 4. A center has been resolved
+  |
+  | This prevents the map from appearing briefly and disappearing.
+  |
+  */
+
+  useEffect(() => {
+    if (
+      !googleReady ||
+      !showForm ||
+      !mapCenter ||
+      !mapContainerRef.current ||
+      !window.google?.maps
+    ) {
+      return;
+    }
+
+    /*
+     * Prevent duplicate map instances.
+     */
+
+    if (!mapInstanceRef.current) {
+      const map =
+        new window.google.maps.Map(
+          mapContainerRef.current,
+          {
+            center: mapCenter,
+            zoom: mapZoom,
+
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: true,
+            clickableIcons: false,
+
+            gestureHandling: "greedy",
+
+            styles: [
+              {
+                featureType: "poi.business",
+                stylers: [
+                  {
+                    visibility: "off",
+                  },
+                ],
+              },
+            ],
+          }
+        );
+
+      mapInstanceRef.current = map;
+
+      /*
+       * Places service
+       */
+
+      placesServiceRef.current =
+        new window.google.maps.places.PlacesService(
+          map
+        );
+
+      /*
+       * Map click
+       */
+
+      map.addListener(
+        "click",
+        (event) => {
+          if (!event.latLng) return;
+
+          const location = {
+            lat: event.latLng.lat(),
+            lng: event.latLng.lng(),
+          };
+
+          setMapLocation(
+            location,
+            SELECTED_MAP_ZOOM
+          );
+
+          reverseGeocodeLocation(location);
+        }
+      );
+
+      /*
+       * Marker
+       */
+
+      markerRef.current =
+        new window.google.maps.Marker({
+          map,
+          position: mapCenter,
+          draggable: true,
+          title: "Selected delivery location",
+        });
+
+      /*
+       * Marker drag
+       */
+
+      markerRef.current.addListener(
+        "dragend",
+        () => {
+          const position =
+            markerRef.current?.getPosition();
+
+          if (!position) return;
+
+          const location = {
+            lat: position.lat(),
+            lng: position.lng(),
+          };
+
+          setMapLocation(
+            location,
+            SELECTED_MAP_ZOOM
+          );
+
+          reverseGeocodeLocation(location);
+        }
+      );
+
+      setMapReady(true);
+
+      /*
+       * Google Maps can calculate incorrect dimensions
+       * when initialized inside a newly mounted/animated
+       * container. Force a resize after mount.
+       */
+
+      window.setTimeout(() => {
+        if (
+          !mapInstanceRef.current ||
+          !window.google?.maps
+        ) {
+          return;
+        }
+
+        window.google.maps.event.trigger(
+          mapInstanceRef.current,
+          "resize"
+        );
+
+        mapInstanceRef.current.setCenter(
+          mapCenter
+        );
+
+        mapInstanceRef.current.setZoom(
+          mapZoom
+        );
+      }, 150);
+    }
+  }, [googleReady, showForm]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Synchronize existing map
   |--------------------------------------------------------------------------
   */
 
   useEffect(() => {
-    if (!googleReady || !mapCenter || !window.google?.maps) return;
+    if (
+      !mapInstanceRef.current ||
+      !mapCenter
+    ) {
+      return;
+    }
 
-    if (!mapRef.current) {
-      mapRef.current = new window.google.maps.Map(
-        document.getElementById("brewed-address-map"),
-        {
-          center: mapCenter,
-          zoom: mapZoom,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: true,
-          clickableIcons: false,
-          gestureHandling: "greedy",
-          styles: [
-            {
-              featureType: "poi.business",
-              stylers: [{ visibility: "off" }],
-            },
-          ],
-        }
+    mapInstanceRef.current.panTo(
+      mapCenter
+    );
+
+    mapInstanceRef.current.setZoom(
+      mapZoom
+    );
+
+    if (markerRef.current) {
+      markerRef.current.setPosition(
+        mapCenter
       );
-
-      placesServiceRef.current =
-        new window.google.maps.places.PlacesService(mapRef.current);
-
-      mapRef.current.addListener("click", (event) => {
-        if (!event.latLng) return;
-
-        const location = {
-          lat: event.latLng.lat(),
-          lng: event.latLng.lng(),
-        };
-
-        setMapLocation(location, SELECTED_MAP_ZOOM);
-        reverseGeocodeLocation(location);
-      });
-
-      setMapReady(true);
-    } else {
-      mapRef.current.panTo(mapCenter);
-      mapRef.current.setZoom(mapZoom);
     }
-
-    if (!markerRef.current) {
-      markerRef.current = new window.google.maps.Marker({
-        map: mapRef.current,
-        position: mapCenter,
-        draggable: true,
-        title: "Selected delivery location",
-      });
-
-      markerRef.current.addListener("dragend", () => {
-        const position = markerRef.current.getPosition();
-
-        if (!position) return;
-
-        const location = {
-          lat: position.lat(),
-          lng: position.lng(),
-        };
-
-        setMapLocation(location, SELECTED_MAP_ZOOM);
-        reverseGeocodeLocation(location);
-      });
-    } else {
-      markerRef.current.setPosition(mapCenter);
-    }
-  }, [googleReady, mapCenter, mapZoom]);
+  }, [mapCenter, mapZoom]);
 
   /*
   |--------------------------------------------------------------------------
-  | Map helpers
+  | Recalculate map when form becomes visible
   |--------------------------------------------------------------------------
   */
 
-  function setMapLocation(location, zoom = SELECTED_MAP_ZOOM) {
+  useEffect(() => {
+    if (
+      !showForm ||
+      !mapInstanceRef.current ||
+      !window.google?.maps
+    ) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      if (!mapInstanceRef.current) return;
+
+      window.google.maps.event.trigger(
+        mapInstanceRef.current,
+        "resize"
+      );
+
+      if (mapCenter) {
+        mapInstanceRef.current.setCenter(
+          mapCenter
+        );
+
+        mapInstanceRef.current.setZoom(
+          mapZoom
+        );
+      }
+    }, 200);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [showForm]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Map helper
+  |--------------------------------------------------------------------------
+  */
+
+  function setMapLocation(
+    location,
+    zoom = SELECTED_MAP_ZOOM
+  ) {
     setMapCenter(location);
     setSelectedLocation(location);
     setMapZoom(zoom);
 
-    if (mapRef.current) {
-      mapRef.current.panTo(location);
-      mapRef.current.setZoom(zoom);
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.panTo(
+        location
+      );
+
+      mapInstanceRef.current.setZoom(
+        zoom
+      );
     }
 
     if (markerRef.current) {
-      markerRef.current.setPosition(location);
+      markerRef.current.setPosition(
+        location
+      );
     }
-  }
-
-  function reverseGeocodeLocation(location) {
-    if (!geocoderRef.current) return;
-
-    setMapAddressLoading(true);
-
-    geocoderRef.current.geocode(
-      {
-        location,
-      },
-      (results, status) => {
-        setMapAddressLoading(false);
-
-        if (status !== "OK" || !results?.length) {
-          setLocationError("We couldn't identify this location.");
-          return;
-        }
-
-        const parsed = parseGoogleAddress(results[0]);
-
-        setCleanedForm((previous) => ({
-          ...previous,
-          ...parsed,
-          latitude: location.lat,
-          longitude: location.lng,
-          formattedAddress: results[0].formatted_address || "",
-        }));
-
-        setSearchText(results[0].formatted_address || "");
-        setSuggestions([]);
-
-        if (parsed.pincode) {
-          checkDelivery(parsed.pincode);
-        }
-      }
-    );
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Google address parsing
+  | Parse Google address
   |--------------------------------------------------------------------------
   */
 
   function parseGoogleAddress(result) {
-    const components = result?.address_components || [];
+    const components =
+      result?.address_components || [];
 
     let house = "";
     let street = "";
@@ -429,38 +708,60 @@ export default function AddressPage({ setPage }) {
     let pincode = "";
 
     components.forEach((component) => {
-      const types = component.types || [];
+      const types =
+        component.types || [];
 
       if (
         types.includes("street_number") ||
         types.includes("premise") ||
         types.includes("subpremise")
       ) {
-        if (!house) house = component.long_name;
+        if (!house) {
+          house =
+            component.long_name;
+        }
       }
 
       if (
         types.includes("route") ||
-        types.includes("sublocality_level_1") ||
+        types.includes(
+          "sublocality_level_1"
+        ) ||
         types.includes("sublocality")
       ) {
-        if (!street) street = component.long_name;
+        if (!street) {
+          street =
+            component.long_name;
+        }
       }
 
       if (
         types.includes("locality") ||
         types.includes("postal_town") ||
-        types.includes("administrative_area_level_2")
+        types.includes(
+          "administrative_area_level_2"
+        )
       ) {
-        if (!city) city = component.long_name;
+        if (!city) {
+          city =
+            component.long_name;
+        }
       }
 
-      if (types.includes("administrative_area_level_1")) {
-        state = component.long_name;
+      if (
+        types.includes(
+          "administrative_area_level_1"
+        )
+      ) {
+        state =
+          component.long_name;
       }
 
-      if (types.includes("postal_code")) {
-        pincode = component.long_name;
+      if (
+        types.includes("postal_code")
+      ) {
+        pincode =
+          component.long_name;
       }
     });
 
@@ -475,14 +776,81 @@ export default function AddressPage({ setPage }) {
 
   /*
   |--------------------------------------------------------------------------
+  | Reverse geocode
+  |--------------------------------------------------------------------------
+  */
+
+  function reverseGeocodeLocation(
+    location
+  ) {
+    if (!geocoderRef.current) return;
+
+    setMapAddressLoading(true);
+    setLocationError("");
+
+    geocoderRef.current.geocode(
+      {
+        location,
+      },
+      (results, status) => {
+        if (!mountedRef.current) return;
+
+        setMapAddressLoading(false);
+
+        if (
+          status !== "OK" ||
+          !results?.length
+        ) {
+          setLocationError(
+            "We couldn't identify this location."
+          );
+
+          return;
+        }
+
+        const result = results[0];
+
+        const parsed =
+          parseGoogleAddress(result);
+
+        setCleanedForm((previous) => ({
+          ...previous,
+          ...parsed,
+          latitude: location.lat,
+          longitude: location.lng,
+          formattedAddress:
+            result.formatted_address ||
+            "",
+        }));
+
+        setSearchText(
+          result.formatted_address || ""
+        );
+
+        setSuggestions([]);
+
+        if (parsed.pincode) {
+          checkDelivery(
+            parsed.pincode
+          );
+        }
+      }
+    );
+  }
+
+  /*
+  |--------------------------------------------------------------------------
   | Delivery validation
   |--------------------------------------------------------------------------
   */
 
   useEffect(() => {
-    const pincode = cleanedForm.pincode;
+    const pincode =
+      cleanedForm.pincode;
 
-    if (pincode.length !== 6) {
+    if (
+      !/^\d{6}$/.test(pincode)
+    ) {
       setDeliveryAvailable(null);
       setDeliveryInfo(null);
       return;
@@ -491,8 +859,12 @@ export default function AddressPage({ setPage }) {
     checkDelivery(pincode);
   }, [cleanedForm.pincode]);
 
-  async function checkDelivery(pincode) {
-    if (!/^\d{6}$/.test(pincode)) {
+  async function checkDelivery(
+    pincode
+  ) {
+    if (
+      !/^\d{6}$/.test(pincode)
+    ) {
       setDeliveryAvailable(null);
       setDeliveryInfo(null);
       return;
@@ -501,35 +873,59 @@ export default function AddressPage({ setPage }) {
     setCheckingDelivery(true);
 
     try {
-      const result = await checkDeliveryService(pincode);
+      const result =
+        await checkDeliveryService(
+          pincode
+        );
+
+      if (!mountedRef.current) return;
 
       if (result?.available) {
         setDeliveryAvailable(true);
-        setDeliveryInfo(result.info || null);
+        setDeliveryInfo(
+          result.info || null
+        );
       } else {
         setDeliveryAvailable(false);
         setDeliveryInfo(null);
       }
     } catch (error) {
-      console.error("Delivery check failed:", error);
-      setDeliveryAvailable(false);
-      setDeliveryInfo(null);
+      console.error(
+        "Delivery check failed:",
+        error
+      );
+
+      if (mountedRef.current) {
+        setDeliveryAvailable(false);
+        setDeliveryInfo(null);
+      }
     } finally {
-      setCheckingDelivery(false);
+      if (mountedRef.current) {
+        setCheckingDelivery(false);
+      }
     }
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Form handling
+  | Form changes
   |--------------------------------------------------------------------------
   */
 
   function handleChange(event) {
-    let { name, value } = event.target;
+    let {
+      name,
+      value,
+    } = event.target;
 
-    if (name === "phone" || name === "pincode") {
-      value = value.replace(/\D/g, "");
+    if (
+      name === "phone" ||
+      name === "pincode"
+    ) {
+      value = value.replace(
+        /\D/g,
+        ""
+      );
     }
 
     setCleanedForm((previous) => ({
@@ -545,7 +941,7 @@ export default function AddressPage({ setPage }) {
 
   /*
   |--------------------------------------------------------------------------
-  | Search places
+  | Google Places search
   |--------------------------------------------------------------------------
   */
 
@@ -553,10 +949,15 @@ export default function AddressPage({ setPage }) {
     setSearchText(text);
 
     if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
+      clearTimeout(
+        debounceRef.current
+      );
     }
 
-    if (!autocompleteServiceRef.current || text.trim().length < 3) {
+    if (
+      !autocompleteServiceRef.current ||
+      text.trim().length < 3
+    ) {
       setSuggestions([]);
       setLoadingSuggestions(false);
       return;
@@ -564,42 +965,75 @@ export default function AddressPage({ setPage }) {
 
     setLoadingSuggestions(true);
 
-    debounceRef.current = setTimeout(() => {
-      autocompleteServiceRef.current.getPlacePredictions(
-        {
-          input: text.trim(),
-          componentRestrictions: {
-            country: "in",
+    debounceRef.current =
+      setTimeout(() => {
+        autocompleteServiceRef.current.getPlacePredictions(
+          {
+            input: text.trim(),
+
+            componentRestrictions: {
+              country: "in",
+            },
           },
-        },
-        (predictions, status) => {
-          setLoadingSuggestions(false);
+          (
+            predictions,
+            status
+          ) => {
+            if (!mountedRef.current) return;
 
-          if (
-            status !==
-              window.google.maps.places.PlacesServiceStatus.OK ||
-            !predictions
-          ) {
-            setSuggestions([]);
-            return;
+            setLoadingSuggestions(false);
+
+            if (
+              status !==
+                window.google.maps
+                  .places
+                  .PlacesServiceStatus
+                  .OK ||
+              !predictions
+            ) {
+              setSuggestions([]);
+              return;
+            }
+
+            setSuggestions(
+              predictions.slice(
+                0,
+                6
+              )
+            );
           }
-
-          setSuggestions(predictions.slice(0, 6));
-        }
-      );
-    }, 250);
+        );
+      }, 250);
   }
 
-  function selectSuggestion(place) {
-    if (!placesServiceRef.current) return;
+  /*
+  |--------------------------------------------------------------------------
+  | Select Google suggestion
+  |--------------------------------------------------------------------------
+  */
 
-    setSearchText(place.description);
+  function selectSuggestion(
+    place
+  ) {
+    if (
+      !placesServiceRef.current
+    ) {
+      return;
+    }
+
+    setSearchText(
+      place.description
+    );
+
     setSuggestions([]);
     setLoadingSuggestions(true);
+    setLocationError("");
 
     placesServiceRef.current.getDetails(
       {
-        placeId: place.place_id,
+        placeId:
+          place.place_id,
+
         fields: [
           "place_id",
           "formatted_address",
@@ -608,37 +1042,67 @@ export default function AddressPage({ setPage }) {
           "name",
         ],
       },
-      (result, status) => {
+      (
+        result,
+        status
+      ) => {
+        if (!mountedRef.current) return;
+
         setLoadingSuggestions(false);
 
         if (
-          status !== window.google.maps.places.PlacesServiceStatus.OK ||
+          status !==
+            window.google.maps
+              .places
+              .PlacesServiceStatus
+              .OK ||
           !result?.geometry?.location
         ) {
-          setLocationError("Unable to load the selected address.");
+          setLocationError(
+            "Unable to load the selected address."
+          );
+
           return;
         }
 
         const location = {
-          lat: result.geometry.location.lat(),
-          lng: result.geometry.location.lng(),
+          lat:
+            result.geometry.location.lat(),
+
+          lng:
+            result.geometry.location.lng(),
         };
 
-        const parsed = parseGoogleAddress(result);
+        const parsed =
+          parseGoogleAddress(
+            result
+          );
 
-        setCleanedForm((previous) => ({
-          ...previous,
-          ...parsed,
-          latitude: location.lat,
-          longitude: location.lng,
-          formattedAddress: result.formatted_address || "",
-        }));
+        setCleanedForm(
+          (previous) => ({
+            ...previous,
+            ...parsed,
+            latitude:
+              location.lat,
 
-        setLocationError("");
-        setMapLocation(location, SELECTED_MAP_ZOOM);
+            longitude:
+              location.lng,
+
+            formattedAddress:
+              result.formatted_address ||
+              "",
+          })
+        );
+
+        setMapLocation(
+          location,
+          SELECTED_MAP_ZOOM
+        );
 
         if (parsed.pincode) {
-          checkDelivery(parsed.pincode);
+          checkDelivery(
+            parsed.pincode
+          );
         }
       }
     );
@@ -655,6 +1119,7 @@ export default function AddressPage({ setPage }) {
       setLocationError(
         "Your device doesn't support location services."
       );
+
       return;
     }
 
@@ -662,78 +1127,113 @@ export default function AddressPage({ setPage }) {
     setLocationError("");
 
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
+      (position) => {
+        if (!mountedRef.current) return;
+
+        const latitude =
+          position.coords.latitude;
+
+        const longitude =
+          position.coords.longitude;
 
         const location = {
           lat: latitude,
           lng: longitude,
         };
 
-        try {
-          setMapLocation(location, SELECTED_MAP_ZOOM);
+        setMapLocation(
+          location,
+          SELECTED_MAP_ZOOM
+        );
 
-          if (!geocoderRef.current) {
-            setLocationLoading(false);
-            return;
-          }
+        if (!geocoderRef.current) {
+          setLocationLoading(false);
+          return;
+        }
 
-          geocoderRef.current.geocode(
-            {
-              location,
-            },
-            (results, status) => {
-              if (status !== "OK" || !results?.length) {
-                setLocationError(
-                  "Your location was found, but no address could be identified."
-                );
-                setLocationLoading(false);
-                return;
-              }
+        geocoderRef.current.geocode(
+          {
+            location,
+          },
+          (
+            results,
+            status
+          ) => {
+            if (!mountedRef.current) return;
 
-              const result = results[0];
-              const parsed = parseGoogleAddress(result);
+            if (
+              status !== "OK" ||
+              !results?.length
+            ) {
+              setLocationError(
+                "Your location was found, but no address could be identified."
+              );
 
-              setCleanedForm((previous) => ({
+              setLocationLoading(false);
+              return;
+            }
+
+            const result =
+              results[0];
+
+            const parsed =
+              parseGoogleAddress(
+                result
+              );
+
+            setCleanedForm(
+              (previous) => ({
                 ...previous,
                 ...parsed,
                 latitude,
                 longitude,
-                formattedAddress: result.formatted_address || "",
-              }));
+                formattedAddress:
+                  result.formatted_address ||
+                  "",
+              })
+            );
 
-              setSearchText(result.formatted_address || "");
+            setSearchText(
+              result.formatted_address ||
+                ""
+            );
 
-              if (parsed.pincode) {
-                checkDelivery(parsed.pincode);
-              }
-
-              setLocationLoading(false);
+            if (parsed.pincode) {
+              checkDelivery(
+                parsed.pincode
+              );
             }
-          );
-        } catch (error) {
-          console.error("Current location failed:", error);
-          setLocationError("Unable to determine your address.");
-          setLocationLoading(false);
-        }
+
+            setLocationLoading(false);
+          }
+        );
       },
       (error) => {
+        if (!mountedRef.current) return;
+
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            setLocationError("Location permission was denied.");
+            setLocationError(
+              "Location permission was denied."
+            );
             break;
 
           case error.POSITION_UNAVAILABLE:
-            setLocationError("Your location is currently unavailable.");
+            setLocationError(
+              "Your location is currently unavailable."
+            );
             break;
 
           case error.TIMEOUT:
-            setLocationError("Location request timed out.");
+            setLocationError(
+              "Location request timed out."
+            );
             break;
 
           default:
-            setLocationError("Couldn't determine your location.");
+            setLocationError(
+              "Couldn't determine your location."
+            );
         }
 
         setLocationLoading(false);
@@ -753,72 +1253,125 @@ export default function AddressPage({ setPage }) {
   */
 
   async function saveAddress() {
-    if (!currentUser || saving) return;
+    if (
+      !currentUser ||
+      saving
+    ) {
+      return;
+    }
 
-    const name = cleanedForm.name.trim();
-    const phone = cleanedForm.phone.trim();
-    const house = cleanedForm.house.trim();
-    const street = cleanedForm.street.trim();
-    const city = cleanedForm.city.trim();
-    const state = cleanedForm.state.trim();
-    const pincode = cleanedForm.pincode.trim();
+    const name =
+      cleanedForm.name.trim();
+
+    const phone =
+      cleanedForm.phone.trim();
+
+    const house =
+      cleanedForm.house.trim();
+
+    const street =
+      cleanedForm.street.trim();
+
+    const city =
+      cleanedForm.city.trim();
+
+    const state =
+      cleanedForm.state.trim();
+
+    const pincode =
+      cleanedForm.pincode.trim();
 
     if (!name) {
-      alert("Please enter your full name.");
+      alert(
+        "Please enter your full name."
+      );
       return;
     }
 
     if (!/^\d{10}$/.test(phone)) {
-      alert("Phone number must be exactly 10 digits.");
+      alert(
+        "Phone number must be exactly 10 digits."
+      );
       return;
     }
 
     if (!house) {
-      alert("Please enter your house or flat number.");
+      alert(
+        "Please enter your house or flat number."
+      );
       return;
     }
 
     if (!street) {
-      alert("Please enter your street or area.");
+      alert(
+        "Please enter your street or area."
+      );
       return;
     }
 
     if (!city) {
-      alert("Please enter your city.");
+      alert(
+        "Please enter your city."
+      );
       return;
     }
 
     if (!state) {
-      alert("Please enter your state.");
-      return;
-    }
-
-    if (!/^\d{6}$/.test(pincode)) {
-      alert("Pincode must be exactly 6 digits.");
-      return;
-    }
-
-    if (deliveryAvailable === false) {
-      alert("This pincode is currently outside our delivery area.");
-      return;
-    }
-
-    const duplicate = addresses.some((item) => {
-      if (editingId && item.id === editingId) return false;
-
-      return (
-        (item.house || "").trim().toLowerCase() ===
-          house.toLowerCase() &&
-        (item.street || "").trim().toLowerCase() ===
-          street.toLowerCase() &&
-        (item.city || "").trim().toLowerCase() ===
-          city.toLowerCase() &&
-        (item.pincode || "") === pincode
+      alert(
+        "Please enter your state."
       );
-    });
+      return;
+    }
+
+    if (
+      !/^\d{6}$/.test(pincode)
+    ) {
+      alert(
+        "Pincode must be exactly 6 digits."
+      );
+      return;
+    }
+
+    if (
+      deliveryAvailable === false
+    ) {
+      alert(
+        "This pincode is currently outside our delivery area."
+      );
+      return;
+    }
+
+    const duplicate =
+      addresses.some((item) => {
+        if (
+          editingId &&
+          item.id === editingId
+        ) {
+          return false;
+        }
+
+        return (
+          (item.house || "")
+            .trim()
+            .toLowerCase() ===
+            house.toLowerCase() &&
+          (item.street || "")
+            .trim()
+            .toLowerCase() ===
+            street.toLowerCase() &&
+          (item.city || "")
+            .trim()
+            .toLowerCase() ===
+            city.toLowerCase() &&
+          (item.pincode || "") ===
+            pincode
+        );
+      });
 
     if (duplicate) {
-      alert("This address is already saved.");
+      alert(
+        "This address is already saved."
+      );
       return;
     }
 
@@ -830,34 +1383,50 @@ export default function AddressPage({ setPage }) {
       city,
       state,
       pincode,
-      type: cleanedForm.type || "Home",
-      isDefault: Boolean(cleanedForm.isDefault),
+
+      type:
+        cleanedForm.type ||
+        "Home",
+
+      isDefault:
+        Boolean(
+          cleanedForm.isDefault
+        ),
+
       latitude:
-        typeof cleanedForm.latitude === "number"
+        typeof cleanedForm.latitude ===
+        "number"
           ? cleanedForm.latitude
           : null,
+
       longitude:
-        typeof cleanedForm.longitude === "number"
+        typeof cleanedForm.longitude ===
+        "number"
           ? cleanedForm.longitude
           : null,
-      formattedAddress: cleanedForm.formattedAddress || "",
+
+      formattedAddress:
+        cleanedForm.formattedAddress ||
+        "",
     };
 
     try {
       setSaving(true);
 
-      /*
-       * If this is the first address, automatically make it default.
-       */
       const shouldBeDefault =
-        addresses.length === 0 || addressData.isDefault;
+        addresses.length === 0 ||
+        addressData.isDefault;
 
       if (shouldBeDefault) {
         addressData.isDefault = true;
 
         await Promise.all(
           addresses
-            .filter((item) => item.id !== editingId && item.isDefault)
+            .filter(
+              (item) =>
+                item.id !== editingId &&
+                item.isDefault
+            )
             .map((item) =>
               updateDoc(
                 doc(
@@ -886,68 +1455,87 @@ export default function AddressPage({ setPage }) {
           ),
           {
             ...addressData,
-            updatedAt: serverTimestamp(),
+            updatedAt:
+              serverTimestamp(),
           }
         );
 
-        setAddresses((previous) =>
-          sortAddresses(
-            previous.map((item) =>
-              item.id === editingId
-                ? {
-                    ...item,
-                    ...addressData,
-                  }
-                : shouldBeDefault
-                ? {
-                    ...item,
-                    isDefault: false,
-                  }
-                : item
+        setAddresses(
+          (previous) =>
+            sortAddresses(
+              previous.map(
+                (item) =>
+                  item.id ===
+                  editingId
+                    ? {
+                        ...item,
+                        ...addressData,
+                      }
+                    : shouldBeDefault
+                    ? {
+                        ...item,
+                        isDefault:
+                          false,
+                      }
+                    : item
+              )
             )
-          )
         );
       } else {
-        const reference = await addDoc(
-          collection(
-            db,
-            "users",
-            currentUser.uid,
-            "addresses"
-          ),
-          {
-            ...addressData,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          }
-        );
+        const reference =
+          await addDoc(
+            collection(
+              db,
+              "users",
+              currentUser.uid,
+              "addresses"
+            ),
+            {
+              ...addressData,
+              createdAt:
+                serverTimestamp(),
+              updatedAt:
+                serverTimestamp(),
+            }
+          );
 
         const newAddress = {
           id: reference.id,
           ...addressData,
         };
 
-        setAddresses((previous) =>
-          sortAddresses([
-            ...previous.map((item) =>
-              shouldBeDefault
-                ? {
-                    ...item,
-                    isDefault: false,
-                  }
-                : item
-            ),
-            newAddress,
-          ])
+        setAddresses(
+          (previous) =>
+            sortAddresses([
+              ...previous.map(
+                (item) =>
+                  shouldBeDefault
+                    ? {
+                        ...item,
+                        isDefault:
+                          false,
+                      }
+                    : item
+              ),
+              newAddress,
+            ])
         );
       }
 
       resetForm();
     } catch (error) {
-      console.error("Failed to save address:", error);
-      alert("Unable to save this address. Please try again.");
+      console.error(
+        "Failed to save address:",
+        error
+      );
+
+      alert(
+        "Unable to save this address. Please try again."
+      );
     } finally {
-      setSaving(false);
+      if (mountedRef.current) {
+        setSaving(false);
+      }
     }
   }
 
@@ -966,28 +1554,44 @@ export default function AddressPage({ setPage }) {
       city: address.city || "",
       state: address.state || "",
       pincode: address.pincode || "",
-      type: address.type || "Home",
-      isDefault: Boolean(address.isDefault),
+      type:
+        address.type || "Home",
+      isDefault:
+        Boolean(address.isDefault),
+
       latitude:
-        typeof address.latitude === "number"
+        typeof address.latitude ===
+        "number"
           ? address.latitude
           : null,
+
       longitude:
-        typeof address.longitude === "number"
+        typeof address.longitude ===
+        "number"
           ? address.longitude
           : null,
-      formattedAddress: address.formattedAddress || "",
+
+      formattedAddress:
+        address.formattedAddress ||
+        "",
     });
 
-    setSearchText(address.formattedAddress || "");
+    setSearchText(
+      address.formattedAddress || ""
+    );
 
     setEditingId(address.id);
     setShowForm(true);
+
     setLocationError("");
+    setDeliveryAvailable(null);
+    setDeliveryInfo(null);
 
     if (
-      typeof address.latitude === "number" &&
-      typeof address.longitude === "number"
+      typeof address.latitude ===
+        "number" &&
+      typeof address.longitude ===
+        "number"
     ) {
       setMapLocation(
         {
@@ -1006,13 +1610,26 @@ export default function AddressPage({ setPage }) {
   */
 
   async function removeAddress(id) {
-    if (!currentUser || deletingId) return;
+    if (
+      !currentUser ||
+      deletingId
+    ) {
+      return;
+    }
 
-    const address = addresses.find((item) => item.id === id);
+    const address =
+      addresses.find(
+        (item) =>
+          item.id === id
+      );
 
-    const confirmed = window.confirm(
-      `Delete ${address?.type || "this"} address?`
-    );
+    const confirmed =
+      window.confirm(
+        `Delete ${
+          address?.type ||
+          "this"
+        } address?`
+      );
 
     if (!confirmed) return;
 
@@ -1029,19 +1646,23 @@ export default function AddressPage({ setPage }) {
         )
       );
 
-      const remaining = addresses.filter(
-        (item) => item.id !== id
-      );
+      const remaining =
+        addresses.filter(
+          (item) =>
+            item.id !== id
+        );
 
       /*
-       * If the deleted address was default, promote the most recent
-       * remaining address.
+       * Promote another address if
+       * the deleted address was default.
        */
+
       if (
         address?.isDefault &&
         remaining.length > 0
       ) {
-        const nextDefault = remaining[0];
+        const nextDefault =
+          remaining[0];
 
         await updateDoc(
           doc(
@@ -1062,136 +1683,169 @@ export default function AddressPage({ setPage }) {
         };
       }
 
-      setAddresses(sortAddresses(remaining));
+      setAddresses(
+        sortAddresses(
+          remaining
+        )
+      );
     } catch (error) {
-      console.error("Failed to delete address:", error);
-      alert("Unable to delete this address.");
+      console.error(
+        "Failed to delete address:",
+        error
+      );
+
+      alert(
+        "Unable to delete this address."
+      );
     } finally {
-      setDeletingId(null);
+      if (mountedRef.current) {
+        setDeletingId(null);
+      }
     }
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Default address
+  | Set default
   |--------------------------------------------------------------------------
   */
 
-  async function setDefaultAddress(id) {
+  async function setDefaultAddress(
+    id
+  ) {
     if (!currentUser) return;
 
     try {
       await Promise.all(
-        addresses.map((item) =>
-          updateDoc(
-            doc(
-              db,
-              "users",
-              currentUser.uid,
-              "addresses",
-              item.id
-            ),
-            {
-              isDefault: item.id === id,
-            }
-          )
+        addresses.map(
+          (item) =>
+            updateDoc(
+              doc(
+                db,
+                "users",
+                currentUser.uid,
+                "addresses",
+                item.id
+              ),
+              {
+                isDefault:
+                  item.id === id,
+              }
+            )
         )
       );
 
-      setAddresses((previous) =>
-        sortAddresses(
-          previous.map((item) => ({
-            ...item,
-            isDefault: item.id === id,
-          }))
-        )
+      setAddresses(
+        (previous) =>
+          sortAddresses(
+            previous.map(
+              (item) => ({
+                ...item,
+                isDefault:
+                  item.id === id,
+              })
+            )
+          )
       );
     } catch (error) {
-      console.error("Failed to set default address:", error);
-      alert("Unable to update your default address.");
+      console.error(
+        "Failed to set default address:",
+        error
+      );
+
+      alert(
+        "Unable to update your default address."
+      );
     }
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Form state
+  | Reset form
   |--------------------------------------------------------------------------
   */
 
   function resetForm() {
     setCleanedForm({
       ...EMPTY_FORM,
-      name: cleanedForm.name,
-      phone: cleanedForm.phone,
+      name:
+        cleanedForm.name,
+      phone:
+        cleanedForm.phone,
     });
 
     setSearchText("");
     setSuggestions([]);
+
     setEditingId(null);
     setShowForm(false);
+
     setLocationError("");
+
     setDeliveryAvailable(null);
     setDeliveryInfo(null);
 
-    /*
-     * Return map to default area when starting fresh.
-     */
     if (mapCenter) {
-      setMapZoom(FALLBACK_MAP_ZOOM);
+      setMapZoom(
+        FALLBACK_MAP_ZOOM
+      );
     }
   }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Open new address
+  |--------------------------------------------------------------------------
+  */
 
   function openNewAddress() {
     setEditingId(null);
 
     setCleanedForm({
       ...EMPTY_FORM,
-      name: cleanedForm.name,
-      phone: cleanedForm.phone,
+      name:
+        cleanedForm.name,
+      phone:
+        cleanedForm.phone,
     });
 
     setSearchText("");
     setSuggestions([]);
+
     setLocationError("");
+
     setDeliveryAvailable(null);
     setDeliveryInfo(null);
 
-    setShowForm((previous) => !previous);
+    setShowForm(true);
 
     if (mapCenter) {
-      setMapLocation(mapCenter, FALLBACK_MAP_ZOOM);
+      setMapLocation(
+        mapCenter,
+        FALLBACK_MAP_ZOOM
+      );
     }
   }
 
   /*
   |--------------------------------------------------------------------------
-  | Sorting / recent addresses
+  | Sorting
   |--------------------------------------------------------------------------
   */
 
   function sortAddresses(items) {
-    return [...items].sort((a, b) => {
-      if (Boolean(a.isDefault) !== Boolean(b.isDefault)) {
-        return Number(b.isDefault) - Number(a.isDefault);
-      }
+    return [...items].sort(
+      (a, b) => {
+        if (
+          Boolean(a.isDefault) !==
+          Boolean(b.isDefault)
+        ) {
+          return (
+            Number(b.isDefault) -
+            Number(a.isDefault)
+          );
+        }
 
-      const aDate =
-        a.updatedAt?.seconds ||
-        a.createdAt?.seconds ||
-        0;
-
-      const bDate =
-        b.updatedAt?.seconds ||
-        b.createdAt?.seconds ||
-        0;
-
-      return bDate - aDate;
-    });
-  }
-
-  const recentAddresses = useMemo(() => {
-    return [...addresses]
-      .sort((a, b) => {
         const aDate =
           a.updatedAt?.seconds ||
           a.createdAt?.seconds ||
@@ -1202,24 +1856,39 @@ export default function AddressPage({ setPage }) {
           b.createdAt?.seconds ||
           0;
 
-        return bDate - aDate;
-      })
-      .slice(0, 3);
-  }, [addresses]);
+        return (
+          bDate - aDate
+        );
+      }
+    );
+  }
 
   /*
   |--------------------------------------------------------------------------
-  | Cleanup
+  | Recent addresses
   |--------------------------------------------------------------------------
   */
 
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-    };
-  }, []);
+  const recentAddresses =
+    useMemo(() => {
+      return [...addresses]
+        .sort((a, b) => {
+          const aDate =
+            a.updatedAt?.seconds ||
+            a.createdAt?.seconds ||
+            0;
+
+          const bDate =
+            b.updatedAt?.seconds ||
+            b.createdAt?.seconds ||
+            0;
+
+          return (
+            bDate - aDate
+          );
+        })
+        .slice(0, 3);
+    }, [addresses]);
 
   /*
   |--------------------------------------------------------------------------
@@ -1244,7 +1913,12 @@ export default function AddressPage({ setPage }) {
             ),
             #FDFAF5;
           color: #1A0B05;
-          font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          font-family:
+            Inter,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
           padding: 28px 20px 70px;
         }
 
@@ -1266,14 +1940,16 @@ export default function AddressPage({ setPage }) {
           height: 46px;
           border: 1px solid #EEE6DE;
           border-radius: 50%;
-          background: rgba(255,255,255,0.90);
+          background: rgba(255,255,255,0.9);
           color: #1A0B05;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           flex-shrink: 0;
-          box-shadow: 0 8px 25px rgba(35,18,8,0.06);
+          box-shadow:
+            0 8px 25px
+            rgba(35,18,8,0.06);
           transition: 0.2s ease;
         }
 
@@ -1297,8 +1973,12 @@ export default function AddressPage({ setPage }) {
 
         .page-title {
           margin: 0;
-          font-family: "Playfair Display", Georgia, serif;
-          font-size: clamp(29px, 6vw, 40px);
+          font-family:
+            "Playfair Display",
+            Georgia,
+            serif;
+          font-size:
+            clamp(29px, 6vw, 40px);
           line-height: 1.05;
           letter-spacing: -0.02em;
           color: #1A0B05;
@@ -1323,9 +2003,10 @@ export default function AddressPage({ setPage }) {
           gap: 9px;
           font-size: 14px;
           font-weight: 750;
-          letter-spacing: 0.01em;
           cursor: pointer;
-          box-shadow: 0 12px 28px rgba(26,11,5,0.16);
+          box-shadow:
+            0 12px 28px
+            rgba(26,11,5,0.16);
           transition: 0.2s ease;
           margin-bottom: 22px;
         }
@@ -1336,10 +2017,13 @@ export default function AddressPage({ setPage }) {
         }
 
         .section-card {
-          background: rgba(255,255,255,0.92);
+          background:
+            rgba(255,255,255,0.92);
           border: 1px solid #EEE6DE;
           border-radius: 22px;
-          box-shadow: 0 14px 40px rgba(45,26,14,0.07);
+          box-shadow:
+            0 14px 40px
+            rgba(45,26,14,0.07);
           overflow: hidden;
         }
 
@@ -1358,7 +2042,10 @@ export default function AddressPage({ setPage }) {
 
         .form-title {
           margin: 0;
-          font-family: "Playfair Display", Georgia, serif;
+          font-family:
+            "Playfair Display",
+            Georgia,
+            serif;
           font-size: 25px;
           color: #1A0B05;
         }
@@ -1415,7 +2102,8 @@ export default function AddressPage({ setPage }) {
           position: absolute;
           left: 15px;
           top: 50%;
-          transform: translateY(-50%);
+          transform:
+            translateY(-50%);
           color: #9B8B80;
           pointer-events: none;
         }
@@ -1423,7 +2111,8 @@ export default function AddressPage({ setPage }) {
         .search-input {
           width: 100%;
           height: 50px;
-          padding: 0 15px 0 45px;
+          padding:
+            0 15px 0 45px;
           border: 1px solid #E6DDD5;
           border-radius: 13px;
           background: #FCFAF7;
@@ -1437,7 +2126,9 @@ export default function AddressPage({ setPage }) {
         .field-input:focus,
         .field-select:focus {
           border-color: #C4956A;
-          box-shadow: 0 0 0 3px rgba(196,149,106,0.12);
+          box-shadow:
+            0 0 0 3px
+            rgba(196,149,106,0.12);
         }
 
         .suggestions {
@@ -1450,13 +2141,16 @@ export default function AddressPage({ setPage }) {
           border: 1px solid #E9E0D8;
           border-radius: 14px;
           overflow: hidden;
-          box-shadow: 0 18px 40px rgba(30,17,9,0.14);
+          box-shadow:
+            0 18px 40px
+            rgba(30,17,9,0.14);
         }
 
         .suggestion {
           width: 100%;
           border: 0;
-          border-bottom: 1px solid #F0EAE4;
+          border-bottom:
+            1px solid #F0EAE4;
           background: #fff;
           padding: 13px 15px;
           display: flex;
@@ -1480,7 +2174,6 @@ export default function AddressPage({ setPage }) {
         .suggestion-icon {
           color: #C4956A;
           flex-shrink: 0;
-          margin-top: 1px;
         }
 
         .map-section {
@@ -1518,11 +2211,15 @@ export default function AddressPage({ setPage }) {
           border-radius: 18px;
           overflow: hidden;
           background:
-            linear-gradient(135deg, #EEE8E1, #F8F5F1);
+            linear-gradient(
+              135deg,
+              #EEE8E1,
+              #F8F5F1
+            );
           border: 1px solid #E9E0D8;
         }
 
-        #brewed-address-map {
+        .brewed-address-map {
           width: 100%;
           height: 100%;
         }
@@ -1572,12 +2269,12 @@ export default function AddressPage({ setPage }) {
         .map-selected svg {
           color: #C4956A;
           flex-shrink: 0;
-          margin-top: 1px;
         }
 
         .field-grid {
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns:
+            repeat(2, minmax(0, 1fr));
           gap: 13px;
         }
 
@@ -1670,7 +2367,9 @@ export default function AddressPage({ setPage }) {
           align-items: center;
           justify-content: center;
           gap: 8px;
-          box-shadow: 0 10px 25px rgba(26,11,5,0.14);
+          box-shadow:
+            0 10px 25px
+            rgba(26,11,5,0.14);
         }
 
         .save-button:disabled {
@@ -1698,7 +2397,10 @@ export default function AddressPage({ setPage }) {
 
         .section-title {
           margin: 0;
-          font-family: "Playfair Display", Georgia, serif;
+          font-family:
+            "Playfair Display",
+            Georgia,
+            serif;
           font-size: 23px;
           color: #1A0B05;
         }
@@ -1713,7 +2415,8 @@ export default function AddressPage({ setPage }) {
 
         .recent-list {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns:
+            repeat(3, minmax(0, 1fr));
           gap: 11px;
         }
 
@@ -1731,7 +2434,9 @@ export default function AddressPage({ setPage }) {
         .recent-card:hover {
           transform: translateY(-2px);
           border-color: #D7B99C;
-          box-shadow: 0 10px 25px rgba(38,20,9,0.07);
+          box-shadow:
+            0 10px 25px
+            rgba(38,20,9,0.07);
         }
 
         .recent-top {
@@ -1771,18 +2476,24 @@ export default function AddressPage({ setPage }) {
         }
 
         .address-card {
-          background: rgba(255,255,255,0.94);
+          background:
+            rgba(255,255,255,0.94);
           border: 1px solid #EEE6DE;
           border-radius: 19px;
           padding: 18px;
-          box-shadow: 0 10px 30px rgba(40,22,11,0.06);
+          box-shadow:
+            0 10px 30px
+            rgba(40,22,11,0.06);
         }
 
         .address-card.default {
-          border-color: rgba(196,149,106,0.55);
+          border-color:
+            rgba(196,149,106,0.55);
           box-shadow:
-            0 10px 30px rgba(40,22,11,0.06),
-            0 0 0 1px rgba(196,149,106,0.08);
+            0 10px 30px
+            rgba(40,22,11,0.06),
+            0 0 0 1px
+            rgba(196,149,106,0.08);
         }
 
         .address-card-top {
@@ -1826,7 +2537,6 @@ export default function AddressPage({ setPage }) {
           color: #fff;
           font-size: 10px;
           font-weight: 800;
-          letter-spacing: 0.02em;
         }
 
         .recent-badge {
@@ -1898,7 +2608,6 @@ export default function AddressPage({ setPage }) {
           margin-top: 8px;
           color: #A08E81;
           font-size: 10px;
-          letter-spacing: 0.02em;
         }
 
         .default-action {
@@ -1936,7 +2645,9 @@ export default function AddressPage({ setPage }) {
           background: #fff;
           border: 1px solid #EEE6DE;
           border-radius: 22px;
-          box-shadow: 0 12px 30px rgba(40,22,11,0.05);
+          box-shadow:
+            0 12px 30px
+            rgba(40,22,11,0.05);
         }
 
         .empty-icon {
@@ -1953,7 +2664,10 @@ export default function AddressPage({ setPage }) {
 
         .empty-title {
           margin: 0 0 8px;
-          font-family: "Playfair Display", Georgia, serif;
+          font-family:
+            "Playfair Display",
+            Georgia,
+            serif;
           font-size: 25px;
           color: #1A0B05;
         }
@@ -1974,13 +2688,18 @@ export default function AddressPage({ setPage }) {
         }
 
         .spinner {
-          animation: address-spin 0.9s linear infinite;
+          animation:
+            address-spin
+            0.9s
+            linear
+            infinite;
         }
 
         @keyframes address-spin {
           from {
             transform: rotate(0deg);
           }
+
           to {
             transform: rotate(360deg);
           }
@@ -1988,7 +2707,10 @@ export default function AddressPage({ setPage }) {
 
         @media (max-width: 700px) {
           .address-page {
-            padding: 20px 15px 55px;
+            padding:
+              20px
+              15px
+              55px;
           }
 
           .field-grid {
@@ -2001,10 +2723,6 @@ export default function AddressPage({ setPage }) {
 
           .recent-list {
             grid-template-columns: 1fr;
-          }
-
-          .recent-card {
-            padding: 13px;
           }
 
           .map-container {
@@ -2057,46 +2775,71 @@ export default function AddressPage({ setPage }) {
         <div className="address-shell">
 
           {/* HEADER */}
+
           <header className="address-header">
             <button
               type="button"
               className="back-button"
-              onClick={() => setPage("menu")}
+              onClick={() =>
+                setPage("menu")
+              }
               aria-label="Back to menu"
             >
               <ArrowLeft size={20} />
             </button>
 
             <div className="header-copy">
-              <p className="eyebrow">Delivery</p>
-              <h1 className="page-title">My Addresses</h1>
+              <p className="eyebrow">
+                Delivery
+              </p>
+
+              <h1 className="page-title">
+                My Addresses
+              </h1>
+
               <p className="page-subtitle">
-                Save your favourite delivery spots for a faster checkout.
+                Save your favourite delivery
+                spots for a faster checkout.
               </p>
             </div>
           </header>
 
-          {/* ADD */}
+          {/* ADD ADDRESS */}
+
           <button
             type="button"
             className="add-address-button"
-            onClick={openNewAddress}
+            onClick={
+              showForm
+                ? resetForm
+                : openNewAddress
+            }
           >
             <Plus size={19} />
-            {showForm ? "Close Address Form" : "Add New Address"}
+
+            {showForm
+              ? "Close Address Form"
+              : "Add New Address"}
           </button>
 
           {/* FORM */}
+
           {showForm && (
-            <section className="section-card form-card">
+            <section
+              className="section-card form-card"
+            >
               <div className="form-heading">
                 <div>
                   <h2 className="form-title">
-                    {editingId ? "Edit Address" : "New Address"}
+                    {editingId
+                      ? "Edit Address"
+                      : "New Address"}
                   </h2>
 
                   <p className="form-caption">
-                    Pin your exact delivery location so we can serve you accurately.
+                    Pin your exact delivery
+                    location so we can serve
+                    you accurately.
                   </p>
                 </div>
 
@@ -2111,16 +2854,27 @@ export default function AddressPage({ setPage }) {
               </div>
 
               {/* CURRENT LOCATION */}
+
               <button
                 type="button"
                 className="location-button"
-                onClick={useCurrentLocation}
-                disabled={locationLoading}
+                onClick={
+                  useCurrentLocation
+                }
+                disabled={
+                  locationLoading ||
+                  !googleReady
+                }
               >
                 {locationLoading ? (
-                  <Loader2 className="spinner" size={17} />
+                  <Loader2
+                    className="spinner"
+                    size={17}
+                  />
                 ) : (
-                  <LocateFixed size={17} />
+                  <LocateFixed
+                    size={17}
+                  />
                 )}
 
                 {locationLoading
@@ -2135,6 +2889,7 @@ export default function AddressPage({ setPage }) {
               )}
 
               {/* SEARCH */}
+
               <div className="search-wrapper">
                 <Search
                   className="search-icon"
@@ -2146,7 +2901,9 @@ export default function AddressPage({ setPage }) {
                   placeholder="Search your delivery address..."
                   value={searchText}
                   onChange={(event) =>
-                    searchPlaces(event.target.value)
+                    searchPlaces(
+                      event.target.value
+                    )
                   }
                   autoComplete="off"
                 />
@@ -2156,40 +2913,52 @@ export default function AddressPage({ setPage }) {
                     className="spinner"
                     size={17}
                     style={{
-                      position: "absolute",
+                      position:
+                        "absolute",
                       right: 15,
                       top: 17,
-                      color: "#C4956A",
+                      color:
+                        "#C4956A",
                     }}
                   />
                 )}
 
-                {suggestions.length > 0 && (
+                {suggestions.length >
+                  0 && (
                   <div className="suggestions">
-                    {suggestions.map((place) => (
-                      <button
-                        type="button"
-                        className="suggestion"
-                        key={place.place_id}
-                        onClick={() =>
-                          selectSuggestion(place)
-                        }
-                      >
-                        <MapPin
-                          className="suggestion-icon"
-                          size={16}
-                        />
+                    {suggestions.map(
+                      (place) => (
+                        <button
+                          type="button"
+                          className="suggestion"
+                          key={
+                            place.place_id
+                          }
+                          onClick={() =>
+                            selectSuggestion(
+                              place
+                            )
+                          }
+                        >
+                          <MapPin
+                            className="suggestion-icon"
+                            size={16}
+                          />
 
-                        <span>
-                          {place.description}
-                        </span>
-                      </button>
-                    ))}
+                          <span>
+                            {
+                              place.description
+                            }
+                          </span>
+                        </button>
+                      )
+                    )}
                   </div>
                 )}
               </div>
 
               {/* MAP */}
+
               <div className="map-section">
                 <div className="map-heading">
                   <h3 className="map-title">
@@ -2203,7 +2972,12 @@ export default function AddressPage({ setPage }) {
                 </div>
 
                 <div className="map-container">
-                  <div id="brewed-address-map" />
+                  <div
+                    ref={
+                      mapContainerRef
+                    }
+                    className="brewed-address-map"
+                  />
 
                   {mapLocationLoading && (
                     <div className="map-loading">
@@ -2211,15 +2985,18 @@ export default function AddressPage({ setPage }) {
                         size={24}
                         className="spinner"
                       />
-                      Loading delivery area...
+
+                      Loading delivery
+                      area...
                     </div>
                   )}
 
-                  {!mapLocationLoading && mapError && (
-                    <div className="map-error">
-                      {mapError}
-                    </div>
-                  )}
+                  {!mapLocationLoading &&
+                    mapError && (
+                      <div className="map-error">
+                        {mapError}
+                      </div>
+                    )}
                 </div>
 
                 {selectedLocation && (
@@ -2237,33 +3014,49 @@ export default function AddressPage({ setPage }) {
               </div>
 
               {/* FORM FIELDS */}
+
               <div className="field-grid">
+
                 <div className="field-group">
                   <label className="field-label">
-                    Full Name <span className="required">*</span>
+                    Full Name{" "}
+                    <span className="required">
+                      *
+                    </span>
                   </label>
 
                   <input
                     className="field-input"
                     name="name"
                     placeholder="Enter full name"
-                    value={cleanedForm.name}
-                    onChange={handleChange}
+                    value={
+                      cleanedForm.name
+                    }
+                    onChange={
+                      handleChange
+                    }
                     autoComplete="name"
                   />
                 </div>
 
                 <div className="field-group">
                   <label className="field-label">
-                    Phone Number <span className="required">*</span>
+                    Phone Number{" "}
+                    <span className="required">
+                      *
+                    </span>
                   </label>
 
                   <input
                     className="field-input"
                     name="phone"
                     placeholder="10-digit mobile number"
-                    value={cleanedForm.phone}
-                    onChange={handleChange}
+                    value={
+                      cleanedForm.phone
+                    }
+                    onChange={
+                      handleChange
+                    }
                     maxLength={10}
                     inputMode="numeric"
                     autoComplete="tel"
@@ -2272,75 +3065,110 @@ export default function AddressPage({ setPage }) {
 
                 <div className="field-group full">
                   <label className="field-label">
-                    House / Flat Number <span className="required">*</span>
+                    House / Flat Number{" "}
+                    <span className="required">
+                      *
+                    </span>
                   </label>
 
                   <input
                     className="field-input"
                     name="house"
                     placeholder="Flat, house, building number"
-                    value={cleanedForm.house}
-                    onChange={handleChange}
+                    value={
+                      cleanedForm.house
+                    }
+                    onChange={
+                      handleChange
+                    }
                     autoComplete="address-line1"
                   />
                 </div>
 
                 <div className="field-group full">
                   <label className="field-label">
-                    Street / Area <span className="required">*</span>
+                    Street / Area{" "}
+                    <span className="required">
+                      *
+                    </span>
                   </label>
 
                   <input
                     className="field-input"
                     name="street"
                     placeholder="Street, locality or area"
-                    value={cleanedForm.street}
-                    onChange={handleChange}
+                    value={
+                      cleanedForm.street
+                    }
+                    onChange={
+                      handleChange
+                    }
                     autoComplete="address-line2"
                   />
                 </div>
 
                 <div className="field-group">
                   <label className="field-label">
-                    City <span className="required">*</span>
+                    City{" "}
+                    <span className="required">
+                      *
+                    </span>
                   </label>
 
                   <input
                     className="field-input"
                     name="city"
                     placeholder="City"
-                    value={cleanedForm.city}
-                    onChange={handleChange}
+                    value={
+                      cleanedForm.city
+                    }
+                    onChange={
+                      handleChange
+                    }
                     autoComplete="address-level2"
                   />
                 </div>
 
                 <div className="field-group">
                   <label className="field-label">
-                    State <span className="required">*</span>
+                    State{" "}
+                    <span className="required">
+                      *
+                    </span>
                   </label>
 
                   <input
                     className="field-input"
                     name="state"
                     placeholder="State"
-                    value={cleanedForm.state}
-                    onChange={handleChange}
+                    value={
+                      cleanedForm.state
+                    }
+                    onChange={
+                      handleChange
+                    }
                     autoComplete="address-level1"
                   />
                 </div>
 
                 <div className="field-group">
                   <label className="field-label">
-                    Pincode <span className="required">*</span>
+                    Pincode{" "}
+                    <span className="required">
+                      *
+                    </span>
                   </label>
 
                   <input
                     className="field-input"
                     name="pincode"
                     placeholder="6-digit pincode"
-                    value={cleanedForm.pincode}
-                    onChange={handleChange}
+                    value={
+                      cleanedForm.pincode
+                    }
+                    onChange={
+                      handleChange
+                    }
                     maxLength={6}
                     inputMode="numeric"
                     autoComplete="postal-code"
@@ -2355,36 +3183,54 @@ export default function AddressPage({ setPage }) {
                   <select
                     className="field-select"
                     name="type"
-                    value={cleanedForm.type}
-                    onChange={handleChange}
+                    value={
+                      cleanedForm.type
+                    }
+                    onChange={
+                      handleChange
+                    }
                   >
-                    <option value="Home">Home</option>
-                    <option value="Work">Work</option>
-                    <option value="Other">Other</option>
+                    <option value="Home">
+                      Home
+                    </option>
+
+                    <option value="Work">
+                      Work
+                    </option>
+
+                    <option value="Other">
+                      Other
+                    </option>
                   </select>
                 </div>
               </div>
 
-              {/* DELIVERY */}
+              {/* DELIVERY STATUS */}
+
               {checkingDelivery && (
                 <div className="delivery-status delivery-checking">
                   <Loader2
                     size={16}
                     className="spinner"
                   />
-                  Checking delivery availability...
+
+                  Checking delivery
+                  availability...
                 </div>
               )}
 
-              {deliveryAvailable === true && (
+              {deliveryAvailable ===
+                true && (
                 <div className="delivery-status delivery-success">
                   <Check size={16} />
 
                   <div>
                     Delivery available
+
                     {deliveryInfo && (
                       <span className="delivery-detail">
-                        {typeof deliveryInfo === "string"
+                        {typeof deliveryInfo ===
+                        "string"
                           ? deliveryInfo
                           : deliveryInfo.message ||
                             deliveryInfo.zone ||
@@ -2395,25 +3241,32 @@ export default function AddressPage({ setPage }) {
                 </div>
               )}
 
-              {deliveryAvailable === false && (
+              {deliveryAvailable ===
+                false && (
                 <div className="delivery-status delivery-error">
                   <X size={16} />
 
                   <div>
-                    Sorry, we don't deliver to this pincode yet.
+                    Sorry, we don't
+                    deliver to this
+                    pincode yet.
                   </div>
                 </div>
               )}
 
               {/* SAVE */}
+
               <button
                 type="button"
                 className="save-button"
-                onClick={saveAddress}
+                onClick={
+                  saveAddress
+                }
                 disabled={
                   saving ||
                   checkingDelivery ||
-                  deliveryAvailable === false
+                  deliveryAvailable ===
+                    false
                 }
               >
                 {saving ? (
@@ -2422,6 +3275,7 @@ export default function AddressPage({ setPage }) {
                       size={17}
                       className="spinner"
                     />
+
                     Saving...
                   </>
                 ) : editingId ? (
@@ -2434,66 +3288,98 @@ export default function AddressPage({ setPage }) {
           )}
 
           {/* RECENT ADDRESSES */}
-          {!loading && recentAddresses.length > 0 && (
-            <section className="recent-section">
-              <div className="section-heading">
-                <div>
-                  <p className="section-label">Quick access</p>
-                  <h2 className="section-title">
-                    Recent Addresses
-                  </h2>
+
+          {!loading &&
+            recentAddresses.length >
+              0 && (
+              <section className="recent-section">
+                <div className="section-heading">
+                  <div>
+                    <p className="section-label">
+                      Quick access
+                    </p>
+
+                    <h2 className="section-title">
+                      Recent Addresses
+                    </h2>
+                  </div>
+
+                  <Clock3
+                    size={18}
+                    color="#C4956A"
+                  />
                 </div>
 
-                <Clock3
-                  size={18}
-                  color="#C4956A"
-                />
-              </div>
+                <div className="recent-list">
+                  {recentAddresses.map(
+                    (address) => (
+                      <button
+                        type="button"
+                        className="recent-card"
+                        key={
+                          address.id
+                        }
+                        onClick={() =>
+                          editAddress(
+                            address
+                          )
+                        }
+                      >
+                        <div className="recent-top">
+                          {address.type ===
+                          "Home" ? (
+                            <Home
+                              size={14}
+                              color="#C4956A"
+                            />
+                          ) : address.type ===
+                            "Work" ? (
+                            <Briefcase
+                              size={14}
+                              color="#C4956A"
+                            />
+                          ) : (
+                            <MapPin
+                              size={14}
+                              color="#C4956A"
+                            />
+                          )}
 
-              <div className="recent-list">
-                {recentAddresses.map((address) => (
-                  <button
-                    type="button"
-                    className="recent-card"
-                    key={address.id}
-                    onClick={() => editAddress(address)}
-                  >
-                    <div className="recent-top">
-                      {address.type === "Home" ? (
-                        <Home size={14} color="#C4956A" />
-                      ) : address.type === "Work" ? (
-                        <Briefcase
-                          size={14}
-                          color="#C4956A"
-                        />
-                      ) : (
-                        <MapPin
-                          size={14}
-                          color="#C4956A"
-                        />
-                      )}
+                          <span className="recent-type">
+                            {
+                              address.type
+                            }
+                          </span>
+                        </div>
 
-                      <span className="recent-type">
-                        {address.type}
-                      </span>
-                    </div>
-
-                    <p className="recent-address">
-                      {address.house}, {address.street},{" "}
-                      {address.city}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
+                        <p className="recent-address">
+                          {
+                            address.house
+                          }
+                          ,{" "}
+                          {
+                            address.street
+                          }
+                          ,{" "}
+                          {
+                            address.city
+                          }
+                        </p>
+                      </button>
+                    )
+                  )}
+                </div>
+              </section>
+            )}
 
           {/* SAVED ADDRESSES */}
+
           <section className="addresses-section">
             <div className="section-heading">
               <div>
                 <p className="section-label">
-                  Your delivery locations
+                  Your delivery
+                  locations
                 </p>
 
                 <h2 className="section-title">
@@ -2501,172 +3387,256 @@ export default function AddressPage({ setPage }) {
                 </h2>
               </div>
 
-              {!loading && addresses.length > 0 && (
-                <span className="section-label">
-                  {addresses.length}{" "}
-                  {addresses.length === 1
-                    ? "address"
-                    : "addresses"}
-                </span>
-              )}
+              {!loading &&
+                addresses.length >
+                  0 && (
+                  <span className="section-label">
+                    {
+                      addresses.length
+                    }{" "}
+                    {addresses.length ===
+                    1
+                      ? "address"
+                      : "addresses"}
+                  </span>
+                )}
             </div>
 
             {loading ? (
               <div className="loading-state">
-                Loading your addresses...
+                Loading your
+                addresses...
               </div>
-            ) : addresses.length === 0 ? (
+            ) : addresses.length ===
+              0 ? (
               <div className="empty-state">
                 <div className="empty-icon">
                   <MapPin size={31} />
                 </div>
 
                 <h2 className="empty-title">
-                  No Saved Addresses
+                  No Saved
+                  Addresses
                 </h2>
 
                 <p className="empty-text">
-                  Add your first delivery address and make
-                  checkout faster next time.
+                  Add your first
+                  delivery address
+                  and make checkout
+                  faster next time.
                 </p>
               </div>
             ) : (
               <div className="address-list">
-                {addresses.map((address, index) => {
-                  const isRecent =
-                    recentAddresses.some(
-                      (item) => item.id === address.id
-                    );
+                {addresses.map(
+                  (
+                    address,
+                    index
+                  ) => {
+                    const isRecent =
+                      recentAddresses.some(
+                        (item) =>
+                          item.id ===
+                          address.id
+                      );
 
-                  return (
-                    <article
-                      className={`address-card ${
-                        address.isDefault ? "default" : ""
-                      }`}
-                      key={address.id}
-                    >
-                      <div className="address-card-top">
-                        <div className="address-type">
-                          <div className="type-icon">
-                            {address.type === "Home" ? (
-                              <Home size={17} />
-                            ) : address.type === "Work" ? (
-                              <Briefcase size={17} />
-                            ) : (
-                              <MapPin size={17} />
-                            )}
-                          </div>
+                    return (
+                      <article
+                        className={`address-card ${
+                          address.isDefault
+                            ? "default"
+                            : ""
+                        }`}
+                        key={
+                          address.id
+                        }
+                      >
+                        <div className="address-card-top">
+                          <div className="address-type">
+                            <div className="type-icon">
+                              {address.type ===
+                              "Home" ? (
+                                <Home
+                                  size={
+                                    17
+                                  }
+                                />
+                              ) : address.type ===
+                                "Work" ? (
+                                <Briefcase
+                                  size={
+                                    17
+                                  }
+                                />
+                              ) : (
+                                <MapPin
+                                  size={
+                                    17
+                                  }
+                                />
+                              )}
+                            </div>
 
-                          <span className="type-name">
-                            {address.type}
-                          </span>
-
-                          {address.isDefault && (
-                            <span className="default-badge">
-                              <Star
-                                size={11}
-                                fill="currentColor"
-                              />
-                              Default
+                            <span className="type-name">
+                              {
+                                address.type
+                              }
                             </span>
-                          )}
 
-                          {!address.isDefault &&
-                            isRecent &&
-                            index < 3 && (
-                              <span className="recent-badge">
-                                <Clock3 size={10} />
-                                Recent
+                            {address.isDefault && (
+                              <span className="default-badge">
+                                <Star
+                                  size={
+                                    11
+                                  }
+                                  fill="currentColor"
+                                />
+                                Default
                               </span>
                             )}
-                        </div>
 
-                        <div className="address-actions">
-                          <button
-                            type="button"
-                            className="icon-button"
-                            onClick={() =>
-                              editAddress(address)
-                            }
-                            aria-label="Edit address"
-                          >
-                            <Pencil size={15} />
-                          </button>
+                            {!address.isDefault &&
+                              isRecent &&
+                              index <
+                                3 && (
+                                <span className="recent-badge">
+                                  <Clock3
+                                    size={
+                                      10
+                                    }
+                                  />
+                                  Recent
+                                </span>
+                              )}
+                          </div>
 
-                          <button
-                            type="button"
-                            className="icon-button delete"
-                            onClick={() =>
-                              removeAddress(address.id)
-                            }
-                            disabled={
-                              deletingId === address.id
-                            }
-                            aria-label="Delete address"
-                          >
-                            {deletingId === address.id ? (
-                              <Loader2
-                                size={15}
-                                className="spinner"
+                          <div className="address-actions">
+                            <button
+                              type="button"
+                              className="icon-button"
+                              onClick={() =>
+                                editAddress(
+                                  address
+                                )
+                              }
+                              aria-label="Edit address"
+                            >
+                              <Pencil
+                                size={
+                                  15
+                                }
                               />
-                            ) : (
-                              <Trash2 size={15} />
-                            )}
-                          </button>
+                            </button>
+
+                            <button
+                              type="button"
+                              className="icon-button delete"
+                              onClick={() =>
+                                removeAddress(
+                                  address.id
+                                )
+                              }
+                              disabled={
+                                deletingId ===
+                                address.id
+                              }
+                              aria-label="Delete address"
+                            >
+                              {deletingId ===
+                              address.id ? (
+                                <Loader2
+                                  size={
+                                    15
+                                  }
+                                  className="spinner"
+                                />
+                              ) : (
+                                <Trash2
+                                  size={
+                                    15
+                                  }
+                                />
+                              )}
+                            </button>
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="address-content">
-                        <h3 className="address-name">
-                          {address.name}
-                        </h3>
+                        <div className="address-content">
+                          <h3 className="address-name">
+                            {
+                              address.name
+                            }
+                          </h3>
 
-                        <p className="address-phone">
-                          {address.phone}
-                        </p>
+                          <p className="address-phone">
+                            {
+                              address.phone
+                            }
+                          </p>
 
-                        <p className="address-line">
-                          {address.house}, {address.street}
-                        </p>
+                          <p className="address-line">
+                            {
+                              address.house
+                            }
+                            ,{" "}
+                            {
+                              address.street
+                            }
+                          </p>
 
-                        <p className="address-line">
-                          {address.city}, {address.state}
-                        </p>
+                          <p className="address-line">
+                            {
+                              address.city
+                            }
+                            ,{" "}
+                            {
+                              address.state
+                            }
+                          </p>
 
-                        <p className="address-line">
-                          {address.pincode}
-                        </p>
+                          <p className="address-line">
+                            {
+                              address.pincode
+                            }
+                          </p>
 
-                        {typeof address.latitude ===
-                          "number" &&
-                          typeof address.longitude ===
-                            "number" && (
-                            <p className="coordinate-line">
-                              Precise map location saved
-                            </p>
-                          )}
-                      </div>
+                          {typeof address.latitude ===
+                            "number" &&
+                            typeof address.longitude ===
+                              "number" && (
+                              <p className="coordinate-line">
+                                Precise map
+                                location
+                                saved
+                              </p>
+                            )}
+                        </div>
 
-                      <button
-                        type="button"
-                        className={`default-action ${
-                          address.isDefault
-                            ? "active"
-                            : "inactive"
-                        }`}
-                        onClick={() =>
-                          !address.isDefault &&
-                          setDefaultAddress(address.id)
-                        }
-                        disabled={address.isDefault}
-                      >
-                        {address.isDefault
-                          ? "★ Default Address"
-                          : "Set as Default"}
-                      </button>
-                    </article>
-                  );
-                })}
+                        <button
+                          type="button"
+                          className={`default-action ${
+                            address.isDefault
+                              ? "active"
+                              : "inactive"
+                          }`}
+                          onClick={() =>
+                            !address.isDefault &&
+                            setDefaultAddress(
+                              address.id
+                            )
+                          }
+                          disabled={
+                            address.isDefault
+                          }
+                        >
+                          {address.isDefault
+                            ? "★ Default Address"
+                            : "Set as Default"}
+                        </button>
+                      </article>
+                    );
+                  }
+                )}
               </div>
             )}
           </section>
