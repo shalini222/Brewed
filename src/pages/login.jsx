@@ -29,11 +29,11 @@ import {
 import walletService from "../service/walletService";
 import rewardService from "../service/rewardService";
 
-import { FcGoogle } from "react-icons/fc";
-
 import {
   AlertCircle,
+  ArrowRight,
   ArrowLeft,
+  Check,
   CheckCircle2,
   Clock3,
   Coffee,
@@ -100,7 +100,7 @@ export default function Login({ setPage }) {
   const [resendingOTP, setResendingOTP] = useState(false);
 
   // =========================================================
-  // DUPLICATE PHONE MODAL
+  // DUPLICATE PHONE
   // =========================================================
 
   const [showPhoneUsedModal, setShowPhoneUsedModal] =
@@ -140,8 +140,8 @@ export default function Login({ setPage }) {
     if (otpTimer <= 0) return undefined;
 
     const timer = setInterval(() => {
-      setOtpTimer((prev) => {
-        if (prev <= 1) {
+      setOtpTimer((previous) => {
+        if (previous <= 1) {
           clearInterval(timer);
 
           setVerificationId(null);
@@ -153,7 +153,7 @@ export default function Login({ setPage }) {
           return 0;
         }
 
-        return prev - 1;
+        return previous - 1;
       });
     }, 1000);
 
@@ -168,13 +168,13 @@ export default function Login({ setPage }) {
     if (resendTimer <= 0) return undefined;
 
     const timer = setInterval(() => {
-      setResendTimer((prev) => {
-        if (prev <= 1) {
+      setResendTimer((previous) => {
+        if (previous <= 1) {
           clearInterval(timer);
           return 0;
         }
 
-        return prev - 1;
+        return previous - 1;
       });
     }, 1000);
 
@@ -189,10 +189,7 @@ export default function Login({ setPage }) {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
 
-    return `${minutes}:${String(remainingSeconds).padStart(
-      2,
-      "0"
-    )}`;
+    return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
   }
 
   // =========================================================
@@ -202,10 +199,10 @@ export default function Login({ setPage }) {
   function getGreeting() {
     const hour = new Date().getHours();
 
-    if (hour < 12) return "Good Morning";
-    if (hour < 17) return "Good Afternoon";
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
 
-    return "Good Evening";
+    return "Good evening";
   }
 
   // =========================================================
@@ -231,16 +228,6 @@ export default function Login({ setPage }) {
   }
 
   // =========================================================
-  // VALIDATE EMAIL
-  // =========================================================
-
-  function isValidEmail(emailAddress = "") {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-      emailAddress.trim()
-    );
-  }
-
-  // =========================================================
   // DESTROY RECAPTCHA
   // =========================================================
 
@@ -258,7 +245,7 @@ export default function Login({ setPage }) {
     recaptchaVerifierRef.current = null;
 
     if (forceNewContainer) {
-      setRecaptchaKey((prev) => prev + 1);
+      setRecaptchaKey((previous) => previous + 1);
     }
   }
 
@@ -287,10 +274,30 @@ export default function Login({ setPage }) {
       },
 
       "expired-callback": () => {
+        console.log("Phone reCAPTCHA expired.");
+
+        if (recaptchaVerifierRef.current) {
+          try {
+            recaptchaVerifierRef.current.clear();
+          } catch (error) {
+            console.error("reCAPTCHA cleanup error:", error);
+          }
+        }
+
         recaptchaVerifierRef.current = null;
       },
 
       "error-callback": () => {
+        console.log("Phone reCAPTCHA error.");
+
+        if (recaptchaVerifierRef.current) {
+          try {
+            recaptchaVerifierRef.current.clear();
+          } catch (error) {
+            console.error("reCAPTCHA cleanup error:", error);
+          }
+        }
+
         recaptchaVerifierRef.current = null;
       },
     });
@@ -369,7 +376,7 @@ export default function Login({ setPage }) {
   }
 
   // =========================================================
-  // CLEAN UP UNVERIFIED ACCOUNT
+  // CLEANUP UNVERIFIED ACCOUNT
   // =========================================================
 
   async function cleanupUnverifiedAccount(user, newAccount) {
@@ -523,34 +530,31 @@ export default function Login({ setPage }) {
         setResendTimer(0);
       }
 
-      switch (error.code) {
-        case "auth/too-many-requests":
-          setMessage(
-            "Too many verification attempts. Please try again later."
-          );
-          break;
-
-        case "auth/invalid-phone-number":
-          setMessage("Please enter a valid phone number.");
-          break;
-
-        case "auth/quota-exceeded":
-          setMessage(
-            "SMS verification limit reached. Please try again later."
-          );
-          break;
-
-        case "auth/captcha-check-failed":
-          setMessage(
-            "Security verification failed. Please try again."
-          );
-          break;
-
-        default:
-          setMessage(
-            error.message ||
-              "Unable to send verification code."
-          );
+      if (error.code === "auth/too-many-requests") {
+        setMessage(
+          "Too many verification attempts. Please try again later."
+        );
+      } else if (
+        error.code === "auth/invalid-phone-number"
+      ) {
+        setMessage("Please enter a valid phone number.");
+      } else if (
+        error.code === "auth/quota-exceeded"
+      ) {
+        setMessage(
+          "SMS verification limit reached. Please try again later."
+        );
+      } else if (
+        error.code === "auth/captcha-check-failed"
+      ) {
+        setMessage(
+          "Security verification failed. Please try again."
+        );
+      } else {
+        setMessage(
+          error.message ||
+            "Unable to send verification code."
+        );
       }
     } finally {
       setPhoneLoading(false);
@@ -570,6 +574,7 @@ export default function Login({ setPage }) {
     }
 
     if (resendTimer > 0) return;
+
     if (resendingOTP || phoneLoading) return;
 
     const cleanedPhone = normalizePhone(phone);
@@ -593,8 +598,6 @@ export default function Login({ setPage }) {
         showPhoneAlreadyUsed();
         return;
       }
-
-      destroyPhoneRecaptcha(true);
 
       const verifier = getPhoneRecaptcha();
       const provider = new PhoneAuthProvider(auth);
@@ -621,30 +624,27 @@ export default function Login({ setPage }) {
 
       destroyPhoneRecaptcha(true);
 
-      switch (error.code) {
-        case "auth/too-many-requests":
-          setMessage(
-            "Too many verification attempts. Please try again later."
-          );
-          break;
-
-        case "auth/quota-exceeded":
-          setMessage(
-            "SMS verification limit reached. Please try again later."
-          );
-          break;
-
-        case "auth/captcha-check-failed":
-          setMessage(
-            "Security verification failed. Please try again."
-          );
-          break;
-
-        default:
-          setMessage(
-            error.message ||
-              "Unable to resend verification code."
-          );
+      if (error.code === "auth/too-many-requests") {
+        setMessage(
+          "Too many verification attempts. Please try again later."
+        );
+      } else if (
+        error.code === "auth/quota-exceeded"
+      ) {
+        setMessage(
+          "SMS verification limit reached. Please try again later."
+        );
+      } else if (
+        error.code === "auth/captcha-check-failed"
+      ) {
+        setMessage(
+          "Security verification failed. Please try again."
+        );
+      } else {
+        setMessage(
+          error.message ||
+            "Unable to resend verification code."
+        );
       }
     } finally {
       setResendingOTP(false);
@@ -769,48 +769,67 @@ export default function Login({ setPage }) {
         error
       );
 
-      switch (error.code) {
-        case "auth/invalid-verification-code":
-          setMessage("Incorrect verification code.");
-          break;
-
-        case "auth/code-expired":
-          setVerificationId(null);
-          setOtpTimer(0);
-
-          setMessage(
-            "Code expired. Request a new code below."
-          );
-          break;
-
-        case "auth/credential-already-in-use":
-          showPhoneAlreadyUsed();
-          break;
-
-        case "auth/provider-already-linked":
-          setMessage(
-            "This phone number is already verified on your account."
-          );
-          break;
-
-        case "auth/requires-recent-login":
-          setMessage(
-            "Please log in again and verify your phone."
-          );
-          break;
-
-        case "auth/invalid-credential":
-          setMessage(
-            "The verification code is invalid or has expired. Request a new code."
-          );
-          break;
-
-        default:
-          setMessage(
-            error.message ||
-              "Unable to verify your phone number."
-          );
+      if (
+        error.code ===
+        "auth/invalid-verification-code"
+      ) {
+        setMessage("Incorrect verification code.");
+        return;
       }
+
+      if (error.code === "auth/code-expired") {
+        setVerificationId(null);
+        setOtpTimer(0);
+
+        setMessage(
+          "Code expired. Request a new code below."
+        );
+
+        return;
+      }
+
+      if (
+        error.code ===
+        "auth/credential-already-in-use"
+      ) {
+        showPhoneAlreadyUsed();
+        return;
+      }
+
+      if (
+        error.code ===
+        "auth/provider-already-linked"
+      ) {
+        setMessage(
+          "This phone number is already verified on your account."
+        );
+        return;
+      }
+
+      if (
+        error.code ===
+        "auth/requires-recent-login"
+      ) {
+        setMessage(
+          "Please log in again and verify your phone."
+        );
+        return;
+      }
+
+      if (
+        error.code ===
+        "auth/invalid-credential"
+      ) {
+        setMessage(
+          "The verification code is invalid or has expired. Request a new code."
+        );
+        return;
+      }
+
+      setMessage(
+        error.message ||
+          "Unable to verify your phone number."
+      );
     } finally {
       setPhoneLoading(false);
     }
@@ -991,27 +1010,10 @@ export default function Login({ setPage }) {
   // EMAIL / PASSWORD
   // =========================================================
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function handleSubmit(event) {
+    event.preventDefault();
 
     if (loading) return;
-
-    const cleanEmail = email.trim();
-
-    if (!isValidEmail(cleanEmail)) {
-      setMessage("Please enter a valid email address.");
-      return;
-    }
-
-    if (!password) {
-      setMessage("Please enter your password.");
-      return;
-    }
-
-    if (!isLogin && !name.trim()) {
-      setMessage("Please enter your full name.");
-      return;
-    }
 
     setLoading(true);
     setMessage("");
@@ -1021,13 +1023,14 @@ export default function Login({ setPage }) {
         const userCredential =
           await signInWithEmailAndPassword(
             auth,
-            cleanEmail,
+            email.trim(),
             password
           );
 
-        const user = userCredential.user;
-
-        await startPhoneVerification(user, false);
+        await startPhoneVerification(
+          userCredential.user,
+          false
+        );
 
         return;
       }
@@ -1035,60 +1038,50 @@ export default function Login({ setPage }) {
       const userCredential =
         await createUserWithEmailAndPassword(
           auth,
-          cleanEmail,
+          email.trim(),
           password
         );
 
-      const user = userCredential.user;
-
-      await startPhoneVerification(user, true);
+      await startPhoneVerification(
+        userCredential.user,
+        true
+      );
     } catch (error) {
       console.error("Login error:", error);
 
-      switch (error.code) {
-        case "auth/invalid-credential":
-          setMessage("Incorrect email or password.");
-          break;
-
-        case "auth/user-not-found":
-          setMessage(
-            "No account was found with this email."
-          );
-          break;
-
-        case "auth/wrong-password":
-          setMessage("Incorrect password.");
-          break;
-
-        case "auth/email-already-in-use":
-          setMessage(
-            "An account already exists with this email."
-          );
-          break;
-
-        case "auth/weak-password":
-          setMessage(
-            "Password must be at least 6 characters."
-          );
-          break;
-
-        case "auth/invalid-email":
-          setMessage(
-            "Please enter a valid email address."
-          );
-          break;
-
-        case "auth/too-many-requests":
-          setMessage(
-            "Too many attempts. Please try again later."
-          );
-          break;
-
-        default:
-          setMessage(
-            error.message ||
-              "Unable to complete login."
-          );
+      if (error.code === "auth/invalid-credential") {
+        setMessage("Incorrect email or password.");
+      } else if (error.code === "auth/user-not-found") {
+        setMessage(
+          "No account was found with this email."
+        );
+      } else if (error.code === "auth/wrong-password") {
+        setMessage("Incorrect password.");
+      } else if (
+        error.code === "auth/email-already-in-use"
+      ) {
+        setMessage(
+          "An account already exists with this email."
+        );
+      } else if (error.code === "auth/weak-password") {
+        setMessage(
+          "Password must be at least 6 characters."
+        );
+      } else if (error.code === "auth/invalid-email") {
+        setMessage(
+          "Please enter a valid email address."
+        );
+      } else if (
+        error.code === "auth/too-many-requests"
+      ) {
+        setMessage(
+          "Too many attempts. Please try again later."
+        );
+      } else {
+        setMessage(
+          error.message ||
+            "Unable to complete login."
+        );
       }
     } finally {
       setLoading(false);
@@ -1135,42 +1128,31 @@ export default function Login({ setPage }) {
         );
       }
 
-      switch (error.code) {
-        case "auth/popup-closed-by-user":
-          setMessage(
-            "Google sign-in was cancelled."
-          );
-          break;
-
-        case "auth/popup-blocked":
-          setMessage(
-            "Google sign-in was blocked by your browser. Please allow popups and try again."
-          );
-          break;
-
-        case "auth/account-exists-with-different-credential":
-          setMessage(
-            "An account already exists with this email. Please use the original sign-in method."
-          );
-          break;
-
-        case "auth/cancelled-popup-request":
-          setMessage(
-            "Google sign-in was cancelled. Please try again."
-          );
-          break;
-
-        case "auth/network-request-failed":
-          setMessage(
-            "Network error. Please check your connection and try again."
-          );
-          break;
-
-        default:
-          setMessage(
-            error.message ||
-              "Unable to sign in with Google."
-          );
+      if (
+        error.code ===
+        "auth/popup-closed-by-user"
+      ) {
+        setMessage(
+          "Google sign-in was cancelled."
+        );
+      } else if (
+        error.code === "auth/popup-blocked"
+      ) {
+        setMessage(
+          "Google sign-in was blocked by your browser. Please allow popups and try again."
+        );
+      } else if (
+        error.code ===
+        "auth/account-exists-with-different-credential"
+      ) {
+        setMessage(
+          "An account already exists with this email. Please use the original sign-in method."
+        );
+      } else {
+        setMessage(
+          error.message ||
+            "Unable to sign in with Google."
+        );
       }
     } finally {
       setLoading(false);
@@ -1186,8 +1168,8 @@ export default function Login({ setPage }) {
 
     const cleanEmail = email.trim();
 
-    if (!isValidEmail(cleanEmail)) {
-      setMessage("Enter a valid email address first.");
+    if (!cleanEmail) {
+      setMessage("Enter your email first.");
       return;
     }
 
@@ -1209,11 +1191,15 @@ export default function Login({ setPage }) {
         error
       );
 
-      // Deliberately generic to avoid exposing
-      // whether an email is registered.
-      setMessage(
-        "If an account exists for this email, a password reset link has been sent."
-      );
+      if (error.code === "auth/invalid-email") {
+        setMessage(
+          "Please enter a valid email address."
+        );
+      } else {
+        setMessage(
+          "If an account exists for this email, a password reset link has been sent."
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -1329,7 +1315,7 @@ export default function Login({ setPage }) {
   function switchAuthMode() {
     if (loading) return;
 
-    setIsLogin((prev) => !prev);
+    setIsLogin((previous) => !previous);
 
     setMessage("");
     setPassword("");
@@ -1337,40 +1323,87 @@ export default function Login({ setPage }) {
   }
 
   // =========================================================
-  // UI
+  // GOOGLE MARK
+  // =========================================================
+
+  function GoogleMark() {
+    return (
+      <span className="google-mark" aria-hidden="true">
+        G
+      </span>
+    );
+  }
+
+  // =========================================================
+  // MESSAGE
+  // =========================================================
+
+  function Message({ children }) {
+    if (!children) return null;
+
+    return (
+      <div className="message" role="status">
+        <AlertCircle
+          size={15}
+          strokeWidth={1.8}
+        />
+
+        <span>{children}</span>
+      </div>
+    );
+  }
+
+  // =========================================================
+  // MAIN UI
   // =========================================================
 
   return (
     <>
       <style>{`
         @import url(
-          'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap'
+          'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap'
         );
 
         :root {
-          --brew-espresso: #3B1A08;
-          --brew-dark: #291207;
-          --brew-caramel: #C4956A;
-          --brew-caramel-dark: #9A6B43;
-          --brew-cream: #FDFAF5;
-          --brew-surface: #FFFFFF;
-          --brew-soft: #F7F0E7;
-          --brew-border: #E7DCD0;
-          --brew-text: #2D211B;
-          --brew-muted: #7C6D62;
-          --brew-danger: #A33D32;
-          --brew-success: #58715C;
+          --espresso: #2B160B;
+          --espresso-soft: #422516;
+          --coffee: #67422A;
+          --caramel: #B58A62;
+          --caramel-light: #D5B997;
+
+          --ivory: #F7F3EC;
+          --paper: #FCFAF6;
+          --white: #FFFFFF;
+
+          --ink: #30251F;
+          --muted: #88786C;
+          --muted-light: #A99A8F;
+
+          --line: #E7DED4;
+          --line-dark: #D9CBBE;
+
+          --danger: #A34B40;
+          --success: #5B705E;
+
+          --serif: "Playfair Display", Georgia, serif;
+          --sans: "DM Sans", Arial, sans-serif;
         }
 
         * {
           box-sizing: border-box;
         }
 
+        html,
+        body,
+        #root {
+          min-height: 100%;
+        }
+
         body {
           margin: 0;
-          background: var(--brew-cream);
-          color: var(--brew-text);
-          font-family: "DM Sans", sans-serif;
+          background: var(--ivory);
+          color: var(--ink);
+          font-family: var(--sans);
         }
 
         button,
@@ -1382,612 +1415,831 @@ export default function Login({ setPage }) {
           -webkit-tap-highlight-color: transparent;
         }
 
-        .login-page {
+        /* =====================================================
+           PAGE
+        ===================================================== */
+
+        .auth-page {
           min-height: 100vh;
           min-height: 100dvh;
+          padding: 24px;
+          background:
+            linear-gradient(
+              120deg,
+              #F5F0E8 0%,
+              #FBF8F2 48%,
+              #F0E9DE 100%
+            );
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 32px 18px;
           position: relative;
           overflow: hidden;
-          background:
-            radial-gradient(
-              circle at 10% 10%,
-              rgba(196,149,106,.18),
-              transparent 30%
-            ),
-            radial-gradient(
-              circle at 90% 90%,
-              rgba(59,26,8,.08),
-              transparent 34%
-            ),
-            var(--brew-cream);
         }
 
-        .login-page::before {
+        .auth-page::before {
           content: "";
           position: absolute;
-          width: 520px;
-          height: 520px;
+          width: 700px;
+          height: 700px;
           border-radius: 50%;
-          border: 1px solid rgba(196,149,106,.16);
-          top: -300px;
-          right: -170px;
+          border: 1px solid rgba(91, 57, 32, .055);
+          top: -450px;
+          left: -250px;
           pointer-events: none;
         }
 
-        .login-page::after {
+        .auth-page::after {
           content: "";
           position: absolute;
-          width: 420px;
-          height: 420px;
+          width: 620px;
+          height: 620px;
           border-radius: 50%;
-          border: 1px solid rgba(59,26,8,.08);
-          bottom: -260px;
-          left: -180px;
+          border: 1px solid rgba(91, 57, 32, .045);
+          right: -360px;
+          bottom: -380px;
           pointer-events: none;
         }
 
-        .login-shell {
+        .auth-frame {
           width: 100%;
-          max-width: 1060px;
-          min-height: 650px;
+          max-width: 1240px;
+          min-height: 720px;
           display: grid;
-          grid-template-columns: .92fr 1.08fr;
-          background: rgba(255,255,255,.72);
-          border: 1px solid rgba(231,220,208,.9);
-          border-radius: 30px;
-          overflow: hidden;
-          box-shadow:
-            0 30px 90px rgba(59,26,8,.12),
-            0 8px 30px rgba(59,26,8,.06);
-          backdrop-filter: blur(20px);
+          grid-template-columns: 1.04fr .96fr;
           position: relative;
           z-index: 1;
+          overflow: hidden;
+          background: var(--paper);
+          box-shadow:
+            0 35px 90px rgba(47, 28, 16, .10),
+            0 8px 30px rgba(47, 28, 16, .05);
         }
 
-        .login-brand-panel {
+        /* =====================================================
+           BRAND / EDITORIAL SIDE
+        ===================================================== */
+
+        .editorial-side {
           position: relative;
-          padding: 54px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
+          min-height: 720px;
+          overflow: hidden;
           background:
             linear-gradient(
               145deg,
-              #3B1A08 0%,
-              #4A2410 58%,
-              #6B3D20 100%
+              rgba(38, 18, 8, .96),
+              rgba(76, 43, 23, .94)
             );
           color: white;
-          overflow: hidden;
+          isolation: isolate;
         }
 
-        .login-brand-panel::before {
+        .editorial-texture {
+          position: absolute;
+          inset: 0;
+          opacity: .23;
+          background:
+            radial-gradient(
+              ellipse at 35% 25%,
+              rgba(255,255,255,.12) 0,
+              transparent 32%
+            ),
+            radial-gradient(
+              ellipse at 72% 78%,
+              rgba(220,181,139,.14) 0,
+              transparent 34%
+            );
+        }
+
+        /*
+          Abstract coffee-inspired visual treatment.
+          It intentionally avoids stock-image / generic SaaS imagery.
+        */
+
+        .coffee-orbit {
+          position: absolute;
+          width: 580px;
+          height: 580px;
+          border-radius: 50%;
+          border: 1px solid rgba(255,255,255,.10);
+          right: -240px;
+          top: 80px;
+        }
+
+        .coffee-orbit::before {
           content: "";
           position: absolute;
-          width: 420px;
-          height: 420px;
-          border: 1px solid rgba(255,255,255,.09);
+          inset: 65px;
           border-radius: 50%;
-          top: -210px;
-          right: -190px;
+          border: 1px solid rgba(255,255,255,.075);
         }
 
-        .login-brand-panel::after {
+        .coffee-orbit::after {
           content: "";
           position: absolute;
-          width: 300px;
-          height: 300px;
-          border: 1px solid rgba(255,255,255,.07);
+          inset: 130px;
           border-radius: 50%;
-          bottom: -190px;
-          left: -160px;
+          border: 1px solid rgba(255,255,255,.055);
         }
 
-        .brand-content,
-        .brand-footer {
+        .coffee-cup-art {
+          position: absolute;
+          width: 260px;
+          height: 260px;
+          right: 90px;
+          top: 205px;
+          border-radius: 50%;
+          background:
+            radial-gradient(
+              circle at 50% 48%,
+              #1E0D05 0 22%,
+              #5A321C 23% 32%,
+              #A06C43 33% 36%,
+              rgba(255,255,255,.10) 37% 37.5%,
+              transparent 38%
+            ),
+            radial-gradient(
+              circle,
+              #C7A27C 0%,
+              #8C5D3C 43%,
+              #40200F 72%,
+              #1F0D05 100%
+            );
+          box-shadow:
+            0 35px 60px rgba(0,0,0,.35),
+            inset 0 8px 20px rgba(255,255,255,.10);
+          transform: rotate(-8deg);
+          opacity: .95;
+        }
+
+        .coffee-cup-art::before {
+          content: "";
+          position: absolute;
+          width: 80px;
+          height: 80px;
+          border: 16px solid #8E6242;
+          border-left-color: transparent;
+          border-radius: 50%;
+          right: -50px;
+          top: 75px;
+          opacity: .85;
+        }
+
+        .steam {
+          position: absolute;
+          width: 2px;
+          height: 90px;
+          background: linear-gradient(
+            to top,
+            rgba(255,255,255,.16),
+            transparent
+          );
+          border-radius: 100%;
+          top: 112px;
+          left: 50%;
+          transform: rotate(7deg);
+          filter: blur(.5px);
+        }
+
+        .steam-two {
+          left: 58%;
+          height: 72px;
+          top: 125px;
+          transform: rotate(-10deg);
+        }
+
+        .editorial-content {
           position: relative;
-          z-index: 1;
-        }
-
-        .brand-logo {
+          z-index: 3;
+          min-height: 720px;
+          padding: 52px 58px;
           display: flex;
-          align-items: center;
-          gap: 11px;
-          font-family: "Playfair Display", serif;
-          font-size: 32px;
-          letter-spacing: -.8px;
+          flex-direction: column;
+          justify-content: space-between;
         }
 
-        .brand-logo-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: 13px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(255,255,255,.12);
-          border: 1px solid rgba(255,255,255,.12);
-        }
-
-        .brand-heading {
-          margin: 80px 0 18px;
-          max-width: 390px;
-          font-family: "Playfair Display", serif;
-          font-size: clamp(38px, 4vw, 58px);
-          line-height: 1.02;
-          letter-spacing: -1.8px;
-          font-weight: 600;
-        }
-
-        .brand-description {
-          max-width: 380px;
-          color: rgba(255,255,255,.68);
-          line-height: 1.75;
-          font-size: 15px;
-        }
-
-        .brand-feature {
+        .brand-lockup {
           display: flex;
           align-items: center;
           gap: 12px;
-          color: rgba(255,255,255,.8);
-          font-size: 13px;
+          color: rgba(255,255,255,.96);
         }
 
-        .brand-feature-icon {
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
+        .brand-mark {
+          width: 38px;
+          height: 38px;
+          border: 1px solid rgba(255,255,255,.22);
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(196,149,106,.2);
-          color: #E4BD96;
+          border-radius: 50%;
+          background: rgba(255,255,255,.055);
         }
 
-        .brand-footer {
-          color: rgba(255,255,255,.42);
-          font-size: 12px;
-          letter-spacing: .3px;
+        .brand-name {
+          font-family: var(--serif);
+          font-size: 27px;
+          font-weight: 500;
+          letter-spacing: -.8px;
         }
 
-        .login-content {
-          padding: 56px clamp(30px, 5vw, 70px);
+        .editorial-copy {
+          max-width: 475px;
+          margin-top: auto;
+          margin-bottom: auto;
+          padding-top: 70px;
+        }
+
+        .editorial-kicker {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: rgba(255,255,255,.62);
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 2.2px;
+          text-transform: uppercase;
+          margin-bottom: 22px;
+        }
+
+        .editorial-kicker::before {
+          content: "";
+          width: 28px;
+          height: 1px;
+          background: var(--caramel-light);
+          opacity: .7;
+        }
+
+        .editorial-title {
+          margin: 0;
+          font-family: var(--serif);
+          font-weight: 500;
+          font-size: clamp(50px, 5vw, 72px);
+          line-height: .98;
+          letter-spacing: -3px;
+        }
+
+        .editorial-title em {
+          color: #D4AF8A;
+          font-style: italic;
+          font-weight: 400;
+        }
+
+        .editorial-description {
+          max-width: 390px;
+          margin: 26px 0 0;
+          color: rgba(255,255,255,.58);
+          font-size: 14px;
+          line-height: 1.8;
+        }
+
+        .editorial-footer {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 20px;
+          color: rgba(255,255,255,.45);
+          font-size: 10px;
+          letter-spacing: 1.1px;
+          text-transform: uppercase;
+        }
+
+        .editorial-footer-line {
+          width: 45px;
+          height: 1px;
+          background: rgba(255,255,255,.25);
+          margin-bottom: 6px;
+        }
+
+        /* =====================================================
+           AUTH SIDE
+        ===================================================== */
+
+        .form-side {
+          min-width: 0;
           display: flex;
           flex-direction: column;
           justify-content: center;
-          background: rgba(255,255,255,.82);
+          padding: 66px clamp(44px, 6vw, 88px);
+          background: rgba(252,250,246,.96);
         }
 
-        .auth-header {
-          margin-bottom: 30px;
+        .form-inner {
+          width: 100%;
+          max-width: 430px;
+          margin: 0 auto;
         }
 
-        .auth-eyebrow {
-          display: inline-flex;
+        .form-topline {
+          display: flex;
           align-items: center;
-          gap: 7px;
-          color: var(--brew-caramel-dark);
-          font-size: 11px;
+          justify-content: space-between;
+          gap: 20px;
+          margin-bottom: 48px;
+        }
+
+        .form-label {
+          color: var(--caramel);
+          font-size: 10px;
           font-weight: 700;
-          letter-spacing: 1.5px;
+          letter-spacing: 2px;
           text-transform: uppercase;
-          margin-bottom: 12px;
         }
 
-        .auth-title {
+        .form-count {
+          color: #B5A69A;
+          font-size: 10px;
+          letter-spacing: 1px;
+        }
+
+        .auth-heading {
           margin: 0;
-          color: var(--brew-espresso);
-          font-family: "Playfair Display", serif;
-          font-size: 36px;
-          line-height: 1.1;
-          letter-spacing: -1px;
+          color: var(--espresso);
+          font-family: var(--serif);
+          font-size: clamp(40px, 4vw, 52px);
+          font-weight: 500;
+          letter-spacing: -2px;
+          line-height: 1;
         }
 
-        .auth-subtitle {
-          margin: 10px 0 0;
-          color: var(--brew-muted);
-          font-size: 14px;
-          line-height: 1.6;
+        .auth-intro {
+          margin: 15px 0 38px;
+          max-width: 370px;
+          color: var(--muted);
+          font-size: 13px;
+          line-height: 1.75;
         }
+
+        /* =====================================================
+           FIELDS
+        ===================================================== */
 
         .auth-form {
           display: flex;
           flex-direction: column;
-          gap: 15px;
+          gap: 22px;
         }
 
-        .field-group {
-          display: flex;
-          flex-direction: column;
-          gap: 7px;
-        }
-
-        .field-label {
-          color: #5B4A3E;
-          font-size: 12px;
-          font-weight: 700;
-          margin-left: 2px;
-        }
-
-        .input-wrapper {
+        .field {
           position: relative;
         }
 
-        .input-icon {
+        .field-label {
+          display: block;
+          margin-bottom: 9px;
+          color: #66564B;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: .15px;
+        }
+
+        .field-control {
+          position: relative;
+        }
+
+        .field-icon {
           position: absolute;
-          left: 15px;
+          left: 0;
           top: 50%;
           transform: translateY(-50%);
-          color: #A38E7D;
+          color: #A7978B;
           pointer-events: none;
+          transition: color .2s ease;
         }
 
         .auth-input {
           width: 100%;
-          height: 52px;
-          padding: 0 16px 0 45px;
-          border: 1px solid var(--brew-border);
-          border-radius: 14px;
-          background: #FFFEFC;
-          color: var(--brew-text);
+          height: 48px;
+          padding: 0 0 0 30px;
+          border: 0;
+          border-bottom: 1px solid var(--line-dark);
+          border-radius: 0;
           outline: none;
+          background: transparent;
+          color: var(--espresso);
           font-size: 14px;
           transition:
-            border-color .2s ease,
-            box-shadow .2s ease,
-            background .2s ease;
+            border-color .25s ease,
+            box-shadow .25s ease;
         }
 
         .auth-input::placeholder {
-          color: #B0A39A;
+          color: #B6A9A0;
         }
 
         .auth-input:hover:not(:disabled) {
-          border-color: #D7C7B8;
+          border-color: #BBA999;
         }
 
         .auth-input:focus {
-          border-color: var(--brew-caramel);
-          background: white;
-          box-shadow:
-            0 0 0 4px rgba(196,149,106,.12);
+          border-color: var(--coffee);
+          box-shadow: 0 1px 0 var(--coffee);
         }
 
-        .password-button {
+        .auth-input:focus ~ .field-icon {
+          color: var(--coffee);
+        }
+
+        .password-control .auth-input {
+          padding-right: 42px;
+        }
+
+        .password-toggle {
           position: absolute;
-          right: 8px;
+          right: 0;
           top: 50%;
+          width: 32px;
+          height: 32px;
           transform: translateY(-50%);
-          width: 36px;
-          height: 36px;
           display: flex;
           align-items: center;
           justify-content: center;
           border: 0;
-          border-radius: 10px;
           background: transparent;
-          color: #927F70;
+          color: #9B8C81;
           cursor: pointer;
+          border-radius: 50%;
         }
 
-        .password-button:hover {
-          background: var(--brew-soft);
-          color: var(--brew-espresso);
+        .password-toggle:hover {
+          color: var(--espresso);
+          background: rgba(0,0,0,.035);
         }
 
-        .password-input {
-          padding-right: 52px;
-        }
-
-        .forgot-row {
+        .form-utility {
           display: flex;
           justify-content: flex-end;
-          margin-top: -4px;
+          margin-top: -10px;
         }
 
-        .text-button {
+        .minimal-button {
           border: 0;
+          padding: 0;
           background: transparent;
-          color: var(--brew-caramel-dark);
-          font-size: 12px;
+          color: var(--coffee);
+          font-size: 11px;
           font-weight: 700;
-          padding: 3px 0;
           cursor: pointer;
         }
 
-        .text-button:hover {
-          color: var(--brew-espresso);
+        .minimal-button:hover {
+          color: var(--espresso);
         }
 
-        .primary-button {
+        /* =====================================================
+           PRIMARY ACTION
+        ===================================================== */
+
+        .continue-button {
           width: 100%;
           min-height: 52px;
+          margin-top: 3px;
+          padding: 0 20px;
+          border: 1px solid var(--espresso);
+          border-radius: 0;
           display: flex;
           align-items: center;
-          justify-content: center;
-          gap: 9px;
-          border: 0;
-          border-radius: 14px;
-          background: var(--brew-espresso);
+          justify-content: space-between;
+          gap: 14px;
+          background: var(--espresso);
           color: white;
-          font-size: 14px;
+          font-size: 12px;
           font-weight: 700;
+          letter-spacing: .35px;
           cursor: pointer;
-          box-shadow:
-            0 9px 22px rgba(59,26,8,.15);
           transition:
-            transform .2s ease,
-            background .2s ease,
-            box-shadow .2s ease;
+            background .25s ease,
+            transform .25s ease,
+            box-shadow .25s ease;
         }
 
-        .primary-button:hover:not(:disabled) {
-          background: #4B220D;
+        .continue-button:hover:not(:disabled) {
+          background: #3A1E0F;
           transform: translateY(-1px);
-          box-shadow:
-            0 12px 26px rgba(59,26,8,.2);
+          box-shadow: 0 10px 24px rgba(43,22,11,.14);
         }
 
-        .primary-button:active:not(:disabled) {
+        .continue-button:active:not(:disabled) {
           transform: translateY(0);
         }
 
-        .primary-button:disabled,
-        .secondary-button:disabled,
-        .google-button:disabled {
-          opacity: .58;
+        .continue-arrow {
+          width: 30px;
+          height: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-left: 1px solid rgba(255,255,255,.2);
+          padding-left: 12px;
+          box-sizing: content-box;
+        }
+
+        .continue-button:disabled {
+          opacity: .55;
           cursor: not-allowed;
         }
 
+        /* =====================================================
+           DIVIDER
+        ===================================================== */
+
+        .auth-divider {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          margin: 27px 0 21px;
+          color: #B0A198;
+          font-size: 9px;
+          font-weight: 700;
+          letter-spacing: 1.8px;
+          text-transform: uppercase;
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+          content: "";
+          flex: 1;
+          height: 1px;
+          background: var(--line);
+        }
+
+        /* =====================================================
+           GOOGLE
+        ===================================================== */
+
         .google-button {
           width: 100%;
-          min-height: 52px;
+          height: 48px;
+          border: 1px solid var(--line-dark);
+          border-radius: 0;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 10px;
-          border: 1px solid var(--brew-border);
-          border-radius: 14px;
-          background: white;
-          color: var(--brew-text);
-          font-size: 14px;
-          font-weight: 700;
+          background: transparent;
+          color: var(--ink);
+          font-size: 12px;
+          font-weight: 600;
           cursor: pointer;
           transition:
             background .2s ease,
-            border-color .2s ease,
-            transform .2s ease;
+            border-color .2s ease;
         }
 
         .google-button:hover:not(:disabled) {
-          background: #FBF8F3;
-          border-color: #D7C7B8;
-          transform: translateY(-1px);
+          background: white;
+          border-color: #C8B8A9;
         }
 
-        .divider {
-          display: flex;
+        .google-button:disabled {
+          opacity: .55;
+          cursor: not-allowed;
+        }
+
+        .google-mark {
+          width: 19px;
+          height: 19px;
+          display: inline-flex;
           align-items: center;
-          gap: 12px;
-          margin: 4px 0;
-          color: #A8998D;
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 1px;
+          justify-content: center;
+          font-family: Arial, sans-serif;
+          font-size: 15px;
           font-weight: 700;
+          color: #4285F4;
         }
 
-        .divider::before,
-        .divider::after {
-          content: "";
-          flex: 1;
-          height: 1px;
-          background: var(--brew-border);
-        }
+        /* =====================================================
+           SWITCH
+        ===================================================== */
 
         .auth-switch {
-          margin-top: 24px;
+          margin-top: 34px;
           text-align: center;
-          color: var(--brew-muted);
-          font-size: 13px;
+          color: var(--muted);
+          font-size: 11px;
         }
 
         .auth-switch button {
+          margin-left: 5px;
           border: 0;
+          padding: 0;
           background: transparent;
-          color: var(--brew-caramel-dark);
+          color: var(--espresso);
           font-weight: 700;
           cursor: pointer;
-          padding: 0 0 0 3px;
         }
 
         .auth-switch button:hover {
-          color: var(--brew-espresso);
+          text-decoration: underline;
+          text-underline-offset: 3px;
         }
+
+        /* =====================================================
+           MESSAGE
+        ===================================================== */
 
         .message {
           display: flex;
           align-items: flex-start;
           gap: 9px;
-          margin-top: 16px;
-          padding: 12px 13px;
-          border-radius: 12px;
-          background: #F9F2E9;
-          color: #77553B;
-          border: 1px solid #EADAC9;
-          font-size: 12px;
-          line-height: 1.55;
+          margin-top: 18px;
+          padding: 11px 13px;
+          border-left: 2px solid var(--caramel);
+          background: #F4EEE6;
+          color: #765B47;
+          font-size: 11px;
+          line-height: 1.6;
         }
 
-        .message-icon {
+        .message svg {
           flex-shrink: 0;
-          margin-top: 1px;
+          margin-top: 2px;
         }
+
+        /* =====================================================
+           PHONE VERIFICATION
+        ===================================================== */
 
         .verification-back {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          margin-bottom: 24px;
+          gap: 7px;
+          width: fit-content;
+          margin-bottom: 48px;
           padding: 0;
           border: 0;
           background: transparent;
-          color: var(--brew-muted);
-          font-size: 12px;
+          color: var(--muted);
+          font-size: 11px;
           font-weight: 700;
           cursor: pointer;
         }
 
         .verification-back:hover {
-          color: var(--brew-espresso);
+          color: var(--espresso);
         }
 
-        .verification-header {
-          text-align: center;
-          margin-bottom: 28px;
+        .verification-heading {
+          margin-bottom: 37px;
         }
 
-        .verification-icon {
-          width: 62px;
-          height: 62px;
-          margin: 0 auto 18px;
+        .verification-kicker {
           display: flex;
           align-items: center;
-          justify-content: center;
-          border-radius: 20px;
-          background: var(--brew-soft);
-          color: var(--brew-caramel-dark);
-          border: 1px solid #EBDDCF;
+          gap: 9px;
+          margin-bottom: 17px;
+          color: var(--caramel);
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 1.8px;
+          text-transform: uppercase;
+        }
+
+        .verification-kicker::before {
+          content: "";
+          width: 25px;
+          height: 1px;
+          background: var(--caramel);
         }
 
         .verification-title {
           margin: 0;
-          color: var(--brew-espresso);
-          font-family: "Playfair Display", serif;
-          font-size: 30px;
-          letter-spacing: -.6px;
+          color: var(--espresso);
+          font-family: var(--serif);
+          font-size: 43px;
+          font-weight: 500;
+          line-height: 1;
+          letter-spacing: -1.7px;
         }
 
         .verification-description {
-          margin: 9px auto 0;
-          max-width: 390px;
-          color: var(--brew-muted);
-          font-size: 13px;
-          line-height: 1.65;
+          margin: 14px 0 0;
+          color: var(--muted);
+          font-size: 12px;
+          line-height: 1.75;
         }
 
         .phone-display {
-          color: var(--brew-espresso);
+          color: var(--espresso);
           font-weight: 700;
-          word-break: break-word;
+        }
+
+        .phone-input {
+          padding-left: 30px;
         }
 
         .otp-input {
           width: 100%;
-          height: 66px;
-          border: 1px solid var(--brew-border);
-          border-radius: 16px;
-          background: #FFFEFC;
-          color: var(--brew-espresso);
-          text-align: center;
-          letter-spacing: 12px;
-          padding-left: 12px;
-          font-size: 25px;
-          font-weight: 700;
+          height: 68px;
+          padding: 0;
+          border: 0;
+          border-bottom: 1px solid var(--line-dark);
+          border-radius: 0;
           outline: none;
-          transition: .2s ease;
+          background: transparent;
+          color: var(--espresso);
+          text-align: center;
+          letter-spacing: 14px;
+          font-size: 27px;
+          font-weight: 600;
+          transition:
+            border-color .2s ease,
+            box-shadow .2s ease;
         }
 
         .otp-input::placeholder {
-          color: #D2C5BA;
-          letter-spacing: 9px;
+          color: #D0C4BA;
+          letter-spacing: 12px;
         }
 
         .otp-input:focus {
-          border-color: var(--brew-caramel);
-          box-shadow:
-            0 0 0 4px rgba(196,149,106,.12);
+          border-color: var(--coffee);
+          box-shadow: 0 1px 0 var(--coffee);
         }
 
         .timer-row {
           display: flex;
-          justify-content: center;
           align-items: center;
-          gap: 7px;
-          margin-top: 12px;
-          color: var(--brew-muted);
-          font-size: 12px;
+          justify-content: center;
+          gap: 6px;
+          margin-top: 13px;
+          color: var(--muted);
+          font-size: 10px;
         }
 
         .timer-active {
-          color: var(--brew-caramel-dark);
+          color: var(--coffee);
           font-weight: 700;
         }
 
         .timer-expired {
-          color: var(--brew-danger);
+          color: var(--danger);
           font-weight: 700;
         }
 
         .verification-actions {
           display: grid;
-          grid-template-columns: .8fr 1.2fr;
+          grid-template-columns: .7fr 1.3fr;
           gap: 10px;
-          margin-top: 18px;
+          margin-top: 27px;
         }
 
         .secondary-button {
-          min-height: 52px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 7px;
-          border: 1px solid var(--brew-border);
-          border-radius: 14px;
-          background: var(--brew-soft);
-          color: var(--brew-espresso);
-          font-size: 13px;
+          min-height: 50px;
+          border: 1px solid var(--line-dark);
+          border-radius: 0;
+          background: transparent;
+          color: var(--ink);
+          font-size: 11px;
           font-weight: 700;
           cursor: pointer;
-          transition: .2s ease;
+          transition:
+            background .2s ease,
+            border-color .2s ease;
         }
 
         .secondary-button:hover:not(:disabled) {
-          background: #EFE4D7;
-          border-color: #D8C6B5;
+          background: white;
+          border-color: #C7B7A8;
+        }
+
+        .secondary-button:disabled {
+          opacity: .5;
+          cursor: not-allowed;
+        }
+
+        .verification-primary {
+          margin-top: 0;
         }
 
         .resend-area {
-          margin-top: 20px;
+          margin-top: 23px;
           text-align: center;
-          color: var(--brew-muted);
-          font-size: 12px;
-          line-height: 1.6;
+          color: var(--muted);
+          font-size: 10px;
+          line-height: 1.7;
         }
 
         .resend-button {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          margin-top: 4px;
-          padding: 4px;
+          margin-top: 3px;
           border: 0;
+          padding: 0;
           background: transparent;
-          color: var(--brew-caramel-dark);
+          color: var(--coffee);
+          font-size: 10px;
           font-weight: 700;
           cursor: pointer;
         }
 
         .resend-button:hover:not(:disabled) {
-          color: var(--brew-espresso);
+          color: var(--espresso);
         }
 
         .resend-button:disabled {
-          opacity: .6;
+          opacity: .55;
           cursor: not-allowed;
         }
 
@@ -1996,10 +2248,10 @@ export default function Login({ setPage }) {
           align-items: center;
           justify-content: center;
           gap: 7px;
-          margin-top: 22px;
-          color: #9A8A7D;
-          font-size: 11px;
-          text-align: center;
+          margin-top: 31px;
+          color: #A3978E;
+          font-size: 9px;
+          letter-spacing: .2px;
         }
 
         .recaptcha-container {
@@ -2007,56 +2259,73 @@ export default function Login({ setPage }) {
           overflow: hidden;
         }
 
-        .phone-used-overlay {
+        /* =====================================================
+           MODAL
+        ===================================================== */
+
+        .modal-overlay {
           position: fixed;
           inset: 0;
           z-index: 10000;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 20px;
-          background: rgba(30,15,7,.68);
-          backdrop-filter: blur(8px);
-          animation: overlayIn .2s ease;
+          padding: 22px;
+          background: rgba(28, 16, 9, .66);
+          backdrop-filter: blur(10px);
+          animation: fadeIn .2s ease;
         }
 
-        .phone-used-modal {
+        .phone-modal {
           width: 100%;
           max-width: 410px;
-          padding: 34px;
-          border-radius: 24px;
-          background: var(--brew-cream);
-          box-shadow:
-            0 30px 90px rgba(0,0,0,.3);
-          text-align: center;
-          animation: modalPop .25s ease;
+          padding: 40px;
+          background: var(--paper);
+          box-shadow: 0 30px 80px rgba(0,0,0,.28);
+          animation: modalIn .28s ease;
+        }
+
+        .modal-topline {
+          width: 36px;
+          height: 1px;
+          margin-bottom: 25px;
+          background: var(--caramel);
         }
 
         .modal-icon {
-          width: 56px;
-          height: 56px;
-          margin: 0 auto 18px;
+          width: 44px;
+          height: 44px;
+          margin-bottom: 22px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 18px;
-          background: #F4E7DA;
-          color: var(--brew-caramel-dark);
+          border: 1px solid var(--line);
+          color: var(--coffee);
         }
 
-        .phone-used-modal h2 {
+        .phone-modal h2 {
           margin: 0;
-          color: var(--brew-espresso);
-          font-family: "Playfair Display", serif;
-          font-size: 25px;
+          color: var(--espresso);
+          font-family: var(--serif);
+          font-size: 29px;
+          font-weight: 500;
+          letter-spacing: -.8px;
         }
 
-        .phone-used-modal p {
-          margin: 12px 0 24px;
-          color: var(--brew-muted);
-          font-size: 13px;
-          line-height: 1.65;
+        .phone-modal p {
+          margin: 13px 0 27px;
+          color: var(--muted);
+          font-size: 12px;
+          line-height: 1.75;
         }
+
+        .modal-button {
+          margin-top: 0;
+        }
+
+        /* =====================================================
+           GREETING
+        ===================================================== */
 
         .greeting-screen {
           position: fixed;
@@ -2066,95 +2335,149 @@ export default function Login({ setPage }) {
           align-items: center;
           justify-content: center;
           flex-direction: column;
-          background:
-            radial-gradient(
-              circle at 50% 20%,
-              rgba(196,149,106,.14),
-              transparent 30%
-            ),
-            var(--brew-cream);
+          background: var(--espresso);
+          color: white;
           animation: greetingIn .55s ease;
         }
 
-        .greeting-logo {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          color: var(--brew-espresso);
-          font-family: "Playfair Display", serif;
-          font-size: 42px;
-          letter-spacing: -1.5px;
-          margin-bottom: 52px;
+        .greeting-screen::before {
+          content: "";
+          position: absolute;
+          width: 620px;
+          height: 620px;
+          border-radius: 50%;
+          border: 1px solid rgba(255,255,255,.08);
         }
 
-        .greeting-logo-icon {
-          width: 46px;
-          height: 46px;
+        .greeting-screen::after {
+          content: "";
+          position: absolute;
+          width: 440px;
+          height: 440px;
+          border-radius: 50%;
+          border: 1px solid rgba(255,255,255,.055);
+        }
+
+        .greeting-content {
+          position: relative;
+          z-index: 2;
+          text-align: center;
+        }
+
+        .greeting-brand {
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 15px;
-          background: var(--brew-soft);
-          color: var(--brew-caramel-dark);
+          gap: 10px;
+          margin-bottom: 75px;
+          color: rgba(255,255,255,.9);
+          font-family: var(--serif);
+          font-size: 30px;
+          letter-spacing: -1px;
         }
 
-        .greeting-title {
-          color: var(--brew-espresso);
-          font-size: 23px;
-          font-weight: 600;
+        .greeting-mark {
+          width: 38px;
+          height: 38px;
+          border: 1px solid rgba(255,255,255,.2);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #D2AB84;
+        }
+
+        .greeting-kicker {
+          color: #C8A27E;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 2.2px;
+          text-transform: uppercase;
         }
 
         .greeting-name {
-          margin-top: 8px;
-          color: var(--brew-caramel-dark);
-          font-family: "Playfair Display", serif;
-          font-size: clamp(38px, 7vw, 58px);
-          text-align: center;
-          letter-spacing: -1.5px;
+          margin-top: 14px;
+          color: white;
+          font-family: var(--serif);
+          font-size: clamp(45px, 7vw, 70px);
+          font-weight: 400;
+          letter-spacing: -2.5px;
         }
 
         .greeting-sub {
           display: flex;
           align-items: center;
-          gap: 8px;
-          margin-top: 18px;
-          color: var(--brew-muted);
-          font-size: 14px;
+          justify-content: center;
+          gap: 11px;
+          margin-top: 21px;
+          color: rgba(255,255,255,.48);
+          font-size: 11px;
         }
 
         .greeting-line {
-          width: 28px;
+          width: 30px;
           height: 1px;
-          background: var(--brew-caramel);
-          opacity: .6;
+          background: rgba(255,255,255,.2);
         }
 
-        @keyframes modalPop {
+        /* =====================================================
+           LOADING
+        ===================================================== */
+
+        .spinner {
+          width: 15px;
+          height: 15px;
+          border: 1.5px solid rgba(255,255,255,.28);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin .7s linear infinite;
+        }
+
+        .spinner-dark {
+          border-color: rgba(43,22,11,.18);
+          border-top-color: var(--espresso);
+        }
+
+        .spin-icon {
+          animation: spin .7s linear infinite;
+        }
+
+        /* =====================================================
+           ANIMATIONS
+        ===================================================== */
+
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes fadeIn {
           from {
             opacity: 0;
-            transform: translateY(8px) scale(.97);
           }
 
           to {
             opacity: 1;
-            transform: translateY(0) scale(1);
           }
         }
 
-        @keyframes overlayIn {
+        @keyframes modalIn {
           from {
             opacity: 0;
+            transform: translateY(10px);
           }
 
           to {
             opacity: 1;
+            transform: translateY(0);
           }
         }
 
         @keyframes greetingIn {
           from {
             opacity: 0;
-            transform: scale(.98);
+            transform: scale(.985);
           }
 
           to {
@@ -2163,85 +2486,101 @@ export default function Login({ setPage }) {
           }
         }
 
-        .spinner {
-          width: 17px;
-          height: 17px;
-          border: 2px solid rgba(255,255,255,.3);
-          border-top-color: white;
-          border-radius: 50%;
-          animation: spin .7s linear infinite;
-        }
+        /* =====================================================
+           TABLET
+        ===================================================== */
 
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
+        @media (max-width: 950px) {
+          .auth-page {
+            padding: 18px;
           }
-        }
 
-        @media (max-width: 850px) {
-          .login-shell {
-            max-width: 620px;
-            min-height: auto;
+          .auth-frame {
+            max-width: 650px;
             grid-template-columns: 1fr;
+            min-height: 700px;
           }
 
-          .login-brand-panel {
+          .editorial-side {
             display: none;
           }
 
-          .login-content {
-            min-height: 650px;
-            padding: 48px clamp(26px, 7vw, 60px);
+          .form-side {
+            min-height: 700px;
+            padding: 60px clamp(36px, 9vw, 72px);
           }
         }
 
-        @media (max-width: 520px) {
-          .login-page {
-            padding: 0;
-            align-items: stretch;
-          }
+        /* =====================================================
+           MOBILE
+        ===================================================== */
 
-          .login-shell {
+        @media (max-width: 560px) {
+          .auth-page {
             min-height: 100dvh;
-            border: 0;
-            border-radius: 0;
-            box-shadow: none;
-            background: var(--brew-cream);
+            padding: 0;
+            background: var(--paper);
           }
 
-          .login-content {
+          .auth-frame {
+            min-height: 100dvh;
+            box-shadow: none;
+            background: var(--paper);
+          }
+
+          .form-side {
             min-height: 100dvh;
             padding:
-              38px 22px
-              max(28px, env(safe-area-inset-bottom))
-              22px;
-            background: var(--brew-cream);
+              34px 24px
+              max(30px, env(safe-area-inset-bottom))
+              24px;
+            justify-content: center;
           }
 
-          .auth-title {
-            font-size: 32px;
+          .form-topline {
+            margin-bottom: 39px;
+          }
+
+          .auth-heading {
+            font-size: 40px;
+          }
+
+          .auth-intro {
+            margin-bottom: 32px;
+          }
+
+          .verification-back {
+            margin-bottom: 39px;
           }
 
           .verification-title {
-            font-size: 28px;
+            font-size: 39px;
           }
 
           .verification-actions {
             grid-template-columns: 1fr;
           }
 
-          .greeting-logo {
-            font-size: 36px;
+          .secondary-button {
+            order: 2;
           }
 
-          .greeting-title {
-            font-size: 20px;
+          .verification-primary {
+            order: 1;
           }
 
-          .greeting-name {
-            padding: 0 20px;
+          .phone-modal {
+            padding: 30px 25px;
+          }
+
+          .greeting-brand {
+            margin-bottom: 58px;
           }
         }
+
+        /* =====================================================
+           REDUCED MOTION
+        ===================================================== */
 
         @media (prefers-reduced-motion: reduce) {
           *,
@@ -2250,6 +2589,7 @@ export default function Login({ setPage }) {
             animation-duration: .01ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: .01ms !important;
+            scroll-behavior: auto !important;
           }
         }
       `}</style>
@@ -2260,32 +2600,41 @@ export default function Login({ setPage }) {
 
       {showPhoneUsedModal && (
         <div
-          className="phone-used-overlay"
+          className="modal-overlay"
           role="dialog"
           aria-modal="true"
           aria-labelledby="phone-used-title"
         >
-          <div className="phone-used-modal">
+          <div className="phone-modal">
+            <div className="modal-topline" />
+
             <div className="modal-icon">
               <AlertCircle
-                size={27}
-                strokeWidth={1.8}
+                size={21}
+                strokeWidth={1.6}
               />
             </div>
 
             <h2 id="phone-used-title">
-              Phone Number Already Used
+              Number already in use
             </h2>
 
             <p>{phoneUsedMessage}</p>
 
             <button
               type="button"
-              className="primary-button"
+              className="continue-button modal-button"
               onClick={closePhoneUsedModal}
               disabled={phoneLoading}
             >
-              Choose Another Number
+              <span>Choose another number</span>
+
+              <span className="continue-arrow">
+                <ArrowRight
+                  size={16}
+                  strokeWidth={1.7}
+                />
+              </span>
             </button>
           </div>
         </div>
@@ -2297,637 +2646,743 @@ export default function Login({ setPage }) {
 
       {showGreeting && (
         <div className="greeting-screen">
-          <div className="greeting-logo">
-            <div className="greeting-logo-icon">
-              <Coffee
-                size={24}
-                strokeWidth={1.8}
-              />
+          <div className="greeting-content">
+            <div className="greeting-brand">
+              <div className="greeting-mark">
+                <Coffee
+                  size={19}
+                  strokeWidth={1.5}
+                />
+              </div>
+
+              Brewed.
             </div>
 
-            Brewed.
-          </div>
+            <div className="greeting-kicker">
+              {getGreeting()}
+            </div>
 
-          <div className="greeting-title">
-            {getGreeting()},
-          </div>
+            <div className="greeting-name">
+              {userName}
+            </div>
 
-          <div className="greeting-name">
-            {userName}
-          </div>
-
-          <div className="greeting-sub">
-            <span className="greeting-line" />
-            Ready for your next coffee?
-            <Coffee
-              size={15}
-              strokeWidth={1.8}
-            />
-            <span className="greeting-line" />
+            <div className="greeting-sub">
+              <span className="greeting-line" />
+              Your ritual awaits
+              <Coffee
+                size={13}
+                strokeWidth={1.5}
+              />
+              <span className="greeting-line" />
+            </div>
           </div>
         </div>
       )}
 
       {/* =====================================================
-          LOGIN PAGE
+          AUTH PAGE
       ===================================================== */}
 
-      <div className="login-page">
-        <div className="login-shell">
+      <main className="auth-page">
+        <section className="auth-frame">
 
           {/* =================================================
-              BRAND PANEL
+              EDITORIAL BRAND SIDE
           ================================================= */}
 
-          <aside className="login-brand-panel">
-            <div className="brand-content">
-              <div className="brand-logo">
-                <div className="brand-logo-icon">
-                  <Coffee
-                    size={21}
-                    strokeWidth={1.8}
-                  />
-                </div>
+          <aside className="editorial-side">
+            <div className="editorial-texture" />
 
-                Brewed.
-              </div>
+            <div className="coffee-orbit" />
 
-              <h1 className="brand-heading">
-                Your coffee,
-                <br />
-                your ritual.
-              </h1>
-
-              <p className="brand-description">
-                A better way to order, earn rewards,
-                manage your favourites and make every
-                Brewed visit feel a little more personal.
-              </p>
+            <div className="coffee-cup-art">
+              <div className="steam" />
+              <div className="steam steam-two" />
             </div>
 
-            <div className="brand-footer">
-              <div className="brand-feature">
-                <div className="brand-feature-icon">
-                  <ShieldCheck
-                    size={16}
-                    strokeWidth={1.8}
+            <div className="editorial-content">
+
+              <div className="brand-lockup">
+                <div className="brand-mark">
+                  <Coffee
+                    size={18}
+                    strokeWidth={1.5}
                   />
                 </div>
 
-                Secure account & phone verification
+                <div className="brand-name">
+                  Brewed.
+                </div>
               </div>
 
-              <div style={{ marginTop: 18 }}>
-                Brewed · Crafted for coffee people
+              <div className="editorial-copy">
+                <div className="editorial-kicker">
+                  The Brewed ritual
+                </div>
+
+                <h1 className="editorial-title">
+                  Good coffee.
+                  <br />
+                  <em>Good moments.</em>
+                </h1>
+
+                <p className="editorial-description">
+                  Your favourites, rewards and next
+                  coffee — thoughtfully brought together
+                  in one quiet place.
+                </p>
               </div>
+
+              <div className="editorial-footer">
+                <div>
+                  Crafted for coffee people
+                </div>
+
+                <div className="editorial-footer-line" />
+
+                <div>
+                  Est. Brewed
+                </div>
+              </div>
+
             </div>
           </aside>
 
           {/* =================================================
-              AUTH CONTENT
+              FORM SIDE
           ================================================= */}
 
-          <main className="login-content">
+          <section className="form-side">
+            <div className="form-inner">
 
-            {showPhoneVerification ? (
-              <>
-                <button
-                  type="button"
-                  className="verification-back"
-                  onClick={cancelPhoneVerification}
-                  disabled={phoneLoading}
-                >
-                  <ArrowLeft size={15} />
-                  Back to sign in
-                </button>
+              {showPhoneVerification ? (
+                <>
+                  {/* =========================================
+                      PHONE BACK
+                  ========================================= */}
 
-                <div className="verification-header">
-                  <div className="verification-icon">
-                    <ShieldCheck
-                      size={29}
-                      strokeWidth={1.6}
-                    />
-                  </div>
-
-                  <h2 className="verification-title">
-                    Verify your phone
-                  </h2>
-
-                  <p className="verification-description">
-                    Phone verification is required
-                    before accessing your Brewed account.
-                    <br />
-                    This helps protect your account,
-                    rewards and loyalty points.
-                  </p>
-                </div>
-
-                {!otpSent ? (
-                  <>
-                    <div className="field-group">
-                      <label
-                        className="field-label"
-                        htmlFor="phone"
-                      >
-                        Phone number
-                      </label>
-
-                      <div className="input-wrapper">
-                        <Phone
-                          className="input-icon"
-                          size={18}
-                          strokeWidth={1.8}
-                        />
-
-                        <input
-                          id="phone"
-                          className="auth-input"
-                          type="tel"
-                          inputMode="tel"
-                          autoComplete="tel"
-                          placeholder="+919876543210"
-                          value={phone}
-                          onChange={(e) =>
-                            setPhone(e.target.value)
-                          }
-                          autoFocus
-                          disabled={phoneLoading}
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      className="primary-button"
-                      onClick={handleSendPhoneOTP}
-                      disabled={
-                        phoneLoading ||
-                        !phone.trim()
-                      }
-                    >
-                      {phoneLoading ? (
-                        <>
-                          <span className="spinner" />
-                          Sending code...
-                        </>
-                      ) : (
-                        <>
-                          Send verification code
-                          <ArrowLeft
-                            size={16}
-                            style={{
-                              transform:
-                                "rotate(180deg)",
-                            }}
-                          />
-                        </>
-                      )}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <p
-                      className="verification-description"
-                      style={{ marginBottom: 16 }}
-                    >
-                      Enter the 6-digit code sent to
-                      <br />
-                      <span className="phone-display">
-                        {phone}
-                      </span>
-                    </p>
-
-                    <input
-                      className="otp-input"
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      maxLength={6}
-                      placeholder="000000"
-                      value={otp}
-                      onChange={(e) =>
-                        setOtp(
-                          e.target.value
-                            .replace(/\D/g, "")
-                            .slice(0, 6)
-                        )
-                      }
-                      autoFocus
-                      disabled={phoneLoading}
-                      aria-label="6-digit verification code"
-                    />
-
-                    {otpTimer > 0 ? (
-                      <div className="timer-row">
-                        <Clock3
-                          size={14}
-                          strokeWidth={1.8}
-                        />
-
-                        Code expires in
-
-                        <span className="timer-active">
-                          {formatTimer(otpTimer)}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="timer-row">
-                        <AlertCircle
-                          size={14}
-                          strokeWidth={1.8}
-                        />
-
-                        <span className="timer-expired">
-                          Code expired. Request a new
-                          code below.
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="verification-actions">
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={changePhoneNumber}
-                        disabled={phoneLoading}
-                      >
-                        <Phone size={15} />
-                        Change number
-                      </button>
-
-                      <button
-                        type="button"
-                        className="primary-button"
-                        onClick={handleVerifyPhoneOTP}
-                        disabled={
-                          phoneLoading ||
-                          otp.length !== 6 ||
-                          !verificationId ||
-                          otpTimer <= 0
-                        }
-                      >
-                        {phoneLoading ? (
-                          <>
-                            <span className="spinner" />
-                            Verifying...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 size={17} />
-                            Verify & continue
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    <div className="resend-area">
-                      {resendTimer > 0 ? (
-                        <>
-                          You can request another code
-                          in{" "}
-                          <strong>
-                            {formatTimer(resendTimer)}
-                          </strong>
-                        </>
-                      ) : (
-                        <>
-                          Didn't receive the code?
-                          <br />
-
-                          <button
-                            type="button"
-                            className="resend-button"
-                            onClick={
-                              handleResendPhoneOTP
-                            }
-                            disabled={
-                              phoneLoading ||
-                              resendingOTP
-                            }
-                          >
-                            <RefreshCw
-                              size={14}
-                            />
-
-                            {resendingOTP
-                              ? "Sending new code..."
-                              : "Resend OTP"}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                <div className="security-note">
-                  <LockKeyhole
-                    size={13}
-                    strokeWidth={1.8}
-                  />
-
-                  Your verification is securely
-                  handled by Firebase.
-                </div>
-
-                <div
-                  key={recaptchaKey}
-                  ref={recaptchaContainerRef}
-                  className="recaptcha-container"
-                />
-
-                {message && (
-                  <div
-                    className="message"
-                    role="alert"
+                  <button
+                    type="button"
+                    className="verification-back"
+                    onClick={
+                      cancelPhoneVerification
+                    }
+                    disabled={phoneLoading}
                   >
-                    <AlertCircle
-                      className="message-icon"
-                      size={16}
+                    <ArrowLeft
+                      size={14}
                       strokeWidth={1.8}
                     />
 
-                    <span>{message}</span>
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                {/* =============================================
-                    AUTH HEADER
-                ============================================= */}
+                    Back
+                  </button>
 
-                <div className="auth-header">
-                  <div className="auth-eyebrow">
-                    <Coffee
-                      size={13}
-                      strokeWidth={2}
+                  {/* =========================================
+                      PHONE HEADING
+                  ========================================= */}
+
+                  <div className="verification-heading">
+                    <div className="verification-kicker">
+                      <ShieldCheck
+                        size={13}
+                        strokeWidth={1.7}
+                      />
+
+                      Account security
+                    </div>
+
+                    <h2 className="verification-title">
+                      Verify your
+                      <br />
+                      phone.
+                    </h2>
+
+                    <p className="verification-description">
+                      A quick verification keeps your
+                      Brewed account, rewards and loyalty
+                      points protected.
+                    </p>
+                  </div>
+
+                  {/* =========================================
+                      PHONE NUMBER
+                  ========================================= */}
+
+                  {!otpSent ? (
+                    <>
+                      <div className="field">
+                        <label
+                          className="field-label"
+                          htmlFor="phone"
+                        >
+                          Mobile number
+                        </label>
+
+                        <div className="field-control">
+                          <Phone
+                            className="field-icon"
+                            size={17}
+                            strokeWidth={1.7}
+                          />
+
+                          <input
+                            id="phone"
+                            className="auth-input phone-input"
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            placeholder="+919876543210"
+                            value={phone}
+                            onChange={(event) =>
+                              setPhone(
+                                event.target.value
+                              )
+                            }
+                            autoFocus
+                            disabled={phoneLoading}
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="continue-button"
+                        onClick={
+                          handleSendPhoneOTP
+                        }
+                        disabled={
+                          phoneLoading ||
+                          !phone.trim()
+                        }
+                      >
+                        <span>
+                          {phoneLoading ? (
+                            <>
+                              <span
+                                className="spinner"
+                                style={{
+                                  display:
+                                    "inline-block",
+                                  verticalAlign:
+                                    "middle",
+                                  marginRight: 8,
+                                }}
+                              />
+
+                              Sending code
+                            </>
+                          ) : (
+                            "Send verification code"
+                          )}
+                        </span>
+
+                        {!phoneLoading && (
+                          <span className="continue-arrow">
+                            <ArrowRight
+                              size={16}
+                              strokeWidth={1.7}
+                            />
+                          </span>
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* =======================================
+                          OTP
+                      ======================================= */}
+
+                      <div
+                        className="verification-description"
+                        style={{
+                          marginTop: 0,
+                          marginBottom: 18,
+                        }}
+                      >
+                        Enter the six-digit code sent to
+                        <br />
+
+                        <span className="phone-display">
+                          {phone}
+                        </span>
+                      </div>
+
+                      <input
+                        className="otp-input"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        maxLength={6}
+                        placeholder="000000"
+                        value={otp}
+                        onChange={(event) =>
+                          setOtp(
+                            event.target.value
+                              .replace(/\D/g, "")
+                              .slice(0, 6)
+                          )
+                        }
+                        autoFocus
+                        disabled={phoneLoading}
+                        aria-label="6-digit verification code"
+                      />
+
+                      {otpTimer > 0 ? (
+                        <div className="timer-row">
+                          <Clock3
+                            size={13}
+                            strokeWidth={1.7}
+                          />
+
+                          Code expires in
+
+                          <span className="timer-active">
+                            {formatTimer(otpTimer)}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="timer-row">
+                          <AlertCircle
+                            size={13}
+                            strokeWidth={1.7}
+                          />
+
+                          <span className="timer-expired">
+                            Code expired
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="verification-actions">
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          onClick={
+                            changePhoneNumber
+                          }
+                          disabled={phoneLoading}
+                        >
+                          Change number
+                        </button>
+
+                        <button
+                          type="button"
+                          className="continue-button verification-primary"
+                          onClick={
+                            handleVerifyPhoneOTP
+                          }
+                          disabled={
+                            phoneLoading ||
+                            otp.length !== 6 ||
+                            !verificationId ||
+                            otpTimer <= 0
+                          }
+                        >
+                          <span>
+                            {phoneLoading ? (
+                              <>
+                                <span
+                                  className="spinner"
+                                  style={{
+                                    display:
+                                      "inline-block",
+                                    verticalAlign:
+                                      "middle",
+                                    marginRight: 8,
+                                  }}
+                                />
+
+                                Verifying
+                              </>
+                            ) : (
+                              "Verify & continue"
+                            )}
+                          </span>
+
+                          {!phoneLoading && (
+                            <span className="continue-arrow">
+                              <Check
+                                size={15}
+                                strokeWidth={1.8}
+                              />
+                            </span>
+                          )}
+                        </button>
+                      </div>
+
+                      <div className="resend-area">
+                        {resendTimer > 0 ? (
+                          <>
+                            You can request another
+                            code in{" "}
+                            <strong>
+                              {formatTimer(
+                                resendTimer
+                              )}
+                            </strong>
+                          </>
+                        ) : (
+                          <>
+                            Didn't receive the code?
+
+                            <br />
+
+                            <button
+                              type="button"
+                              className="resend-button"
+                              onClick={
+                                handleResendPhoneOTP
+                              }
+                              disabled={
+                                phoneLoading ||
+                                resendingOTP
+                              }
+                            >
+                              <RefreshCw
+                                size={12}
+                                strokeWidth={1.8}
+                                className={
+                                  resendingOTP
+                                    ? "spin-icon"
+                                    : ""
+                                }
+                              />
+
+                              {resendingOTP
+                                ? "Sending new code..."
+                                : "Resend OTP"}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  <div className="security-note">
+                    <LockKeyhole
+                      size={12}
+                      strokeWidth={1.7}
                     />
 
-                    Brewed
+                    Secured by Firebase
                   </div>
 
-                  <h2 className="auth-title">
+                  <div
+                    key={recaptchaKey}
+                    ref={recaptchaContainerRef}
+                    className="recaptcha-container"
+                  />
+
+                  <Message>
+                    {message}
+                  </Message>
+                </>
+              ) : (
+                <>
+                  {/* =========================================
+                      AUTH TOPLINE
+                  ========================================= */}
+
+                  <div className="form-topline">
+                    <span className="form-label">
+                      {isLogin
+                        ? "Member access"
+                        : "Join the ritual"}
+                    </span>
+
+                    <span className="form-count">
+                      01 / 01
+                    </span>
+                  </div>
+
+                  {/* =========================================
+                      AUTH HEADING
+                  ========================================= */}
+
+                  <h2 className="auth-heading">
                     {isLogin
                       ? "Welcome back."
-                      : "Join Brewed."}
+                      : "Make yourself at home."}
                   </h2>
 
-                  <p className="auth-subtitle">
+                  <p className="auth-intro">
                     {isLogin
-                      ? "Sign in to continue your coffee ritual."
-                      : "Create your account and start earning rewards."}
+                      ? "Sign in to pick up where you left off."
+                      : "Create your Brewed account and make every cup a little more rewarding."}
                   </p>
-                </div>
 
-                {/* =============================================
-                    FORM
-                ============================================= */}
+                  {/* =========================================
+                      FORM
+                  ========================================= */}
 
-                <form
-                  className="auth-form"
-                  onSubmit={handleSubmit}
-                >
-                  {!isLogin && (
-                    <div className="field-group">
+                  <form
+                    className="auth-form"
+                    onSubmit={handleSubmit}
+                  >
+                    {!isLogin && (
+                      <div className="field">
+                        <label
+                          className="field-label"
+                          htmlFor="name"
+                        >
+                          Your name
+                        </label>
+
+                        <div className="field-control">
+                          <UserRound
+                            className="field-icon"
+                            size={17}
+                            strokeWidth={1.7}
+                          />
+
+                          <input
+                            id="name"
+                            className="auth-input"
+                            type="text"
+                            placeholder="How should we call you?"
+                            value={name}
+                            onChange={(event) =>
+                              setName(
+                                event.target.value
+                              )
+                            }
+                            autoComplete="name"
+                            required
+                            disabled={loading}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="field">
                       <label
                         className="field-label"
-                        htmlFor="name"
+                        htmlFor="email"
                       >
-                        Full name
+                        Email address
                       </label>
 
-                      <div className="input-wrapper">
-                        <UserRound
-                          className="input-icon"
-                          size={18}
-                          strokeWidth={1.8}
+                      <div className="field-control">
+                        <Mail
+                          className="field-icon"
+                          size={17}
+                          strokeWidth={1.7}
                         />
 
                         <input
-                          id="name"
+                          id="email"
                           className="auth-input"
-                          type="text"
-                          placeholder="Your name"
-                          value={name}
-                          onChange={(e) =>
-                            setName(e.target.value)
+                          type="email"
+                          placeholder="you@example.com"
+                          value={email}
+                          onChange={(event) =>
+                            setEmail(
+                              event.target.value
+                            )
                           }
-                          autoComplete="name"
+                          autoComplete="email"
                           required
                           disabled={loading}
                         />
                       </div>
                     </div>
-                  )}
 
-                  <div className="field-group">
-                    <label
-                      className="field-label"
-                      htmlFor="email"
-                    >
-                      Email address
-                    </label>
-
-                    <div className="input-wrapper">
-                      <Mail
-                        className="input-icon"
-                        size={18}
-                        strokeWidth={1.8}
-                      />
-
-                      <input
-                        id="email"
-                        className="auth-input"
-                        type="email"
-                        placeholder="you@example.com"
-                        value={email}
-                        onChange={(e) =>
-                          setEmail(e.target.value)
-                        }
-                        autoComplete="email"
-                        required
-                        disabled={loading}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="field-group">
-                    <label
-                      className="field-label"
-                      htmlFor="password"
-                    >
-                      Password
-                    </label>
-
-                    <div className="input-wrapper">
-                      <LockKeyhole
-                        className="input-icon"
-                        size={18}
-                        strokeWidth={1.8}
-                      />
-
-                      <input
-                        id="password"
-                        className="auth-input password-input"
-                        type={
-                          showPassword
-                            ? "text"
-                            : "password"
-                        }
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) =>
-                          setPassword(e.target.value)
-                        }
-                        autoComplete={
-                          isLogin
-                            ? "current-password"
-                            : "new-password"
-                        }
-                        minLength={6}
-                        required
-                        disabled={loading}
-                      />
-
-                      <button
-                        type="button"
-                        className="password-button"
-                        onClick={() =>
-                          setShowPassword(
-                            (prev) => !prev
-                          )
-                        }
-                        disabled={loading}
-                        aria-label={
-                          showPassword
-                            ? "Hide password"
-                            : "Show password"
-                        }
+                    <div className="field">
+                      <label
+                        className="field-label"
+                        htmlFor="password"
                       >
-                        {showPassword ? (
-                          <EyeOff
-                            size={18}
-                            strokeWidth={1.8}
-                          />
+                        Password
+                      </label>
+
+                      <div className="field-control password-control">
+                        <LockKeyhole
+                          className="field-icon"
+                          size={17}
+                          strokeWidth={1.7}
+                        />
+
+                        <input
+                          id="password"
+                          className="auth-input"
+                          type={
+                            showPassword
+                              ? "text"
+                              : "password"
+                          }
+                          placeholder="Enter your password"
+                          value={password}
+                          onChange={(event) =>
+                            setPassword(
+                              event.target.value
+                            )
+                          }
+                          autoComplete={
+                            isLogin
+                              ? "current-password"
+                              : "new-password"
+                          }
+                          required
+                          disabled={loading}
+                        />
+
+                        <button
+                          type="button"
+                          className="password-toggle"
+                          onClick={() =>
+                            setShowPassword(
+                              (previous) =>
+                                !previous
+                            )
+                          }
+                          disabled={loading}
+                          aria-label={
+                            showPassword
+                              ? "Hide password"
+                              : "Show password"
+                          }
+                        >
+                          {showPassword ? (
+                            <EyeOff
+                              size={16}
+                              strokeWidth={1.7}
+                            />
+                          ) : (
+                            <Eye
+                              size={16}
+                              strokeWidth={1.7}
+                            />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {isLogin && (
+                      <div className="form-utility">
+                        <button
+                          type="button"
+                          className="minimal-button"
+                          onClick={forgotPassword}
+                          disabled={loading}
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
+                    )}
+
+                    {/* =======================================
+                        PRIMARY
+                    ======================================= */}
+
+                    <button
+                      type="submit"
+                      className="continue-button"
+                      disabled={loading}
+                    >
+                      <span>
+                        {loading ? (
+                          <>
+                            <span
+                              className="spinner"
+                              style={{
+                                display:
+                                  "inline-block",
+                                verticalAlign:
+                                  "middle",
+                                marginRight: 8,
+                              }}
+                            />
+
+                            Please wait
+                          </>
+                        ) : isLogin ? (
+                          "Continue"
                         ) : (
-                          <Eye
-                            size={18}
-                            strokeWidth={1.8}
-                          />
+                          "Create my account"
                         )}
-                      </button>
-                    </div>
-                  </div>
+                      </span>
 
-                  {isLogin && (
-                    <div className="forgot-row">
-                      <button
-                        type="button"
-                        className="text-button"
-                        onClick={forgotPassword}
-                        disabled={loading}
-                      >
-                        Forgot password?
-                      </button>
-                    </div>
-                  )}
+                      {!loading && (
+                        <span className="continue-arrow">
+                          <ArrowRight
+                            size={16}
+                            strokeWidth={1.7}
+                          />
+                        </span>
+                      )}
+                    </button>
 
-                  <button
-                    className="primary-button"
-                    type="submit"
-                    disabled={loading}
-                  >
-                    {loading ? (
+                    {/* =======================================
+                        GOOGLE
+                    ======================================= */}
+
+                    <div className="auth-divider">
+                      <span>or continue with</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="google-button"
+                      onClick={
+                        handleGoogleLogin
+                      }
+                      disabled={loading}
+                    >
+                      <GoogleMark />
+
+                      Continue with Google
+                    </button>
+                  </form>
+
+                  {/* =========================================
+                      MESSAGE
+                  ========================================= */}
+
+                  <Message>
+                    {message}
+                  </Message>
+
+                  {/* =========================================
+                      SWITCH
+                  ========================================= */}
+
+                  <div className="auth-switch">
+                    {isLogin ? (
                       <>
-                        <span className="spinner" />
-                        Please wait...
+                        New to Brewed?
+
+                        <button
+                          type="button"
+                          onClick={
+                            switchAuthMode
+                          }
+                          disabled={loading}
+                        >
+                          Create an account
+                        </button>
                       </>
                     ) : (
                       <>
-                        {isLogin
-                          ? "Sign in"
-                          : "Create account"}
+                        Already a member?
 
-                        <ArrowLeft
-                          size={16}
-                          style={{
-                            transform:
-                              "rotate(180deg)",
-                          }}
-                        />
+                        <button
+                          type="button"
+                          onClick={
+                            switchAuthMode
+                          }
+                          disabled={loading}
+                        >
+                          Sign in
+                        </button>
                       </>
                     )}
-                  </button>
-
-                  <div className="divider">
-                    <span>or</span>
                   </div>
-
-                  <button
-                    type="button"
-                    className="google-button"
-                    onClick={handleGoogleLogin}
-                    disabled={loading}
-                  >
-                    <FcGoogle size={20} />
-
-                    Continue with Google
-                  </button>
-                </form>
-
-                {/* =============================================
-                    MESSAGE
-                ============================================= */}
-
-                {message && (
-                  <div
-                    className="message"
-                    role="alert"
-                  >
-                    <AlertCircle
-                      className="message-icon"
-                      size={16}
-                      strokeWidth={1.8}
-                    />
-
-                    <span>{message}</span>
-                  </div>
-                )}
-
-                {/* =============================================
-                    SWITCH LOGIN / SIGNUP
-                ============================================= */}
-
-                <div className="auth-switch">
-                  {isLogin ? (
-                    <>
-                      Don't have an account?
-                      <button
-                        type="button"
-                        onClick={switchAuthMode}
-                        disabled={loading}
-                      >
-                        Sign up
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      Already have an account?
-                      <button
-                        type="button"
-                        onClick={switchAuthMode}
-                        disabled={loading}
-                      >
-                        Sign in
-                      </button>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-          </main>
-        </div>
-      </div>
+                </>
+              )}
+            </div>
+          </section>
+        </section>
+      </main>
     </>
   );
 }
