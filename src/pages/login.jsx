@@ -29,16 +29,16 @@ import {
 import walletService from "../service/walletService";
 import rewardService from "../service/rewardService";
 
+import { FcGoogle } from "react-icons/fc";
+
 import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
-  Chrome,
   Clock3,
   Coffee,
   Eye,
   EyeOff,
-  KeyRound,
   LockKeyhole,
   Mail,
   Phone,
@@ -189,7 +189,10 @@ export default function Login({ setPage }) {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
 
-    return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
+    return `${minutes}:${String(remainingSeconds).padStart(
+      2,
+      "0"
+    )}`;
   }
 
   // =========================================================
@@ -224,6 +227,16 @@ export default function Login({ setPage }) {
   function isValidPhone(phoneNumber) {
     return /^\+[1-9]\d{7,14}$/.test(
       normalizePhone(phoneNumber)
+    );
+  }
+
+  // =========================================================
+  // VALIDATE EMAIL
+  // =========================================================
+
+  function isValidEmail(emailAddress = "") {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+      emailAddress.trim()
     );
   }
 
@@ -274,30 +287,10 @@ export default function Login({ setPage }) {
       },
 
       "expired-callback": () => {
-        console.log("Phone reCAPTCHA expired.");
-
-        if (recaptchaVerifierRef.current) {
-          try {
-            recaptchaVerifierRef.current.clear();
-          } catch (error) {
-            console.error("reCAPTCHA cleanup error:", error);
-          }
-        }
-
         recaptchaVerifierRef.current = null;
       },
 
       "error-callback": () => {
-        console.log("Phone reCAPTCHA error.");
-
-        if (recaptchaVerifierRef.current) {
-          try {
-            recaptchaVerifierRef.current.clear();
-          } catch (error) {
-            console.error("reCAPTCHA cleanup error:", error);
-          }
-        }
-
         recaptchaVerifierRef.current = null;
       },
     });
@@ -411,7 +404,10 @@ export default function Login({ setPage }) {
   // START PHONE VERIFICATION
   // =========================================================
 
-  async function startPhoneVerification(user, newAccount = false) {
+  async function startPhoneVerification(
+    user,
+    newAccount = false
+  ) {
     if (!user) return;
 
     setPendingUser(user);
@@ -527,29 +523,34 @@ export default function Login({ setPage }) {
         setResendTimer(0);
       }
 
-      if (error.code === "auth/too-many-requests") {
-        setMessage(
-          "Too many verification attempts. Please try again later."
-        );
-      } else if (
-        error.code === "auth/invalid-phone-number"
-      ) {
-        setMessage("Please enter a valid phone number.");
-      } else if (error.code === "auth/quota-exceeded") {
-        setMessage(
-          "SMS verification limit reached. Please try again later."
-        );
-      } else if (
-        error.code === "auth/captcha-check-failed"
-      ) {
-        setMessage(
-          "Security verification failed. Please try again."
-        );
-      } else {
-        setMessage(
-          error.message ||
-            "Unable to send verification code."
-        );
+      switch (error.code) {
+        case "auth/too-many-requests":
+          setMessage(
+            "Too many verification attempts. Please try again later."
+          );
+          break;
+
+        case "auth/invalid-phone-number":
+          setMessage("Please enter a valid phone number.");
+          break;
+
+        case "auth/quota-exceeded":
+          setMessage(
+            "SMS verification limit reached. Please try again later."
+          );
+          break;
+
+        case "auth/captcha-check-failed":
+          setMessage(
+            "Security verification failed. Please try again."
+          );
+          break;
+
+        default:
+          setMessage(
+            error.message ||
+              "Unable to send verification code."
+          );
       }
     } finally {
       setPhoneLoading(false);
@@ -569,7 +570,6 @@ export default function Login({ setPage }) {
     }
 
     if (resendTimer > 0) return;
-
     if (resendingOTP || phoneLoading) return;
 
     const cleanedPhone = normalizePhone(phone);
@@ -593,6 +593,8 @@ export default function Login({ setPage }) {
         showPhoneAlreadyUsed();
         return;
       }
+
+      destroyPhoneRecaptcha(true);
 
       const verifier = getPhoneRecaptcha();
       const provider = new PhoneAuthProvider(auth);
@@ -619,25 +621,30 @@ export default function Login({ setPage }) {
 
       destroyPhoneRecaptcha(true);
 
-      if (error.code === "auth/too-many-requests") {
-        setMessage(
-          "Too many verification attempts. Please try again later."
-        );
-      } else if (error.code === "auth/quota-exceeded") {
-        setMessage(
-          "SMS verification limit reached. Please try again later."
-        );
-      } else if (
-        error.code === "auth/captcha-check-failed"
-      ) {
-        setMessage(
-          "Security verification failed. Please try again."
-        );
-      } else {
-        setMessage(
-          error.message ||
-            "Unable to resend verification code."
-        );
+      switch (error.code) {
+        case "auth/too-many-requests":
+          setMessage(
+            "Too many verification attempts. Please try again later."
+          );
+          break;
+
+        case "auth/quota-exceeded":
+          setMessage(
+            "SMS verification limit reached. Please try again later."
+          );
+          break;
+
+        case "auth/captcha-check-failed":
+          setMessage(
+            "Security verification failed. Please try again."
+          );
+          break;
+
+        default:
+          setMessage(
+            error.message ||
+              "Unable to resend verification code."
+          );
       }
     } finally {
       setResendingOTP(false);
@@ -762,67 +769,48 @@ export default function Login({ setPage }) {
         error
       );
 
-      if (
-        error.code ===
-        "auth/invalid-verification-code"
-      ) {
-        setMessage("Incorrect verification code.");
-        return;
+      switch (error.code) {
+        case "auth/invalid-verification-code":
+          setMessage("Incorrect verification code.");
+          break;
+
+        case "auth/code-expired":
+          setVerificationId(null);
+          setOtpTimer(0);
+
+          setMessage(
+            "Code expired. Request a new code below."
+          );
+          break;
+
+        case "auth/credential-already-in-use":
+          showPhoneAlreadyUsed();
+          break;
+
+        case "auth/provider-already-linked":
+          setMessage(
+            "This phone number is already verified on your account."
+          );
+          break;
+
+        case "auth/requires-recent-login":
+          setMessage(
+            "Please log in again and verify your phone."
+          );
+          break;
+
+        case "auth/invalid-credential":
+          setMessage(
+            "The verification code is invalid or has expired. Request a new code."
+          );
+          break;
+
+        default:
+          setMessage(
+            error.message ||
+              "Unable to verify your phone number."
+          );
       }
-
-      if (error.code === "auth/code-expired") {
-        setVerificationId(null);
-        setOtpTimer(0);
-
-        setMessage(
-          "Code expired. Request a new code below."
-        );
-
-        return;
-      }
-
-      if (
-        error.code ===
-        "auth/credential-already-in-use"
-      ) {
-        showPhoneAlreadyUsed();
-        return;
-      }
-
-      if (
-        error.code ===
-        "auth/provider-already-linked"
-      ) {
-        setMessage(
-          "This phone number is already verified on your account."
-        );
-        return;
-      }
-
-      if (
-        error.code ===
-        "auth/requires-recent-login"
-      ) {
-        setMessage(
-          "Please log in again and verify your phone."
-        );
-        return;
-      }
-
-      if (
-        error.code ===
-        "auth/invalid-credential"
-      ) {
-        setMessage(
-          "The verification code is invalid or has expired. Request a new code."
-        );
-        return;
-      }
-
-      setMessage(
-        error.message ||
-          "Unable to verify your phone number."
-      );
     } finally {
       setPhoneLoading(false);
     }
@@ -1008,6 +996,23 @@ export default function Login({ setPage }) {
 
     if (loading) return;
 
+    const cleanEmail = email.trim();
+
+    if (!isValidEmail(cleanEmail)) {
+      setMessage("Please enter a valid email address.");
+      return;
+    }
+
+    if (!password) {
+      setMessage("Please enter your password.");
+      return;
+    }
+
+    if (!isLogin && !name.trim()) {
+      setMessage("Please enter your full name.");
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
@@ -1016,7 +1021,7 @@ export default function Login({ setPage }) {
         const userCredential =
           await signInWithEmailAndPassword(
             auth,
-            email.trim(),
+            cleanEmail,
             password
           );
 
@@ -1030,7 +1035,7 @@ export default function Login({ setPage }) {
       const userCredential =
         await createUserWithEmailAndPassword(
           auth,
-          email.trim(),
+          cleanEmail,
           password
         );
 
@@ -1040,39 +1045,50 @@ export default function Login({ setPage }) {
     } catch (error) {
       console.error("Login error:", error);
 
-      if (error.code === "auth/invalid-credential") {
-        setMessage("Incorrect email or password.");
-      } else if (error.code === "auth/user-not-found") {
-        setMessage(
-          "No account was found with this email."
-        );
-      } else if (error.code === "auth/wrong-password") {
-        setMessage("Incorrect password.");
-      } else if (
-        error.code === "auth/email-already-in-use"
-      ) {
-        setMessage(
-          "An account already exists with this email."
-        );
-      } else if (error.code === "auth/weak-password") {
-        setMessage(
-          "Password must be at least 6 characters."
-        );
-      } else if (error.code === "auth/invalid-email") {
-        setMessage(
-          "Please enter a valid email address."
-        );
-      } else if (
-        error.code === "auth/too-many-requests"
-      ) {
-        setMessage(
-          "Too many attempts. Please try again later."
-        );
-      } else {
-        setMessage(
-          error.message ||
-            "Unable to complete login."
-        );
+      switch (error.code) {
+        case "auth/invalid-credential":
+          setMessage("Incorrect email or password.");
+          break;
+
+        case "auth/user-not-found":
+          setMessage(
+            "No account was found with this email."
+          );
+          break;
+
+        case "auth/wrong-password":
+          setMessage("Incorrect password.");
+          break;
+
+        case "auth/email-already-in-use":
+          setMessage(
+            "An account already exists with this email."
+          );
+          break;
+
+        case "auth/weak-password":
+          setMessage(
+            "Password must be at least 6 characters."
+          );
+          break;
+
+        case "auth/invalid-email":
+          setMessage(
+            "Please enter a valid email address."
+          );
+          break;
+
+        case "auth/too-many-requests":
+          setMessage(
+            "Too many attempts. Please try again later."
+          );
+          break;
+
+        default:
+          setMessage(
+            error.message ||
+              "Unable to complete login."
+          );
       }
     } finally {
       setLoading(false);
@@ -1119,31 +1135,42 @@ export default function Login({ setPage }) {
         );
       }
 
-      if (
-        error.code ===
-        "auth/popup-closed-by-user"
-      ) {
-        setMessage(
-          "Google sign-in was cancelled."
-        );
-      } else if (
-        error.code === "auth/popup-blocked"
-      ) {
-        setMessage(
-          "Google sign-in was blocked by your browser. Please allow popups and try again."
-        );
-      } else if (
-        error.code ===
-        "auth/account-exists-with-different-credential"
-      ) {
-        setMessage(
-          "An account already exists with this email. Please use the original sign-in method."
-        );
-      } else {
-        setMessage(
-          error.message ||
-            "Unable to sign in with Google."
-        );
+      switch (error.code) {
+        case "auth/popup-closed-by-user":
+          setMessage(
+            "Google sign-in was cancelled."
+          );
+          break;
+
+        case "auth/popup-blocked":
+          setMessage(
+            "Google sign-in was blocked by your browser. Please allow popups and try again."
+          );
+          break;
+
+        case "auth/account-exists-with-different-credential":
+          setMessage(
+            "An account already exists with this email. Please use the original sign-in method."
+          );
+          break;
+
+        case "auth/cancelled-popup-request":
+          setMessage(
+            "Google sign-in was cancelled. Please try again."
+          );
+          break;
+
+        case "auth/network-request-failed":
+          setMessage(
+            "Network error. Please check your connection and try again."
+          );
+          break;
+
+        default:
+          setMessage(
+            error.message ||
+              "Unable to sign in with Google."
+          );
       }
     } finally {
       setLoading(false);
@@ -1159,8 +1186,8 @@ export default function Login({ setPage }) {
 
     const cleanEmail = email.trim();
 
-    if (!cleanEmail) {
-      setMessage("Enter your email first.");
+    if (!isValidEmail(cleanEmail)) {
+      setMessage("Enter a valid email address first.");
       return;
     }
 
@@ -1182,15 +1209,11 @@ export default function Login({ setPage }) {
         error
       );
 
-      if (error.code === "auth/invalid-email") {
-        setMessage(
-          "Please enter a valid email address."
-        );
-      } else {
-        setMessage(
-          "If an account exists for this email, a password reset link has been sent."
-        );
-      }
+      // Deliberately generic to avoid exposing
+      // whether an email is registered.
+      setMessage(
+        "If an account exists for this email, a password reset link has been sent."
+      );
     } finally {
       setLoading(false);
     }
@@ -1601,7 +1624,6 @@ export default function Login({ setPage }) {
           transform: translateY(-50%);
           color: #A38E7D;
           pointer-events: none;
-          transition: color .2s ease;
         }
 
         .auth-input {
@@ -1633,10 +1655,6 @@ export default function Login({ setPage }) {
           background: white;
           box-shadow:
             0 0 0 4px rgba(196,149,106,.12);
-        }
-
-        .auth-input:focus + .input-focus-helper {
-          color: var(--brew-caramel-dark);
         }
 
         .password-button {
@@ -1751,10 +1769,6 @@ export default function Login({ setPage }) {
           transform: translateY(-1px);
         }
 
-        .google-icon {
-          color: #4285F4;
-        }
-
         .divider {
           display: flex;
           align-items: center;
@@ -1813,8 +1827,6 @@ export default function Login({ setPage }) {
           flex-shrink: 0;
           margin-top: 1px;
         }
-
-        /* PHONE VERIFICATION */
 
         .verification-back {
           display: inline-flex;
@@ -1995,8 +2007,6 @@ export default function Login({ setPage }) {
           overflow: hidden;
         }
 
-        /* MODAL */
-
         .phone-used-overlay {
           position: fixed;
           inset: 0;
@@ -2047,8 +2057,6 @@ export default function Login({ setPage }) {
           font-size: 13px;
           line-height: 1.65;
         }
-
-        /* GREETING */
 
         .greeting-screen {
           position: fixed;
@@ -2164,11 +2172,6 @@ export default function Login({ setPage }) {
           animation: spin .7s linear infinite;
         }
 
-        .spinner-dark {
-          border-color: rgba(59,26,8,.2);
-          border-top-color: var(--brew-espresso);
-        }
-
         @keyframes spin {
           to {
             transform: rotate(360deg);
@@ -2264,7 +2267,10 @@ export default function Login({ setPage }) {
         >
           <div className="phone-used-modal">
             <div className="modal-icon">
-              <AlertCircle size={27} strokeWidth={1.8} />
+              <AlertCircle
+                size={27}
+                strokeWidth={1.8}
+              />
             </div>
 
             <h2 id="phone-used-title">
@@ -2293,7 +2299,10 @@ export default function Login({ setPage }) {
         <div className="greeting-screen">
           <div className="greeting-logo">
             <div className="greeting-logo-icon">
-              <Coffee size={24} strokeWidth={1.8} />
+              <Coffee
+                size={24}
+                strokeWidth={1.8}
+              />
             </div>
 
             Brewed.
@@ -2310,7 +2319,10 @@ export default function Login({ setPage }) {
           <div className="greeting-sub">
             <span className="greeting-line" />
             Ready for your next coffee?
-            <Coffee size={15} strokeWidth={1.8} />
+            <Coffee
+              size={15}
+              strokeWidth={1.8}
+            />
             <span className="greeting-line" />
           </div>
         </div>
@@ -2331,7 +2343,10 @@ export default function Login({ setPage }) {
             <div className="brand-content">
               <div className="brand-logo">
                 <div className="brand-logo-icon">
-                  <Coffee size={21} strokeWidth={1.8} />
+                  <Coffee
+                    size={21}
+                    strokeWidth={1.8}
+                  />
                 </div>
 
                 Brewed.
@@ -2461,7 +2476,8 @@ export default function Login({ setPage }) {
                           <ArrowLeft
                             size={16}
                             style={{
-                              transform: "rotate(180deg)",
+                              transform:
+                                "rotate(180deg)",
                             }}
                           />
                         </>
@@ -2522,8 +2538,8 @@ export default function Login({ setPage }) {
                         />
 
                         <span className="timer-expired">
-                          Code expired. Request a
-                          new code below.
+                          Code expired. Request a new
+                          code below.
                         </span>
                       </div>
                     )}
@@ -2591,11 +2607,6 @@ export default function Login({ setPage }) {
                           >
                             <RefreshCw
                               size={14}
-                              className={
-                                resendingOTP
-                                  ? "spin-icon"
-                                  : ""
-                              }
                             />
 
                             {resendingOTP
@@ -2625,7 +2636,10 @@ export default function Login({ setPage }) {
                 />
 
                 {message && (
-                  <div className="message">
+                  <div
+                    className="message"
+                    role="alert"
+                  >
                     <AlertCircle
                       className="message-icon"
                       size={16}
@@ -2770,6 +2784,7 @@ export default function Login({ setPage }) {
                             ? "current-password"
                             : "new-password"
                         }
+                        minLength={6}
                         required
                         disabled={loading}
                       />
@@ -2836,7 +2851,8 @@ export default function Login({ setPage }) {
                         <ArrowLeft
                           size={16}
                           style={{
-                            transform: "rotate(180deg)",
+                            transform:
+                              "rotate(180deg)",
                           }}
                         />
                       </>
@@ -2853,11 +2869,7 @@ export default function Login({ setPage }) {
                     onClick={handleGoogleLogin}
                     disabled={loading}
                   >
-                    <Chrome
-                      className="google-icon"
-                      size={18}
-                      strokeWidth={2}
-                    />
+                    <FcGoogle size={20} />
 
                     Continue with Google
                   </button>
@@ -2868,7 +2880,10 @@ export default function Login({ setPage }) {
                 ============================================= */}
 
                 {message && (
-                  <div className="message">
+                  <div
+                    className="message"
+                    role="alert"
+                  >
                     <AlertCircle
                       className="message-icon"
                       size={16}
