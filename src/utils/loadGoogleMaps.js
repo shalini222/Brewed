@@ -5,25 +5,73 @@ export function loadGoogleMaps(apiKey) {
     return Promise.resolve(window.google);
   }
 
+  if (!apiKey) {
+    return Promise.reject(
+      new Error("Google Maps API key is missing.")
+    );
+  }
+
   if (googleMapsPromise) {
     return googleMapsPromise;
   }
 
-  googleMapsPromise = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
+  googleMapsPromise = new Promise(
+    (resolve, reject) => {
+      const existingScript =
+        document.querySelector(
+          'script[data-google-maps="true"]'
+        );
 
-    script.src =
-      `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+      if (existingScript) {
+        existingScript.addEventListener(
+          "load",
+          () => resolve(window.google)
+        );
 
-    script.async = true;
-    script.defer = true;
+        existingScript.addEventListener(
+          "error",
+          reject
+        );
 
-    script.onload = () => resolve(window.google);
+        return;
+      }
 
-    script.onerror = reject;
+      const script =
+        document.createElement("script");
 
-    document.body.appendChild(script);
-  });
+      script.src =
+        `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
+          apiKey
+        )}&libraries=places`;
+
+      script.async = true;
+      script.defer = true;
+
+      script.dataset.googleMaps = "true";
+
+      script.onload = () => {
+        if (window.google?.maps) {
+          resolve(window.google);
+        } else {
+          reject(
+            new Error(
+              "Google Maps loaded but is unavailable."
+            )
+          );
+        }
+      };
+
+      script.onerror = () => {
+        reject(
+          new Error(
+            "Failed to load Google Maps."
+          )
+        );
+      };
+
+      document.head.appendChild(script);
+    }
+  );
 
   return googleMapsPromise;
 }
