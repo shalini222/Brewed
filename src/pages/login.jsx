@@ -9,6 +9,8 @@ import {
   RecaptchaVerifier,
   linkWithCredential,
   reauthenticateWithCredential,
+  signOut,
+  deleteUser,
 } from "firebase/auth";
 
 import { auth, googleProvider, db } from "../firebase";
@@ -41,7 +43,7 @@ export default function Login({ setPage }) {
   const [userName, setUserName] = useState("");
 
   // =========================================================
-  // PHONE VERIFICATION STATE
+  // PHONE VERIFICATION
   // =========================================================
 
   const [showPhoneVerification, setShowPhoneVerification] =
@@ -64,11 +66,11 @@ export default function Login({ setPage }) {
   // OTP TIMERS
   // =========================================================
 
-  // Resend becomes available after 90 seconds.
-  const [resendTimer, setResendTimer] = useState(0);
+  const OTP_DURATION = 90;
+  const RESEND_COOLDOWN = 90;
 
-  // Each OTP session lasts 3 minutes.
   const [otpTimer, setOtpTimer] = useState(0);
+  const [resendTimer, setResendTimer] = useState(0);
 
   const [resendingOTP, setResendingOTP] = useState(false);
 
@@ -83,7 +85,37 @@ export default function Login({ setPage }) {
     useState("");
 
   // =========================================================
-  // OTP RESEND COUNTDOWN
+  // OTP TIMER
+  // =========================================================
+
+  useEffect(() => {
+    if (otpTimer <= 0) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setOtpTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+
+          setVerificationId(null);
+
+          setMessage(
+            "Code expired. Request a new code below."
+          );
+
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [otpTimer]);
+
+  // =========================================================
+  // RESEND TIMER
   // =========================================================
 
   useEffect(() => {
@@ -106,36 +138,6 @@ export default function Login({ setPage }) {
   }, [resendTimer]);
 
   // =========================================================
-  // OTP SESSION COUNTDOWN
-  // =========================================================
-
-  useEffect(() => {
-    if (otpTimer <= 0) {
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setOtpTimer((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-
-          setVerificationId(null);
-
-          setMessage(
-            "This verification code has expired. Please request a new code."
-          );
-
-          return 0;
-        }
-
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [otpTimer]);
-
-  // =========================================================
   // FORMAT TIMER
   // =========================================================
 
@@ -143,10 +145,9 @@ export default function Login({ setPage }) {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
 
-    return `${minutes}:${String(remainingSeconds).padStart(
-      2,
-      "0"
-    )}`;
+    return `${minutes}:${String(
+      remainingSeconds
+    ).padStart(2, "0")}`;
   }
 
   // =========================================================
@@ -163,10 +164,10 @@ export default function Login({ setPage }) {
   }
 
   // =========================================================
-  // NORMALIZE PHONE NUMBER
+  // NORMALIZE PHONE
   // =========================================================
 
-  function normalizePhone(phoneNumber) {
+  function normalizePhone(phoneNumber = "") {
     return phoneNumber
       .replace(/\s+/g, "")
       .replace(/-/g, "")
@@ -202,12 +203,13 @@ export default function Login({ setPage }) {
   }
 
   // =========================================================
-  // SETUP RECAPTCHA
+  // GET / CREATE RECAPTCHA
   // =========================================================
 
-  async function setupPhoneRecaptcha() {
-    // Always destroy previous verifier first.
-    clearPhoneRecaptcha();
+  function getPhoneRecaptcha() {
+    if (window.loginPhoneRecaptcha) {
+      return window.loginPhoneRecaptcha;
+    }
 
     const element = document.getElementById(
       "login-phone-recaptcha"
@@ -218,8 +220,6 @@ export default function Login({ setPage }) {
         "Phone verification could not be initialized. Please try again."
       );
     }
-
-    element.innerHTML = "";
 
     const verifier = new RecaptchaVerifier(
       auth,
@@ -234,18 +234,24 @@ export default function Login({ setPage }) {
         },
 
         "expired-callback": () => {
+          console.log(
+            "Phone reCAPTCHA expired."
+          );
+
           clearPhoneRecaptcha();
         },
 
         "error-callback": () => {
+          console.log(
+            "Phone reCAPTCHA error."
+          );
+
           clearPhoneRecaptcha();
         },
       }
     );
 
     window.loginPhoneRecaptcha = verifier;
-
-    await verifier.render();
 
     return verifier;
   }
@@ -287,7 +293,7 @@ export default function Login({ setPage }) {
   }
 
   // =========================================================
-  // CHECK IF PHONE BELONGS TO ANOTHER USER
+  // CHECK DUPLICATE PHONE
   // =========================================================
 
   async function isPhoneAlreadyUsed(
@@ -320,7 +326,7 @@ export default function Login({ setPage }) {
   }
 
   // =========================================================
-  // SHOW DUPLICATE PHONE MODAL
+  // DUPLICATE PHONE MODAL
   // =========================================================
 
   function showPhoneAlreadyUsed() {
@@ -329,6 +335,53 @@ export default function Login({ setPage }) {
     );
 
     setShowPhoneUsedModal(true);
+  }
+
+  // =========================================================
+  // CLEAN UP NEW UNVERIFIED ACCOUNT
+  // =========================================================
+
+  async function cleanupUnverifiedAccount(user = pendingUser) {
+    if (!user || !isNewAccount) {
+      return false;
+    }
+
+    try {
+      /*
+       * The user was created in Firebase Auth during signup
+       * but never successfully completed phone verification.
+       *
+       * Delete that Auth account so an abandoned signup does
+       * not remain as an unusable orphan account.
+       */
+      await deleteUser(user);
+
+      console.log(
+        "Unverified signup account deleted."
+      );
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Failed to delete unverified account:",
+        error
+      );
+
+      /*
+       * If deletion fails because the auth state changed,
+       * make sure the user is still signed out.
+       */
+      try {
+        await signOut(auth);
+      } catch (signOutError) {
+        console.error(
+          "Fallback sign out failed:",
+          signOutError
+        );
+      }
+
+      return false;
+    }
   }
 
   // =========================================================
@@ -344,7 +397,6 @@ export default function Login({ setPage }) {
     }
 
     setPendingUser(user);
-
     setIsNewAccount(newAccount);
 
     const status =
@@ -354,7 +406,7 @@ export default function Login({ setPage }) {
     // ALREADY VERIFIED
     // =====================================================
 
-    if (status.phoneVerified) {
+    if (status.phoneVerified === true) {
       await finishCustomerLogin(
         user,
         false
@@ -376,14 +428,11 @@ export default function Login({ setPage }) {
     }
 
     setOtp("");
-
     setOtpSent(false);
-
     setVerificationId(null);
 
-    setResendTimer(0);
-
     setOtpTimer(0);
+    setResendTimer(0);
 
     setMessage("");
 
@@ -391,7 +440,7 @@ export default function Login({ setPage }) {
   }
 
   // =========================================================
-  // SEND PHONE OTP
+  // SEND FIRST OTP
   // =========================================================
 
   async function handleSendPhoneOTP() {
@@ -419,12 +468,11 @@ export default function Login({ setPage }) {
     }
 
     setPhoneLoading(true);
-
     setMessage("");
 
     try {
       // ===================================================
-      // CHECK DUPLICATE
+      // DUPLICATE PHONE CHECK
       // ===================================================
 
       const alreadyUsed =
@@ -435,20 +483,21 @@ export default function Login({ setPage }) {
 
       if (alreadyUsed) {
         showPhoneAlreadyUsed();
+
         return;
       }
 
       setPhone(cleanedPhone);
 
       // ===================================================
-      // RECAPTCHA
+      // GET RECAPTCHA
       // ===================================================
 
       const verifier =
-        await setupPhoneRecaptcha();
+        getPhoneRecaptcha();
 
       // ===================================================
-      // FIREBASE PHONE AUTH
+      // SEND OTP
       // ===================================================
 
       const provider =
@@ -461,20 +510,22 @@ export default function Login({ setPage }) {
         );
 
       // ===================================================
-      // SAVE VERIFICATION SESSION
+      // NEW OTP SESSION
       // ===================================================
 
       setVerificationId(id);
 
       setOtpSent(true);
 
-      // 90 seconds before resend.
-      setResendTimer(90);
-
-      // 3 minute OTP session.
-      setOtpTimer(180);
-
       setOtp("");
+
+      setOtpTimer(
+        OTP_DURATION
+      );
+
+      setResendTimer(
+        RESEND_COOLDOWN
+      );
 
       setMessage(
         "A verification code has been sent to your phone."
@@ -487,6 +538,38 @@ export default function Login({ setPage }) {
       );
 
       clearPhoneRecaptcha();
+
+      /*
+       * IMPORTANT:
+       *
+       * If this was a NEW signup and the initial SMS
+       * could not be sent, remove the unverified Auth
+       * account.
+       *
+       * Existing accounts are NOT deleted.
+       */
+      if (isNewAccount && pendingUser) {
+        const userToDelete =
+          pendingUser;
+
+        await cleanupUnverifiedAccount(
+          userToDelete
+        );
+
+        setShowPhoneVerification(
+          false
+        );
+
+        setPendingUser(null);
+        setIsNewAccount(false);
+
+        setOtp("");
+        setOtpSent(false);
+        setVerificationId(null);
+
+        setOtpTimer(0);
+        setResendTimer(0);
+      }
 
       if (
         error.code ===
@@ -525,7 +608,7 @@ export default function Login({ setPage }) {
   }
 
   // =========================================================
-  // RESEND PHONE OTP
+  // RESEND OTP
   // =========================================================
 
   async function handleResendPhoneOTP() {
@@ -537,11 +620,15 @@ export default function Login({ setPage }) {
       return;
     }
 
+    // HARD BLOCK BEFORE 90 SECONDS
     if (resendTimer > 0) {
       return;
     }
 
-    if (resendingOTP || phoneLoading) {
+    if (
+      resendingOTP ||
+      phoneLoading
+    ) {
       return;
     }
 
@@ -561,14 +648,12 @@ export default function Login({ setPage }) {
     }
 
     setResendingOTP(true);
-
     setPhoneLoading(true);
-
     setMessage("");
 
     try {
       // ===================================================
-      // CHECK DUPLICATE AGAIN
+      // DUPLICATE PHONE CHECK
       // ===================================================
 
       const alreadyUsed =
@@ -583,44 +668,42 @@ export default function Login({ setPage }) {
       }
 
       // ===================================================
-      // CLEAN OLD RECAPTCHA
-      // ===================================================
-
-      clearPhoneRecaptcha();
-
-      // ===================================================
-      // CREATE NEW RECAPTCHA
+      // REUSE EXISTING RECAPTCHA
       // ===================================================
 
       const verifier =
-        await setupPhoneRecaptcha();
+        getPhoneRecaptcha();
 
       // ===================================================
-      // REQUEST NEW OTP
+      // SEND NEW OTP
       // ===================================================
 
       const provider =
         new PhoneAuthProvider(auth);
 
-      const id =
+      const newVerificationId =
         await provider.verifyPhoneNumber(
           cleanedPhone,
           verifier
         );
 
       // ===================================================
-      // REPLACE OLD VERIFICATION SESSION
+      // OLD OTP SESSION REPLACED
       // ===================================================
 
-      setVerificationId(id);
+      setVerificationId(
+        newVerificationId
+      );
 
       setOtp("");
 
-      // New 90 second resend cooldown.
-      setResendTimer(90);
+      setOtpTimer(
+        OTP_DURATION
+      );
 
-      // New 3 minute OTP session.
-      setOtpTimer(180);
+      setResendTimer(
+        RESEND_COOLDOWN
+      );
 
       setOtpSent(true);
 
@@ -635,6 +718,16 @@ export default function Login({ setPage }) {
       );
 
       clearPhoneRecaptcha();
+
+      /*
+       * IMPORTANT:
+       *
+       * Do NOT delete the account here.
+       *
+       * A resend failure should not destroy an existing
+       * account or an account that is already in an OTP
+       * session.
+       */
 
       if (
         error.code ===
@@ -661,17 +754,23 @@ export default function Login({ setPage }) {
 
     } finally {
       setResendingOTP(false);
-
       setPhoneLoading(false);
     }
   }
 
   // =========================================================
-  // VERIFY PHONE OTP
+  // VERIFY OTP
   // =========================================================
 
   async function handleVerifyPhoneOTP() {
-    if (!pendingUser || !verificationId) {
+    // =====================================================
+    // ABSOLUTE REQUIREMENT
+    // =====================================================
+
+    if (
+      !pendingUser ||
+      !verificationId
+    ) {
       setMessage(
         "Your verification session has expired. Please request a new code."
       );
@@ -680,14 +779,14 @@ export default function Login({ setPage }) {
     }
 
     // =====================================================
-    // OTP SESSION EXPIRED
+    // 90 SECOND SESSION EXPIRED
     // =====================================================
 
     if (otpTimer <= 0) {
       setVerificationId(null);
 
       setMessage(
-        "This verification code has expired. Please request a new code."
+        "Code expired. Request a new code below."
       );
 
       return;
@@ -707,7 +806,6 @@ export default function Login({ setPage }) {
     }
 
     setPhoneLoading(true);
-
     setMessage("");
 
     try {
@@ -715,7 +813,7 @@ export default function Login({ setPage }) {
         normalizePhone(phone);
 
       // ===================================================
-      // CHECK DUPLICATE
+      // DUPLICATE PHONE CHECK
       // ===================================================
 
       const alreadyUsed =
@@ -733,7 +831,7 @@ export default function Login({ setPage }) {
       }
 
       // ===================================================
-      // CREATE PHONE CREDENTIAL
+      // CREATE CREDENTIAL
       // ===================================================
 
       const credential =
@@ -743,7 +841,7 @@ export default function Login({ setPage }) {
         );
 
       // ===================================================
-      // CHECK IF PHONE PROVIDER IS ALREADY LINKED
+      // CHECK PHONE PROVIDER
       // ===================================================
 
       const phoneProviderAlreadyLinked =
@@ -754,20 +852,17 @@ export default function Login({ setPage }) {
         );
 
       // ===================================================
-      // EXISTING PHONE LINK
+      // VERIFY
       // ===================================================
 
-      if (phoneProviderAlreadyLinked) {
+      if (
+        phoneProviderAlreadyLinked
+      ) {
         await reauthenticateWithCredential(
           pendingUser,
           credential
         );
-
       } else {
-        // =================================================
-        // NEW PHONE LINK
-        // =================================================
-
         await linkWithCredential(
           pendingUser,
           credential
@@ -775,7 +870,7 @@ export default function Login({ setPage }) {
       }
 
       // ===================================================
-      // SAVE PHONE VERIFICATION
+      // OTP SUCCESSFUL
       // ===================================================
 
       await setDoc(
@@ -806,7 +901,15 @@ export default function Login({ setPage }) {
       // CLEANUP
       // ===================================================
 
-      setShowPhoneVerification(false);
+      const verifiedUser =
+        pendingUser;
+
+      const wasNewAccount =
+        isNewAccount;
+
+      setShowPhoneVerification(
+        false
+      );
 
       setOtp("");
 
@@ -814,21 +917,23 @@ export default function Login({ setPage }) {
 
       setVerificationId(null);
 
-      setResendTimer(0);
-
       setOtpTimer(0);
+      setResendTimer(0);
 
       clearPhoneRecaptcha();
 
       setMessage("");
 
+      setPendingUser(null);
+      setIsNewAccount(false);
+
       // ===================================================
-      // FINISH LOGIN
+      // ONLY SUCCESSFUL OTP REACHES LOGIN
       // ===================================================
 
       await finishCustomerLogin(
-        pendingUser,
-        isNewAccount
+        verifiedUser,
+        wasNewAccount
       );
 
     } catch (error) {
@@ -837,10 +942,8 @@ export default function Login({ setPage }) {
         error
       );
 
-      clearPhoneRecaptcha();
-
       // ===================================================
-      // WRONG OTP
+      // INCORRECT OTP
       // ===================================================
 
       if (
@@ -851,11 +954,14 @@ export default function Login({ setPage }) {
           "Incorrect verification code."
         );
 
+        return;
+      }
+
       // ===================================================
       // EXPIRED OTP
       // ===================================================
 
-      } else if (
+      if (
         error.code ===
         "auth/code-expired"
       ) {
@@ -864,24 +970,30 @@ export default function Login({ setPage }) {
         setOtpTimer(0);
 
         setMessage(
-          "That code has expired. Please request a new code."
+          "Code expired. Request a new code below."
         );
 
+        return;
+      }
+
       // ===================================================
-      // PHONE ALREADY USED BY ANOTHER ACCOUNT
+      // PHONE ALREADY USED
       // ===================================================
 
-      } else if (
+      if (
         error.code ===
         "auth/credential-already-in-use"
       ) {
         showPhoneAlreadyUsed();
 
+        return;
+      }
+
       // ===================================================
-      // PHONE ALREADY LINKED
+      // PROVIDER ALREADY LINKED
       // ===================================================
 
-      } else if (
+      if (
         error.code ===
         "auth/provider-already-linked"
       ) {
@@ -889,11 +1001,14 @@ export default function Login({ setPage }) {
           "This phone number is already verified on your account."
         );
 
+        return;
+      }
+
       // ===================================================
       // RECENT LOGIN REQUIRED
       // ===================================================
 
-      } else if (
+      if (
         error.code ===
         "auth/requires-recent-login"
       ) {
@@ -901,12 +1016,13 @@ export default function Login({ setPage }) {
           "Please log in again and verify your phone."
         );
 
-      } else {
-        setMessage(
-          error.message ||
-            "Unable to verify your phone number."
-        );
+        return;
       }
+
+      setMessage(
+        error.message ||
+          "Unable to verify your phone number."
+      );
 
     } finally {
       setPhoneLoading(false);
@@ -914,15 +1030,42 @@ export default function Login({ setPage }) {
   }
 
   // =========================================================
-  // FINISH CUSTOMER LOGIN
+  // FINISH CUSTOMER / RIDER LOGIN
   // =========================================================
 
   async function finishCustomerLogin(
     user,
     shouldGiveSignupReward = false
   ) {
+    if (!user) {
+      return;
+    }
+
+    // =======================================================
+    // FINAL PHONE SECURITY CHECK
+    // =======================================================
+
+    const phoneStatus =
+      await checkPhoneStatus(user);
+
+    if (
+      phoneStatus.phoneVerified !== true
+    ) {
+      setMessage(
+        "Phone verification is required before you can continue."
+      );
+
+      await signOut(auth);
+
+      return;
+    }
+
     // =======================================================
     // CHECK RIDER
+    //
+    // IMPORTANT:
+    // This happens AFTER phone verification.
+    // Therefore Google Rider login cannot bypass OTP.
     // =======================================================
 
     const riderQuery = query(
@@ -952,6 +1095,8 @@ export default function Login({ setPage }) {
           "Your rider account is currently inactive. Please contact the administrator."
         );
 
+        await signOut(auth);
+
         return;
       }
 
@@ -976,10 +1121,15 @@ export default function Login({ setPage }) {
 
     let userData;
 
+    // =======================================================
+    // CREATE CUSTOMER DATA ONLY AFTER VERIFIED LOGIN
+    // =======================================================
+
     if (!userSnap.exists()) {
       userData = {
         name:
           user.displayName ||
+          name ||
           user.email?.split("@")[0] ||
           "User",
 
@@ -992,6 +1142,7 @@ export default function Login({ setPage }) {
           user.photoURL || "",
 
         phone:
+          phoneStatus.phone ||
           normalizePhone(phone),
 
         phoneVerified:
@@ -1007,13 +1158,17 @@ export default function Login({ setPage }) {
 
         lifetimePoints: 0,
 
-        signupRewardClaimed: false,
+        signupRewardClaimed:
+          false,
 
-        birthdayRewardYear: null,
+        birthdayRewardYear:
+          null,
 
-        referredBy: null,
+        referredBy:
+          null,
 
-        referralRewardClaimed: false,
+        referralRewardClaimed:
+          false,
 
         settings: {
           notifications: true,
@@ -1027,7 +1182,8 @@ export default function Login({ setPage }) {
           tier: "Bronze",
           memberSince:
             serverTimestamp(),
-          birthdayRewardClaimed: false,
+          birthdayRewardClaimed:
+            false,
         },
       };
 
@@ -1035,7 +1191,6 @@ export default function Login({ setPage }) {
         userRef,
         userData
       );
-
     } else {
       userData =
         userSnap.data();
@@ -1091,14 +1246,13 @@ export default function Login({ setPage }) {
   }
 
   // =========================================================
-  // EMAIL / PASSWORD LOGIN
+  // EMAIL / PASSWORD
   // =========================================================
 
   async function handleSubmit(e) {
     e.preventDefault();
 
     setLoading(true);
-
     setMessage("");
 
     try {
@@ -1116,6 +1270,14 @@ export default function Login({ setPage }) {
 
         const user =
           userCredential.user;
+
+        /*
+         * IMPORTANT:
+         *
+         * Do NOT setPage here.
+         *
+         * Phone verification MUST happen first.
+         */
 
         await startPhoneVerification(
           user,
@@ -1139,68 +1301,18 @@ export default function Login({ setPage }) {
       const user =
         userCredential.user;
 
-      // =====================================================
-      // CREATE BASIC CUSTOMER DOCUMENT
-      // =====================================================
-
-      await setDoc(
-        doc(
-          db,
-          "users",
-          user.uid
-        ),
-        {
-          name:
-            name.trim() ||
-            email.split("@")[0],
-
-          email:
-            user.email,
-
-          birthday: "",
-
-          photoURL:
-            user.photoURL || "",
-
-          phone: "",
-
-          phoneVerified: false,
-
-          createdAt:
-            serverTimestamp(),
-
-          loyaltyPoints: 0,
-
-          lifetimePoints: 0,
-
-          signupRewardClaimed: false,
-
-          birthdayRewardYear: null,
-
-          referredBy: null,
-
-          referralRewardClaimed: false,
-
-          settings: {
-            notifications: true,
-            darkMode: false,
-            reduceMotion: false,
-          },
-
-          rewards: {
-            beans: 0,
-            lifetimeBeans: 0,
-            tier: "Bronze",
-            memberSince:
-              serverTimestamp(),
-            birthdayRewardClaimed: false,
-          },
-        }
-      );
-
-      // =====================================================
-      // FORCE PHONE VERIFICATION
-      // =====================================================
+      /*
+       * IMPORTANT:
+       *
+       * We intentionally DO NOT:
+       *
+       * - setPage()
+       * - create customer Firestore data
+       * - create wallet
+       * - give signup reward
+       *
+       * Everything waits for successful phone verification.
+       */
 
       await startPhoneVerification(
         user,
@@ -1212,6 +1324,28 @@ export default function Login({ setPage }) {
         "Login error:",
         error
       );
+
+      /*
+       * If createUserWithEmailAndPassword succeeded
+       * but something after it failed, make sure the
+       * newly-created unverified account doesn't remain.
+       */
+
+      if (
+        !isLogin &&
+        pendingUser &&
+        isNewAccount
+      ) {
+        const userToDelete =
+          pendingUser;
+
+        await cleanupUnverifiedAccount(
+          userToDelete
+        );
+
+        setPendingUser(null);
+        setIsNewAccount(false);
+      }
 
       if (
         error.code ===
@@ -1271,7 +1405,6 @@ export default function Login({ setPage }) {
 
   async function handleGoogleLogin() {
     setLoading(true);
-
     setMessage("");
 
     try {
@@ -1285,46 +1418,7 @@ export default function Login({ setPage }) {
         result.user;
 
       // =====================================================
-      // RIDER CHECK
-      // =====================================================
-
-      const riderQuery = query(
-        collection(db, "riders"),
-        where(
-          "email",
-          "==",
-          user.email
-        )
-      );
-
-      const riderSnapshot =
-        await getDocs(riderQuery);
-
-      if (!riderSnapshot.empty) {
-        const riderDoc =
-          riderSnapshot.docs[0];
-
-        const riderData =
-          riderDoc.data();
-
-        if (
-          riderData.status !==
-          "Active"
-        ) {
-          setMessage(
-            "Your rider account is currently inactive. Please contact the administrator."
-          );
-
-          return;
-        }
-
-        setPage("rider");
-
-        return;
-      }
-
-      // =====================================================
-      // CUSTOMER
+      // CHECK CUSTOMER DOCUMENT
       // =====================================================
 
       const userRef =
@@ -1337,82 +1431,23 @@ export default function Login({ setPage }) {
       const userSnap =
         await getDoc(userRef);
 
-      // =====================================================
-      // NEW GOOGLE ACCOUNT
-      // =====================================================
-
-      if (!userSnap.exists()) {
-        await setDoc(
-          userRef,
-          {
-            name:
-              user.displayName ||
-              user.email?.split("@")[0] ||
-              "User",
-
-            email:
-              user.email,
-
-            birthday: "",
-
-            photoURL:
-              user.photoURL || "",
-
-            phone: "",
-
-            phoneVerified: false,
-
-            createdAt:
-              serverTimestamp(),
-
-            loyaltyPoints: 0,
-
-            lifetimePoints: 0,
-
-            signupRewardClaimed: false,
-
-            birthdayRewardYear: null,
-
-            referredBy: null,
-
-            referralRewardClaimed: false,
-
-            settings: {
-              notifications: true,
-              darkMode: false,
-              reduceMotion: false,
-            },
-
-            rewards: {
-              beans: 0,
-              lifetimeBeans: 0,
-              tier: "Bronze",
-              memberSince:
-                serverTimestamp(),
-              birthdayRewardClaimed: false,
-            },
-          }
-        );
-
-        // ===================================================
-        // FORCE PHONE VERIFICATION
-        // ===================================================
-
-        await startPhoneVerification(
-          user,
-          true
-        );
-
-        return;
-      }
-
-      // =====================================================
-      // EXISTING GOOGLE ACCOUNT
-      // =====================================================
+      /*
+       * IMPORTANT:
+       *
+       * Do NOT check riders here.
+       *
+       * Do NOT setPage("rider") here.
+       *
+       * Google authentication must pass through the
+       * same phone-verification gate as email/password.
+       *
+       * finishCustomerLogin() handles rider/customer
+       * routing AFTER phone verification succeeds.
+       */
 
       await startPhoneVerification(
         user,
-        false
+        !userSnap.exists()
       );
 
     } catch (error) {
@@ -1420,6 +1455,49 @@ export default function Login({ setPage }) {
         "Google login error:",
         error
       );
+
+      /*
+       * Only clean up a NEW account if this is an actual
+       * Google authentication / initialization failure.
+       *
+       * Normal OTP waiting/cancellation is handled by
+       * cancelPhoneVerification().
+       */
+
+      if (
+        isNewAccount &&
+        pendingUser
+      ) {
+        const userToDelete =
+          pendingUser;
+
+        try {
+          await deleteUser(
+            userToDelete
+          );
+
+          console.log(
+            "Unverified Google account deleted."
+          );
+        } catch (deleteError) {
+          console.error(
+            "Failed to delete unverified Google account:",
+            deleteError
+          );
+        }
+
+        setPendingUser(null);
+        setIsNewAccount(false);
+      }
+
+      try {
+        await signOut(auth);
+      } catch (signOutError) {
+        console.error(
+          "Google fallback sign out failed:",
+          signOutError
+        );
+      }
 
       setMessage(
         error.message ||
@@ -1465,7 +1543,13 @@ export default function Login({ setPage }) {
   // CANCEL PHONE VERIFICATION
   // =========================================================
 
-  function cancelPhoneVerification() {
+  async function cancelPhoneVerification() {
+    const wasNewAccount =
+      isNewAccount;
+
+    const user =
+      pendingUser;
+
     setShowPhoneVerification(false);
 
     setOtp("");
@@ -1480,16 +1564,74 @@ export default function Login({ setPage }) {
 
     setIsNewAccount(false);
 
-    setResendTimer(0);
-
     setOtpTimer(0);
+
+    setResendTimer(0);
 
     clearPhoneRecaptcha();
 
     setMessage("");
 
-    // Prevent bypassing phone verification.
-    auth.signOut();
+    /*
+     * CRITICAL:
+     *
+     * NEW ACCOUNT:
+     * Delete the Firebase Auth account.
+     *
+     * EXISTING ACCOUNT:
+     * Only sign out.
+     *
+     * This prevents an unverified signup from
+     * remaining in Firebase Auth.
+     */
+
+    try {
+      if (
+        wasNewAccount &&
+        user
+      ) {
+        try {
+          await deleteUser(
+            user
+          );
+
+          console.log(
+            "Unverified signup account deleted after cancellation."
+          );
+        } catch (deleteError) {
+          console.error(
+            "Failed to delete account during cancellation:",
+            deleteError
+          );
+
+          try {
+            await signOut(auth);
+          } catch (signOutError) {
+            console.error(
+              "Fallback sign out failed:",
+              signOutError
+            );
+          }
+        }
+      } else {
+        await signOut(auth);
+      }
+
+    } catch (error) {
+      console.error(
+        "Sign out after phone cancellation:",
+        error
+      );
+
+      try {
+        await signOut(auth);
+      } catch (signOutError) {
+        console.error(
+          "Fallback sign out failed:",
+          signOutError
+        );
+      }
+    }
   }
 
   // =========================================================
@@ -1503,9 +1645,9 @@ export default function Login({ setPage }) {
 
     setVerificationId(null);
 
-    setResendTimer(0);
-
     setOtpTimer(0);
+
+    setResendTimer(0);
 
     clearPhoneRecaptcha();
 
@@ -1516,7 +1658,13 @@ export default function Login({ setPage }) {
   // CLOSE DUPLICATE PHONE MODAL
   // =========================================================
 
-  function closePhoneUsedModal() {
+  async function closePhoneUsedModal() {
+    const wasNewAccount =
+      isNewAccount;
+
+    const user =
+      pendingUser;
+
     setShowPhoneUsedModal(false);
 
     setPhoneUsedMessage("");
@@ -1527,13 +1675,65 @@ export default function Login({ setPage }) {
 
     setVerificationId(null);
 
-    setResendTimer(0);
-
     setOtpTimer(0);
+
+    setResendTimer(0);
 
     clearPhoneRecaptcha();
 
     setPhone("");
+
+    setPendingUser(null);
+
+    setIsNewAccount(false);
+
+    /*
+     * If this was a new signup, delete the unverified
+     * Firebase Auth account.
+     *
+     * Existing accounts are simply signed out.
+     */
+
+    try {
+      if (
+        wasNewAccount &&
+        user
+      ) {
+        try {
+          await deleteUser(
+            user
+          );
+
+          console.log(
+            "Unverified account deleted after duplicate phone."
+          );
+        } catch (deleteError) {
+          console.error(
+            "Duplicate phone account deletion failed:",
+            deleteError
+          );
+
+          await signOut(auth);
+        }
+      } else {
+        await signOut(auth);
+      }
+
+    } catch (error) {
+      console.error(
+        "Duplicate phone cleanup error:",
+        error
+      );
+
+      try {
+        await signOut(auth);
+      } catch (signOutError) {
+        console.error(
+          "Fallback sign out failed:",
+          signOutError
+        );
+      }
+    }
   }
 
   // =========================================================
@@ -1559,15 +1759,10 @@ export default function Login({ setPage }) {
 
         .login-page {
           min-height: 100vh;
-
           display: flex;
-
           justify-content: center;
-
           align-items: center;
-
           padding: 40px 20px;
-
           background:
             linear-gradient(
               rgba(26,10,0,.45),
@@ -1576,26 +1771,17 @@ export default function Login({ setPage }) {
             url(
               "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1500&q=80"
             );
-
           background-size: cover;
-
           background-position: center;
         }
 
         .login-card {
           width: 100%;
-
           max-width: 430px;
-
-          background:
-            rgba(253,250,245,.95);
-
+          background: rgba(253,250,245,.95);
           backdrop-filter: blur(12px);
-
           border-radius: 22px;
-
           padding: 45px;
-
           box-shadow:
             0 25px 60px rgba(0,0,0,.25);
         }
@@ -1603,44 +1789,30 @@ export default function Login({ setPage }) {
         .logo {
           font-family:
             'Playfair Display', serif;
-
           font-size: 2.2rem;
-
           color: #3B1A08;
-
           text-align: center;
-
           margin-bottom: 10px;
         }
 
         .subtitle {
           text-align: center;
-
           color: #6B5C53;
-
           margin-bottom: 30px;
         }
 
         form {
           display: flex;
-
           flex-direction: column;
-
           gap: 16px;
         }
 
         input {
           width: 100%;
-
           padding: 15px;
-
           border-radius: 12px;
-
-          border:
-            1px solid #DDD;
-
+          border: 1px solid #DDD;
           font-size: 15px;
-
           outline: none;
         }
 
@@ -1650,115 +1822,80 @@ export default function Login({ setPage }) {
 
         button {
           padding: 15px;
-
           border: none;
-
           border-radius: 12px;
-
           cursor: pointer;
-
           font-weight: 600;
-
           transition: .3s;
         }
 
         button:disabled {
           opacity: .6;
-
           cursor: not-allowed;
         }
 
         .primary {
           background: #3B1A08;
-
           color: white;
         }
 
         .primary:hover {
           background: #C4956A;
-
           color: #3B1A08;
         }
 
         .google {
           background: white;
-
-          border:
-            1px solid #DDD;
+          border: 1px solid #DDD;
         }
 
         .message {
           margin-top: 15px;
-
           text-align: center;
-
           color: #8A5A32;
-
           line-height: 1.5;
         }
 
         .switch {
           margin-top: 25px;
-
           text-align: center;
         }
 
         .switch span {
           color: #8A5A32;
-
           cursor: pointer;
-
           font-weight: 600;
         }
 
         .forgot {
           text-align: right;
-
           font-size: 14px;
-
           color: #8A5A32;
-
           cursor: pointer;
         }
-
-        /* =================================================
-           PHONE VERIFICATION
-        ================================================= */
 
         .phone-title {
           font-family:
             'Playfair Display', serif;
-
           font-size: 1.8rem;
-
           color: #3B1A08;
-
           text-align: center;
-
           margin-bottom: 10px;
         }
 
         .phone-description {
           text-align: center;
-
           color: #6B5C53;
-
           font-size: 14px;
-
           line-height: 1.6;
-
           margin-bottom: 25px;
         }
 
         .phone-label {
           display: block;
-
           color: #5A453A;
-
           font-size: 14px;
-
           font-weight: 600;
-
           margin-bottom: 8px;
         }
 
@@ -1768,21 +1905,15 @@ export default function Login({ setPage }) {
 
         .otp-input {
           text-align: center;
-
           letter-spacing: 8px;
-
           font-size: 22px;
-
           font-weight: 600;
-
           margin-top: 12px;
         }
 
         .phone-actions {
           display: flex;
-
           gap: 10px;
-
           margin-top: 12px;
         }
 
@@ -1792,157 +1923,101 @@ export default function Login({ setPage }) {
 
         .secondary {
           background: #F8F4EE;
-
           color: #3B1A08;
         }
 
         .resend-section {
           text-align: center;
-
           margin-top: 18px;
-
           font-size: 14px;
-
           color: #6B5C53;
         }
 
         .resend-button {
           background: transparent;
-
           padding: 5px;
-
           margin-top: 4px;
-
           color: #8A5A32;
-
           font-weight: 600;
         }
 
         .resend-button:hover {
           background: transparent;
-
           color: #C4956A;
         }
 
         .otp-expiry {
           text-align: center;
-
           margin-top: 10px;
-
           font-size: 13px;
-
           color: #8A5A32;
         }
 
         .otp-expired {
           text-align: center;
-
           margin-top: 10px;
-
           font-size: 13px;
-
           color: #A13A2A;
-
           font-weight: 600;
         }
 
         .recaptcha-container {
           height: 0;
-
           overflow: hidden;
         }
 
-        /* =================================================
-           DUPLICATE PHONE MODAL
-        ================================================= */
-
         .phone-used-overlay {
           position: fixed;
-
           inset: 0;
-
-          background:
-            rgba(20, 10, 5, 0.68);
-
+          background: rgba(20, 10, 5, 0.68);
           backdrop-filter: blur(6px);
-
           display: flex;
-
           justify-content: center;
-
           align-items: center;
-
           padding: 20px;
-
           z-index: 10000;
         }
 
         .phone-used-modal {
           width: 100%;
-
           max-width: 390px;
-
           background: #FDFAF5;
-
           border-radius: 22px;
-
           padding: 32px;
-
           text-align: center;
-
           box-shadow:
             0 25px 70px rgba(0,0,0,.3);
-
           animation:
             modalPop .2s ease;
         }
 
         .phone-used-icon {
           width: 54px;
-
           height: 54px;
-
-          margin:
-            0 auto 18px;
-
+          margin: 0 auto 18px;
           border-radius: 50%;
-
           background: #F3E4D5;
-
           color: #8A5A32;
-
           display: flex;
-
           justify-content: center;
-
           align-items: center;
-
           font-size: 28px;
-
           font-weight: 700;
         }
 
         .phone-used-modal h2 {
-          margin:
-            0 0 12px;
-
+          margin: 0 0 12px;
           font-family:
             'Playfair Display', serif;
-
           color: #3B1A08;
-
           font-size: 1.6rem;
         }
 
         .phone-used-modal p {
           color: #6B5C53;
-
           font-size: 14px;
-
           line-height: 1.6;
-
-          margin:
-            0 0 24px;
+          margin: 0 0 24px;
         }
 
         .phone-used-modal button {
@@ -1952,40 +2027,24 @@ export default function Login({ setPage }) {
         @keyframes modalPop {
           from {
             opacity: 0;
-
-            transform:
-              scale(.94);
+            transform: scale(.94);
           }
 
           to {
             opacity: 1;
-
-            transform:
-              scale(1);
+            transform: scale(1);
           }
         }
 
-        /* =================================================
-           GREETING
-        ================================================= */
-
         .greeting-screen {
           position: fixed;
-
           inset: 0;
-
           background: #FDFAF5;
-
           display: flex;
-
           justify-content: center;
-
           align-items: center;
-
           flex-direction: column;
-
           z-index: 9999;
-
           animation:
             fadeIn .7s ease;
         }
@@ -1993,67 +2052,50 @@ export default function Login({ setPage }) {
         .greeting-logo {
           font-family:
             'Playfair Display', serif;
-
           font-size: 3rem;
-
           color: #3B1A08;
-
           margin-bottom: 40px;
         }
 
         .greeting-title {
           font-size: 2.4rem;
-
           color: #3B1A08;
-
           font-weight: 600;
         }
 
         .greeting-name {
           margin-top: 12px;
-
           font-size: 3rem;
-
           color: #C4956A;
-
           font-family:
             'Playfair Display', serif;
         }
 
         .greeting-sub {
           margin-top: 18px;
-
           color: #6B5C53;
-
           font-size: 1.2rem;
         }
 
         @keyframes fadeIn {
           from {
             opacity: 0;
-
-            transform:
-              scale(.98);
+            transform: scale(.98);
           }
 
           to {
             opacity: 1;
-
-            transform:
-              scale(1);
+            transform: scale(1);
           }
         }
 
         @media(max-width: 500px) {
-
           .login-card {
-            padding:
-              30px 22px;
+            padding: 30px 22px;
           }
 
           .phone-actions {
-            flex-direction:
-              column;
+            flex-direction: column;
           }
         }
       `}</style>
@@ -2064,7 +2106,6 @@ export default function Login({ setPage }) {
 
       {showPhoneUsedModal && (
         <div className="phone-used-overlay">
-
           <div className="phone-used-modal">
 
             <div className="phone-used-icon">
@@ -2090,7 +2131,6 @@ export default function Login({ setPage }) {
             </button>
 
           </div>
-
         </div>
       )}
 
@@ -2121,7 +2161,7 @@ export default function Login({ setPage }) {
       )}
 
       {/* =====================================================
-          LOGIN PAGE
+          LOGIN
       ===================================================== */}
 
       <div className="login-page">
@@ -2144,7 +2184,6 @@ export default function Login({ setPage }) {
               </div>
 
               <div className="phone-description">
-
                 Phone verification is required
                 to access your Brewed account.
 
@@ -2152,12 +2191,10 @@ export default function Login({ setPage }) {
 
                 This helps keep accounts,
                 rewards and loyalty points secure.
-
               </div>
 
               {!otpSent ? (
                 <>
-
                   <label className="phone-label">
                     Phone Number
                   </label>
@@ -2190,11 +2227,9 @@ export default function Login({ setPage }) {
                       ? "Sending..."
                       : "Send Verification Code"}
                   </button>
-
                 </>
               ) : (
                 <>
-
                   <div className="phone-description">
 
                     Enter the 6-digit code
@@ -2281,7 +2316,7 @@ export default function Login({ setPage }) {
                   </div>
 
                   {/* =================================================
-                      RESEND OTP
+                      RESEND
                   ================================================= */}
 
                   <div className="resend-section">
@@ -2323,7 +2358,6 @@ export default function Login({ setPage }) {
                     )}
 
                   </div>
-
                 </>
               )}
 
@@ -2357,7 +2391,6 @@ export default function Login({ setPage }) {
 
             </>
           ) : (
-
             /* =================================================
                NORMAL LOGIN
             ================================================= */
@@ -2365,11 +2398,9 @@ export default function Login({ setPage }) {
             <>
 
               <div className="subtitle">
-
                 {isLogin
                   ? "Welcome back."
                   : "Create your Brewed account"}
-
               </div>
 
               <form
@@ -2494,7 +2525,6 @@ export default function Login({ setPage }) {
           )}
 
         </div>
-
       </div>
     </>
   );
