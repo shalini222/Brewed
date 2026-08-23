@@ -10,14 +10,12 @@ import {
 } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import {
+  Check,
+  ChevronDown,
   Heart,
   Search,
+  Sparkles,
   X,
-  ChevronDown,
-  Plus,
-  Check,
-  Star,
-  ArrowUpRight,
 } from "lucide-react";
 
 export default function MenuPage({ setPage, setSelectedProduct }) {
@@ -30,7 +28,6 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
   const [reviewStats, setReviewStats] = useState({});
   const [bestSellerIds, setBestSellerIds] = useState([]);
   const [toasts, setToasts] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   const { addToCart } = useCart();
   const { currentUser } = useAuth();
@@ -44,43 +41,30 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
     "Food",
   ];
 
-  /* =========================================================
+  /* ------------------------------------------------------------
      TOASTS
-  ========================================================= */
+  ------------------------------------------------------------ */
 
   const showToast = (message, type = "success") => {
     const id = `${Date.now()}-${Math.random()}`;
 
-    setToasts((prev) => [
-      ...prev,
-      {
-        id,
-        message,
-        type,
-      },
-    ]);
+    setToasts((prev) => [...prev, { id, message, type }]);
 
     window.setTimeout(() => {
-      setToasts((prev) =>
-        prev.filter((toast) => toast.id !== id)
-      );
-    }, 2800);
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    }, 3000);
   };
 
-  /* =========================================================
+  /* ------------------------------------------------------------
      FETCH MENU
-  ========================================================= */
+  ------------------------------------------------------------ */
 
   useEffect(() => {
     let mounted = true;
 
     const fetchMenu = async () => {
       try {
-        setLoading(true);
-
-        const snapshot = await getDocs(
-          collection(db, "menu")
-        );
+        const snapshot = await getDocs(collection(db, "menu"));
 
         if (!mounted) return;
 
@@ -92,23 +76,17 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
 
         const topSelling = [...items]
           .sort(
-            (a, b) =>
-              Number(b.salesCount || 0) -
-              Number(a.salesCount || 0)
+            (a, b) => (Number(b.salesCount) || 0) - (Number(a.salesCount) || 0)
           )
           .slice(0, 5);
 
-        setBestSellerIds(
-          topSelling.map((item) => item.firestoreId)
-        );
-
+        setBestSellerIds(topSelling.map((item) => item.firestoreId));
         setMenuItems(items);
       } catch (error) {
         console.error("Error fetching menu:", error);
-        showToast("Unable to load the menu.", "error");
-      } finally {
+
         if (mounted) {
-          setLoading(false);
+          showToast("Unable to load the menu right now.", "error");
         }
       }
     };
@@ -122,41 +100,29 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
     };
   }, []);
 
-  /* =========================================================
+  /* ------------------------------------------------------------
      LOAD FAVORITES
-  ========================================================= */
+  ------------------------------------------------------------ */
 
   useEffect(() => {
-    if (!currentUser) {
-      setFavorites([]);
-      return;
-    }
-
     let mounted = true;
 
     const loadFavorites = async () => {
+      if (!currentUser) {
+        setFavorites([]);
+        return;
+      }
+
       try {
         const snapshot = await getDocs(
-          collection(
-            db,
-            "users",
-            currentUser.uid,
-            "favorites"
-          )
+          collection(db, "users", currentUser.uid, "favorites")
         );
 
         if (!mounted) return;
 
-        setFavorites(
-          snapshot.docs.map(
-            (favoriteDoc) => favoriteDoc.id
-          )
-        );
+        setFavorites(snapshot.docs.map((favoriteDoc) => favoriteDoc.id));
       } catch (error) {
-        console.error(
-          "Error loading favorites:",
-          error
-        );
+        console.error("Error loading favorites:", error);
       }
     };
 
@@ -167,59 +133,50 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
     };
   }, [currentUser]);
 
-  /* =========================================================
-     REVIEW STATISTICS
-  ========================================================= */
+  /* ------------------------------------------------------------
+     FETCH REVIEW STATS
+  ------------------------------------------------------------ */
 
   useEffect(() => {
     let mounted = true;
 
     const fetchReviewStats = async () => {
       try {
-        const snapshot = await getDocs(
-          collection(db, "reviews")
-        );
+        const snapshot = await getDocs(collection(db, "reviews"));
 
         const stats = {};
 
         snapshot.docs.forEach((reviewDoc) => {
           const review = reviewDoc.data();
+          const productId = review.productId;
 
-          if (!review.productId) return;
+          if (!productId) return;
 
-          if (!stats[review.productId]) {
-            stats[review.productId] = {
+          if (!stats[productId]) {
+            stats[productId] = {
               total: 0,
               rating: 0,
             };
           }
 
-          stats[review.productId].total += 1;
-
-          stats[review.productId].rating += Number(
-            review.rating || 0
-          );
+          stats[productId].total += 1;
+          stats[productId].rating += Number(review.rating) || 0;
         });
 
         Object.keys(stats).forEach((id) => {
-          if (stats[id].total > 0) {
-            stats[id].rating = Number(
-              (
-                stats[id].rating /
-                stats[id].total
-              ).toFixed(1)
-            );
-          }
+          const total = stats[id].total;
+
+          stats[id].rating =
+            total > 0
+              ? Number((stats[id].rating / total).toFixed(1))
+              : 0;
         });
 
         if (mounted) {
           setReviewStats(stats);
         }
       } catch (error) {
-        console.error(
-          "Error fetching review stats:",
-          error
-        );
+        console.error("Error fetching review stats:", error);
       }
     };
 
@@ -230,1204 +187,1032 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
     };
   }, []);
 
-  /* =========================================================
+  /* ------------------------------------------------------------
      LIVE MENU METADATA
-  ========================================================= */
+  ------------------------------------------------------------ */
 
   const menuWithLiveMetadata = useMemo(() => {
     return menuItems.map((item) => {
-      const review = reviewStats[item.id];
+      const liveReview = reviewStats[item.id];
 
       return {
         ...item,
-
-        isBestSeller: bestSellerIds.includes(
-          item.firestoreId
-        ),
-
-        rating: review
-          ? Number(review.rating)
-          : 0,
-
-        reviews: review
-          ? review.total
-          : 0,
+        isBestSeller: bestSellerIds.includes(item.firestoreId),
+        rating: liveReview ? Number(liveReview.rating) : 0,
+        reviews: liveReview ? liveReview.total : 0,
       };
     });
-  }, [
-    menuItems,
-    reviewStats,
-    bestSellerIds,
-  ]);
+  }, [menuItems, reviewStats, bestSellerIds]);
 
-  /* =========================================================
-     FILTERING + SORTING
-  ========================================================= */
+  /* ------------------------------------------------------------
+     FILTER + SORT
+  ------------------------------------------------------------ */
 
-  const filteredItems = useMemo(() => {
-    const search = searchQuery
-      .toLowerCase()
-      .trim();
+  const sortedAndFiltered = useMemo(() => {
+    const cleanSearch = searchQuery.toLowerCase().trim();
 
-    const filtered = menuWithLiveMetadata.filter(
-      (item) => {
-        const matchesSearch =
-          !search ||
-          item.name
-            ?.toLowerCase()
-            .includes(search) ||
-          item.desc
-            ?.toLowerCase()
-            .includes(search) ||
-          item.category
-            ?.toLowerCase()
-            .includes(search);
+    const filtered = menuWithLiveMetadata.filter((item) => {
+      const matchesSearch =
+        !cleanSearch ||
+        item.name?.toLowerCase().includes(cleanSearch) ||
+        item.desc?.toLowerCase().includes(cleanSearch);
 
-        if (!matchesSearch) {
-          return false;
-        }
+      if (!matchesSearch) return false;
 
-        if (activeCategory === "All") {
-          return true;
-        }
+      if (activeCategory === "All") return true;
 
-        if (activeCategory === "Featured") {
-          return item.isFeatured === true;
-        }
-
-        if (activeCategory === "Bestselling") {
-          return item.isBestSeller;
-        }
-
-        return item.category === activeCategory;
+      if (activeCategory === "Featured") {
+        return item.isFeatured === true;
       }
-    );
+
+      if (activeCategory === "Bestselling") {
+        return bestSellerIds.includes(item.firestoreId);
+      }
+
+      return item.category === activeCategory;
+    });
 
     return [...filtered].sort((a, b) => {
       if (activeCategory === "Bestselling") {
         return (
-          Number(b.salesCount || 0) -
-          Number(a.salesCount || 0)
+          (Number(b.salesCount) || 0) - (Number(a.salesCount) || 0)
         );
       }
 
       if (sortBy === "price-low") {
-        return (
-          Number(a.price || 0) -
-          Number(b.price || 0)
-        );
+        return (Number(a.price) || 0) - (Number(b.price) || 0);
       }
 
       if (sortBy === "price-high") {
-        return (
-          Number(b.price || 0) -
-          Number(a.price || 0)
-        );
+        return (Number(b.price) || 0) - (Number(a.price) || 0);
       }
 
       if (sortBy === "popularity") {
-        return (
-          Number(b.rating || 0) -
-          Number(a.rating || 0)
-        );
+        return (Number(b.rating) || 0) - (Number(a.rating) || 0);
       }
 
       if (a.isFeatured !== b.isFeatured) {
         return a.isFeatured ? -1 : 1;
       }
 
-      return (a.name || "").localeCompare(
-        b.name || ""
-      );
+      return (a.name || "").localeCompare(b.name || "");
     });
   }, [
     menuWithLiveMetadata,
-    activeCategory,
     searchQuery,
+    activeCategory,
     sortBy,
+    bestSellerIds,
   ]);
 
-  /* =========================================================
-     FEATURED PRODUCT
-  ========================================================= */
-
-  const featuredProduct = useMemo(() => {
-    return menuWithLiveMetadata.find(
-      (item) =>
-        item.isFeatured &&
-        item.available !== false
-    );
-  }, [menuWithLiveMetadata]);
-
-  /* =========================================================
-     PRODUCT
-  ========================================================= */
-
-  const openProduct = (item) => {
-    setSelectedProduct(item);
-    setPage("product");
-  };
-
-  /* =========================================================
+  /* ------------------------------------------------------------
      ADD TO CART
-  ========================================================= */
+  ------------------------------------------------------------ */
 
   const handleAdd = (item) => {
     if (!currentUser) {
-      showToast(
-        "Please log in to add items to your cart.",
-        "error"
-      );
-
+      showToast("Please log in to add items to your cart.", "error");
       setPage("login");
       return;
     }
 
     addToCart(item);
 
+    showToast(`${item.name} added to your cart.`);
+
     setAdded((prev) => ({
       ...prev,
       [item.id]: true,
     }));
-
-    showToast(
-      `${item.name} added to your cart.`
-    );
 
     window.setTimeout(() => {
       setAdded((prev) => ({
         ...prev,
         [item.id]: false,
       }));
-    }, 1100);
+    }, 1200);
   };
 
-  /* =========================================================
+  /* ------------------------------------------------------------
      FAVORITES
-  ========================================================= */
+  ------------------------------------------------------------ */
 
-  const toggleFavorite = async (item, event) => {
+  const toggleFavorite = async (event, item) => {
     event.stopPropagation();
 
     if (!currentUser) {
-      showToast(
-        "Please log in to save favourites.",
-        "error"
-      );
-
+      showToast("Please log in to save favorites.", "error");
       setPage("login");
       return;
     }
 
-    try {
-      const favoriteRef = doc(
-        db,
-        "users",
-        currentUser.uid,
-        "favorites",
-        String(item.id)
-      );
+    const favoriteRef = doc(
+      db,
+      "users",
+      currentUser.uid,
+      "favorites",
+      String(item.id)
+    );
 
+    try {
       if (favorites.includes(item.id)) {
         await deleteDoc(favoriteRef);
 
         setFavorites((prev) =>
-          prev.filter(
-            (id) => id !== item.id
-          )
+          prev.filter((id) => id !== item.id)
         );
 
-        showToast(
-          `${item.name} removed from favourites.`
-        );
+        showToast(`${item.name} removed from favorites.`);
       } else {
         await setDoc(favoriteRef, {
           ...item,
           savedAt: Date.now(),
         });
 
-        setFavorites((prev) => [
-          ...prev,
-          item.id,
-        ]);
+        setFavorites((prev) => [...prev, item.id]);
 
-        showToast(
-          `${item.name} saved to favourites ♡`
-        );
+        showToast(`${item.name} saved to favorites.`);
       }
     } catch (error) {
-      console.error(
-        "Favorite update error:",
-        error
-      );
-
-      showToast(
-        "Couldn't update favourites.",
-        "error"
-      );
+      console.error("Error updating favorite:", error);
+      showToast("Something went wrong. Please try again.", "error");
     }
   };
+
+  /* ------------------------------------------------------------
+     OPEN PRODUCT
+  ------------------------------------------------------------ */
+
+  const openProduct = (item) => {
+    setSelectedProduct(item);
+    setPage("product");
+  };
+
+  /* ------------------------------------------------------------
+     RENDER
+  ------------------------------------------------------------ */
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap');
+        /* =========================================================
+           BREWED MENU — PREMIUM CAFE DESIGN
+        ========================================================= */
 
-        :root {
-          --brew-bg: #fcfaf7;
-          --brew-surface: #ffffff;
-          --brew-cream: #f4ede5;
-          --brew-espresso: #30231d;
-          --brew-mocha: #756257;
-          --brew-muted: #9c8d84;
-          --brew-line: #eee7e1;
-          --brew-pink: #e8cecb;
-          --brew-pink-dark: #a76f6c;
-          --brew-sage: #d7dfd1;
-          --brew-sage-dark: #63715f;
-          --brew-gold: #bd914e;
-        }
-
-        .brew-menu {
+        .brewed-menu-page {
           min-height: 100vh;
-          background: var(--brew-bg);
-          color: var(--brew-espresso);
-          font-family: "DM Sans", sans-serif;
+          background: #fbf8f3;
+          color: #1a0a00;
+          overflow-x: hidden;
         }
 
-        /* HEADER */
+        /* ---------------------------------------------------------
+           TOASTS
+        --------------------------------------------------------- */
 
-        .menu-header {
-          width: min(1180px, calc(100% - 40px));
-          margin: 0 auto;
-          padding: 28px 0 18px;
+        .brewed-toast-container {
+          position: fixed;
+          left: 50%;
+          bottom: 24px;
+          transform: translateX(-50%);
+          width: min(calc(100% - 32px), 390px);
+          display: flex;
+          flex-direction: column;
+          gap: 9px;
+          z-index: 9999;
+          pointer-events: none;
         }
 
-        .menu-header-top {
+        .brewed-toast {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          gap: 20px;
-          margin-bottom: 26px;
-        }
-
-        .brand-lockup {
-          display: flex;
-          align-items: baseline;
-          gap: 7px;
-        }
-
-        .brand-name {
-          font-family: "Manrope", sans-serif;
-          font-size: 25px;
-          font-weight: 800;
-          letter-spacing: -.06em;
-        }
-
-        .brand-mark {
-          color: var(--brew-pink-dark);
-          font-family: "Playfair Display", serif;
-          font-size: 15px;
-          font-style: italic;
-        }
-
-        .header-note {
-          color: var(--brew-muted);
-          font-size: 10px;
-          letter-spacing: .08em;
-          text-transform: uppercase;
-        }
-
-        /* INTRO */
-
-        .menu-intro {
-          display: flex;
-          align-items: flex-end;
-          justify-content: space-between;
-          gap: 30px;
-          margin-bottom: 23px;
-        }
-
-        .intro-copy {
-          max-width: 600px;
-        }
-
-        .intro-kicker {
-          margin: 0 0 9px;
-          color: var(--brew-pink-dark);
-          font-size: 9px;
-          font-weight: 800;
-          letter-spacing: .16em;
-          text-transform: uppercase;
-        }
-
-        .intro-title {
-          margin: 0;
-          font-family: "Manrope", sans-serif;
-          font-size: clamp(2rem, 4vw, 3.2rem);
-          font-weight: 800;
-          line-height: 1;
-          letter-spacing: -.065em;
-        }
-
-        .intro-title em {
-          font-family: "Playfair Display", serif;
-          font-weight: 400;
-          letter-spacing: -.035em;
-        }
-
-        .intro-subtitle {
-          max-width: 430px;
-          margin: 11px 0 0;
-          color: var(--brew-muted);
-          font-size: 12px;
-          line-height: 1.65;
-        }
-
-        /* SEARCH */
-
-        .search-wrap {
-          position: relative;
-          width: min(450px, 100%);
-        }
-
-        .search-box {
-          display: flex;
-          align-items: center;
-          height: 48px;
-          padding: 0 15px;
-          border: 1px solid var(--brew-line);
+          gap: 11px;
+          padding: 13px 16px;
+          border: 1px solid rgba(255,255,255,.08);
           border-radius: 14px;
-          background: var(--brew-surface);
-          box-shadow: 0 5px 20px rgba(57,39,28,.035);
-          transition: border-color .2s ease,
-                      box-shadow .2s ease;
+          background: rgba(26,10,0,.96);
+          color: #fffaf3;
+          box-shadow: 0 18px 45px rgba(26,10,0,.22);
+          backdrop-filter: blur(14px);
+          font-family: Inter, sans-serif;
+          font-size: 13px;
+          font-weight: 500;
+          letter-spacing: .01em;
+          animation: brewedToastIn .35s cubic-bezier(.16,1,.3,1);
         }
 
-        .search-box:focus-within {
-          border-color: #d9c8bf;
-          box-shadow: 0 6px 24px rgba(57,39,28,.065);
-        }
-
-        .search-box svg {
-          flex: 0 0 auto;
-          color: #a89990;
-        }
-
-        .search-box input {
-          flex: 1;
-          width: 100%;
-          height: 100%;
-          padding: 0 10px;
-          border: 0;
-          outline: 0;
-          background: transparent;
-          color: var(--brew-espresso);
-          font-family: "DM Sans", sans-serif;
-          font-size: 12px;
-        }
-
-        .search-box input::placeholder {
-          color: #b4a69e;
-        }
-
-        .clear-search {
+        .brewed-toast-icon {
           width: 25px;
           height: 25px;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          flex: 0 0 25px;
+          background: #c4956a;
+          color: #1a0a00;
+        }
+
+        .brewed-toast.error .brewed-toast-icon {
+          background: #c95c52;
+          color: #fff;
+        }
+
+        @keyframes brewedToastIn {
+          from {
+            opacity: 0;
+            transform: translateY(14px) scale(.97);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        /* ---------------------------------------------------------
+           HERO
+        --------------------------------------------------------- */
+
+        .brewed-menu-hero {
+          position: relative;
+          min-height: 455px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 0;
-          border-radius: 50%;
-          background: #f4efeb;
-          color: #8e7c72;
-          cursor: pointer;
+          overflow: hidden;
+          background:
+            radial-gradient(
+              circle at 78% 30%,
+              rgba(196,149,106,.17),
+              transparent 30%
+            ),
+            radial-gradient(
+              circle at 18% 85%,
+              rgba(92,46,14,.32),
+              transparent 34%
+            ),
+            linear-gradient(
+              135deg,
+              #140702 0%,
+              #211007 45%,
+              #351806 100%
+            );
         }
 
-        /* CATEGORIES */
+        .brewed-menu-hero::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          opacity: .12;
+          background-image:
+            radial-gradient(rgba(255,255,255,.8) .5px, transparent .5px);
+          background-size: 6px 6px;
+          pointer-events: none;
+        }
 
-        .category-row {
+        .brewed-menu-hero::after {
+          content: "";
+          position: absolute;
+          width: 520px;
+          height: 520px;
+          right: -220px;
+          top: -230px;
+          border: 1px solid rgba(196,149,106,.2);
+          border-radius: 50%;
+          box-shadow:
+            0 0 0 35px rgba(196,149,106,.025),
+            0 0 0 70px rgba(196,149,106,.02);
+        }
+
+        .brewed-hero-content {
+          position: relative;
+          z-index: 2;
+          width: min(100% - 40px, 760px);
+          padding: 80px 0;
+          text-align: center;
+        }
+
+        .brewed-hero-eyebrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          margin: 0 0 22px;
+          color: #c4956a;
+          font-family: Inter, sans-serif;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: .22em;
+          text-transform: uppercase;
+        }
+
+        .brewed-hero-eyebrow::before,
+        .brewed-hero-eyebrow::after {
+          content: "";
+          width: 24px;
+          height: 1px;
+          background: rgba(196,149,106,.55);
+        }
+
+        .brewed-hero-title {
+          margin: 0;
+          color: #fffaf3;
+          font-family: "Playfair Display", Georgia, serif;
+          font-size: clamp(46px, 8vw, 76px);
+          font-weight: 500;
+          line-height: .98;
+          letter-spacing: -.045em;
+        }
+
+        .brewed-hero-title em {
+          color: #d4ad84;
+          font-weight: 400;
+        }
+
+        .brewed-hero-subtitle {
+          max-width: 480px;
+          margin: 25px auto 0;
+          color: rgba(255,250,243,.65);
+          font-family: Inter, sans-serif;
+          font-size: 14px;
+          line-height: 1.75;
+          letter-spacing: .01em;
+        }
+
+        .brewed-hero-rule {
+          width: 46px;
+          height: 1px;
+          margin: 30px auto 0;
+          background: #c4956a;
+        }
+
+        /* ---------------------------------------------------------
+           FILTER AREA
+        --------------------------------------------------------- */
+
+        .brewed-controls {
+          position: sticky;
+          top: 0;
+          z-index: 80;
+          border-bottom: 1px solid rgba(26,10,0,.075);
+          background: rgba(251,248,243,.94);
+          backdrop-filter: blur(18px);
+        }
+
+        .brewed-controls-inner {
+          width: min(100% - 40px, 1240px);
+          margin: 0 auto;
+          padding: 17px 0;
+        }
+
+        .brewed-control-top {
+          display: grid;
+          grid-template-columns: minmax(0,1fr) minmax(220px,320px) auto;
+          align-items: center;
+          gap: 18px;
+        }
+
+        .brewed-categories {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 7px;
           overflow-x: auto;
-          padding: 2px 0 7px;
           scrollbar-width: none;
+          min-width: 0;
         }
 
-        .category-row::-webkit-scrollbar {
+        .brewed-categories::-webkit-scrollbar {
           display: none;
         }
 
-        .category {
+        .brewed-filter {
           flex: 0 0 auto;
-          height: 34px;
-          padding: 0 15px;
-          border: 1px solid var(--brew-line);
-          border-radius: 999px;
+          border: 1px solid transparent;
           background: transparent;
-          color: var(--brew-mocha);
+          color: #755f51;
+          padding: 9px 13px;
+          border-radius: 999px;
           cursor: pointer;
-          font-family: "DM Sans", sans-serif;
-          font-size: 10px;
+          font-family: Inter, sans-serif;
+          font-size: 11px;
           font-weight: 600;
-          transition: all .2s ease;
+          letter-spacing: .01em;
+          transition:
+            color .2s ease,
+            background .2s ease,
+            border-color .2s ease,
+            transform .2s ease;
         }
 
-        .category:hover {
-          background: #f7f2ed;
+        .brewed-filter:hover {
+          color: #1a0a00;
+          background: rgba(196,149,106,.08);
         }
 
-        .category.active {
-          border-color: var(--brew-espresso);
-          background: var(--brew-espresso);
-          color: white;
+        .brewed-filter.active {
+          color: #fffaf3;
+          background: #1a0a00;
+          border-color: #1a0a00;
         }
 
-        /* FEATURED EDITORIAL */
-
-        .featured-wrap {
-          width: min(1180px, calc(100% - 40px));
-          margin: 30px auto 0;
-        }
-
-        .featured-card {
+        .brewed-search {
           position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .brewed-search-icon {
+          position: absolute;
+          left: 13px;
+          color: #927e70;
+          pointer-events: none;
+        }
+
+        .brewed-search-input {
+          width: 100%;
+          height: 39px;
+          padding: 0 38px 0 38px;
+          border: 1px solid rgba(26,10,0,.11);
+          border-radius: 999px;
+          outline: none;
+          background: #fffdf9;
+          color: #1a0a00;
+          font-family: Inter, sans-serif;
+          font-size: 11px;
+          transition:
+            border-color .2s ease,
+            box-shadow .2s ease,
+            background .2s ease;
+        }
+
+        .brewed-search-input::placeholder {
+          color: #a49488;
+        }
+
+        .brewed-search-input:focus {
+          border-color: rgba(26,10,0,.35);
+          background: #fff;
+          box-shadow: 0 0 0 3px rgba(196,149,106,.10);
+        }
+
+        .brewed-search-clear {
+          position: absolute;
+          right: 8px;
+          width: 27px;
+          height: 27px;
           display: grid;
-          grid-template-columns: 1.3fr .7fr;
-          min-height: 255px;
-          overflow: hidden;
-          border-radius: 24px;
-          background: #eee2d8;
+          place-items: center;
+          border: none;
+          border-radius: 50%;
+          background: transparent;
+          color: #806e62;
           cursor: pointer;
         }
 
-        .featured-image {
-          position: relative;
-          overflow: hidden;
+        .brewed-search-clear:hover {
+          background: rgba(26,10,0,.06);
         }
 
-        .featured-image img {
+        .brewed-sort {
+          position: relative;
+          min-width: 155px;
+        }
+
+        .brewed-sort-select {
+          appearance: none;
+          width: 100%;
+          height: 39px;
+          padding: 0 34px 0 14px;
+          border: 1px solid rgba(26,10,0,.11);
+          border-radius: 999px;
+          outline: none;
+          background: #fffdf9;
+          color: #3b271c;
+          cursor: pointer;
+          font-family: Inter, sans-serif;
+          font-size: 11px;
+          font-weight: 600;
+        }
+
+        .brewed-sort-icon {
+          position: absolute;
+          right: 13px;
+          top: 50%;
+          transform: translateY(-50%);
+          pointer-events: none;
+          color: #5e493c;
+        }
+
+        .brewed-results-count {
+          margin-top: 11px;
+          color: #a18d80;
+          font-family: Inter, sans-serif;
+          font-size: 10px;
+          letter-spacing: .03em;
+        }
+
+        /* ---------------------------------------------------------
+           GRID
+        --------------------------------------------------------- */
+
+        .brewed-menu-grid {
+          width: min(100% - 40px, 1240px);
+          margin: 0 auto;
+          padding: 42px 0 80px;
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 24px;
+        }
+
+        /* ---------------------------------------------------------
+           PRODUCT CARD
+        --------------------------------------------------------- */
+
+        .brewed-product-card {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+          overflow: hidden;
+          border: 1px solid rgba(26,10,0,.075);
+          border-radius: 20px;
+          background: #fffdf9;
+          cursor: pointer;
+          transition:
+            transform .35s cubic-bezier(.16,1,.3,1),
+            box-shadow .35s ease,
+            border-color .35s ease;
+        }
+
+        .brewed-product-card:hover {
+          transform: translateY(-6px);
+          border-color: rgba(196,149,106,.24);
+          box-shadow: 0 22px 55px rgba(26,10,0,.10);
+        }
+
+        .brewed-product-media {
+          position: relative;
+          height: 255px;
+          overflow: hidden;
+          background:
+            radial-gradient(
+              circle at 50% 40%,
+              #fffdf8 0%,
+              #f7eee4 100%
+            );
+        }
+
+        .brewed-product-media img {
           width: 100%;
           height: 100%;
           display: block;
           object-fit: cover;
-          transition: transform .5s ease;
+          transition: transform .6s cubic-bezier(.16,1,.3,1);
         }
 
-        .featured-card:hover .featured-image img {
-          transform: scale(1.04);
+        .brewed-product-card:hover .brewed-product-media img {
+          transform: scale(1.045);
         }
 
-        .featured-image::after {
-          content: "";
+        .brewed-emoji-placeholder {
+          width: 100%;
+          height: 100%;
+          display: grid;
+          place-items: center;
+          color: #6a4630;
+          font-size: 56px;
+          background:
+            radial-gradient(
+              circle at 50% 42%,
+              #fffdf9 0%,
+              #f6e8da 100%
+            );
+        }
+
+        .brewed-image-overlay {
           position: absolute;
-          inset: 0;
+          inset: auto 0 0;
+          height: 70px;
           background: linear-gradient(
-            90deg,
-            transparent 55%,
-            rgba(0,0,0,.08)
+            to top,
+            rgba(26,10,0,.13),
+            transparent
           );
           pointer-events: none;
         }
 
-        .featured-content {
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          padding: 32px;
-          background: #f2e7dc;
-        }
-
-        .featured-label {
-          color: var(--brew-pink-dark);
-          font-size: 8px;
+        .brewed-badge {
+          position: absolute;
+          top: 14px;
+          left: 14px;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          min-height: 27px;
+          padding: 0 10px;
+          border: 1px solid rgba(196,149,106,.3);
+          border-radius: 999px;
+          background: rgba(255,250,243,.92);
+          color: #4d2b18;
+          backdrop-filter: blur(10px);
+          font-family: Inter, sans-serif;
+          font-size: 9px;
           font-weight: 800;
-          letter-spacing: .15em;
+          letter-spacing: .09em;
           text-transform: uppercase;
-        }
-
-        .featured-content h2 {
-          margin: 12px 0 7px;
-          font-family: "Manrope", sans-serif;
-          font-size: 25px;
-          font-weight: 800;
-          letter-spacing: -.045em;
-          line-height: 1.05;
-        }
-
-        .featured-content p {
-          max-width: 290px;
-          margin: 0;
-          color: var(--brew-mocha);
-          font-size: 10px;
-          line-height: 1.65;
-        }
-
-        .featured-bottom {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          margin-top: 21px;
-        }
-
-        .featured-price {
-          font-family: "Manrope", sans-serif;
-          font-size: 17px;
-          font-weight: 800;
-        }
-
-        .featured-add {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 9px 13px;
-          border: 0;
-          border-radius: 10px;
-          background: var(--brew-espresso);
-          color: white;
-          cursor: pointer;
-          font-family: "DM Sans", sans-serif;
-          font-size: 9px;
-          font-weight: 700;
-        }
-
-        /* MENU SECTION */
-
-        .menu-content {
-          width: min(1180px, calc(100% - 40px));
-          margin: 40px auto 0;
-          padding-bottom: 70px;
-        }
-
-        .menu-heading {
-          display: flex;
-          align-items: flex-end;
-          justify-content: space-between;
-          gap: 20px;
-          margin-bottom: 18px;
-        }
-
-        .heading-left {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-        }
-
-        .heading-left h2 {
-          margin: 0;
-          font-family: "Manrope", sans-serif;
-          font-size: 20px;
-          font-weight: 800;
-          letter-spacing: -.035em;
-        }
-
-        .heading-left span {
-          color: var(--brew-muted);
-          font-size: 10px;
-        }
-
-        .sort {
-          position: relative;
-        }
-
-        .sort select {
-          appearance: none;
-          height: 32px;
-          padding: 0 28px 0 11px;
-          border: 1px solid var(--brew-line);
-          border-radius: 9px;
-          outline: 0;
-          background: white;
-          color: var(--brew-mocha);
-          cursor: pointer;
-          font-family: "DM Sans", sans-serif;
-          font-size: 9px;
-        }
-
-        .sort svg {
-          position: absolute;
-          top: 50%;
-          right: 8px;
-          transform: translateY(-50%);
-          pointer-events: none;
-          color: #9d8c83;
-        }
-
-        /* GRID */
-
-        .menu-grid {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0,1fr));
-          gap: 18px;
-        }
-
-        .menu-card {
-          min-width: 0;
-          overflow: hidden;
-          border-radius: 20px;
-          background: white;
-          box-shadow:
-            0 3px 18px rgba(58,39,28,.045);
-          cursor: pointer;
-          transition:
-            transform .25s ease,
-            box-shadow .25s ease;
-        }
-
-        .menu-card:hover {
-          transform: translateY(-4px);
-          box-shadow:
-            0 13px 30px rgba(58,39,28,.085);
-        }
-
-        .card-image {
-          position: relative;
-          aspect-ratio: 1 / .91;
-          overflow: hidden;
-          background: var(--brew-cream);
-        }
-
-        .card-image img {
-          width: 100%;
-          height: 100%;
-          display: block;
-          object-fit: cover;
-          transition: transform .45s ease;
-        }
-
-        .menu-card:hover .card-image img {
-          transform: scale(1.045);
-        }
-
-        .image-fallback {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background:
-            radial-gradient(
-              circle at center,
-              #fffaf6,
-              #eee0d5
-            );
-          font-size: 48px;
-        }
-
-        /* FAVORITE */
-
-        .favorite {
-          position: absolute;
-          top: 11px;
-          right: 11px;
-          z-index: 4;
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 0;
-          border-radius: 50%;
-          background: rgba(255,255,255,.94);
-          color: var(--brew-espresso);
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(48,35,29,.08);
-          transition: transform .2s ease;
-        }
-
-        .favorite:hover {
-          transform: scale(1.08);
-        }
-
-        /* BADGES */
-
-        .badge {
-          position: absolute;
-          left: 11px;
-          top: 11px;
           z-index: 3;
-          padding: 5px 8px;
-          border-radius: 7px;
-          background: rgba(255,255,255,.94);
-          color: var(--brew-mocha);
-          font-size: 7px;
-          font-weight: 800;
-          letter-spacing: .08em;
-          text-transform: uppercase;
         }
 
-        .badge.featured {
-          background: #ead1ce;
-          color: #8c5d59;
+        .brewed-badge.best {
+          background: #1a0a00;
+          border-color: #1a0a00;
+          color: #fdf8ef;
         }
 
-        .badge.out {
-          top: auto;
-          bottom: 11px;
-          background: #7b4d48;
+        .brewed-badge.out {
+          top: 49px;
+          background: rgba(156,45,36,.94);
+          border-color: transparent;
           color: white;
         }
 
-        /* CARD BODY */
-
-        .card-body {
-          padding: 13px 13px 14px;
+        .brewed-favorite {
+          position: absolute;
+          top: 14px;
+          right: 14px;
+          width: 38px;
+          height: 38px;
+          display: grid;
+          place-items: center;
+          border: 1px solid rgba(26,10,0,.08);
+          border-radius: 50%;
+          background: rgba(255,253,249,.9);
+          color: #6d5546;
+          backdrop-filter: blur(10px);
+          cursor: pointer;
+          z-index: 4;
+          transition:
+            transform .2s ease,
+            background .2s ease,
+            color .2s ease;
         }
 
-        .card-title-row {
+        .brewed-favorite:hover {
+          transform: scale(1.07);
+          background: #1a0a00;
+          color: #fffaf3;
+        }
+
+        .brewed-favorite.saved {
+          background: #1a0a00;
+          color: #c4956a;
+        }
+
+        /* ---------------------------------------------------------
+           CARD BODY
+        --------------------------------------------------------- */
+
+        .brewed-card-body {
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+          padding: 19px 19px 0;
+        }
+
+        .brewed-card-heading {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
-          gap: 10px;
+          gap: 14px;
         }
 
-        .card-name {
+        .brewed-card-name {
           margin: 0;
-          color: var(--brew-espresso);
-          font-family: "Manrope", sans-serif;
-          font-size: 13px;
-          font-weight: 800;
-          line-height: 1.25;
-          letter-spacing: -.02em;
+          color: #1a0a00;
+          font-family: "Playfair Display", Georgia, serif;
+          font-size: 20px;
+          font-weight: 600;
+          line-height: 1.15;
+          letter-spacing: -.025em;
         }
 
-        .card-price {
+        .brewed-card-price {
           flex: 0 0 auto;
-          color: var(--brew-espresso);
-          font-family: "Manrope", sans-serif;
-          font-size: 12px;
-          font-weight: 800;
+          color: #4a2a18;
+          font-family: "Playfair Display", Georgia, serif;
+          font-size: 16px;
+          font-weight: 700;
         }
 
-        .card-desc {
+        .brewed-rating {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 10px;
+          font-family: Inter, sans-serif;
+          font-size: 10px;
+        }
+
+        .brewed-rating-star {
+          color: #b87d45;
+        }
+
+        .brewed-rating-score {
+          color: #39271d;
+          font-weight: 700;
+        }
+
+        .brewed-rating-count {
+          color: #a08e82;
+        }
+
+        .brewed-card-desc {
           display: -webkit-box;
-          min-height: 30px;
-          margin: 6px 0 11px;
           overflow: hidden;
-          color: var(--brew-muted);
-          font-size: 9px;
-          line-height: 1.6;
+          margin: 11px 0 0;
+          color: #806e61;
+          font-family: Inter, sans-serif;
+          font-size: 11px;
+          line-height: 1.65;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
         }
 
-        .card-footer {
+        .brewed-add-button {
+          width: calc(100% - 38px);
+          min-height: 43px;
+          margin: 19px;
+          border: 1px solid #1a0a00;
+          border-radius: 11px;
+          background: #1a0a00;
+          color: #fffaf3;
+          cursor: pointer;
+          font-family: Inter, sans-serif;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: .03em;
+          transition:
+            background .2s ease,
+            color .2s ease,
+            transform .2s ease,
+            box-shadow .2s ease;
+        }
+
+        .brewed-add-button:hover:not(:disabled) {
+          background: #3b1a08;
+          box-shadow: 0 8px 20px rgba(26,10,0,.13);
+        }
+
+        .brewed-add-button:active:not(:disabled) {
+          transform: scale(.985);
+        }
+
+        .brewed-add-button.added {
+          border-color: #c4956a;
+          background: #c4956a;
+          color: #1a0a00;
+        }
+
+        .brewed-add-button:disabled {
+          border-color: #d7ccc3;
+          background: #e4ddd7;
+          color: #87766a;
+          cursor: not-allowed;
+        }
+
+        /* ---------------------------------------------------------
+           EMPTY STATE
+        --------------------------------------------------------- */
+
+        .brewed-empty {
+          grid-column: 1 / -1;
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-        }
-
-        .rating {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          color: var(--brew-muted);
-          font-size: 8px;
-          font-weight: 600;
-        }
-
-        .rating svg {
-          color: var(--brew-gold);
-        }
-
-        .add-button {
-          display: inline-flex;
+          min-height: 300px;
           align-items: center;
           justify-content: center;
-          gap: 4px;
-          height: 29px;
-          min-width: 58px;
-          padding: 0 9px;
-          border: 1px solid #e5dad2;
-          border-radius: 9px;
-          background: #fffdfa;
-          color: var(--brew-espresso);
-          cursor: pointer;
-          font-family: "DM Sans", sans-serif;
-          font-size: 8px;
-          font-weight: 800;
-          transition: all .2s ease;
-        }
-
-        .add-button:hover {
-          border-color: var(--brew-espresso);
-          background: var(--brew-espresso);
-          color: white;
-        }
-
-        .add-button.added {
-          border-color: var(--brew-sage);
-          background: var(--brew-sage);
-          color: var(--brew-sage-dark);
-        }
-
-        .add-button:disabled {
-          cursor: not-allowed;
-          opacity: .5;
-        }
-
-        /* LOADING */
-
-        .loading-grid {
-          display: grid;
-          grid-template-columns: repeat(4,1fr);
-          gap: 18px;
-          grid-column: 1/-1;
-        }
-
-        .skeleton {
-          height: 330px;
-          border-radius: 20px;
-          background:
-            linear-gradient(
-              100deg,
-              #f1e9e3 30%,
-              #faf6f2 45%,
-              #f1e9e3 60%
-            );
-          background-size: 200% 100%;
-          animation: shimmer 1.3s infinite;
-        }
-
-        @keyframes shimmer {
-          from { background-position: 200% 0; }
-          to { background-position: -200% 0; }
-        }
-
-        /* EMPTY */
-
-        .empty {
-          grid-column: 1/-1;
-          padding: 70px 20px;
-          border: 1px dashed #e5dad2;
-          border-radius: 20px;
-          background: white;
+          flex-direction: column;
           text-align: center;
         }
 
-        .empty h3 {
-          margin: 12px 0 6px;
-          font-family: "Manrope", sans-serif;
-          font-size: 18px;
+        .brewed-empty-icon {
+          width: 54px;
+          height: 54px;
+          display: grid;
+          place-items: center;
+          margin-bottom: 17px;
+          border: 1px solid rgba(196,149,106,.3);
+          border-radius: 50%;
+          color: #8b6850;
+          background: #f8eee4;
         }
 
-        .empty p {
-          margin: 0 0 18px;
-          color: var(--brew-muted);
-          font-size: 10px;
+        .brewed-empty-title {
+          margin: 0;
+          color: #29160c;
+          font-family: "Playfair Display", Georgia, serif;
+          font-size: 24px;
+          font-weight: 500;
         }
 
-        .empty button {
-          padding: 9px 14px;
-          border: 0;
-          border-radius: 9px;
-          background: var(--brew-espresso);
-          color: white;
+        .brewed-empty-text {
+          margin: 8px 0 0;
+          color: #927e70;
+          font-family: Inter, sans-serif;
+          font-size: 11px;
+        }
+
+        .brewed-clear-search {
+          margin-top: 18px;
+          padding: 9px 15px;
+          border: 1px solid rgba(26,10,0,.14);
+          border-radius: 999px;
+          background: transparent;
+          color: #3b1a08;
           cursor: pointer;
-          font-size: 9px;
+          font-family: Inter, sans-serif;
+          font-size: 10px;
           font-weight: 700;
         }
 
-        /* TOAST */
+        /* ---------------------------------------------------------
+           RESPONSIVE
+        --------------------------------------------------------- */
 
-        .toast-container {
-          position: fixed;
-          left: 50%;
-          bottom: 22px;
-          z-index: 9999;
-          width: min(380px, calc(100% - 30px));
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          transform: translateX(-50%);
-          pointer-events: none;
-        }
-
-        .toast {
-          padding: 12px 16px;
-          border-radius: 12px;
-          background: var(--brew-espresso);
-          color: white;
-          box-shadow: 0 12px 35px rgba(48,35,29,.2);
-          font-size: 10px;
-          font-weight: 600;
-          text-align: center;
-          animation: toastIn .25s ease;
-        }
-
-        .toast.error {
-          background: #794b47;
-        }
-
-        @keyframes toastIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
+        @media (max-width: 1050px) {
+          .brewed-control-top {
+            grid-template-columns: 1fr minmax(210px,280px);
           }
-          to {
-            opacity: 1;
-            transform: translateY(0);
+
+          .brewed-sort {
+            display: none;
+          }
+
+          .brewed-menu-grid {
+            grid-template-columns: repeat(2, minmax(0,1fr));
           }
         }
 
-        /* TABLET */
-
-        @media (max-width: 1000px) {
-          .menu-grid {
-            grid-template-columns: repeat(3,1fr);
+        @media (max-width: 700px) {
+          .brewed-menu-hero {
+            min-height: 390px;
           }
 
-          .loading-grid {
-            grid-template-columns: repeat(3,1fr);
+          .brewed-hero-content {
+            padding: 65px 0;
           }
 
-          .menu-intro {
+          .brewed-hero-title {
+            font-size: clamp(43px, 14vw, 62px);
+          }
+
+          .brewed-hero-subtitle {
+            font-size: 13px;
+          }
+
+          .brewed-controls-inner {
+            width: min(100% - 28px, 1240px);
+          }
+
+          .brewed-control-top {
+            display: flex;
             flex-direction: column;
             align-items: stretch;
+            gap: 12px;
           }
 
-          .search-wrap {
-            width: 100%;
+          .brewed-categories {
+            order: 1;
+          }
+
+          .brewed-search {
+            order: 2;
+          }
+
+          .brewed-menu-grid {
+            width: min(100% - 28px, 1240px);
+            grid-template-columns: 1fr;
+            gap: 18px;
+            padding-top: 28px;
+          }
+
+          .brewed-product-media {
+            height: 265px;
           }
         }
 
-        /* MOBILE */
-
-        @media (max-width: 680px) {
-          .menu-header,
-          .featured-wrap,
-          .menu-content {
-            width: calc(100% - 24px);
+        @media (max-width: 420px) {
+          .brewed-menu-hero {
+            min-height: 360px;
           }
 
-          .menu-header {
-            padding-top: 20px;
+          .brewed-hero-content {
+            width: calc(100% - 30px);
           }
 
-          .header-note {
-            display: none;
+          .brewed-hero-title {
+            font-size: 43px;
           }
 
-          .menu-header-top {
-            margin-bottom: 22px;
-          }
-
-          .brand-name {
-            font-size: 23px;
-          }
-
-          .intro-title {
-            font-size: 34px;
-          }
-
-          .intro-subtitle {
-            max-width: 340px;
-            font-size: 11px;
-          }
-
-          .featured-wrap {
-            margin-top: 25px;
-          }
-
-          .featured-card {
-            grid-template-columns: 1fr;
-            border-radius: 20px;
-          }
-
-          .featured-image {
-            height: 220px;
-          }
-
-          .featured-content {
-            padding: 23px;
-          }
-
-          .featured-content h2 {
-            font-size: 22px;
-          }
-
-          .menu-content {
-            margin-top: 32px;
-          }
-
-          .menu-heading {
-            align-items: center;
-          }
-
-          .heading-left h2 {
-            font-size: 18px;
-          }
-
-          .heading-left span {
-            display: none;
-          }
-
-          .menu-grid {
-            grid-template-columns: repeat(2,minmax(0,1fr));
-            gap: 11px;
-          }
-
-          .loading-grid {
-            grid-template-columns: repeat(2,1fr);
-            gap: 11px;
-          }
-
-          .skeleton {
-            height: 275px;
-            border-radius: 16px;
-          }
-
-          .menu-card {
-            border-radius: 16px;
-          }
-
-          .card-image {
-            aspect-ratio: .9;
-          }
-
-          .card-body {
-            padding: 10px;
-          }
-
-          .card-name {
-            font-size: 11px;
-          }
-
-          .card-price {
-            font-size: 11px;
-          }
-
-          .card-desc {
-            min-height: 28px;
-            margin: 5px 0 9px;
-            font-size: 8px;
-          }
-
-          .rating {
-            font-size: 7px;
-          }
-
-          .add-button {
-            height: 27px;
-            min-width: 53px;
-            font-size: 7px;
-          }
-
-          .favorite {
-            width: 29px;
-            height: 29px;
-            top: 8px;
-            right: 8px;
-          }
-
-          .badge {
-            top: 8px;
-            left: 8px;
-            padding: 4px 6px;
-            font-size: 6px;
-          }
-
-          .badge.out {
-            bottom: 8px;
-          }
-        }
-
-        @media (max-width: 370px) {
-          .menu-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .card-image {
-            aspect-ratio: 1.05;
+          .brewed-product-media {
+            height: 245px;
           }
         }
 
         @media (prefers-reduced-motion: reduce) {
-          *,
-          *::before,
-          *::after {
-            animation-duration: .01ms !important;
-            transition-duration: .01ms !important;
+          .brewed-product-card,
+          .brewed-product-media img,
+          .brewed-toast,
+          .brewed-add-button,
+          .brewed-favorite {
+            animation: none !important;
+            transition: none !important;
           }
         }
       `}</style>
 
-      {/* =====================================================
+      {/* =========================================================
           TOASTS
-      ===================================================== */}
+      ========================================================= */}
 
-      <div
-        className="toast-container"
-        aria-live="polite"
-      >
+      <div className="brewed-toast-container" aria-live="polite">
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`toast ${toast.type}`}
+            className={`brewed-toast ${toast.type === "error" ? "error" : ""}`}
           >
-            {toast.message}
+            <span className="brewed-toast-icon">
+              {toast.type === "error" ? (
+                <X size={14} strokeWidth={2.5} />
+              ) : (
+                <Check size={14} strokeWidth={2.5} />
+              )}
+            </span>
+
+            <span>{toast.message}</span>
           </div>
         ))}
       </div>
 
-      <main className="brew-menu">
+      <main className="brewed-menu-page">
+        {/* =======================================================
+            HERO
+        ======================================================= */}
 
-        {/* ===================================================
-            HEADER
-        =================================================== */}
-
-        <header className="menu-header">
-
-          <div className="menu-header-top">
-            <div className="brand-lockup">
-              <span className="brand-name">
-                brewed
-              </span>
-
-              <span className="brand-mark">
-                coffee & little things
-              </span>
-            </div>
-
-            <span className="header-note">
+        <section className="brewed-menu-hero">
+          <div className="brewed-hero-content">
+            <p className="brewed-hero-eyebrow">
               Est. 2024 · Kolkata
-            </span>
+            </p>
+
+            <h1 className="brewed-hero-title">
+              Good coffee.
+              <br />
+              <em>Good moments.</em>
+            </h1>
+
+            <p className="brewed-hero-subtitle">
+              Specialty coffee, thoughtful food and little things
+              made beautifully — served fresh, every day.
+            </p>
+
+            <div className="brewed-hero-rule" />
           </div>
+        </section>
 
-          <div className="menu-intro">
+        {/* =======================================================
+            CONTROLS
+        ======================================================= */}
 
-            <div className="intro-copy">
-              <p className="intro-kicker">
-                made for your everyday
-              </p>
+        <section className="brewed-controls">
+          <div className="brewed-controls-inner">
+            <div className="brewed-control-top">
+              <div className="brewed-categories">
+                {filters.map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    className={`brewed-filter ${
+                      activeCategory === category ? "active" : ""
+                    }`}
+                    onClick={() => setActiveCategory(category)}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
 
-              <h1 className="intro-title">
-                What are you in the mood <em>for?</em>
-              </h1>
-
-              <p className="intro-subtitle">
-                Slow mornings, study breaks, late-night
-                cravings — find something lovely to sip
-                or snack on.
-              </p>
-            </div>
-
-            <div className="search-wrap">
-              <div className="search-box">
-
-                <Search size={17} />
+              <div className="brewed-search">
+                <Search
+                  className="brewed-search-icon"
+                  size={15}
+                  strokeWidth={1.8}
+                />
 
                 <input
                   type="search"
-                  placeholder="Search coffee, food & more..."
+                  className="brewed-search-input"
+                  placeholder="Search the menu..."
                   value={searchQuery}
                   onChange={(event) =>
-                    setSearchQuery(
-                      event.target.value
-                    )
+                    setSearchQuery(event.target.value)
                   }
                   aria-label="Search menu"
                 />
@@ -1435,450 +1220,216 @@ export default function MenuPage({ setPage, setSelectedProduct }) {
                 {searchQuery && (
                   <button
                     type="button"
-                    className="clear-search"
-                    onClick={() =>
-                      setSearchQuery("")
-                    }
+                    className="brewed-search-clear"
+                    onClick={() => setSearchQuery("")}
                     aria-label="Clear search"
                   >
-                    <X size={13} />
+                    <X size={14} />
                   </button>
                 )}
+              </div>
 
+              <div className="brewed-sort">
+                <select
+                  className="brewed-sort-select"
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value)}
+                  aria-label="Sort menu"
+                >
+                  <option value="default">Sort: Featured</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="popularity">
+                    Highest Rated
+                  </option>
+                </select>
+
+                <ChevronDown
+                  className="brewed-sort-icon"
+                  size={14}
+                />
               </div>
             </div>
 
+            <div className="brewed-results-count">
+              {sortedAndFiltered.length}{" "}
+              {sortedAndFiltered.length === 1 ? "item" : "items"}
+              {activeCategory !== "All" &&
+                ` · ${activeCategory}`}
+            </div>
           </div>
+        </section>
 
-          <nav
-            className="category-row"
-            aria-label="Menu categories"
-          >
-            {filters.map((category) => (
-              <button
-                key={category}
-                type="button"
-                className={`category ${
-                  activeCategory === category
-                    ? "active"
-                    : ""
-                }`}
-                onClick={() =>
-                  setActiveCategory(category)
-                }
-              >
-                {category}
-              </button>
-            ))}
-          </nav>
+        {/* =======================================================
+            PRODUCT GRID
+        ======================================================= */}
 
-        </header>
+        <section className="brewed-menu-grid">
+          {sortedAndFiltered.length === 0 ? (
+            <div className="brewed-empty">
+              <div className="brewed-empty-icon">
+                <Search size={20} strokeWidth={1.5} />
+              </div>
 
-        {/* ===================================================
-            FEATURED
-        =================================================== */}
-
-        {!loading &&
-          !searchQuery.trim() &&
-          activeCategory === "All" &&
-          featuredProduct && (
-            <section className="featured-wrap">
-
-              <article
-                className="featured-card"
-                onClick={() =>
-                  openProduct(featuredProduct)
-                }
-              >
-
-                <div className="featured-image">
-                  {featuredProduct.img ||
-                  featuredProduct.image ? (
-                    <img
-                      src={
-                        featuredProduct.img ||
-                        featuredProduct.image
-                      }
-                      alt={featuredProduct.name}
-                      loading="eager"
-                    />
-                  ) : (
-                    <div className="image-fallback">
-                      {featuredProduct.emoji ||
-                        "☕"}
-                    </div>
-                  )}
-                </div>
-
-                <div className="featured-content">
-
-                  <span className="featured-label">
-                    ✦ currently loving
-                  </span>
-
-                  <h2>
-                    {featuredProduct.name}
-                  </h2>
-
-                  <p>
-                    {featuredProduct.desc ||
-                      "Something freshly made and worth slowing down for."}
-                  </p>
-
-                  <div className="featured-bottom">
-
-                    <span className="featured-price">
-                      ₹
-                      {Math.round(
-                        Number(
-                          featuredProduct.price ||
-                            0
-                        )
-                      )}
-                    </span>
-
-                    <button
-                      type="button"
-                      className="featured-add"
-                      disabled={
-                        featuredProduct.available ===
-                        false
-                      }
-                      onClick={(event) => {
-                        event.stopPropagation();
-
-                        if (
-                          featuredProduct.available !==
-                          false
-                        ) {
-                          handleAdd(
-                            featuredProduct
-                          );
-                        }
-                      }}
-                    >
-                      {added[
-                        featuredProduct.id
-                      ] ? (
-                        <>
-                          <Check size={12} />
-                          Added
-                        </>
-                      ) : (
-                        <>
-                          <Plus size={12} />
-                          Add to order
-                        </>
-                      )}
-                    </button>
-
-                  </div>
-
-                </div>
-
-              </article>
-
-            </section>
-          )}
-
-        {/* ===================================================
-            MENU
-        =================================================== */}
-
-        <section className="menu-content">
-
-          <div className="menu-heading">
-
-            <div className="heading-left">
-              <h2>
-                {activeCategory === "All"
-                  ? "The menu"
-                  : activeCategory}
+              <h2 className="brewed-empty-title">
+                Nothing found
               </h2>
 
-              {!loading && (
-                <span>
-                  {filteredItems.length}{" "}
-                  {filteredItems.length === 1
-                    ? "item"
-                    : "items"}
-                </span>
-              )}
-            </div>
+              <p className="brewed-empty-text">
+                Try another search or explore a different category.
+              </p>
 
-            <div className="sort">
-
-              <select
-                value={sortBy}
-                onChange={(event) =>
-                  setSortBy(
-                    event.target.value
-                  )
-                }
-                aria-label="Sort menu"
-              >
-                <option value="default">
-                  Recommended
-                </option>
-
-                <option value="price-low">
-                  Price: Low to High
-                </option>
-
-                <option value="price-high">
-                  Price: High to Low
-                </option>
-
-                <option value="popularity">
-                  Highest Rated
-                </option>
-              </select>
-
-              <ChevronDown size={11} />
-
-            </div>
-
-          </div>
-
-          <div className="menu-grid">
-
-            {loading ? (
-              <div className="loading-grid">
-                {Array.from({
-                  length: 8,
-                }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="skeleton"
-                  />
-                ))}
-              </div>
-            ) : filteredItems.length === 0 ? (
-              <div className="empty">
-
-                <Search
-                  size={26}
-                  color="#b78e88"
-                />
-
-                <h3>
-                  Nothing caught your eye
-                </h3>
-
-                <p>
-                  Try another search or browse
-                  everything on the menu.
-                </p>
-
+              {(searchQuery || activeCategory !== "All") && (
                 <button
                   type="button"
+                  className="brewed-clear-search"
                   onClick={() => {
                     setSearchQuery("");
                     setActiveCategory("All");
                   }}
                 >
-                  View all
+                  View the full menu
                 </button>
+              )}
+            </div>
+          ) : (
+            sortedAndFiltered.map((item) => {
+              const isFavorite = favorites.includes(item.id);
+              const isAdded = Boolean(added[item.id]);
+              const isUnavailable = item.available === false;
 
-              </div>
-            ) : (
-              filteredItems.map((item) => {
+              return (
+                <article
+                  key={item.id}
+                  className="brewed-product-card"
+                  onClick={() => openProduct(item)}
+                >
+                  {/* Image */}
+                  <div className="brewed-product-media">
+                    {item.img || item.image ? (
+                      <img
+                        src={item.img || item.image}
+                        alt={item.name || "Menu item"}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div className="brewed-emoji-placeholder">
+                        {item.emoji || "☕"}
+                      </div>
+                    )}
 
-                const image =
-                  item.img ||
-                  item.image ||
-                  null;
+                    <div className="brewed-image-overlay" />
 
-                const isFavorite =
-                  favorites.includes(
-                    item.id
-                  );
+                    {/* Featured */}
+                    {item.isFeatured && (
+                      <div className="brewed-badge">
+                        <Sparkles size={10} />
+                        Featured
+                      </div>
+                    )}
 
-                return (
-                  <article
-                    key={item.id}
-                    className="menu-card"
-                    onClick={() =>
-                      openProduct(item)
-                    }
-                  >
+                    {/* Bestseller */}
+                    {!item.isFeatured && item.isBestSeller && (
+                      <div className="brewed-badge best">
+                        Bestseller
+                      </div>
+                    )}
 
-                    <div className="card-image">
+                    {/* Out of stock */}
+                    {isUnavailable && (
+                      <div className="brewed-badge out">
+                        Out of Stock
+                      </div>
+                    )}
 
-                      {image ? (
-                        <img
-                          src={image}
-                          alt={item.name}
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="image-fallback">
-                          {item.emoji ||
-                            "☕"}
-                        </div>
-                      )}
+                    {/* Favorite */}
+                    <button
+                      type="button"
+                      className={`brewed-favorite ${
+                        isFavorite ? "saved" : ""
+                      }`}
+                      onClick={(event) =>
+                        toggleFavorite(event, item)
+                      }
+                      aria-label={
+                        isFavorite
+                          ? `Remove ${item.name} from favorites`
+                          : `Save ${item.name} to favorites`
+                      }
+                      aria-pressed={isFavorite}
+                    >
+                      <Heart
+                        size={17}
+                        strokeWidth={1.8}
+                        fill={isFavorite ? "currentColor" : "none"}
+                      />
+                    </button>
+                  </div>
 
-                      {/* BADGE */}
+                  {/* Content */}
+                  <div className="brewed-card-body">
+                    <div className="brewed-card-heading">
+                      <h2 className="brewed-card-name">
+                        {item.name}
+                      </h2>
 
-                      {item.isFeatured ? (
-                        <span className="badge featured">
-                          ✦ Featured
-                        </span>
-                      ) : item.isBestSeller ? (
-                        <span className="badge">
-                          ★ Bestseller
-                        </span>
-                      ) : null}
-
-                      {item.available ===
-                        false && (
-                        <span className="badge out">
-                          Out of stock
-                        </span>
-                      )}
-
-                      {/* FAVORITE */}
-
-                      <button
-                        type="button"
-                        className="favorite"
-                        aria-label={
-                          isFavorite
-                            ? `Remove ${item.name} from favourites`
-                            : `Save ${item.name} to favourites`
-                        }
-                        onClick={(event) =>
-                          toggleFavorite(
-                            item,
-                            event
-                          )
-                        }
-                      >
-                        <Heart
-                          size={15}
-                          strokeWidth={1.8}
-                          fill={
-                            isFavorite
-                              ? "currentColor"
-                              : "none"
-                          }
-                        />
-                      </button>
-
+                      <span className="brewed-card-price">
+                        ₹{Math.round(Number(item.price) || 0)}
+                      </span>
                     </div>
 
-                    {/* BODY */}
+                    <div className="brewed-rating">
+                      <span className="brewed-rating-star">
+                        ★
+                      </span>
 
-                    <div className="card-body">
+                      <span className="brewed-rating-score">
+                        {item.rating > 0
+                          ? Number(item.rating).toFixed(1)
+                          : "New"}
+                      </span>
 
-                      <div className="card-title-row">
-
-                        <h3 className="card-name">
-                          {item.name}
-                        </h3>
-
-                        <span className="card-price">
-                          ₹
-                          {Math.round(
-                            Number(
-                              item.price || 0
-                            )
-                          )}
+                      {item.reviews > 0 && (
+                        <span className="brewed-rating-count">
+                          ({item.reviews})
                         </span>
+                      )}
+                    </div>
 
-                      </div>
-
-                      <p className="card-desc">
-                        {item.desc ||
-                          "Freshly made at Brewed."}
+                    {item.desc && (
+                      <p className="brewed-card-desc">
+                        {item.desc}
                       </p>
+                    )}
+                  </div>
 
-                      <div className="card-footer">
+                  {/* Add */}
+                  <button
+                    type="button"
+                    disabled={isUnavailable}
+                    className={`brewed-add-button ${
+                      isAdded ? "added" : ""
+                    }`}
+                    onClick={(event) => {
+                      event.stopPropagation();
 
-                        <div className="rating">
-
-                          {item.rating > 0 ? (
-                            <>
-                              <Star
-                                size={10}
-                                fill="currentColor"
-                              />
-
-                              <span>
-                                {item.rating}
-                              </span>
-
-                              {item.reviews >
-                                0 && (
-                                <span>
-                                  ·{" "}
-                                  {
-                                    item.reviews
-                                  }
-                                </span>
-                              )}
-                            </>
-                          ) : (
-                            <span>
-                              New on the menu
-                            </span>
-                          )}
-
-                        </div>
-
-                        <button
-                          type="button"
-                          className={`add-button ${
-                            added[item.id]
-                              ? "added"
-                              : ""
-                          }`}
-                          disabled={
-                            item.available ===
-                            false
-                          }
-                          onClick={(event) => {
-                            event.stopPropagation();
-
-                            if (
-                              item.available !==
-                              false
-                            ) {
-                              handleAdd(item);
-                            }
-                          }}
-                        >
-
-                          {item.available ===
-                          false ? (
-                            "Unavailable"
-                          ) : added[item.id] ? (
-                            <>
-                              <Check size={11} />
-                              Added
-                            </>
-                          ) : (
-                            <>
-                              <Plus size={11} />
-                              Add
-                            </>
-                          )}
-
-                        </button>
-
-                      </div>
-
-                    </div>
-
-                  </article>
-                );
-              })
-            )}
-
-          </div>
-
+                      if (!isUnavailable) {
+                        handleAdd(item);
+                      }
+                    }}
+                  >
+                    {isUnavailable
+                      ? "Currently unavailable"
+                      : isAdded
+                      ? "✓ Added to cart"
+                      : "Add to cart"}
+                  </button>
+                </article>
+              );
+            })
+          )}
         </section>
-
       </main>
     </>
   );
