@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+import React, { useState } from "react":
+
+
+
 
 import {
   signInWithEmailAndPassword,
@@ -8,6 +11,7 @@ import {
   PhoneAuthProvider,
   RecaptchaVerifier,
   linkWithCredential,
+  reauthenticateWithCredential,
 } from "firebase/auth";
 
 import { auth, googleProvider, db } from "../firebase";
@@ -98,75 +102,47 @@ export default function Login({ setPage }) {
   // CLEAR RECAPTCHA
   // =========================================================
 
-  function clearPhoneRecaptcha() {
-    try {
-      if (window.loginPhoneRecaptcha) {
-        window.loginPhoneRecaptcha.clear();
-      }
-    } catch (error) {
-      console.log("reCAPTCHA cleanup:", error);
-    }
+ function setupPhoneRecaptcha() {
+  clearPhoneRecaptcha();
 
-    window.loginPhoneRecaptcha = null;
+  const element = document.getElementById(
+    "login-phone-recaptcha"
+  );
+
+  if (!element) {
+    throw new Error(
+      "Phone verification could not be initialized. Please try again."
+    );
   }
 
-  // =========================================================
-  // RECAPTCHA
-  // =========================================================
+  element.innerHTML = "";
 
-  async function setupPhoneRecaptcha() {
-    // If an old verifier exists, remove it first.
-    if (window.loginPhoneRecaptcha) {
-      try {
-        window.loginPhoneRecaptcha.clear();
-      } catch (error) {
-        console.log("Old reCAPTCHA cleanup:", error);
-      }
+  const verifier = new RecaptchaVerifier(
+    auth,
+    "login-phone-recaptcha",
+    {
+      size: "invisible",
 
-      window.loginPhoneRecaptcha = null;
+      callback: () => {
+        console.log(
+          "Phone reCAPTCHA completed."
+        );
+      },
+
+      "expired-callback": () => {
+        clearPhoneRecaptcha();
+      },
+
+      "error-callback": () => {
+        clearPhoneRecaptcha();
+      },
     }
+  );
 
-    const element = document.getElementById(
-      "login-phone-recaptcha"
-    );
+  window.loginPhoneRecaptcha = verifier;
 
-    if (!element) {
-      throw new Error(
-        "Phone verification could not be initialized. Please try again."
-      );
-    }
-
-    // Make sure Firebase doesn't think the element is still rendered.
-    element.innerHTML = "";
-
-    const verifier = new RecaptchaVerifier(
-      auth,
-      "login-phone-recaptcha",
-      {
-        size: "invisible",
-
-        callback: () => {
-          console.log(
-            "Phone reCAPTCHA completed."
-          );
-        },
-
-        "expired-callback": () => {
-          clearPhoneRecaptcha();
-        },
-
-        "error-callback": () => {
-          clearPhoneRecaptcha();
-        },
-      }
-    );
-
-    window.loginPhoneRecaptcha = verifier;
-
-    await verifier.render();
-
-    return verifier;
-  }
+  return verifier;
+}
 
   // =========================================================
   // CHECK CUSTOMER PHONE STATUS
@@ -254,43 +230,129 @@ export default function Login({ setPage }) {
   // START PHONE VERIFICATION
   // =========================================================
 
-  async function startPhoneVerification(
-    user,
-    newAccount = false
-  ) {
-    if (!user) return;
+ async function handleVerifyPhoneOTP() {
+  if (!pendingUser || !verificationId) {
+    setMessage(
+      "Your verification session has expired. Please try again."
+    );
 
-    setPendingUser(user);
+    return;
+  }
 
-    setIsNewAccount(newAccount);
+  const cleanOtp = otp.trim();
 
-    const status =
-      await checkPhoneStatus(user);
+  if (!/^\d{6}$/.test(cleanOtp)) {
+    setMessage(
+      "Enter the 6-digit verification code."
+    );
 
-    // =====================================================
-    // ALREADY VERIFIED
-    // =====================================================
+    return;
+  }
 
-    if (status.phoneVerified) {
-      await finishCustomerLogin(
-        user,
-        false
+  setPhoneLoading(true);
+  setMessage("");
+
+  try {
+    const normalizedPhone =
+      normalizePhone(phone);
+
+    // ===================================================
+    // CHECK IF PHONE IS ALREADY USED BY ANOTHER USER
+    // ===================================================
+
+    const alreadyUsed =
+      await isPhoneAlreadyUsed(
+        normalizedPhone,
+        pendingUser.uid
       );
+
+    if (alreadyUsed) {
+      clearPhoneRecaptcha();
+
+      showPhoneAlreadyUsed();
 
       return;
     }
 
-    // =====================================================
-    // EXISTING PHONE
-    // =====================================================
+    // ===================================================
+    // CREATE PHONE CREDENTIAL
+    // ===================================================
 
-    if (status.phone) {
-      setPhone(
-        normalizePhone(status.phone)
+    const credential =
+      PhoneAuthProvider.credential(
+        verificationId,
+        cleanOtp
       );
+
+    // ===================================================
+    // CHECK WHETHER PHONE IS ALREADY LINKED
+    // TO THIS SAME FIREBASE ACCOUNT
+    // ===================================================
+
+    const phoneProviderAlreadyLinked =
+      pendingUser.providerData.some(
+        (provider) =>
+          provider.providerId === "phone"
+      );
+
+    // ===================================================
+    // EXISTING PHONE LINK
+    // ===================================================
+
+    if (phoneProviderAlreadyLinked) {
+
+      // The phone already belongs to THIS account.
+      // Do NOT link it again.
+      // Reauthenticate instead.
+
+      await reauthenticateWithCredential(
+        pendingUser,
+        credential
+      );
+
     } else {
-      setPhone("");
+
+      // =================================================
+      // NEW PHONE LINK
+      // =================================================
+
+      await linkWithCredential(
+        pendingUser,
+        credential
+      );
     }
+
+    // ===================================================
+    // SAVE PHONE VERIFICATION
+    // ===================================================
+
+    await setDoc(
+      doc(
+        db,
+        "users",
+        pendingUser.uid
+      ),
+      {
+        phone: normalizedPhone,
+
+        phoneVerified: true,
+
+        phoneVerifiedAt:
+          serverTimestamp(),
+
+        updatedAt:
+          serverTimestamp(),
+      },
+      {
+        merge: true,
+      }
+    );
+
+    // ===================================================
+    // CLEANUP
+    // ===================================================
+
+    setShowPhoneVerification(false);
 
     setOtp("");
 
@@ -298,286 +360,104 @@ export default function Login({ setPage }) {
 
     setVerificationId(null);
 
-    setMessage("");
-
-    setShowPhoneVerification(true);
-  }
-
-  // =========================================================
-  // SEND PHONE OTP
-  // =========================================================
-
-  async function handleSendPhoneOTP() {
-    if (!pendingUser) {
-      setMessage(
-        "Your login session has expired. Please log in again."
-      );
-
-      return;
-    }
-
-    const cleanedPhone =
-      normalizePhone(phone);
-
-    if (
-      !/^\+[1-9]\d{7,14}$/.test(
-        cleanedPhone
-      )
-    ) {
-      setMessage(
-        "Enter your phone number with country code, e.g. +919876543210."
-      );
-
-      return;
-    }
-
-    setPhoneLoading(true);
+    clearPhoneRecaptcha();
 
     setMessage("");
 
-    try {
-      // ===================================================
-      // CHECK DUPLICATE BEFORE SENDING SMS
-      // ===================================================
+    // ===================================================
+    // FINISH LOGIN
+    // ===================================================
 
-      const alreadyUsed =
-        await isPhoneAlreadyUsed(
-          cleanedPhone,
-          pendingUser.uid
-        );
+    await finishCustomerLogin(
+      pendingUser,
+      isNewAccount
+    );
 
-      if (alreadyUsed) {
-        showPhoneAlreadyUsed();
+  } catch (error) {
 
-        return;
-      }
+    console.error(
+      "Phone OTP verification error:",
+      error
+    );
 
-      // ===================================================
-      // SET NORMALIZED PHONE
-      // ===================================================
+    clearPhoneRecaptcha();
 
-      setPhone(cleanedPhone);
-
-      // ===================================================
-      // CREATE RECAPTCHA
-      // ===================================================
-
-      const verifier =
-        await setupPhoneRecaptcha();
-
-      // ===================================================
-      // SEND FIREBASE SMS
-      // ===================================================
-
-      const provider =
-        new PhoneAuthProvider(auth);
-
-      const id =
-        await provider.verifyPhoneNumber(
-          cleanedPhone,
-          verifier
-        );
-
-      setVerificationId(id);
-
-      setOtpSent(true);
-
-      setMessage(
-        "A verification code has been sent to your phone."
-      );
-
-    } catch (error) {
-      console.error(
-        "Phone OTP send error:",
-        error
-      );
-
-      clearPhoneRecaptcha();
-
-      if (
-        error.code ===
-        "auth/too-many-requests"
-      ) {
-        setMessage(
-          "Too many verification attempts. Please try again later."
-        );
-      } else {
-        setMessage(
-          error.message ||
-            "Unable to send verification code."
-        );
-      }
-
-    } finally {
-      setPhoneLoading(false);
-    }
-  }
-
-  // =========================================================
-  // VERIFY PHONE OTP
-  // =========================================================
-
-  async function handleVerifyPhoneOTP() {
-    if (
-      !pendingUser ||
-      !verificationId
-    ) {
-      setMessage(
-        "Your verification session has expired. Please try again."
-      );
-
-      return;
-    }
-
-    const cleanOtp =
-      otp.trim();
+    // ===================================================
+    // WRONG OTP
+    // ===================================================
 
     if (
-      !/^\d{6}$/.test(cleanOtp)
+      error.code ===
+      "auth/invalid-verification-code"
     ) {
+
       setMessage(
-        "Enter the 6-digit verification code."
+        "Incorrect verification code."
       );
 
-      return;
+    // ===================================================
+    // EXPIRED OTP
+    // ===================================================
+
+    } else if (
+      error.code ===
+      "auth/code-expired"
+    ) {
+
+      setMessage(
+        "That code has expired. Please request a new code."
+      );
+
+    // ===================================================
+    // PHONE ALREADY BELONGS TO ANOTHER ACCOUNT
+    // ===================================================
+
+    } else if (
+      error.code ===
+      "auth/credential-already-in-use"
+    ) {
+
+      showPhoneAlreadyUsed();
+
+    // ===================================================
+    // PHONE ALREADY LINKED TO SAME ACCOUNT
+    // ===================================================
+
+    } else if (
+      error.code ===
+      "auth/provider-already-linked"
+    ) {
+
+      setMessage(
+        "This phone number is already verified on your account."
+      );
+
+    // ===================================================
+    // REAUTHENTICATION REQUIRED
+    // ===================================================
+
+    } else if (
+      error.code ===
+      "auth/requires-recent-login"
+    ) {
+
+      setMessage(
+        "Please log in again and verify your phone."
+      );
+
+    } else {
+
+      setMessage(
+        error.message ||
+          "Unable to verify your phone number."
+      );
     }
 
-    setPhoneLoading(true);
+  } finally {
 
-    setMessage("");
-
-    try {
-      const normalizedPhone =
-        normalizePhone(phone);
-
-      // ===================================================
-      // CHECK DUPLICATE AGAIN
-      // ===================================================
-
-      const alreadyUsed =
-        await isPhoneAlreadyUsed(
-          normalizedPhone,
-          pendingUser.uid
-        );
-
-      if (alreadyUsed) {
-        showPhoneAlreadyUsed();
-
-        return;
-      }
-
-      // ===================================================
-      // CREATE PHONE CREDENTIAL
-      // ===================================================
-
-      const credential =
-        PhoneAuthProvider.credential(
-          verificationId,
-          cleanOtp
-        );
-
-      // ===================================================
-      // LINK PHONE TO FIREBASE ACCOUNT
-      // ===================================================
-
-      await linkWithCredential(
-        pendingUser,
-        credential
-      );
-
-      // ===================================================
-      // SAVE PHONE VERIFICATION
-      // ===================================================
-
-      await setDoc(
-        doc(
-          db,
-          "users",
-          pendingUser.uid
-        ),
-        {
-          phone:
-            normalizedPhone,
-
-          phoneVerified:
-            true,
-
-          phoneVerifiedAt:
-            serverTimestamp(),
-
-          updatedAt:
-            serverTimestamp(),
-        },
-        {
-          merge: true,
-        }
-      );
-
-      // ===================================================
-      // CLEANUP
-      // ===================================================
-
-      setShowPhoneVerification(false);
-
-      setOtp("");
-
-      setOtpSent(false);
-
-      setVerificationId(null);
-
-      clearPhoneRecaptcha();
-
-      setMessage("");
-
-      // ===================================================
-      // FINISH LOGIN
-      // ===================================================
-
-      await finishCustomerLogin(
-        pendingUser,
-        isNewAccount
-      );
-
-    } catch (error) {
-      console.error(
-        "Phone OTP verification error:",
-        error
-      );
-
-      if (
-        error.code ===
-        "auth/invalid-verification-code"
-      ) {
-        setMessage(
-          "Incorrect verification code."
-        );
-
-      } else if (
-        error.code ===
-        "auth/code-expired"
-      ) {
-        setMessage(
-          "That code has expired. Please request a new code."
-        );
-
-      } else if (
-        error.code ===
-        "auth/credential-already-in-use"
-      ) {
-        showPhoneAlreadyUsed();
-
-      } else {
-        setMessage(
-          error.message ||
-            "Unable to verify your phone number."
-        );
-      }
-
-    } finally {
-      setPhoneLoading(false);
-    }
+    setPhoneLoading(false);
   }
-
+}
   // =========================================================
   // FINISH CUSTOMER LOGIN
   // =========================================================
