@@ -61,16 +61,16 @@ export default function Login({ setPage }) {
   const [isNewAccount, setIsNewAccount] = useState(false);
 
   // =========================================================
-  // OTP RESEND / SESSION TIMERS
+  // OTP RESEND / EXPIRY
   // =========================================================
 
   // Resend becomes available after 90 seconds.
   const [resendTimer, setResendTimer] = useState(0);
 
-  // Each OTP session lasts 3 minutes.
-  const [otpSessionTimer, setOtpSessionTimer] = useState(0);
-
   const [resendingOTP, setResendingOTP] = useState(false);
+
+  // OTP session lasts 3 minutes.
+  const [otpExpiryTimer, setOtpExpiryTimer] = useState(0);
 
   // =========================================================
   // DUPLICATE PHONE MODAL
@@ -106,25 +106,18 @@ export default function Login({ setPage }) {
   }, [resendTimer]);
 
   // =========================================================
-  // OTP SESSION COUNTDOWN
+  // OTP EXPIRY COUNTDOWN
   // =========================================================
 
   useEffect(() => {
-    if (otpSessionTimer <= 0) {
+    if (otpExpiryTimer <= 0) {
       return;
     }
 
     const timer = setInterval(() => {
-      setOtpSessionTimer((prev) => {
+      setOtpExpiryTimer((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-
-          setVerificationId(null);
-
-          setMessage(
-            "Your verification code has expired. Please request a new code."
-          );
-
           return 0;
         }
 
@@ -133,7 +126,20 @@ export default function Login({ setPage }) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [otpSessionTimer]);
+  }, [otpExpiryTimer]);
+
+  // =========================================================
+  // FORMAT TIMER
+  // =========================================================
+
+  function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+
+    return `${minutes}:${remainingSeconds
+      .toString()
+      .padStart(2, "0")}`;
+  }
 
   // =========================================================
   // GREETING
@@ -168,23 +174,22 @@ export default function Login({ setPage }) {
     try {
       if (window.loginPhoneRecaptcha) {
         window.loginPhoneRecaptcha.clear();
-        window.loginPhoneRecaptcha = null;
       }
     } catch (error) {
       console.log(
         "reCAPTCHA cleanup:",
         error
       );
-
-      window.loginPhoneRecaptcha = null;
     }
 
-    const container = document.getElementById(
+    window.loginPhoneRecaptcha = null;
+
+    const element = document.getElementById(
       "login-phone-recaptcha"
     );
 
-    if (container) {
-      container.innerHTML = "";
+    if (element) {
+      element.innerHTML = "";
     }
   }
 
@@ -193,25 +198,25 @@ export default function Login({ setPage }) {
   // =========================================================
 
   async function setupPhoneRecaptcha() {
-    // Always destroy the previous verifier first.
+    // Always destroy previous verifier first.
     clearPhoneRecaptcha();
 
-    const container = document.getElementById(
+    const element = document.getElementById(
       "login-phone-recaptcha"
     );
 
-    if (!container) {
+    if (!element) {
       throw new Error(
         "Phone verification could not be initialized. Please try again."
       );
     }
 
     // Make absolutely sure the container is empty.
-    container.innerHTML = "";
+    element.innerHTML = "";
 
     const verifier = new RecaptchaVerifier(
       auth,
-      container,
+      "login-phone-recaptcha",
       {
         size: "invisible",
 
@@ -222,10 +227,18 @@ export default function Login({ setPage }) {
         },
 
         "expired-callback": () => {
+          console.log(
+            "Phone reCAPTCHA expired."
+          );
+
           clearPhoneRecaptcha();
         },
 
         "error-callback": () => {
+          console.log(
+            "Phone reCAPTCHA error."
+          );
+
           clearPhoneRecaptcha();
         },
       }
@@ -249,7 +262,9 @@ export default function Login({ setPage }) {
       user.uid
     );
 
-    const userSnap = await getDoc(userRef);
+    const userSnap = await getDoc(
+      userRef
+    );
 
     if (!userSnap.exists()) {
       return {
@@ -328,9 +343,7 @@ export default function Login({ setPage }) {
     user,
     newAccount = false
   ) {
-    if (!user) {
-      return;
-    }
+    if (!user) return;
 
     setPendingUser(user);
 
@@ -372,7 +385,7 @@ export default function Login({ setPage }) {
 
     setResendTimer(0);
 
-    setOtpSessionTimer(0);
+    setOtpExpiryTimer(0);
 
     setMessage("");
 
@@ -383,13 +396,13 @@ export default function Login({ setPage }) {
   // SEND PHONE OTP
   // =========================================================
 
-  async function handleSendPhoneOTP() {
+  async function sendPhoneOTP() {
     if (!pendingUser) {
       setMessage(
         "Your login session has expired. Please log in again."
       );
 
-      return;
+      return false;
     }
 
     const cleanedPhone =
@@ -404,73 +417,93 @@ export default function Login({ setPage }) {
         "Enter your phone number with country code, e.g. +919876543210."
       );
 
-      return;
+      return false;
     }
+
+    // =====================================================
+    // CHECK DUPLICATE PHONE
+    // =====================================================
+
+    const alreadyUsed =
+      await isPhoneAlreadyUsed(
+        cleanedPhone,
+        pendingUser.uid
+      );
+
+    if (alreadyUsed) {
+      showPhoneAlreadyUsed();
+
+      return false;
+    }
+
+    setPhone(
+      cleanedPhone
+    );
+
+    // =====================================================
+    // CLEAN OLD RECAPTCHA
+    // =====================================================
+
+    clearPhoneRecaptcha();
+
+    // =====================================================
+    // CREATE NEW RECAPTCHA
+    // =====================================================
+
+    const verifier =
+      await setupPhoneRecaptcha();
+
+    // =====================================================
+    // SEND FIREBASE SMS
+    // =====================================================
+
+    const provider =
+      new PhoneAuthProvider(auth);
+
+    const id =
+      await provider.verifyPhoneNumber(
+        cleanedPhone,
+        verifier
+      );
+
+    setVerificationId(id);
+
+    setOtpSent(true);
+
+    // =====================================================
+    // 90 SECOND RESEND LOCK
+    // =====================================================
+
+    setResendTimer(90);
+
+    // =====================================================
+    // 3 MINUTE OTP SESSION
+    // =====================================================
+
+    setOtpExpiryTimer(180);
+
+    setOtp("");
+
+    return true;
+  }
+
+  // =========================================================
+  // FIRST OTP SEND
+  // =========================================================
+
+  async function handleSendPhoneOTP() {
+    if (phoneLoading) return;
 
     setPhoneLoading(true);
 
     setMessage("");
 
     try {
-      // ===================================================
-      // CHECK DUPLICATE PHONE
-      // ===================================================
-
-      const alreadyUsed =
-        await isPhoneAlreadyUsed(
-          cleanedPhone,
-          pendingUser.uid
-        );
-
-      if (alreadyUsed) {
-        showPhoneAlreadyUsed();
-        return;
-      }
-
-      // ===================================================
-      // SET NORMALIZED PHONE
-      // ===================================================
-
-      setPhone(cleanedPhone);
-
-      // ===================================================
-      // CREATE RECAPTCHA
-      // ===================================================
-
-      const verifier =
-        await setupPhoneRecaptcha();
-
-      // ===================================================
-      // SEND FIREBASE SMS
-      // ===================================================
-
-      const provider =
-        new PhoneAuthProvider(auth);
-
-      const id =
-        await provider.verifyPhoneNumber(
-          cleanedPhone,
-          verifier
-        );
-
-      // ===================================================
-      // SAVE NEW VERIFICATION SESSION
-      // ===================================================
-
-      setVerificationId(id);
-
-      setOtpSent(true);
-
-      // Resend available after 90 seconds.
-      setResendTimer(90);
-
-      // OTP session expires after 3 minutes.
-      setOtpSessionTimer(180);
+      await sendPhoneOTP();
 
       setMessage(
         "A verification code has been sent to your phone."
       );
-
     } catch (error) {
       console.error(
         "Phone OTP send error:",
@@ -486,125 +519,69 @@ export default function Login({ setPage }) {
         setMessage(
           "Too many verification attempts. Please try again later."
         );
+      } else if (
+        error.code ===
+        "auth/quota-exceeded"
+      ) {
+        setMessage(
+          "SMS verification limit reached. Please try again later."
+        );
       } else {
         setMessage(
           error.message ||
             "Unable to send verification code."
         );
       }
-
     } finally {
       setPhoneLoading(false);
     }
   }
 
   // =========================================================
-  // RESEND PHONE OTP
+  // RESEND OTP
   // =========================================================
 
-  async function handleResendPhoneOTP() {
-    if (!pendingUser) {
-      setMessage(
-        "Your login session has expired. Please log in again."
-      );
-
-      return;
-    }
-
-    // Absolutely prevent resend before 90 seconds.
-    if (resendTimer > 0) {
-      return;
-    }
-
-    if (resendingOTP) {
-      return;
-    }
-
-    const cleanedPhone =
-      normalizePhone(phone);
-
+  async function handleResendOTP() {
     if (
-      !/^\+[1-9]\d{7,14}$/.test(
-        cleanedPhone
-      )
+      !pendingUser ||
+      phoneLoading ||
+      resendingOTP ||
+      resendTimer > 0
     ) {
-      setMessage(
-        "Enter a valid phone number with country code."
-      );
-
       return;
     }
 
     setResendingOTP(true);
 
+    setPhoneLoading(true);
+
     setMessage("");
 
     try {
-      // ===================================================
-      // CHECK DUPLICATE PHONE
-      // ===================================================
-
-      const alreadyUsed =
-        await isPhoneAlreadyUsed(
-          cleanedPhone,
-          pendingUser.uid
-        );
-
-      if (alreadyUsed) {
-        showPhoneAlreadyUsed();
-        return;
-      }
-
-      // ===================================================
-      // DESTROY OLD RECAPTCHA
-      // ===================================================
-
-      clearPhoneRecaptcha();
-
-      // Give Firebase/browser a moment to remove
-      // the previous rendered verifier.
-      await new Promise((resolve) =>
-        setTimeout(resolve, 100)
-      );
-
-      // ===================================================
-      // CREATE FRESH RECAPTCHA
-      // ===================================================
-
-      const verifier =
-        await setupPhoneRecaptcha();
-
-      // ===================================================
-      // SEND NEW OTP
-      // ===================================================
-
-      const provider =
-        new PhoneAuthProvider(auth);
-
-      const id =
-        await provider.verifyPhoneNumber(
-          cleanedPhone,
-          verifier
-        );
-
-      // ===================================================
-      // REPLACE OLD VERIFICATION SESSION
-      // ===================================================
-
-      setVerificationId(id);
+      // Clear previous OTP session.
+      setVerificationId(null);
 
       setOtp("");
 
-      // New 90-second resend cooldown.
-      setResendTimer(90);
+      setOtpExpiryTimer(0);
 
-      // New 3-minute OTP session.
-      setOtpSessionTimer(180);
+      clearPhoneRecaptcha();
 
-      setMessage(
-        "A new verification code has been sent."
+      // Small delay helps ensure old verifier/container
+      // is completely cleaned before creating a new one.
+      await new Promise(
+        (resolve) =>
+          setTimeout(resolve, 150)
       );
 
+      const success =
+        await sendPhoneOTP();
+
+      if (success) {
+        setMessage(
+          "A new verification code has been sent."
+        );
+      }
     } catch (error) {
       console.error(
         "Resend OTP error:",
@@ -620,15 +597,23 @@ export default function Login({ setPage }) {
         setMessage(
           "Too many verification attempts. Please try again later."
         );
+      } else if (
+        error.code ===
+        "auth/quota-exceeded"
+      ) {
+        setMessage(
+          "SMS verification limit reached. Please try again later."
+        );
       } else {
         setMessage(
           error.message ||
             "Unable to resend verification code."
         );
       }
-
     } finally {
       setResendingOTP(false);
+
+      setPhoneLoading(false);
     }
   }
 
@@ -642,19 +627,19 @@ export default function Login({ setPage }) {
       !verificationId
     ) {
       setMessage(
-        "Your verification code has expired. Please request a new code."
+        "Your verification session has expired. Please request a new code."
       );
 
       return;
     }
 
     // =====================================================
-    // CHECK 3-MINUTE SESSION
+    // CHECK LOCAL 3-MINUTE EXPIRY
     // =====================================================
 
-    if (otpSessionTimer <= 0) {
+    if (otpExpiryTimer <= 0) {
       setMessage(
-        "Your verification code has expired. Please request a new code."
+        "This verification code has expired. Please request a new code."
       );
 
       return;
@@ -682,7 +667,7 @@ export default function Login({ setPage }) {
         normalizePhone(phone);
 
       // ===================================================
-      // CHECK DUPLICATE PHONE
+      // CHECK DUPLICATE AGAIN
       // ===================================================
 
       const alreadyUsed =
@@ -723,25 +708,15 @@ export default function Login({ setPage }) {
 
       // ===================================================
       // EXISTING PHONE LINK
-      // =====================================================
+      // ===================================================
 
-      if (phoneProviderAlreadyLinked) {
-        // The phone is already linked to
-        // this Firebase account.
-        //
-        // Do NOT call linkWithCredential()
-        // because that causes:
-        //
-        // auth/provider-already-linked
-        //
-        // Instead authenticate the account
-        // using the phone credential.
-
+      if (
+        phoneProviderAlreadyLinked
+      ) {
         await reauthenticateWithCredential(
           pendingUser,
           credential
         );
-
       } else {
         // =================================================
         // NEW PHONE LINK
@@ -785,7 +760,9 @@ export default function Login({ setPage }) {
       // CLEANUP
       // ===================================================
 
-      setShowPhoneVerification(false);
+      setShowPhoneVerification(
+        false
+      );
 
       setOtp("");
 
@@ -795,7 +772,7 @@ export default function Login({ setPage }) {
 
       setResendTimer(0);
 
-      setOtpSessionTimer(0);
+      setOtpExpiryTimer(0);
 
       clearPhoneRecaptcha();
 
@@ -809,7 +786,6 @@ export default function Login({ setPage }) {
         pendingUser,
         isNewAccount
       );
-
     } catch (error) {
       console.error(
         "Phone OTP verification error:",
@@ -838,9 +814,7 @@ export default function Login({ setPage }) {
         error.code ===
         "auth/code-expired"
       ) {
-        setVerificationId(null);
-
-        setOtpSessionTimer(0);
+        setOtpExpiryTimer(0);
 
         setMessage(
           "That code has expired. Please request a new code."
@@ -886,7 +860,6 @@ export default function Login({ setPage }) {
             "Unable to verify your phone number."
         );
       }
-
     } finally {
       setPhoneLoading(false);
     }
@@ -955,10 +928,6 @@ export default function Login({ setPage }) {
 
     let userData;
 
-    // =======================================================
-    // CREATE CUSTOMER DOCUMENT IF MISSING
-    // =======================================================
-
     if (!userSnap.exists()) {
       userData = {
         name:
@@ -1018,7 +987,6 @@ export default function Login({ setPage }) {
         userRef,
         userData
       );
-
     } else {
       userData =
         userSnap.data();
@@ -1190,7 +1158,6 @@ export default function Login({ setPage }) {
         user,
         true
       );
-
     } catch (error) {
       console.error(
         "Login error:",
@@ -1243,7 +1210,6 @@ export default function Login({ setPage }) {
             "Unable to complete login."
         );
       }
-
     } finally {
       setLoading(false);
     }
@@ -1398,18 +1364,25 @@ export default function Login({ setPage }) {
         user,
         false
       );
-
     } catch (error) {
       console.error(
         "Google login error:",
         error
       );
 
-      setMessage(
-        error.message ||
-          "Unable to sign in with Google."
-      );
-
+      if (
+        error.code ===
+        "auth/too-many-requests"
+      ) {
+        setMessage(
+          "Too many attempts. Please try again later."
+        );
+      } else {
+        setMessage(
+          error.message ||
+            "Unable to sign in with Google."
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -1437,7 +1410,6 @@ export default function Login({ setPage }) {
       setMessage(
         "Password reset email sent!"
       );
-
     } catch (error) {
       setMessage(
         error.message
@@ -1449,7 +1421,7 @@ export default function Login({ setPage }) {
   // CANCEL PHONE VERIFICATION
   // =========================================================
 
-  function cancelPhoneVerification() {
+  async function cancelPhoneVerification() {
     setShowPhoneVerification(false);
 
     setOtp("");
@@ -1466,14 +1438,21 @@ export default function Login({ setPage }) {
 
     setResendTimer(0);
 
-    setOtpSessionTimer(0);
+    setOtpExpiryTimer(0);
 
     clearPhoneRecaptcha();
 
     setMessage("");
 
     // Prevent bypassing phone verification.
-    auth.signOut();
+    try {
+      await auth.signOut();
+    } catch (error) {
+      console.error(
+        "Sign out error:",
+        error
+      );
+    }
   }
 
   // =========================================================
@@ -1489,7 +1468,7 @@ export default function Login({ setPage }) {
 
     setResendTimer(0);
 
-    setOtpSessionTimer(0);
+    setOtpExpiryTimer(0);
 
     clearPhoneRecaptcha();
 
@@ -1513,28 +1492,11 @@ export default function Login({ setPage }) {
 
     setResendTimer(0);
 
-    setOtpSessionTimer(0);
+    setOtpExpiryTimer(0);
 
     clearPhoneRecaptcha();
 
     setPhone("");
-  }
-
-  // =========================================================
-  // FORMAT TIMER
-  // =========================================================
-
-  function formatTimer(seconds) {
-    const minutes = Math.floor(
-      seconds / 60
-    );
-
-    const remainingSeconds =
-      seconds % 60;
-
-    return `${minutes}:${String(
-      remainingSeconds
-    ).padStart(2, "0")}`;
   }
 
   // =========================================================
@@ -1560,13 +1522,9 @@ export default function Login({ setPage }) {
 
         .login-page {
           min-height: 100vh;
-
           display: flex;
-
           justify-content: center;
-
           align-items: center;
-
           padding: 40px 20px;
 
           background:
@@ -1579,13 +1537,11 @@ export default function Login({ setPage }) {
             );
 
           background-size: cover;
-
           background-position: center;
         }
 
         .login-card {
           width: 100%;
-
           max-width: 430px;
 
           background:
@@ -1797,10 +1753,6 @@ export default function Login({ setPage }) {
           color: #3B1A08;
         }
 
-        .secondary:hover {
-          background: #EEE4D7;
-        }
-
         .recaptcha-container {
           height: 0;
 
@@ -1811,20 +1763,46 @@ export default function Login({ setPage }) {
            OTP TIMER
         ================================================= */
 
-        .otp-timer {
+        .otp-status {
           text-align: center;
 
-          margin-top: 12px;
+          margin-top: 14px;
+
+          font-size: 13px;
 
           color: #6B5C53;
 
-          font-size: 13px;
+          line-height: 1.6;
+        }
+
+        .otp-expiry {
+          font-weight: 600;
+
+          color: #8A5A32;
         }
 
         .resend-button {
-          width: 100%;
+          background: transparent;
 
-          margin-top: 10px;
+          color: #8A5A32;
+
+          padding: 6px 0;
+
+          margin-top: 5px;
+
+          font-size: 14px;
+        }
+
+        .resend-button:hover:not(:disabled) {
+          color: #3B1A08;
+
+          background: transparent;
+        }
+
+        .resend-button:disabled {
+          background: transparent;
+
+          color: #A69A91;
         }
 
         /* =================================================
@@ -2030,14 +2008,6 @@ export default function Login({ setPage }) {
             flex-direction:
               column;
           }
-
-          .greeting-title {
-            font-size: 2rem;
-          }
-
-          .greeting-name {
-            font-size: 2.4rem;
-          }
         }
       `}</style>
 
@@ -2047,7 +2017,6 @@ export default function Login({ setPage }) {
 
       {showPhoneUsedModal && (
         <div className="phone-used-overlay">
-
           <div className="phone-used-modal">
 
             <div className="phone-used-icon">
@@ -2073,7 +2042,6 @@ export default function Login({ setPage }) {
             </button>
 
           </div>
-
         </div>
       )}
 
@@ -2202,14 +2170,65 @@ export default function Login({ setPage }) {
                     onChange={(e) =>
                       setOtp(
                         e.target.value
-                          .replace(
-                            /\D/g,
-                            ""
-                          )
+                          .replace(/\D/g, "")
                       )
                     }
                     autoFocus
                   />
+
+                  {/* =================================================
+                      OTP STATUS
+                  ================================================= */}
+
+                  <div className="otp-status">
+
+                    {otpExpiryTimer > 0 ? (
+                      <>
+                        Code expires in{" "}
+                        <span className="otp-expiry">
+                          {formatTime(
+                            otpExpiryTimer
+                          )}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="otp-expiry">
+                        This code has expired.
+                      </span>
+                    )}
+
+                    <br />
+
+                    {resendTimer > 0 ? (
+                      <button
+                        type="button"
+                        className="resend-button"
+                        disabled
+                      >
+                        Resend code in{" "}
+                        {formatTime(
+                          resendTimer
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="resend-button"
+                        onClick={
+                          handleResendOTP
+                        }
+                        disabled={
+                          phoneLoading ||
+                          resendingOTP
+                        }
+                      >
+                        {resendingOTP
+                          ? "Sending new code..."
+                          : "Resend verification code"}
+                      </button>
+                    )}
+
+                  </div>
 
                   <div className="phone-actions">
 
@@ -2220,8 +2239,7 @@ export default function Login({ setPage }) {
                         changePhoneNumber
                       }
                       disabled={
-                        phoneLoading ||
-                        resendingOTP
+                        phoneLoading
                       }
                     >
                       Change Number
@@ -2235,9 +2253,8 @@ export default function Login({ setPage }) {
                       }
                       disabled={
                         phoneLoading ||
-                        resendingOTP ||
                         otp.length !== 6 ||
-                        otpSessionTimer <= 0
+                        otpExpiryTimer <= 0
                       }
                     >
                       {phoneLoading
@@ -2247,58 +2264,8 @@ export default function Login({ setPage }) {
 
                   </div>
 
-                  {/* =================================================
-                      RESEND OTP
-                  ================================================= */}
-
-                  <button
-                    type="button"
-                    className="secondary resend-button"
-                    onClick={
-                      handleResendPhoneOTP
-                    }
-                    disabled={
-                      phoneLoading ||
-                      resendingOTP ||
-                      resendTimer > 0
-                    }
-                  >
-                    {resendingOTP
-                      ? "Sending..."
-                      : resendTimer > 0
-                      ? `Resend code in ${resendTimer}s`
-                      : "Resend Verification Code"}
-                  </button>
-
-                  {/* =================================================
-                      OTP SESSION TIMER
-                  ================================================= */}
-
-                  <div className="otp-timer">
-
-                    {otpSessionTimer > 0 ? (
-                      <>
-                        Code expires in{" "}
-                        <strong>
-                          {formatTimer(
-                            otpSessionTimer
-                          )}
-                        </strong>
-                      </>
-                    ) : (
-                      <strong>
-                        Verification code expired.
-                      </strong>
-                    )}
-
-                  </div>
-
                 </>
               )}
-
-              {/* =================================================
-                  RECAPTCHA CONTAINER
-              ================================================= */}
 
               <div
                 id="login-phone-recaptcha"
@@ -2318,8 +2285,7 @@ export default function Login({ setPage }) {
                   cancelPhoneVerification
                 }
                 disabled={
-                  phoneLoading ||
-                  resendingOTP
+                  phoneLoading
                 }
                 style={{
                   width: "100%",
