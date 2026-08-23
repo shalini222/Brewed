@@ -30,6 +30,10 @@ import walletService from "../service/walletService";
 import rewardService from "../service/rewardService";
 
 export default function Login({ setPage }) {
+  // =========================================================
+  // AUTH MODE
+  // =========================================================
+
   const [isLogin, setIsLogin] = useState(true);
 
   const [name, setName] = useState("");
@@ -38,6 +42,10 @@ export default function Login({ setPage }) {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  // =========================================================
+  // GREETING
+  // =========================================================
 
   const [showGreeting, setShowGreeting] = useState(false);
   const [userName, setUserName] = useState("");
@@ -53,13 +61,11 @@ export default function Login({ setPage }) {
   const [otp, setOtp] = useState("");
 
   const [otpSent, setOtpSent] = useState(false);
-
   const [phoneLoading, setPhoneLoading] = useState(false);
 
   const [verificationId, setVerificationId] = useState(null);
 
   const [pendingUser, setPendingUser] = useState(null);
-
   const [isNewAccount, setIsNewAccount] = useState(false);
 
   // =========================================================
@@ -71,7 +77,6 @@ export default function Login({ setPage }) {
 
   const [otpTimer, setOtpTimer] = useState(0);
   const [resendTimer, setResendTimer] = useState(0);
-
   const [resendingOTP, setResendingOTP] = useState(false);
 
   // =========================================================
@@ -81,14 +86,33 @@ export default function Login({ setPage }) {
   const [showPhoneUsedModal, setShowPhoneUsedModal] =
     useState(false);
 
-  const [phoneUsedMessage, setPhoneUsedMessage] =
-    useState("");
+  const [phoneUsedMessage, setPhoneUsedMessage] = useState("");
 
   // =========================================================
   // REFS
   // =========================================================
 
   const greetingTimeoutRef = useRef(null);
+
+  /*
+   * IMPORTANT:
+   *
+   * We keep the Firebase reCAPTCHA verifier outside React state.
+   * It is an imperative Firebase object and should not trigger
+   * React renders.
+   */
+  const recaptchaVerifierRef = useRef(null);
+
+  /*
+   * This points to the actual DOM element used by Firebase.
+   */
+  const recaptchaContainerRef = useRef(null);
+
+  /*
+   * Changing this forces React to destroy the old reCAPTCHA
+   * container and create a completely fresh DOM element.
+   */
+  const [recaptchaKey, setRecaptchaKey] = useState(0);
 
   // =========================================================
   // CLEANUP ON UNMOUNT
@@ -100,18 +124,7 @@ export default function Login({ setPage }) {
         clearTimeout(greetingTimeoutRef.current);
       }
 
-      try {
-        if (window.loginPhoneRecaptcha) {
-          window.loginPhoneRecaptcha.clear();
-        }
-      } catch (error) {
-        console.error(
-          "Login cleanup error:",
-          error
-        );
-      }
-
-      window.loginPhoneRecaptcha = null;
+      destroyPhoneRecaptcha(false);
     };
   }, []);
 
@@ -121,7 +134,7 @@ export default function Login({ setPage }) {
 
   useEffect(() => {
     if (otpTimer <= 0) {
-      return;
+      return undefined;
     }
 
     const timer = setInterval(() => {
@@ -151,7 +164,7 @@ export default function Login({ setPage }) {
 
   useEffect(() => {
     if (resendTimer <= 0) {
-      return;
+      return undefined;
     }
 
     const timer = setInterval(() => {
@@ -174,6 +187,7 @@ export default function Login({ setPage }) {
 
   function formatTimer(seconds) {
     const minutes = Math.floor(seconds / 60);
+
     const remainingSeconds = seconds % 60;
 
     return `${minutes}:${String(
@@ -212,44 +226,58 @@ export default function Login({ setPage }) {
   }
 
   // =========================================================
-  // CLEAR RECAPTCHA
+  // VALIDATE PHONE
   // =========================================================
 
-  function clearPhoneRecaptcha() {
-    try {
-      if (window.loginPhoneRecaptcha) {
-        window.loginPhoneRecaptcha.clear();
+  function isValidPhone(phoneNumber) {
+    return /^\+[1-9]\d{7,14}$/.test(
+      normalizePhone(phoneNumber)
+    );
+  }
+
+  // =========================================================
+  // DESTROY RECAPTCHA
+  // =========================================================
+
+  function destroyPhoneRecaptcha(forceNewContainer = true) {
+    const verifier = recaptchaVerifierRef.current;
+
+    if (verifier) {
+      try {
+        verifier.clear();
+      } catch (error) {
+        console.error(
+          "reCAPTCHA cleanup error:",
+          error
+        );
       }
-    } catch (error) {
-      console.error(
-        "reCAPTCHA cleanup:",
-        error
-      );
     }
 
-    window.loginPhoneRecaptcha = null;
+    recaptchaVerifierRef.current = null;
 
-    const element = document.getElementById(
-      "login-phone-recaptcha"
-    );
-
-    if (element) {
-      element.innerHTML = "";
+    /*
+     * Do NOT manually modify innerHTML.
+     *
+     * React owns this DOM node.
+     *
+     * Instead, change the key so React creates a completely
+     * new element.
+     */
+    if (forceNewContainer) {
+      setRecaptchaKey((prev) => prev + 1);
     }
   }
 
   // =========================================================
-  // GET / CREATE RECAPTCHA
+  // CREATE / GET RECAPTCHA
   // =========================================================
 
   function getPhoneRecaptcha() {
-    if (window.loginPhoneRecaptcha) {
-      return window.loginPhoneRecaptcha;
+    if (recaptchaVerifierRef.current) {
+      return recaptchaVerifierRef.current;
     }
 
-    const element = document.getElementById(
-      "login-phone-recaptcha"
-    );
+    const element = recaptchaContainerRef.current;
 
     if (!element) {
       throw new Error(
@@ -259,7 +287,7 @@ export default function Login({ setPage }) {
 
     const verifier = new RecaptchaVerifier(
       auth,
-      "login-phone-recaptcha",
+      element,
       {
         size: "invisible",
 
@@ -274,7 +302,20 @@ export default function Login({ setPage }) {
             "Phone reCAPTCHA expired."
           );
 
-          clearPhoneRecaptcha();
+          if (
+            recaptchaVerifierRef.current
+          ) {
+            try {
+              recaptchaVerifierRef.current.clear();
+            } catch (error) {
+              console.error(
+                "reCAPTCHA expired cleanup error:",
+                error
+              );
+            }
+          }
+
+          recaptchaVerifierRef.current = null;
         },
 
         "error-callback": () => {
@@ -282,12 +323,25 @@ export default function Login({ setPage }) {
             "Phone reCAPTCHA error."
           );
 
-          clearPhoneRecaptcha();
+          if (
+            recaptchaVerifierRef.current
+          ) {
+            try {
+              recaptchaVerifierRef.current.clear();
+            } catch (error) {
+              console.error(
+                "reCAPTCHA error cleanup:",
+                error
+              );
+            }
+          }
+
+          recaptchaVerifierRef.current = null;
         },
       }
     );
 
-    window.loginPhoneRecaptcha = verifier;
+    recaptchaVerifierRef.current = verifier;
 
     return verifier;
   }
@@ -311,9 +365,7 @@ export default function Login({ setPage }) {
       user.uid
     );
 
-    const userSnap = await getDoc(
-      userRef
-    );
+    const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
       return {
@@ -331,8 +383,7 @@ export default function Login({ setPage }) {
       phoneVerified:
         data.phoneVerified === true,
 
-      phone:
-        data.phone || "",
+      phone: data.phone || "",
     };
   }
 
@@ -476,6 +527,8 @@ export default function Login({ setPage }) {
 
     setMessage("");
 
+    destroyPhoneRecaptcha(true);
+
     setShowPhoneVerification(true);
   }
 
@@ -499,11 +552,7 @@ export default function Login({ setPage }) {
     const cleanedPhone =
       normalizePhone(phone);
 
-    if (
-      !/^\+[1-9]\d{7,14}$/.test(
-        cleanedPhone
-      )
-    ) {
+    if (!isValidPhone(cleanedPhone)) {
       setMessage(
         "Enter your phone number with country code, e.g. +919876543210."
       );
@@ -557,7 +606,9 @@ export default function Login({ setPage }) {
       // =====================================================
 
       setVerificationId(id);
+
       setOtpSent(true);
+
       setOtp("");
 
       setOtpTimer(
@@ -577,7 +628,7 @@ export default function Login({ setPage }) {
         error
       );
 
-      clearPhoneRecaptcha();
+      destroyPhoneRecaptcha(true);
 
       const userToDelete =
         pendingUser;
@@ -585,6 +636,14 @@ export default function Login({ setPage }) {
       const shouldDelete =
         isNewAccount;
 
+      /*
+       * If this is a brand-new email/password signup
+       * and the initial OTP cannot be sent, clean up
+       * the temporary Firebase Auth account.
+       *
+       * Existing accounts are NEVER deleted because
+       * an OTP request failed.
+       */
       if (
         shouldDelete &&
         userToDelete
@@ -630,6 +689,13 @@ export default function Login({ setPage }) {
         setMessage(
           "SMS verification limit reached. Please try again later."
         );
+      } else if (
+        error.code ===
+        "auth/captcha-check-failed"
+      ) {
+        setMessage(
+          "Security verification failed. Please try again."
+        );
       } else {
         setMessage(
           error.message ||
@@ -668,11 +734,7 @@ export default function Login({ setPage }) {
     const cleanedPhone =
       normalizePhone(phone);
 
-    if (
-      !/^\+[1-9]\d{7,14}$/.test(
-        cleanedPhone
-      )
-    ) {
+    if (!isValidPhone(cleanedPhone)) {
       setMessage(
         "Enter a valid phone number."
       );
@@ -749,10 +811,13 @@ export default function Login({ setPage }) {
         error
       );
 
-      clearPhoneRecaptcha();
-
-      // IMPORTANT:
-      // Never delete an account because a resend failed.
+      /*
+       * IMPORTANT:
+       *
+       * Resend failure must NEVER delete an existing
+       * customer account or a pending signup account.
+       */
+      destroyPhoneRecaptcha(true);
 
       if (
         error.code ===
@@ -767,6 +832,13 @@ export default function Login({ setPage }) {
       ) {
         setMessage(
           "SMS verification limit reached. Please try again later."
+        );
+      } else if (
+        error.code ===
+        "auth/captcha-check-failed"
+      ) {
+        setMessage(
+          "Security verification failed. Please try again."
         );
       } else {
         setMessage(
@@ -842,7 +914,7 @@ export default function Login({ setPage }) {
         );
 
       if (alreadyUsed) {
-        clearPhoneRecaptcha();
+        destroyPhoneRecaptcha(true);
 
         showPhoneAlreadyUsed();
 
@@ -930,6 +1002,8 @@ export default function Login({ setPage }) {
       // CLEANUP OTP STATE
       // =====================================================
 
+      destroyPhoneRecaptcha(true);
+
       setShowPhoneVerification(
         false
       );
@@ -942,8 +1016,6 @@ export default function Login({ setPage }) {
 
       setOtpTimer(0);
       setResendTimer(0);
-
-      clearPhoneRecaptcha();
 
       setMessage("");
 
@@ -1016,6 +1088,17 @@ export default function Login({ setPage }) {
       ) {
         setMessage(
           "Please log in again and verify your phone."
+        );
+
+        return;
+      }
+
+      if (
+        error.code ===
+        "auth/invalid-credential"
+      ) {
+        setMessage(
+          "The verification code is invalid or has expired. Request a new code."
         );
 
         return;
@@ -1206,6 +1289,10 @@ export default function Login({ setPage }) {
         user.uid
       );
     } catch (error) {
+      /*
+       * Wallet creation failure should not destroy
+       * a successful authentication session.
+       */
       console.error(
         "Wallet initialization failed:",
         error
@@ -1225,6 +1312,9 @@ export default function Login({ setPage }) {
           user.uid
         );
       } catch (error) {
+        /*
+         * Reward failure should not prevent login.
+         */
         console.error(
           "Signup reward failed:",
           error
@@ -1243,9 +1333,7 @@ export default function Login({ setPage }) {
       user.email?.split("@")[0] ||
       "User";
 
-    setUserName(
-      displayName
-    );
+    setUserName(displayName);
 
     setShowGreeting(true);
 
@@ -1293,12 +1381,10 @@ export default function Login({ setPage }) {
           userCredential.user;
 
         /*
-         * IMPORTANT:
-         *
          * Never route directly after email/password login.
-         * Phone verification is mandatory.
+         *
+         * Phone verification remains mandatory.
          */
-
         await startPhoneVerification(
           user,
           false
@@ -1322,8 +1408,6 @@ export default function Login({ setPage }) {
         userCredential.user;
 
       /*
-       * IMPORTANT:
-       *
        * Do NOT create:
        *
        * - customer Firestore data
@@ -1441,15 +1525,9 @@ export default function Login({ setPage }) {
         await getDoc(userRef);
 
       /*
-       * IMPORTANT:
-       *
        * Google authentication NEVER bypasses
        * phone verification.
-       *
-       * finishCustomerLogin() handles rider/customer
-       * routing only AFTER successful phone verification.
        */
-
       await startPhoneVerification(
         user,
         !userSnap.exists()
@@ -1461,18 +1539,13 @@ export default function Login({ setPage }) {
       );
 
       /*
-       * IMPORTANT:
+       * Do not delete accounts here.
        *
-       * Do NOT automatically delete pending accounts here.
-       *
-       * This catch can run because of:
-       * - popup cancellation
-       * - popup closed
-       * - network failure
+       * Google popup errors can occur because of:
+       * - cancellation
+       * - popup blocked
+       * - network problems
        * - Firebase errors
-       *
-       * Account cleanup is handled explicitly by
-       * cancelPhoneVerification() or verification flow.
        */
 
       try {
@@ -1545,8 +1618,12 @@ export default function Login({ setPage }) {
         cleanEmail
       );
 
+      /*
+       * Generic production-facing message.
+       * Avoid exposing whether an email exists.
+       */
       setMessage(
-        "Password reset email sent. Check your inbox."
+        "If an account exists for this email, a password reset link has been sent."
       );
     } catch (error) {
       console.error(
@@ -1561,20 +1638,9 @@ export default function Login({ setPage }) {
         setMessage(
           "Please enter a valid email address."
         );
-      } else if (
-        error.code ===
-        "auth/user-not-found"
-      ) {
-        /*
-         * Avoid revealing whether an email exists
-         * in production-facing UX.
-         */
-        setMessage(
-          "If an account exists for this email, a password reset link has been sent."
-        );
       } else {
         setMessage(
-          "Unable to send password reset email. Please try again."
+          "If an account exists for this email, a password reset link has been sent."
         );
       }
     } finally {
@@ -1597,7 +1663,12 @@ export default function Login({ setPage }) {
     const user =
       pendingUser;
 
-    // Reset UI first
+    // =======================================================
+    // RESET UI
+    // =======================================================
+
+    destroyPhoneRecaptcha(true);
+
     setShowPhoneVerification(false);
 
     setOtp("");
@@ -1615,8 +1686,6 @@ export default function Login({ setPage }) {
     setOtpTimer(0);
 
     setResendTimer(0);
-
-    clearPhoneRecaptcha();
 
     setMessage("");
 
@@ -1659,6 +1728,17 @@ export default function Login({ setPage }) {
       return;
     }
 
+    /*
+     * IMPORTANT:
+     *
+     * Completely destroy the existing Firebase
+     * reCAPTCHA verifier.
+     */
+    destroyPhoneRecaptcha(true);
+
+    /*
+     * Reset the OTP session.
+     */
     setOtpSent(false);
 
     setOtp("");
@@ -1669,9 +1749,16 @@ export default function Login({ setPage }) {
 
     setResendTimer(0);
 
-    clearPhoneRecaptcha();
-
     setMessage("");
+
+    /*
+     * We intentionally DO NOT clear `phone`.
+     *
+     * The user can edit the existing value.
+     *
+     * More importantly, we do not modify the user's
+     * verified Firestore phone until the new OTP succeeds.
+     */
   }
 
   // =========================================================
@@ -1703,7 +1790,7 @@ export default function Login({ setPage }) {
 
     setResendTimer(0);
 
-    clearPhoneRecaptcha();
+    destroyPhoneRecaptcha(true);
 
     setPhone("");
 
@@ -2398,8 +2485,13 @@ export default function Login({ setPage }) {
                 </>
               )}
 
+              {/* =================================================
+                  FRESH RECAPTCHA CONTAINER
+              ================================================= */}
+
               <div
-                id="login-phone-recaptcha"
+                key={recaptchaKey}
+                ref={recaptchaContainerRef}
                 className="recaptcha-container"
               />
 
@@ -2471,11 +2563,7 @@ export default function Login({ setPage }) {
                       e.target.value
                     )
                   }
-                  autoComplete={
-                    isLogin
-                      ? "email"
-                      : "email"
-                  }
+                  autoComplete="email"
                   required
                   disabled={loading}
                 />
