@@ -115,8 +115,7 @@ export default function ProfilePage({ setPage }) {
   // CONFIG
   // =========================================================
 
-  const googleApiKey =
-    import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+  const googleApiKey = "AIzaSyAZXXMZOvmUviZqgDoljAhSllaQLxelvfY";
 
   // =========================================================
   // HELPERS
