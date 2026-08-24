@@ -1,22 +1,22 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
 import {
   doc,
   getDoc,
-  setDoc,
   serverTimestamp,
+  setDoc,
 } from "firebase/firestore";
 
 import {
-  updateEmail,
-  updateProfile,
-  updatePhoneNumber,
-  sendPasswordResetEmail,
-  sendEmailVerification,
-  reload,
-  RecaptchaVerifier,
   PhoneAuthProvider,
+  RecaptchaVerifier,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  updateEmail,
+  updatePhoneNumber,
+  updateProfile,
+  reload,
 } from "firebase/auth";
 
 import {
@@ -25,108 +25,30 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 
+import {
+  Camera,
+  Check,
+  ChevronLeft,
+  Lock,
+  Mail,
+  MapPin,
+  Phone,
+  ShieldCheck,
+  Sparkles,
+  User,
+  X,
+} from "lucide-react";
+
 import { db, storage, auth } from "../firebase";
 
 import GooglePlacesAutocomplete from "react-google-places-autocomplete";
 
-import {
-  ArrowLeft,
-  Camera,
-  Check,
-  ChevronRight,
-  Coffee,
-  Home,
-  Loader2,
-  Mail,
-  MapPin,
-  Pencil,
-  Phone,
-  RotateCcw,
-  ShieldCheck,
-  Sparkles,
-  X,
-} from "lucide-react";
-
-/* ============================================================
-   HELPERS
-============================================================ */
-
-const GOOGLE_API_KEY =
-  import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-
-const MAX_PROFILE_IMAGE_SIZE = 5 * 1024 * 1024;
-
-const PHONE_REGEX = /^\+[1-9]\d{7,14}$/;
-
-const normalizePhone = (value = "") =>
-  value.replace(/\s+/g, "").trim();
-
-const formatPhoneForDisplay = (value = "") => {
-  if (!value) return "";
-
-  const cleaned = normalizePhone(value);
-
-  if (cleaned.length <= 4) return cleaned;
-
-  return `${cleaned.slice(0, 3)} ${cleaned.slice(3)}`;
-};
-
-const getFriendlyAuthError = (error) => {
-  switch (error?.code) {
-    case "auth/invalid-phone-number":
-      return "Please enter a valid phone number with country code.";
-
-    case "auth/too-many-requests":
-      return "Too many verification attempts. Please try again later.";
-
-    case "auth/quota-exceeded":
-      return "SMS verification limit reached. Please try again later.";
-
-    case "auth/invalid-verification-code":
-      return "That verification code is incorrect.";
-
-    case "auth/code-expired":
-      return "That verification code has expired. Please request a new one.";
-
-    case "auth/phone-number-already-exists":
-      return "This phone number is already associated with another Brewed account.";
-
-    case "auth/credential-already-in-use":
-      return "This phone number is already associated with another account.";
-
-    case "auth/requires-recent-login":
-      return "For your security, please sign in again before changing your phone number.";
-
-    case "auth/email-already-in-use":
-      return "That email address is already associated with another account.";
-
-    case "auth/invalid-email":
-      return "Please enter a valid email address.";
-
-    case "auth/user-token-expired":
-      return "Your session has expired. Please sign in again.";
-
-    case "auth/network-request-failed":
-      return "A network error occurred. Please check your connection and try again.";
-
-    default:
-      return (
-        error?.message ||
-        "Something went wrong. Please try again."
-      );
-  }
-};
-
-/* ============================================================
-   COMPONENT
-============================================================ */
-
 export default function ProfilePage({ setPage }) {
   const { currentUser } = useAuth();
 
-  /* ----------------------------------------------------------
-     PROFILE STATE
-  ---------------------------------------------------------- */
+  // =========================================================
+  // STATE
+  // =========================================================
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -150,57 +72,67 @@ export default function ProfilePage({ setPage }) {
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  /* ----------------------------------------------------------
-     VERIFICATION STATE
-  ---------------------------------------------------------- */
+  // ---------------------------------------------------------
+  // PHONE VERIFICATION
+  // ---------------------------------------------------------
 
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [originalPhone, setOriginalPhone] = useState("");
-
-  const [phoneModalOpen, setPhoneModalOpen] =
-    useState(false);
-
-  const [phoneModalStep, setPhoneModalStep] =
-    useState("phone");
-
   const [pendingPhone, setPendingPhone] = useState("");
+
   const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [verificationId, setVerificationId] =
     useState(null);
 
   const [isPhoneProcessing, setIsPhoneProcessing] =
     useState(false);
 
-  const [phoneModalError, setPhoneModalError] =
-    useState("");
-
-  const [phoneModalMessage, setPhoneModalMessage] =
-    useState("");
-
-  const [emailVerified, setEmailVerified] =
+  const [showPhoneModal, setShowPhoneModal] =
     useState(false);
 
-  const [emailModalOpen, setEmailModalOpen] =
+  // ---------------------------------------------------------
+  // EMAIL VERIFICATION
+  // ---------------------------------------------------------
+
+  const [emailVerified, setEmailVerified] =
     useState(false);
 
   const [isEmailProcessing, setIsEmailProcessing] =
     useState(false);
 
-  const [emailModalMessage, setEmailModalMessage] =
-    useState("");
+  const [showEmailModal, setShowEmailModal] =
+    useState(false);
 
-  const [emailModalError, setEmailModalError] =
-    useState("");
+  // =========================================================
+  // CONFIG
+  // =========================================================
 
-  /* ----------------------------------------------------------
-     REFS
-  ---------------------------------------------------------- */
+  const googleApiKey =
+    import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
-  const recaptchaContainerRef = useRef(null);
+  // =========================================================
+  // HELPERS
+  // =========================================================
 
-  /* ==========================================================
-     LOAD PROFILE
-  ========================================================== */
+  const clearMessages = () => {
+    setMessage("");
+    setErrorMessage("");
+  };
+
+  const normalizePhone = (value) =>
+    value.trim().replace(/\s+/g, "");
+
+  const phoneChanged = useMemo(() => {
+    return (
+      normalizePhone(phone) !==
+      normalizePhone(originalPhone)
+    );
+  }, [phone, originalPhone]);
+
+  // =========================================================
+  // LOAD PROFILE
+  // =========================================================
 
   useEffect(() => {
     if (!currentUser) {
@@ -212,18 +144,19 @@ export default function ProfilePage({ setPage }) {
 
     const fetchProfile = async () => {
       setIsLoading(true);
-      setErrorMessage("");
+      clearMessages();
 
       try {
-        /*
-         * Firebase Auth values
-         */
+        await reload(currentUser);
 
         if (!mounted) return;
 
         setFullName(currentUser.displayName || "");
         setEmail(currentUser.email || "");
-        setEmailVerified(currentUser.emailVerified === true);
+
+        setEmailVerified(
+          currentUser.emailVerified === true
+        );
 
         if (currentUser.photoURL) {
           setAvatarUrl(currentUser.photoURL);
@@ -242,10 +175,6 @@ export default function ProfilePage({ setPage }) {
           );
         }
 
-        /*
-         * Firestore profile
-         */
-
         const userRef = doc(
           db,
           "users",
@@ -257,8 +186,7 @@ export default function ProfilePage({ setPage }) {
         if (!mounted) return;
 
         if (!snapshot.exists()) {
-          setOriginalPhone("");
-          setPhoneVerified(false);
+          setIsLoading(false);
           return;
         }
 
@@ -268,6 +196,7 @@ export default function ProfilePage({ setPage }) {
 
         setPhone(storedPhone);
         setOriginalPhone(storedPhone);
+
         setPhoneVerified(
           data.phoneVerified === true
         );
@@ -276,9 +205,9 @@ export default function ProfilePage({ setPage }) {
           data.addressType || "home"
         );
 
-        /*
-         * Address compatibility
-         */
+        // -----------------------------------------------------
+        // ADDRESS
+        // -----------------------------------------------------
 
         if (data.address) {
           if (typeof data.address === "string") {
@@ -302,31 +231,31 @@ export default function ProfilePage({ setPage }) {
           }
         }
 
-        /*
-         * Birthday
-         */
+        // -----------------------------------------------------
+        // BIRTHDAY
+        // -----------------------------------------------------
 
         if (data.birthday) {
           setBirthday(data.birthday);
           setIsBirthdayLocked(true);
         }
 
-        /*
-         * Profile photo
-         */
+        // -----------------------------------------------------
+        // PHOTO
+        // -----------------------------------------------------
 
         if (data.photoURL) {
           setAvatarUrl(data.photoURL);
         }
       } catch (error) {
         console.error(
-          "Error loading profile:",
+          "Profile loading failed:",
           error
         );
 
         if (mounted) {
           setErrorMessage(
-            "Unable to load your profile. Please try again."
+            "We couldn't load your profile. Please try again."
           );
         }
       } finally {
@@ -343,56 +272,29 @@ export default function ProfilePage({ setPage }) {
     };
   }, [currentUser]);
 
-  /* ==========================================================
-     REFRESH AUTH VERIFICATION STATUS
-  ========================================================== */
-
-  const refreshEmailVerificationStatus = async () => {
-    if (!currentUser) return false;
-
-    try {
-      await reload(currentUser);
-
-      const verified =
-        currentUser.emailVerified === true;
-
-      setEmailVerified(verified);
-
-      return verified;
-    } catch (error) {
-      console.error(
-        "Unable to refresh email verification:",
-        error
-      );
-
-      return false;
-    }
-  };
-
-  /* ==========================================================
-     PROFILE PHOTO
-  ========================================================== */
+  // =========================================================
+  // PROFILE PHOTO
+  // =========================================================
 
   const handleImageUpload = async (event) => {
     const file = event.target.files?.[0];
 
     if (!file || !currentUser) return;
 
-    setMessage("");
-    setErrorMessage("");
+    clearMessages();
 
     if (!file.type.startsWith("image/")) {
       setErrorMessage(
-        "Please select a valid image."
+        "Please choose a valid image file."
       );
 
       event.target.value = "";
       return;
     }
 
-    if (file.size > MAX_PROFILE_IMAGE_SIZE) {
+    if (file.size > 5 * 1024 * 1024) {
       setErrorMessage(
-        "Profile photo must be smaller than 5MB."
+        "Your profile photo must be smaller than 5MB."
       );
 
       event.target.value = "";
@@ -424,9 +326,7 @@ export default function ProfilePage({ setPage }) {
           photoURL: downloadURL,
           updatedAt: serverTimestamp(),
         },
-        {
-          merge: true,
-        }
+        { merge: true }
       );
 
       setAvatarUrl(downloadURL);
@@ -441,18 +341,18 @@ export default function ProfilePage({ setPage }) {
       );
 
       setErrorMessage(
-        getFriendlyAuthError(error)
+        error.message ||
+          "Unable to update your profile photo."
       );
     } finally {
       setIsProcessing(false);
-
       event.target.value = "";
     }
   };
 
-  /* ==========================================================
-     GOOGLE PLACES
-  ========================================================== */
+  // =========================================================
+  // GOOGLE PLACE COORDINATES
+  // =========================================================
 
   const getPlaceCoordinates = (placeId) => {
     return new Promise((resolve) => {
@@ -472,9 +372,7 @@ export default function ProfilePage({ setPage }) {
         new window.google.maps.Geocoder();
 
       geocoder.geocode(
-        {
-          placeId,
-        },
+        { placeId },
         (results, status) => {
           if (
             status === "OK" &&
@@ -498,6 +396,10 @@ export default function ProfilePage({ setPage }) {
     });
   };
 
+  // =========================================================
+  // ADDRESS
+  // =========================================================
+
   const handleAddressChange = async (selected) => {
     if (!selected) {
       setAddress(null);
@@ -517,153 +419,170 @@ export default function ProfilePage({ setPage }) {
       lng: null,
     });
 
-    if (placeId) {
-      try {
-        const coordinates =
-          await getPlaceCoordinates(placeId);
+    if (!placeId) return;
 
-        setAddress((previous) => {
-          if (!previous) return previous;
-
-          return {
-            ...previous,
-            lat: coordinates.lat,
-            lng: coordinates.lng,
-          };
-        });
-      } catch (error) {
-        console.error(
-          "Unable to retrieve address coordinates:",
-          error
-        );
-      }
-    }
-  };
-
-  /* ==========================================================
-     RECAPTCHA
-  ========================================================== */
-
-  const clearRecaptcha = () => {
     try {
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-      }
+      const coordinates =
+        await getPlaceCoordinates(placeId);
+
+      setAddress((previous) => {
+        if (!previous) return previous;
+
+        return {
+          ...previous,
+          lat: coordinates.lat,
+          lng: coordinates.lng,
+        };
+      });
     } catch (error) {
-      console.warn(
-        "Unable to clear reCAPTCHA:",
+      console.error(
+        "Address coordinate lookup failed:",
         error
       );
     }
-
-    window.recaptchaVerifier = null;
   };
+
+  // =========================================================
+  // RECAPTCHA
+  // =========================================================
 
   const setupRecaptcha = () => {
     if (window.recaptchaVerifier) {
       return window.recaptchaVerifier;
     }
 
-    if (!auth || !recaptchaContainerRef.current) {
-      throw new Error(
-        "Phone verification is temporarily unavailable."
-      );
-    }
+    const verifier = new RecaptchaVerifier(
+      auth,
+      "phone-recaptcha",
+      {
+        size: "invisible",
 
-    window.recaptchaVerifier =
-      new RecaptchaVerifier(
-        auth,
-        recaptchaContainerRef.current,
-        {
-          size: "invisible",
+        callback: () => {
+          console.log(
+            "Phone reCAPTCHA completed."
+          );
+        },
 
-          callback: () => {
-            console.log(
-              "Phone verification reCAPTCHA completed."
-            );
-          },
+        "expired-callback": () => {
+          try {
+            window.recaptchaVerifier?.clear();
+          } catch {}
 
-          "expired-callback": () => {
-            clearRecaptcha();
-          },
-        }
-      );
-
-    return window.recaptchaVerifier;
-  };
-
-  /* ==========================================================
-     OPEN PHONE MODAL
-  ========================================================== */
-
-  const openPhoneModal = () => {
-    setPhoneModalError("");
-    setPhoneModalMessage("");
-
-    setPendingPhone(
-      normalizePhone(phone)
+          window.recaptchaVerifier = null;
+        },
+      }
     );
 
-    setOtp("");
-    setVerificationId(null);
+    window.recaptchaVerifier = verifier;
 
-    setPhoneModalStep("phone");
-
-    setPhoneModalOpen(true);
+    return verifier;
   };
 
-  /* ==========================================================
-     CLOSE PHONE MODAL
-  ========================================================== */
+  const clearRecaptcha = () => {
+    try {
+      window.recaptchaVerifier?.clear();
+    } catch {}
 
-  const closePhoneModal = () => {
-    if (isPhoneProcessing) return;
-
-    clearRecaptcha();
-
-    setPhoneModalOpen(false);
-    setPhoneModalStep("phone");
-
-    setPendingPhone("");
-    setOtp("");
-    setVerificationId(null);
-
-    setPhoneModalError("");
-    setPhoneModalMessage("");
+    window.recaptchaVerifier = null;
   };
 
-  /* ==========================================================
-     SEND PHONE OTP
-  ========================================================== */
+  // =========================================================
+  // PHONE INPUT
+  // =========================================================
 
-  const handleSendPhoneOTP = async () => {
+  const handlePhoneChange = (event) => {
+    const newPhone = event.target.value;
+
+    setPhone(newPhone);
+
+    if (
+      normalizePhone(newPhone) !==
+      normalizePhone(originalPhone)
+    ) {
+      setPhoneVerified(false);
+      setOtpSent(false);
+      setOtp("");
+      setVerificationId(null);
+      setPendingPhone("");
+    }
+  };
+
+  // =========================================================
+  // OPEN PHONE MODAL
+  // =========================================================
+
+  const openPhoneVerificationModal = () => {
     if (!currentUser) return;
 
+    clearMessages();
+
     const cleanedPhone =
-      normalizePhone(pendingPhone);
+      normalizePhone(phone);
 
-    setPhoneModalError("");
-    setPhoneModalMessage("");
-
-    if (!PHONE_REGEX.test(cleanedPhone)) {
-      setPhoneModalError(
+    if (
+      !/^\+[1-9]\d{7,14}$/.test(
+        cleanedPhone
+      )
+    ) {
+      setErrorMessage(
         "Enter your phone number with country code, for example +919876543210."
       );
 
       return;
     }
 
-    /*
-     * If user is attempting to verify the same
-     * already-verified number, simply close.
-     */
+    if (
+      normalizePhone(cleanedPhone) ===
+      normalizePhone(originalPhone)
+    ) {
+      setPhoneVerified(true);
+
+      setMessage(
+        "This phone number is already verified."
+      );
+
+      return;
+    }
+
+    setOtp("");
+    setOtpSent(false);
+    setVerificationId(null);
+    setPendingPhone(cleanedPhone);
+
+    setShowPhoneModal(true);
+  };
+
+  // =========================================================
+  // SEND PHONE OTP
+  // =========================================================
+
+  const handleSendPhoneOTP = async () => {
+    if (!currentUser) return;
+
+    const cleanedPhone =
+      normalizePhone(phone);
 
     if (
-      phoneVerified &&
-      cleanedPhone ===
-        normalizePhone(originalPhone)
+      !/^\+[1-9]\d{7,14}$/.test(
+        cleanedPhone
+      )
     ) {
-      setPhoneModalMessage(
+      setErrorMessage(
+        "Enter your phone number with country code, for example +919876543210."
+      );
+
+      return;
+    }
+
+    if (
+      normalizePhone(cleanedPhone) ===
+      normalizePhone(originalPhone)
+    ) {
+      setPhoneVerified(true);
+
+      setShowPhoneModal(false);
+
+      setMessage(
         "This phone number is already verified."
       );
 
@@ -671,19 +590,9 @@ export default function ProfilePage({ setPage }) {
     }
 
     setIsPhoneProcessing(true);
+    clearMessages();
 
     try {
-      clearRecaptcha();
-
-      /*
-       * Wait for React to render the fresh
-       * reCAPTCHA container before constructing it.
-       */
-
-      await new Promise((resolve) =>
-        requestAnimationFrame(resolve)
-      );
-
       const verifier = setupRecaptcha();
 
       const provider =
@@ -697,52 +606,71 @@ export default function ProfilePage({ setPage }) {
 
       setVerificationId(id);
       setPendingPhone(cleanedPhone);
-      setOtp("");
+      setOtpSent(true);
 
-      setPhoneModalStep("otp");
+      setMessage("");
 
-      setPhoneModalMessage(
-        `We sent a 6-digit code to ${formatPhoneForDisplay(
-          cleanedPhone
-        )}.`
-      );
     } catch (error) {
       console.error(
-        "Phone OTP error:",
+        "Phone OTP sending failed:",
         error
       );
 
       clearRecaptcha();
 
-      setPhoneModalError(
-        getFriendlyAuthError(error)
-      );
+      switch (error.code) {
+        case "auth/invalid-phone-number":
+          setErrorMessage(
+            "Please enter a valid phone number."
+          );
+          break;
+
+        case "auth/too-many-requests":
+          setErrorMessage(
+            "Too many verification attempts. Please try again later."
+          );
+          break;
+
+        case "auth/quota-exceeded":
+          setErrorMessage(
+            "SMS verification limit reached. Please try again later."
+          );
+          break;
+
+        case "auth/captcha-check-failed":
+          setErrorMessage(
+            "Verification security check failed. Please try again."
+          );
+          break;
+
+        default:
+          setErrorMessage(
+            error.message ||
+              "Unable to send verification code."
+          );
+      }
     } finally {
       setIsPhoneProcessing(false);
     }
   };
 
-  /* ==========================================================
-     VERIFY PHONE OTP
-  ========================================================== */
+  // =========================================================
+  // VERIFY PHONE OTP
+  // =========================================================
 
   const handleVerifyPhoneOTP = async () => {
-    if (
-      !currentUser ||
-      !verificationId
-    ) {
-      setPhoneModalError(
+    if (!currentUser || !verificationId) {
+      setErrorMessage(
         "Please request a new verification code."
       );
 
       return;
     }
 
-    const cleanOTP =
-      otp.replace(/\D/g, "").trim();
+    const cleanOTP = otp.trim();
 
     if (!/^\d{6}$/.test(cleanOTP)) {
-      setPhoneModalError(
+      setErrorMessage(
         "Enter the 6-digit verification code."
       );
 
@@ -750,8 +678,7 @@ export default function ProfilePage({ setPage }) {
     }
 
     setIsPhoneProcessing(true);
-    setPhoneModalError("");
-    setPhoneModalMessage("");
+    clearMessages();
 
     try {
       const credential =
@@ -760,138 +687,150 @@ export default function ProfilePage({ setPage }) {
           cleanOTP
         );
 
-      /*
-       * Firebase may require a recent login
-       * before replacing an existing phone credential.
-       */
-
       await updatePhoneNumber(
         currentUser,
         credential
       );
 
-      /*
-       * Persist verified phone state.
-       */
+      const verifiedPhone =
+        pendingPhone;
+
+      setPhone(verifiedPhone);
+      setOriginalPhone(verifiedPhone);
+      setPhoneVerified(true);
 
       await setDoc(
         doc(db, "users", currentUser.uid),
         {
-          phone: pendingPhone,
+          phone: verifiedPhone,
           phoneVerified: true,
           phoneVerifiedAt:
             serverTimestamp(),
           updatedAt:
             serverTimestamp(),
         },
-        {
-          merge: true,
-        }
-      );
-
-      setPhone(pendingPhone);
-      setOriginalPhone(pendingPhone);
-      setPhoneVerified(true);
-
-      setPhoneModalMessage(
-        "Your phone number has been verified."
+        { merge: true }
       );
 
       setOtp("");
+      setOtpSent(false);
       setVerificationId(null);
+      setPendingPhone("");
 
-      /*
-       * Small success state before closing.
-       */
+      clearRecaptcha();
 
-      setTimeout(() => {
-        closePhoneModal();
-      }, 900);
+      setShowPhoneModal(false);
+
+      setMessage(
+        "Your new phone number has been verified."
+      );
+
     } catch (error) {
       console.error(
-        "Phone OTP verification error:",
+        "Phone verification failed:",
         error
       );
 
       if (
-        error?.code ===
+        error.code ===
+        "auth/invalid-verification-code"
+      ) {
+        setErrorMessage(
+          "That verification code is incorrect."
+        );
+      } else if (
+        error.code ===
         "auth/code-expired"
       ) {
-        setVerificationId(null);
-        setPhoneModalStep("phone");
-      }
+        setErrorMessage(
+          "That code has expired. Please request a new one."
+        );
 
-      setPhoneModalError(
-        getFriendlyAuthError(error)
-      );
+        setOtpSent(false);
+        setVerificationId(null);
+      } else if (
+        error.code ===
+        "auth/phone-number-already-exists"
+      ) {
+        setErrorMessage(
+          "This phone number is already associated with another Brewed account."
+        );
+      } else if (
+        error.code ===
+        "auth/requires-recent-login"
+      ) {
+        setPhoneVerified(false);
+
+        setErrorMessage(
+          "For your security, please sign in again and then verify your new phone number."
+        );
+      } else if (
+        error.code ===
+        "auth/provider-already-linked"
+      ) {
+        setErrorMessage(
+          "This phone number is already linked to your account."
+        );
+      } else {
+        setErrorMessage(
+          error.message ||
+            "Unable to verify this phone number."
+        );
+      }
     } finally {
       setIsPhoneProcessing(false);
     }
   };
 
-  /* ==========================================================
-     RESEND PHONE OTP
-  ========================================================== */
+  // =========================================================
+  // CLOSE PHONE MODAL
+  // =========================================================
 
-  const handleResendPhoneOTP = async () => {
-    setVerificationId(null);
+  const closePhoneModal = () => {
+    if (isPhoneProcessing) return;
+
+    setShowPhoneModal(false);
+
     setOtp("");
-    setPhoneModalMessage("");
+    setOtpSent(false);
+    setVerificationId(null);
+    setPendingPhone("");
 
-    await handleSendPhoneOTP();
+    clearRecaptcha();
+    clearMessages();
   };
 
-  /* ==========================================================
-     EMAIL MODAL
-  ========================================================== */
+  // =========================================================
+  // EMAIL VERIFICATION
+  // =========================================================
 
-  const openEmailModal = async () => {
-    setEmailModalError("");
-    setEmailModalMessage("");
-
-    const verified =
-      await refreshEmailVerificationStatus();
-
-    if (verified) {
-      setEmailModalMessage(
-        "Your email address is already verified."
-      );
-    }
-
-    setEmailModalOpen(true);
+  const openEmailVerificationModal = () => {
+    clearMessages();
+    setShowEmailModal(true);
   };
 
-  const closeEmailModal = () => {
-    if (isEmailProcessing) return;
-
-    setEmailModalOpen(false);
-    setEmailModalError("");
-    setEmailModalMessage("");
-  };
-
-  /* ==========================================================
-     SEND EMAIL VERIFICATION
-  ========================================================== */
+  // =========================================================
+  // SEND EMAIL VERIFICATION
+  // =========================================================
 
   const handleSendEmailVerification = async () => {
     if (!currentUser?.email) {
-      setEmailModalError(
-        "There is no email address associated with this account."
+      setErrorMessage(
+        "No email address is associated with this account."
       );
 
       return;
     }
 
     setIsEmailProcessing(true);
-    setEmailModalError("");
-    setEmailModalMessage("");
+    clearMessages();
 
     try {
       await sendEmailVerification(
         currentUser
       );
 
-      setEmailModalMessage(
+      setMessage(
         `Verification email sent to ${currentUser.email}.`
       );
     } catch (error) {
@@ -900,80 +839,89 @@ export default function ProfilePage({ setPage }) {
         error
       );
 
-      setEmailModalError(
-        getFriendlyAuthError(error)
-      );
+      if (
+        error.code ===
+        "auth/too-many-requests"
+      ) {
+        setErrorMessage(
+          "Too many verification emails were requested. Please try again later."
+        );
+      } else {
+        setErrorMessage(
+          error.message ||
+            "Unable to send verification email."
+        );
+      }
     } finally {
       setIsEmailProcessing(false);
     }
   };
 
-  /* ==========================================================
-     CHECK EMAIL
-  ========================================================== */
+  // =========================================================
+  // REFRESH EMAIL VERIFICATION STATE
+  // =========================================================
 
-  const handleCheckEmailVerification =
+  const handleRefreshEmailVerification =
     async () => {
+      if (!currentUser) return;
+
       setIsEmailProcessing(true);
-      setEmailModalError("");
-      setEmailModalMessage("");
+      clearMessages();
 
       try {
+        await reload(currentUser);
+
         const verified =
-          await refreshEmailVerificationStatus();
+          currentUser.emailVerified === true;
+
+        setEmailVerified(verified);
 
         if (verified) {
-          setEmailModalMessage(
-            "Email verified successfully."
-          );
+          setShowEmailModal(false);
 
-          setTimeout(() => {
-            closeEmailModal();
-          }, 900);
+          setMessage(
+            "Your email address is verified."
+          );
         } else {
-          setEmailModalError(
-            "Your email hasn't been verified yet. Open the verification email and tap the verification link."
+          setErrorMessage(
+            "Your email is not verified yet. Please check your inbox and try again."
           );
         }
       } catch (error) {
-        setEmailModalError(
-          getFriendlyAuthError(error)
+        console.error(
+          "Email verification refresh failed:",
+          error
+        );
+
+        setErrorMessage(
+          "Unable to refresh verification status."
         );
       } finally {
         setIsEmailProcessing(false);
       }
     };
 
-  /* ==========================================================
-     SAVE PROFILE
-  ========================================================== */
+  // =========================================================
+  // CLOSE EMAIL MODAL
+  // =========================================================
+
+  const closeEmailModal = () => {
+    if (isEmailProcessing) return;
+
+    setShowEmailModal(false);
+    clearMessages();
+  };
+
+  // =========================================================
+  // SAVE PROFILE
+  // =========================================================
 
   const handleSave = async (event) => {
     event.preventDefault();
 
     if (!currentUser) return;
 
-    setMessage("");
-    setErrorMessage("");
-
-    const cleanedPhone =
-      normalizePhone(phone);
-
-    if (!cleanedPhone) {
-      setErrorMessage(
-        "Phone number is required."
-      );
-
-      return;
-    }
-
-    if (!phoneVerified) {
-      setErrorMessage(
-        "Please verify your phone number before saving your profile."
-      );
-
-      return;
-    }
+    clearMessages();
 
     if (!fullName.trim()) {
       setErrorMessage(
@@ -991,91 +939,107 @@ export default function ProfilePage({ setPage }) {
       return;
     }
 
+    if (!phone.trim()) {
+      setErrorMessage(
+        "Phone number is required."
+      );
+
+      return;
+    }
+
+    if (phoneChanged && !phoneVerified) {
+      setErrorMessage(
+        "Please verify your new phone number before saving."
+      );
+
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
-      /*
-       * NAME
-       */
+      // -----------------------------------------------------
+      // NAME
+      // -----------------------------------------------------
 
       if (
         fullName.trim() !==
         (currentUser.displayName || "")
       ) {
-        await updateProfile(
-          currentUser,
-          {
-            displayName:
-              fullName.trim(),
-          }
-        );
+        await updateProfile(currentUser, {
+          displayName:
+            fullName.trim(),
+        });
       }
 
-      /*
-       * EMAIL
-       *
-       * Changing email can require recent
-       * authentication depending on Firebase state.
-       */
+      // -----------------------------------------------------
+      // EMAIL
+      // -----------------------------------------------------
 
-      if (
-        email.trim() !==
+      const newEmail =
+        email.trim().toLowerCase();
+
+      const oldEmail =
         (currentUser.email || "")
-      ) {
-        await updateEmail(
-          currentUser,
-          email.trim()
-        );
+          .trim()
+          .toLowerCase();
 
-        /*
-         * New email should be verified again.
-         */
-
-        setEmailVerified(false);
-
-        /*
-         * Send verification to the new email.
-         */
-
+      if (newEmail !== oldEmail) {
         try {
+          await updateEmail(
+            currentUser,
+            newEmail
+          );
+
           await sendEmailVerification(
             currentUser
           );
-        } catch (verificationError) {
-          console.warn(
-            "Email changed but verification email could not be sent:",
-            verificationError
+
+          setEmailVerified(false);
+
+          setShowEmailModal(true);
+
+          setMessage(
+            "Email updated. We sent a new verification link to your email."
           );
+        } catch (emailError) {
+          if (
+            emailError.code ===
+            "auth/requires-recent-login"
+          ) {
+            setErrorMessage(
+              "Please sign in again before changing your email address."
+            );
+
+            return;
+          }
+
+          throw emailError;
         }
       }
 
-      /*
-       * FIRESTORE
-       */
+      // -----------------------------------------------------
+      // FIRESTORE
+      // -----------------------------------------------------
 
       const updateData = {
         fullName:
           fullName.trim(),
 
-        email:
-          email.trim(),
+        email: newEmail,
 
         phone:
-          cleanedPhone,
+          normalizePhone(phone),
 
         phoneVerified,
 
         address,
+
         addressType,
 
         updatedAt:
           serverTimestamp(),
       };
-
-      /*
-       * Birthday is intentionally immutable
-       * after first save.
-       */
 
       if (
         !isBirthdayLocked &&
@@ -1086,7 +1050,11 @@ export default function ProfilePage({ setPage }) {
       }
 
       await setDoc(
-        doc(db, "users", currentUser.uid),
+        doc(
+          db,
+          "users",
+          currentUser.uid
+        ),
         updateData,
         {
           merge: true,
@@ -1100,26 +1068,67 @@ export default function ProfilePage({ setPage }) {
         setIsBirthdayLocked(true);
       }
 
+      if (newEmail === oldEmail) {
+        await reload(currentUser);
+
+        setEmailVerified(
+          currentUser.emailVerified === true
+        );
+      }
+
+      setOriginalPhone(
+        normalizePhone(phone)
+      );
+
       setMessage(
         "Your profile has been saved."
       );
+
     } catch (error) {
       console.error(
-        "Failed to save profile:",
+        "Profile save failed:",
         error
       );
 
-      setErrorMessage(
-        getFriendlyAuthError(error)
-      );
+      switch (error.code) {
+        case "auth/requires-recent-login":
+          setErrorMessage(
+            "Please sign in again before making this security-sensitive change."
+          );
+          break;
+
+        case "auth/email-already-in-use":
+          setErrorMessage(
+            "That email address is already associated with another account."
+          );
+          break;
+
+        case "auth/invalid-email":
+          setErrorMessage(
+            "Please enter a valid email address."
+          );
+          break;
+
+        case "auth/operation-not-allowed":
+          setErrorMessage(
+            "This account change is currently unavailable."
+          );
+          break;
+
+        default:
+          setErrorMessage(
+            error.message ||
+              "Unable to save your profile."
+          );
+      }
     } finally {
       setIsProcessing(false);
     }
   };
 
-  /* ==========================================================
-     PASSWORD RESET
-  ========================================================== */
+  // =========================================================
+  // PASSWORD RESET
+  // =========================================================
 
   const handleChangePassword = async () => {
     if (!currentUser?.email) {
@@ -1131,8 +1140,7 @@ export default function ProfilePage({ setPage }) {
     }
 
     setIsPasswordProcessing(true);
-    setMessage("");
-    setErrorMessage("");
+    clearMessages();
 
     try {
       await sendPasswordResetEmail(
@@ -1150,197 +1158,1163 @@ export default function ProfilePage({ setPage }) {
       );
 
       setErrorMessage(
-        getFriendlyAuthError(error)
+        error.message ||
+          "Unable to send password reset instructions."
       );
     } finally {
       setIsPasswordProcessing(false);
     }
   };
 
-  /* ==========================================================
-     AVATAR
-  ========================================================== */
+  // =========================================================
+  // AVATAR
+  // =========================================================
 
-  const avatar = useMemo(() => {
-    if (avatarUrl) return avatarUrl;
-
-    return `https://ui-avatars.com/api/?background=EFE6DB&color=4B2E20&bold=true&name=${encodeURIComponent(
-      fullName || "User"
+  const avatar =
+    avatarUrl ||
+    `https://ui-avatars.com/api/?background=E8D8C8&color=3A2418&name=${encodeURIComponent(
+      fullName || "Brewed Member"
     )}`;
-  }, [avatarUrl, fullName]);
 
-  /* ==========================================================
-     LOADING
-  ========================================================== */
+  // =========================================================
+  // LOADING
+  // =========================================================
 
   if (isLoading) {
     return (
-      <>
-        <style>{PROFILE_STYLES}</style>
-
-        <div className="brew-profile-loading">
-          <div className="brew-loading-mark">
-            <Coffee size={20} strokeWidth={1.7} />
+      <div className="profile-loading-screen">
+        <div className="profile-loader">
+          <div className="loader-mark">
+            B
           </div>
 
-          <span>Preparing your profile</span>
+          <span>
+            Preparing your profile
+          </span>
         </div>
-      </>
+
+        <style>{`
+          .profile-loading-screen {
+            min-height:100vh;
+            background:
+              radial-gradient(
+                circle at 20% 10%,
+                rgba(196,149,106,.12),
+                transparent 30%
+              ),
+              #FBF8F4;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-family:Inter,sans-serif;
+            color:#6F625A;
+          }
+
+          .profile-loader {
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            gap:14px;
+            font-size:13px;
+            letter-spacing:.02em;
+          }
+
+          .loader-mark {
+            width:48px;
+            height:48px;
+            border-radius:16px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:#2D1B12;
+            color:#F7EDE2;
+            font-family:Georgia,serif;
+            font-size:20px;
+            box-shadow:0 12px 30px rgba(45,27,18,.14);
+          }
+        `}</style>
+      </div>
     );
   }
 
-  /* ==========================================================
-     UI
-  ========================================================== */
+  // =========================================================
+  // UI
+  // =========================================================
 
   return (
     <>
-      <style>{PROFILE_STYLES}</style>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
 
-      <main className="brew-profile-page">
+        :root {
+          --brew-espresso:#2D1B12;
+          --brew-coffee:#493126;
+          --brew-muted:#76685F;
+          --brew-tan:#B88961;
+          --brew-sand:#EAD8C7;
+          --brew-cream:#FBF8F4;
+          --brew-white:#FFFFFF;
+          --brew-border:#E9E0D8;
+          --brew-soft:#F5EEE7;
+          --brew-green:#39704A;
+          --brew-green-bg:#EEF7F0;
+          --brew-red:#A04444;
+          --brew-red-bg:#FBEEEE;
+        }
 
-        {/* ---------------------------------------------------
-            BACK
-        --------------------------------------------------- */}
+        * {
+          box-sizing:border-box;
+        }
 
-        <button
-          type="button"
-          className="brew-back"
-          onClick={() => setPage("menu")}
-        >
-          <ArrowLeft size={17} />
-          <span>Back to menu</span>
-        </button>
+        body {
+          margin:0;
+          background:var(--brew-cream);
+          color:var(--brew-espresso);
+          font-family:"DM Sans",sans-serif;
+        }
 
-        {/* ---------------------------------------------------
-            HERO
-        --------------------------------------------------- */}
+        button,
+        input {
+          font:inherit;
+        }
 
-        <section className="brew-profile-shell">
+        button {
+          -webkit-tap-highlight-color:transparent;
+        }
 
-          <div className="brew-profile-intro">
-            <div className="brew-eyebrow">
-              <Sparkles size={14} />
-              YOUR BREWED
+        .profile-page {
+          min-height:100vh;
+          background:
+            radial-gradient(
+              circle at 7% 4%,
+              rgba(184,137,97,.13),
+              transparent 27%
+            ),
+            radial-gradient(
+              circle at 95% 32%,
+              rgba(234,216,199,.42),
+              transparent 28%
+            ),
+            var(--brew-cream);
+          padding:104px 24px 70px;
+        }
+
+        .profile-shell {
+          width:100%;
+          max-width:1040px;
+          margin:0 auto;
+        }
+
+        /* =====================================================
+           TOP BAR
+        ===================================================== */
+
+        .profile-topbar {
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:20px;
+          margin-bottom:28px;
+        }
+
+        .back-button {
+          display:inline-flex;
+          align-items:center;
+          gap:8px;
+          border:0;
+          background:transparent;
+          color:var(--brew-muted);
+          cursor:pointer;
+          padding:8px 0;
+          font-size:14px;
+          font-weight:600;
+          transition:.2s ease;
+        }
+
+        .back-button:hover {
+          color:var(--brew-espresso);
+          transform:translateX(-2px);
+        }
+
+        .topbar-label {
+          font-size:11px;
+          letter-spacing:.16em;
+          text-transform:uppercase;
+          color:#A08F84;
+          font-weight:700;
+        }
+
+        /* =====================================================
+           HERO
+        ===================================================== */
+
+        .profile-hero {
+          position:relative;
+          overflow:hidden;
+          min-height:270px;
+          border-radius:30px;
+          padding:38px 42px;
+          display:flex;
+          align-items:center;
+          gap:36px;
+          background:
+            linear-gradient(
+              135deg,
+              #382219 0%,
+              #2D1B12 55%,
+              #24150F 100%
+            );
+          box-shadow:
+            0 24px 70px rgba(45,27,18,.16);
+          color:white;
+        }
+
+        .hero-glow-one,
+        .hero-glow-two {
+          position:absolute;
+          border-radius:999px;
+          pointer-events:none;
+        }
+
+        .hero-glow-one {
+          width:300px;
+          height:300px;
+          right:-90px;
+          top:-150px;
+          background:rgba(234,216,199,.12);
+        }
+
+        .hero-glow-two {
+          width:230px;
+          height:230px;
+          left:-150px;
+          bottom:-150px;
+          background:rgba(184,137,97,.14);
+        }
+
+        .hero-avatar-wrap {
+          position:relative;
+          flex:none;
+          z-index:1;
+        }
+
+        .hero-avatar {
+          width:128px;
+          height:128px;
+          border-radius:38px;
+          object-fit:cover;
+          border:4px solid rgba(255,255,255,.18);
+          box-shadow:0 18px 45px rgba(0,0,0,.25);
+          display:block;
+          background:#EAD8C7;
+        }
+
+        .avatar-upload {
+          position:absolute;
+          right:-8px;
+          bottom:-8px;
+          width:42px;
+          height:42px;
+          border-radius:15px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:#F4E6D8;
+          color:var(--brew-espresso);
+          border:3px solid #2D1B12;
+          cursor:pointer;
+          box-shadow:0 7px 20px rgba(0,0,0,.18);
+          transition:.2s ease;
+        }
+
+        .avatar-upload:hover {
+          transform:translateY(-2px);
+          background:white;
+        }
+
+        .hero-copy {
+          position:relative;
+          z-index:1;
+          min-width:0;
+        }
+
+        .hero-eyebrow {
+          display:flex;
+          align-items:center;
+          gap:7px;
+          color:#D9C3AF;
+          font-size:11px;
+          font-weight:700;
+          letter-spacing:.14em;
+          text-transform:uppercase;
+          margin-bottom:10px;
+        }
+
+        .hero-title {
+          margin:0;
+          font-family:"Playfair Display",serif;
+          font-size:clamp(2.2rem,5vw,3.5rem);
+          line-height:1;
+          letter-spacing:-.035em;
+          font-weight:600;
+        }
+
+        .hero-subtitle {
+          margin:13px 0 0;
+          color:#D7C8BE;
+          font-size:14px;
+          line-height:1.7;
+          max-width:520px;
+        }
+
+        .member-pill {
+          display:inline-flex;
+          align-items:center;
+          gap:7px;
+          margin-top:20px;
+          padding:9px 13px;
+          border:1px solid rgba(255,255,255,.12);
+          border-radius:999px;
+          background:rgba(255,255,255,.07);
+          color:#E8DCD4;
+          font-size:12px;
+          font-weight:600;
+        }
+
+        /* =====================================================
+           CONTENT
+        ===================================================== */
+
+        .profile-content {
+          margin-top:18px;
+          display:block;
+        }
+
+        .profile-card {
+          background:rgba(255,255,255,.82);
+          border:1px solid rgba(221,211,202,.72);
+          border-radius:26px;
+          padding:30px;
+          box-shadow:
+            0 14px 45px rgba(65,44,31,.055);
+          backdrop-filter:blur(12px);
+        }
+
+        .section {
+          padding-bottom:30px;
+          margin-bottom:30px;
+          border-bottom:1px solid var(--brew-border);
+        }
+
+        .section:last-child {
+          padding-bottom:0;
+          margin-bottom:0;
+          border-bottom:0;
+        }
+
+        .section-heading {
+          display:flex;
+          align-items:flex-start;
+          gap:12px;
+          margin-bottom:22px;
+        }
+
+        .section-icon {
+          width:38px;
+          height:38px;
+          border-radius:13px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:var(--brew-soft);
+          color:var(--brew-coffee);
+          flex:none;
+        }
+
+        .section-title {
+          margin:0;
+          font-family:"Playfair Display",serif;
+          font-size:21px;
+          font-weight:600;
+          letter-spacing:-.02em;
+          color:var(--brew-espresso);
+        }
+
+        .section-description {
+          margin:4px 0 0;
+          color:#92847B;
+          font-size:12px;
+          line-height:1.5;
+        }
+
+        .form-grid {
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:18px;
+        }
+
+        .form-group {
+          min-width:0;
+        }
+
+        .form-group.full {
+          grid-column:1 / -1;
+        }
+
+        .field-label {
+          display:flex;
+          align-items:center;
+          gap:5px;
+          margin:0 0 8px;
+          color:#58463C;
+          font-size:12px;
+          font-weight:700;
+        }
+
+        .required {
+          color:var(--brew-tan);
+        }
+
+        .field-input {
+          width:100%;
+          min-height:50px;
+          padding:13px 15px;
+          border:1px solid var(--brew-border);
+          border-radius:14px;
+          background:#FFFDFC;
+          color:var(--brew-espresso);
+          outline:none;
+          font-size:14px;
+          transition:
+            border-color .2s ease,
+            box-shadow .2s ease,
+            background .2s ease;
+        }
+
+        .field-input:hover {
+          border-color:#D6C5B7;
+        }
+
+        .field-input:focus {
+          border-color:#B88961;
+          box-shadow:
+            0 0 0 4px rgba(184,137,97,.10);
+          background:white;
+        }
+
+        .field-input::placeholder {
+          color:#B1A49C;
+        }
+
+        .field-input:read-only {
+          cursor:default;
+        }
+
+        .field-input.locked {
+          background:#F6F0EA;
+          color:#806E63;
+        }
+
+        /* =====================================================
+           VERIFICATION ACTION
+        ===================================================== */
+
+        .verification-action {
+          margin-top:9px;
+          display:flex;
+          align-items:center;
+          justify-content:flex-end;
+        }
+
+        .verification-trigger {
+          display:inline-flex;
+          align-items:center;
+          gap:6px;
+          border:0;
+          background:transparent;
+          color:#9A6640;
+          padding:2px 0;
+          font-size:11px;
+          font-weight:700;
+          cursor:pointer;
+        }
+
+        .verification-trigger:hover {
+          text-decoration:underline;
+        }
+
+        .verification-confirmed {
+          display:inline-flex;
+          align-items:center;
+          gap:6px;
+          color:var(--brew-green);
+          font-size:11px;
+          font-weight:700;
+        }
+
+        /* =====================================================
+           ADDRESS
+        ===================================================== */
+
+        .address-type {
+          display:flex;
+          gap:9px;
+          flex-wrap:wrap;
+        }
+
+        .address-option {
+          position:relative;
+        }
+
+        .address-option input {
+          position:absolute;
+          opacity:0;
+          pointer-events:none;
+        }
+
+        .address-label {
+          display:inline-flex;
+          align-items:center;
+          gap:7px;
+          padding:10px 14px;
+          border-radius:999px;
+          border:1px solid var(--brew-border);
+          background:#FFFDFC;
+          color:#78685E;
+          font-size:12px;
+          font-weight:600;
+          cursor:pointer;
+          transition:.2s ease;
+        }
+
+        .address-label:hover {
+          border-color:#D2BCA9;
+        }
+
+        .address-option input:checked + .address-label {
+          border-color:#B88961;
+          background:#F6EDE4;
+          color:var(--brew-coffee);
+        }
+
+        .address-option input:focus-visible + .address-label {
+          outline:3px solid rgba(184,137,97,.18);
+        }
+
+        .birthday-lock {
+          display:flex;
+          align-items:center;
+          gap:7px;
+          margin-top:9px;
+          color:#9A8A80;
+          font-size:11px;
+        }
+
+        /* =====================================================
+           ALERTS
+        ===================================================== */
+
+        .status-message {
+          display:flex;
+          align-items:flex-start;
+          gap:10px;
+          margin-top:22px;
+          padding:13px 15px;
+          border-radius:15px;
+          font-size:12px;
+          line-height:1.5;
+        }
+
+        .success-message {
+          background:var(--brew-green-bg);
+          color:#356943;
+          border:1px solid #D8EBDD;
+        }
+
+        .error-message {
+          background:var(--brew-red-bg);
+          color:#923D3D;
+          border:1px solid #F1D9D9;
+        }
+
+        /* =====================================================
+           ACTIONS
+        ===================================================== */
+
+        .actions {
+          margin-top:30px;
+          display:flex;
+          justify-content:flex-end;
+          gap:10px;
+        }
+
+        .action-button {
+          min-height:50px;
+          padding:0 20px;
+          border-radius:15px;
+          border:1px solid var(--brew-border);
+          cursor:pointer;
+          font-size:12px;
+          font-weight:700;
+          transition:.2s ease;
+        }
+
+        .password-button {
+          background:#FFFDFC;
+          color:var(--brew-coffee);
+        }
+
+        .password-button:hover:not(:disabled) {
+          background:#F7F0EA;
+          border-color:#D8C6B7;
+        }
+
+        .save-button {
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          gap:8px;
+          min-width:150px;
+          background:var(--brew-espresso);
+          color:white;
+          border-color:var(--brew-espresso);
+          box-shadow:0 9px 22px rgba(45,27,18,.13);
+        }
+
+        .save-button:hover:not(:disabled) {
+          background:#493126;
+          transform:translateY(-1px);
+          box-shadow:0 12px 26px rgba(45,27,18,.17);
+        }
+
+        .action-button:disabled {
+          opacity:.5;
+          cursor:not-allowed;
+          transform:none;
+        }
+
+        /* =====================================================
+           GOOGLE PLACES
+        ===================================================== */
+
+        .places-control {
+          min-height:50px !important;
+          border-radius:14px !important;
+          border-color:var(--brew-border) !important;
+          background:#FFFDFC !important;
+          box-shadow:none !important;
+        }
+
+        .places-control:focus-within {
+          border-color:#B88961 !important;
+          box-shadow:0 0 0 4px rgba(184,137,97,.10) !important;
+        }
+
+        /* =====================================================
+           VERIFICATION MODALS
+        ===================================================== */
+
+        .verification-overlay {
+          position:fixed;
+          inset:0;
+          z-index:10000;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          padding:20px;
+          background:rgba(32,20,14,.52);
+          backdrop-filter:blur(8px);
+          -webkit-backdrop-filter:blur(8px);
+          animation:verificationFadeIn .18s ease;
+        }
+
+        @keyframes verificationFadeIn {
+          from {
+            opacity:0;
+          }
+
+          to {
+            opacity:1;
+          }
+        }
+
+        .verification-modal {
+          width:100%;
+          max-width:430px;
+          position:relative;
+          background:#FFFDFC;
+          border:1px solid rgba(221,211,202,.8);
+          border-radius:28px;
+          padding:28px;
+          box-shadow:
+            0 30px 90px rgba(32,20,14,.25);
+          animation:verificationModalIn .22s ease;
+        }
+
+        @keyframes verificationModalIn {
+          from {
+            opacity:0;
+            transform:translateY(12px) scale(.98);
+          }
+
+          to {
+            opacity:1;
+            transform:translateY(0) scale(1);
+          }
+        }
+
+        .modal-close {
+          position:absolute;
+          top:18px;
+          right:18px;
+          width:34px;
+          height:34px;
+          border:0;
+          border-radius:11px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:#F6F0EA;
+          color:#78685E;
+          cursor:pointer;
+          transition:.2s ease;
+        }
+
+        .modal-close:hover {
+          background:#EDE2D8;
+          color:var(--brew-espresso);
+        }
+
+        .modal-icon {
+          width:52px;
+          height:52px;
+          border-radius:17px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:#F4E7DA;
+          color:#765039;
+          margin-bottom:18px;
+        }
+
+        .modal-icon.email {
+          background:#F1E8E0;
+        }
+
+        .modal-title {
+          margin:0;
+          font-family:"Playfair Display",serif;
+          color:var(--brew-espresso);
+          font-size:26px;
+          line-height:1.15;
+          letter-spacing:-.025em;
+        }
+
+        .modal-description {
+          margin:9px 0 0;
+          color:#887970;
+          font-size:13px;
+          line-height:1.65;
+        }
+
+        .modal-target {
+          margin-top:14px;
+          padding:11px 13px;
+          border-radius:13px;
+          background:#F8F2EC;
+          border:1px solid #EDE1D7;
+          color:#5D493D;
+          font-size:12px;
+          font-weight:700;
+          word-break:break-word;
+        }
+
+        .modal-actions {
+          display:flex;
+          flex-direction:column;
+          gap:9px;
+          margin-top:21px;
+        }
+
+        .modal-primary-button {
+          width:100%;
+          min-height:48px;
+          border:0;
+          border-radius:14px;
+          background:var(--brew-espresso);
+          color:white;
+          font-size:12px;
+          font-weight:700;
+          cursor:pointer;
+          transition:.2s ease;
+        }
+
+        .modal-primary-button:hover:not(:disabled) {
+          background:#493126;
+          transform:translateY(-1px);
+        }
+
+        .modal-primary-button:disabled {
+          opacity:.5;
+          cursor:not-allowed;
+        }
+
+        .modal-secondary-button {
+          width:100%;
+          min-height:46px;
+          border:1px solid var(--brew-border);
+          border-radius:14px;
+          background:#FFFDFC;
+          color:#6E5D53;
+          font-size:12px;
+          font-weight:700;
+          cursor:pointer;
+          transition:.2s ease;
+        }
+
+        .modal-secondary-button:hover:not(:disabled) {
+          background:#F7F0EA;
+        }
+
+        .modal-secondary-button:disabled {
+          opacity:.5;
+          cursor:not-allowed;
+        }
+
+        .modal-otp {
+          margin-top:18px;
+        }
+
+        .modal-otp-input {
+          width:100%;
+          height:58px;
+          border:1px solid var(--brew-border);
+          border-radius:15px;
+          background:#FFFDFC;
+          outline:none;
+          text-align:center;
+          font-size:22px;
+          font-weight:700;
+          letter-spacing:.32em;
+          color:var(--brew-espresso);
+        }
+
+        .modal-otp-input:focus {
+          border-color:#B88961;
+          box-shadow:0 0 0 4px rgba(184,137,97,.10);
+        }
+
+        .modal-otp-input::placeholder {
+          color:#C2B5AC;
+          letter-spacing:.2em;
+        }
+
+        .modal-helper {
+          margin:9px 1px 0;
+          color:#9A8A80;
+          font-size:11px;
+          line-height:1.5;
+          text-align:center;
+        }
+
+        .modal-status {
+          margin-top:15px;
+          padding:11px 13px;
+          border-radius:13px;
+          font-size:11px;
+          line-height:1.5;
+        }
+
+        .modal-status.success {
+          background:var(--brew-green-bg);
+          color:#356943;
+          border:1px solid #D8EBDD;
+        }
+
+        .modal-status.error {
+          background:var(--brew-red-bg);
+          color:#923D3D;
+          border:1px solid #F1D9D9;
+        }
+
+        .modal-reassurance {
+          margin-top:16px;
+          display:flex;
+          align-items:flex-start;
+          gap:8px;
+          color:#9A8A80;
+          font-size:10px;
+          line-height:1.5;
+        }
+
+        /* =====================================================
+           RESPONSIVE
+        ===================================================== */
+
+        @media (max-width:680px) {
+          .profile-page {
+            padding:84px 14px 45px;
+          }
+
+          .profile-topbar {
+            margin-bottom:18px;
+          }
+
+          .topbar-label {
+            display:none;
+          }
+
+          .profile-hero {
+            min-height:auto;
+            padding:28px 23px;
+            border-radius:25px;
+            flex-direction:column;
+            align-items:flex-start;
+            gap:22px;
+          }
+
+          .hero-avatar {
+            width:104px;
+            height:104px;
+            border-radius:30px;
+          }
+
+          .hero-title {
+            font-size:2.45rem;
+          }
+
+          .profile-card {
+            padding:22px 18px;
+            border-radius:23px;
+          }
+
+          .form-grid {
+            grid-template-columns:1fr;
+          }
+
+          .form-group.full {
+            grid-column:auto;
+          }
+
+          .actions {
+            flex-direction:column-reverse;
+          }
+
+          .action-button {
+            width:100%;
+          }
+
+          .verification-modal {
+            padding:24px 20px;
+            border-radius:24px;
+          }
+
+          .modal-title {
+            font-size:24px;
+          }
+        }
+
+        @media (max-width:420px) {
+          .profile-page {
+            padding-left:10px;
+            padding-right:10px;
+          }
+
+          .profile-hero {
+            padding:24px 20px;
+          }
+
+          .profile-card {
+            padding:20px 15px;
+          }
+
+          .hero-title {
+            font-size:2.15rem;
+          }
+
+          .section {
+            padding-bottom:25px;
+            margin-bottom:25px;
+          }
+
+          .verification-overlay {
+            padding:12px;
+          }
+        }
+
+        @media (prefers-reduced-motion:reduce) {
+          *,
+          *::before,
+          *::after {
+            scroll-behavior:auto !important;
+            transition:none !important;
+            animation:none !important;
+          }
+        }
+      `}</style>
+
+      <main className="profile-page">
+        <div className="profile-shell">
+
+          {/* =================================================
+              TOP BAR
+          ================================================= */}
+
+          <div className="profile-topbar">
+            <button
+              type="button"
+              className="back-button"
+              onClick={() =>
+                setPage("menu")
+              }
+            >
+              <ChevronLeft size={17} />
+              Back to menu
+            </button>
+
+            <div className="topbar-label">
+              Brewed / Account
             </div>
-
-            <h1>
-              Make it
-              <br />
-              <em>yours.</em>
-            </h1>
-
-            <p>
-              Keep your details, delivery
-              preferences and Brewed
-              experience beautifully up to date.
-            </p>
           </div>
 
-          {/* -------------------------------------------------
-              PROFILE CARD
-          ------------------------------------------------- */}
+          {/* =================================================
+              HERO
+          ================================================= */}
 
-          <section className="brew-profile-card">
+          <section className="profile-hero">
+            <div className="hero-glow-one" />
+            <div className="hero-glow-two" />
 
-            {/* PHOTO */}
+            <div className="hero-avatar-wrap">
+              <img
+                src={avatar}
+                alt="Profile"
+                className="hero-avatar"
+              />
 
-            <div className="brew-profile-photo-row">
-
-              <label className="brew-avatar-wrap">
-
-                <img
-                  src={avatar}
-                  alt="Your profile"
-                  className="brew-avatar"
-                />
-
-                <span className="brew-avatar-edit">
-                  <Camera
-                    size={15}
-                    strokeWidth={2}
-                  />
-                </span>
+              <label
+                className="avatar-upload"
+                title="Change profile photo"
+              >
+                <Camera size={17} />
 
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleImageUpload}
+                  onChange={
+                    handleImageUpload
+                  }
                   disabled={isProcessing}
-                  hidden
+                  style={{
+                    display:"none",
+                  }}
                 />
               </label>
-
-              <div>
-                <p className="brew-photo-label">
-                  Your profile
-                </p>
-
-                <p className="brew-photo-copy">
-                  Add a photo that feels like you.
-                </p>
-
-                <p className="brew-photo-meta">
-                  JPG, PNG · max 5MB
-                </p>
-              </div>
-
             </div>
 
-            {/* FORM */}
-
-            <form onSubmit={handleSave}>
-
-              {/* PERSONAL */}
-
-              <div className="brew-section-head">
-                <div>
-                  <span>01</span>
-                  <h2>Personal details</h2>
-                </div>
+            <div className="hero-copy">
+              <div className="hero-eyebrow">
+                <Sparkles size={13} />
+                Your Brewed account
               </div>
 
-              <div className="brew-fields">
+              <h1 className="hero-title">
+                Hey,{" "}
+                {fullName?.split(" ")[0] ||
+                  "there"}.
+              </h1>
 
-                {/* NAME */}
+              <p className="hero-subtitle">
+                Keep your details up to date
+                so every Brewed experience
+                feels a little more personal.
+              </p>
 
-                <div className="brew-field brew-field-full">
+              <div className="member-pill">
+                <Check size={13} />
+                Member since{" "}
+                {memberSince || "Today"}
+              </div>
+            </div>
+          </section>
 
-                  <label>
-                    Full name
-                  </label>
+          {/* =================================================
+              CONTENT
+          ================================================= */}
 
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(event) =>
-                      setFullName(
-                        event.target.value
-                      )
-                    }
-                    placeholder="Your full name"
-                    autoComplete="name"
-                    required
-                  />
+          <div className="profile-content">
 
+            <form
+              className="profile-card"
+              onSubmit={handleSave}
+            >
+
+              {/* =================================================
+                  PERSONAL
+              ================================================= */}
+
+              <section className="section">
+                <div className="section-heading">
+                  <div className="section-icon">
+                    <User size={18} />
+                  </div>
+
+                  <div>
+                    <h2 className="section-title">
+                      Personal details
+                    </h2>
+
+                    <p className="section-description">
+                      The basics we use to
+                      personalize your account.
+                    </p>
+                  </div>
                 </div>
 
-                {/* EMAIL */}
+                <div className="form-grid">
 
-                <div className="brew-field">
+                  {/* NAME */}
 
-                  <label>
-                    Email address
-                  </label>
-
-                  <div className="brew-input-action">
+                  <div className="form-group full">
+                    <label className="field-label">
+                      Full name
+                      <span className="required">
+                        *
+                      </span>
+                    </label>
 
                     <input
+                      className="field-input"
+                      type="text"
+                      value={fullName}
+                      onChange={(e) =>
+                        setFullName(
+                          e.target.value
+                        )
+                      }
+                      placeholder="Your full name"
+                      autoComplete="name"
+                      required
+                    />
+                  </div>
+
+                  {/* EMAIL */}
+
+                  <div className="form-group">
+                    <label className="field-label">
+                      Email address
+                      <span className="required">
+                        *
+                      </span>
+                    </label>
+
+                    <input
+                      className="field-input"
                       type="email"
                       value={email}
-                      onChange={(event) =>
+                      onChange={(e) =>
                         setEmail(
-                          event.target.value
+                          e.target.value
                         )
                       }
                       placeholder="you@example.com"
@@ -1348,429 +2322,337 @@ export default function ProfilePage({ setPage }) {
                       required
                     />
 
-                    {!emailVerified && (
-                      <button
-                        type="button"
-                        className="brew-field-action"
-                        onClick={
-                          openEmailModal
-                        }
-                      >
-                        Verify
-                      </button>
-                    )}
-
+                    <div className="verification-action">
+                      {emailVerified ? (
+                        <span className="verification-confirmed">
+                          <ShieldCheck size={13} />
+                          Email verified
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="verification-trigger"
+                          onClick={
+                            openEmailVerificationModal
+                          }
+                        >
+                          <Mail size={13} />
+                          Verify email
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <button
-                    type="button"
-                    className={`brew-inline-status ${
-                      emailVerified
-                        ? "is-verified"
-                        : "is-unverified"
-                    }`}
-                    onClick={
-                      emailVerified
-                        ? undefined
-                        : openEmailModal
-                    }
-                  >
-                    <span className="brew-status-dot" />
+                  {/* PHONE */}
 
-                    {emailVerified
-                      ? "Email verified"
-                      : "Email verification required"}
-                  </button>
-
-                </div>
-
-                {/* PHONE */}
-
-                <div className="brew-field">
-
-                  <label>
-                    Phone number
-                  </label>
-
-                  <div className="brew-input-action">
+                  <div className="form-group">
+                    <label className="field-label">
+                      Phone number
+                      <span className="required">
+                        *
+                      </span>
+                    </label>
 
                     <input
+                      className="field-input"
                       type="tel"
                       value={phone}
-                      onChange={(event) => {
-                        const value =
-                          event.target.value;
-
-                        setPhone(value);
-
-                        /*
-                         * Changing the phone
-                         * immediately invalidates
-                         * its previous verification.
-                         */
-
-                        if (
-                          normalizePhone(
-                            value
-                          ) !==
-                          normalizePhone(
-                            originalPhone
-                          )
-                        ) {
-                          setPhoneVerified(
-                            false
-                          );
-                        }
-                      }}
-                      placeholder="+91 9876543210"
+                      onChange={
+                        handlePhoneChange
+                      }
+                      placeholder="+919876543210"
                       autoComplete="tel"
                       required
                     />
 
-                    {!phoneVerified && (
-                      <button
-                        type="button"
-                        className="brew-field-action"
-                        onClick={
-                          openPhoneModal
-                        }
-                      >
-                        Verify
-                      </button>
-                    )}
-
+                    <div className="verification-action">
+                      {phoneVerified &&
+                      !phoneChanged ? (
+                        <span className="verification-confirmed">
+                          <ShieldCheck size={13} />
+                          Phone verified
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="verification-trigger"
+                          onClick={
+                            openPhoneVerificationModal
+                          }
+                        >
+                          <Phone size={13} />
+                          Verify phone
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <button
-                    type="button"
-                    className={`brew-inline-status ${
-                      phoneVerified
-                        ? "is-verified"
-                        : "is-unverified"
-                    }`}
-                    onClick={
-                      phoneVerified
-                        ? undefined
-                        : openPhoneModal
-                    }
-                  >
-                    <span className="brew-status-dot" />
+                  {/* BIRTHDAY */}
 
-                    {phoneVerified
-                      ? "Phone verified"
-                      : "Phone verification required"}
-                  </button>
+                  <div className="form-group full">
+                    <label className="field-label">
+                      Birthday
+                      <span className="required">
+                        *
+                      </span>
+                    </label>
 
+                    <input
+                      className={`field-input ${
+                        isBirthdayLocked
+                          ? "locked"
+                          : ""
+                      }`}
+                      type={
+                        isBirthdayLocked
+                          ? "text"
+                          : "date"
+                      }
+                      value={birthday}
+                      onChange={(e) =>
+                        setBirthday(
+                          e.target.value
+                        )
+                      }
+                      readOnly={
+                        isBirthdayLocked
+                      }
+                      required
+                    />
+
+                    {isBirthdayLocked && (
+                      <div className="birthday-lock">
+                        <Lock size={12} />
+                        Your birthday is locked
+                        after the first save.
+                      </div>
+                    )}
+                  </div>
                 </div>
+              </section>
 
-                {/* BIRTHDAY */}
+              {/* =================================================
+                  ADDRESS
+              ================================================= */}
 
-                <div className="brew-field brew-field-full">
+              <section className="section">
+                <div className="section-heading">
+                  <div className="section-icon">
+                    <MapPin size={18} />
+                  </div>
 
-                  <label>
-                    Birthday
-                  </label>
+                  <div>
+                    <h2 className="section-title">
+                      Delivery details
+                    </h2>
 
-                  <input
-                    type={
-                      isBirthdayLocked
-                        ? "text"
-                        : "date"
-                    }
-                    value={birthday}
-                    onChange={(event) =>
-                      setBirthday(
-                        event.target.value
-                      )
-                    }
-                    readOnly={
-                      isBirthdayLocked
-                    }
-                    required
-                    className={
-                      isBirthdayLocked
-                        ? "is-locked"
-                        : ""
-                    }
-                  />
-
-                  {isBirthdayLocked && (
-                    <p className="brew-field-note">
-                      Your birthday is locked
-                      after the first save.
+                    <p className="section-description">
+                      Save the address you use
+                      most often for orders.
                     </p>
-                  )}
-
+                  </div>
                 </div>
 
-              </div>
+                <div className="form-grid">
 
-              {/* ------------------------------------------------
-                  DELIVERY
-              ------------------------------------------------ */}
+                  <div className="form-group full">
+                    <label className="field-label">
+                      Address type
+                    </label>
 
-              <div className="brew-section-head brew-section-spaced">
-                <div>
-                  <span>02</span>
-                  <h2>Delivery details</h2>
-                </div>
-              </div>
-
-              <div className="brew-delivery-card">
-
-                <div className="brew-delivery-icon">
-                  <MapPin size={19} />
-                </div>
-
-                <div className="brew-delivery-content">
-
-                  <label>
-                    Address type
-                  </label>
-
-                  <div className="brew-address-types">
-
-                    {[
-                      {
-                        value: "home",
-                        label: "Home",
-                        icon: Home,
-                      },
-                      {
-                        value: "work",
-                        label: "Work",
-                        icon: Coffee,
-                      },
-                      {
-                        value: "other",
-                        label: "Other",
-                        icon: MapPin,
-                      },
-                    ].map(
-                      ({
-                        value,
-                        label,
-                        icon: Icon,
-                      }) => (
+                    <div className="address-type">
+                      {[
+                        "home",
+                        "work",
+                        "other",
+                      ].map((type) => (
                         <label
-                          key={value}
-                          className={`brew-address-type ${
-                            addressType === value
-                              ? "is-active"
-                              : ""
-                          }`}
+                          key={type}
+                          className="address-option"
                         >
                           <input
                             type="radio"
                             name="addressType"
-                            value={value}
+                            value={type}
                             checked={
                               addressType ===
-                              value
+                              type
                             }
-                            onChange={(event) =>
+                            onChange={(e) =>
                               setAddressType(
-                                event.target
-                                  .value
+                                e.target.value
                               )
                             }
                           />
 
-                          <Icon size={15} />
-
-                          <span>
-                            {label}
+                          <span className="address-label">
+                            {type
+                              .charAt(0)
+                              .toUpperCase() +
+                              type.slice(1)}
                           </span>
                         </label>
-                      )
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="form-group full">
+                    <label className="field-label">
+                      Delivery address
+                    </label>
+
+                    {googleApiKey ? (
+                      <GooglePlacesAutocomplete
+                        apiKey={
+                          googleApiKey
+                        }
+                        selectProps={{
+                          value: address
+                            ? {
+                                label:
+                                  address.formatted ||
+                                  "",
+                                value:
+                                  address.placeId ||
+                                  "",
+                              }
+                            : null,
+
+                          onChange:
+                            handleAddressChange,
+
+                          placeholder:
+                            "Search your delivery address...",
+
+                          isClearable:true,
+
+                          styles:{
+                            control:(
+                              provided,
+                              state
+                            ) => ({
+                              ...provided,
+                              minHeight:"50px",
+                              borderRadius:"14px",
+                              borderColor:
+                                state.isFocused
+                                  ? "#B88961"
+                                  : "#E9E0D8",
+                              boxShadow:
+                                state.isFocused
+                                  ? "0 0 0 4px rgba(184,137,97,.10)"
+                                  : "none",
+                              background:"#FFFDFC",
+                            }),
+
+                            input:(
+                              provided
+                            ) => ({
+                              ...provided,
+                              fontSize:"14px",
+                              color:"#2D1B12",
+                            }),
+
+                            placeholder:(
+                              provided
+                            ) => ({
+                              ...provided,
+                              color:"#B1A49C",
+                              fontSize:"14px",
+                            }),
+
+                            singleValue:(
+                              provided
+                            ) => ({
+                              ...provided,
+                              color:"#2D1B12",
+                              fontSize:"14px",
+                            }),
+
+                            menu:(
+                              provided
+                            ) => ({
+                              ...provided,
+                              zIndex:9999,
+                              borderRadius:"14px",
+                              overflow:"hidden",
+                              boxShadow:
+                                "0 18px 40px rgba(45,27,18,.12)",
+                            }),
+
+                            option:(
+                              provided,
+                              state
+                            ) => ({
+                              ...provided,
+                              backgroundColor:
+                                state.isFocused
+                                  ? "#F6EDE4"
+                                  : "white",
+                              color:"#2D1B12",
+                              fontSize:"13px",
+                              padding:"12px 14px",
+                            }),
+                          },
+                        }}
+                      />
+                    ) : (
+                      <div className="error-message">
+                        Google Maps address search
+                        is not configured.
+                      </div>
                     )}
 
+                    <div className="field-note">
+                      Search and select the exact
+                      address from the suggestions.
+                    </div>
                   </div>
-
                 </div>
+              </section>
 
-              </div>
-
-              <div className="brew-address-field">
-
-                {GOOGLE_API_KEY ? (
-                  <GooglePlacesAutocomplete
-                    apiKey={
-                      GOOGLE_API_KEY
-                    }
-                    selectProps={{
-                      value: address
-                        ? {
-                            label:
-                              address.formatted ||
-                              "",
-                            value:
-                              address.placeId ||
-                              "",
-                          }
-                        : null,
-
-                      onChange:
-                        handleAddressChange,
-
-                      placeholder:
-                        "Search your delivery address",
-
-                      isClearable: true,
-
-                      styles: {
-                        control: (
-                          provided,
-                          state
-                        ) => ({
-                          ...provided,
-                          minHeight: "58px",
-                          borderRadius:
-                            "16px",
-                          border:
-                            state.isFocused
-                              ? "1px solid #9B6F4F"
-                              : "1px solid #E7DED4",
-                          boxShadow:
-                            state.isFocused
-                              ? "0 0 0 4px rgba(155,111,79,.08)"
-                              : "none",
-                          background:
-                            "#FCFAF7",
-                          padding:
-                            "2px 8px",
-                          transition:
-                            "all .2s ease",
-                        }),
-
-                        input: (
-                          provided
-                        ) => ({
-                          ...provided,
-                          fontSize:
-                            "14px",
-                          color:
-                            "#33231C",
-                        }),
-
-                        placeholder: (
-                          provided
-                        ) => ({
-                          ...provided,
-                          color:
-                            "#9A8B82",
-                        }),
-
-                        singleValue: (
-                          provided
-                        ) => ({
-                          ...provided,
-                          color:
-                            "#33231C",
-                          fontSize:
-                            "14px",
-                        }),
-
-                        menu: (
-                          provided
-                        ) => ({
-                          ...provided,
-                          zIndex: 10000,
-                          borderRadius:
-                            "14px",
-                          overflow:
-                            "hidden",
-                          border:
-                            "1px solid #E7DED4",
-                          boxShadow:
-                            "0 18px 45px rgba(55,38,27,.12)",
-                        }),
-                      },
-                    }}
-                  />
-                ) : (
-                  <div className="brew-config-warning">
-                    Google Places is not configured.
-                    Add{" "}
-                    <strong>
-                      VITE_GOOGLE_MAPS_API_KEY
-                    </strong>{" "}
-                    to your environment variables.
-                  </div>
-                )}
-
-                <p className="brew-field-note">
-                  Search and select the exact
-                  address you'd like Brewed to use
-                  for delivery.
-                </p>
-
-              </div>
-
-              {/* ------------------------------------------------
-                  MEMBERSHIP
-              ------------------------------------------------ */}
-
-              <div className="brew-section-head brew-section-spaced">
-                <div>
-                  <span>03</span>
-                  <h2>Your Brewed membership</h2>
-                </div>
-              </div>
-
-              <div className="brew-membership">
-
-                <div className="brew-membership-mark">
-                  <Coffee size={20} />
-                </div>
-
-                <div className="brew-membership-copy">
-                  <span>Member since</span>
-
-                  <strong>
-                    {memberSince ||
-                      "Today"}
-                  </strong>
-                </div>
-
-                <div className="brew-membership-line" />
-
-                <Sparkles
-                  size={17}
-                  className="brew-membership-spark"
-                />
-
-              </div>
-
-              {/* ------------------------------------------------
-                  MESSAGES
-              ------------------------------------------------ */}
+              {/* =================================================
+                  ALERTS
+              ================================================= */}
 
               {message && (
-                <div className="brew-message brew-success">
-                  <Check size={17} />
+                <div className="status-message success-message">
+                  <Check
+                    size={16}
+                    style={{
+                      flex:"none",
+                      marginTop:2,
+                    }}
+                  />
+
                   <span>{message}</span>
                 </div>
               )}
 
               {errorMessage && (
-                <div className="brew-message brew-error">
-                  <X size={17} />
+                <div className="status-message error-message">
+                  <X
+                    size={16}
+                    style={{
+                      flex:"none",
+                      marginTop:2,
+                    }}
+                  />
+
                   <span>
                     {errorMessage}
                   </span>
                 </div>
               )}
 
-              {/* ------------------------------------------------
+              {/* =================================================
                   ACTIONS
-              ------------------------------------------------ */}
+              ================================================= */}
 
-              <div className="brew-actions">
-
+              <div className="actions">
                 <button
                   type="button"
-                  className="brew-password-btn"
+                  className="action-button password-button"
                   onClick={
                     handleChangePassword
                   }
@@ -1779,63 +2661,44 @@ export default function ProfilePage({ setPage }) {
                     isProcessing
                   }
                 >
-                  {isPasswordProcessing ? (
-                    <>
-                      <Loader2
-                        size={16}
-                        className="brew-spin"
-                      />
-                      Sending
-                    </>
-                  ) : (
-                    <>
-                      Reset password
-                      <ChevronRight
-                        size={16}
-                      />
-                    </>
-                  )}
+                  {isPasswordProcessing
+                    ? "Sending..."
+                    : "Reset password"}
                 </button>
 
                 <button
                   type="submit"
-                  className="brew-save-btn"
+                  className="action-button save-button"
                   disabled={
-                    isProcessing
+                    isProcessing ||
+                    isPhoneProcessing
                   }
                 >
                   {isProcessing ? (
-                    <>
-                      <Loader2
-                        size={17}
-                        className="brew-spin"
-                      />
-                      Saving
-                    </>
+                    "Saving..."
                   ) : (
                     <>
                       Save changes
-                      <Check size={17} />
+                      <Check size={15} />
                     </>
                   )}
                 </button>
-
               </div>
-
             </form>
-
-          </section>
-        </section>
-
+          </div>
+        </div>
       </main>
 
-      {/* ======================================================
+      {/* =======================================================
           PHONE VERIFICATION MODAL
-      ====================================================== */}
+      ======================================================= */}
 
-      {phoneModalOpen && (
+      {showPhoneModal && (
         <div
-          className="brew-modal-backdrop"
+          className="verification-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="phone-verification-title"
           onMouseDown={(event) => {
             if (
               event.target ===
@@ -1845,84 +2708,47 @@ export default function ProfilePage({ setPage }) {
             }
           }}
         >
-
-          <div
-            className="brew-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="phone-modal-title"
-          >
+          <div className="verification-modal">
 
             <button
               type="button"
-              className="brew-modal-close"
+              className="modal-close"
               onClick={closePhoneModal}
               disabled={
                 isPhoneProcessing
               }
+              aria-label="Close"
             >
-              <X size={18} />
+              <X size={17} />
             </button>
 
-            <div className="brew-modal-icon">
-              <Phone size={20} />
+            <div className="modal-icon">
+              <Phone size={22} />
             </div>
 
-            {phoneModalStep === "phone" ? (
-              <>
-                <span className="brew-modal-eyebrow">
-                  PHONE VERIFICATION
-                </span>
+            <h2
+              id="phone-verification-title"
+              className="modal-title"
+            >
+              Verify your phone
+            </h2>
 
-                <h2 id="phone-modal-title">
-                  Verify your number
-                </h2>
+            <p className="modal-description">
+              We'll send a one-time
+              verification code to your
+              new phone number.
+            </p>
 
-                <p className="brew-modal-copy">
-                  We'll send a one-time
-                  verification code to make
-                  sure this number belongs to
-                  you.
-                </p>
+            <div className="modal-target">
+              {pendingPhone ||
+                normalizePhone(phone)}
+            </div>
 
-                <div className="brew-modal-field">
-
-                  <label>
-                    Phone number
-                  </label>
-
-                  <input
-                    type="tel"
-                    value={pendingPhone}
-                    onChange={(event) =>
-                      setPendingPhone(
-                        event.target.value
-                      )
-                    }
-                    placeholder="+919876543210"
-                    autoComplete="tel"
-                    autoFocus
-                  />
-
-                </div>
-
-                {phoneModalError && (
-                  <div className="brew-modal-error">
-                    <X size={15} />
-                    {phoneModalError}
-                  </div>
-                )}
-
-                {phoneModalMessage && (
-                  <div className="brew-modal-success">
-                    <Check size={15} />
-                    {phoneModalMessage}
-                  </div>
-                )}
-
+            {!otpSent ? (
+              <div className="modal-actions">
                 <button
                   type="button"
-                  className="brew-modal-primary"
+                  className="modal-primary-button"
                   onClick={
                     handleSendPhoneOTP
                   }
@@ -1930,163 +2756,118 @@ export default function ProfilePage({ setPage }) {
                     isPhoneProcessing
                   }
                 >
-                  {isPhoneProcessing ? (
-                    <>
-                      <Loader2
-                        size={17}
-                        className="brew-spin"
-                      />
-                      Sending code
-                    </>
-                  ) : (
-                    <>
-                      Send verification code
-                      <ChevronRight
-                        size={17}
-                      />
-                    </>
-                  )}
+                  {isPhoneProcessing
+                    ? "Sending code..."
+                    : "Send verification code"}
                 </button>
 
-                <p className="brew-modal-footnote">
-                  Standard SMS rates may apply.
-                </p>
-              </>
+                <button
+                  type="button"
+                  className="modal-secondary-button"
+                  onClick={
+                    closePhoneModal
+                  }
+                  disabled={
+                    isPhoneProcessing
+                  }
+                >
+                  Cancel
+                </button>
+              </div>
             ) : (
               <>
-                <span className="brew-modal-eyebrow">
-                  ONE-TIME CODE
-                </span>
-
-                <h2 id="phone-modal-title">
-                  Enter your code
-                </h2>
-
-                <p className="brew-modal-copy">
-                  Enter the 6-digit code we
-                  sent to{" "}
-                  <strong>
-                    {formatPhoneForDisplay(
-                      pendingPhone
-                    )}
-                  </strong>
-                  .
-                </p>
-
-                <div className="brew-otp-input-wrap">
-
+                <div className="modal-otp">
                   <input
-                    className="brew-otp-input"
+                    className="modal-otp-input"
                     type="text"
                     inputMode="numeric"
                     autoComplete="one-time-code"
                     maxLength={6}
+                    autoFocus
                     value={otp}
                     onChange={(event) =>
                       setOtp(
-                        event.target.value
-                          .replace(
-                            /\D/g,
-                            ""
-                          )
+                        event.target.value.replace(
+                          /\D/g,
+                          ""
+                        )
                       )
                     }
-                    autoFocus
-                    placeholder="000000"
+                    placeholder="••••••"
+                    aria-label="Phone verification code"
                   />
 
+                  <div className="modal-helper">
+                    Enter the 6-digit code
+                    sent to your phone.
+                  </div>
                 </div>
 
-                {phoneModalError && (
-                  <div className="brew-modal-error">
-                    <X size={15} />
-                    {phoneModalError}
+                {errorMessage && (
+                  <div className="modal-status error">
+                    {errorMessage}
                   </div>
                 )}
 
-                {phoneModalMessage && (
-                  <div className="brew-modal-success">
-                    <Check size={15} />
-                    {phoneModalMessage}
-                  </div>
-                )}
+                <div className="modal-actions">
+                  <button
+                    type="button"
+                    className="modal-primary-button"
+                    onClick={
+                      handleVerifyPhoneOTP
+                    }
+                    disabled={
+                      isPhoneProcessing ||
+                      otp.length !== 6
+                    }
+                  >
+                    {isPhoneProcessing
+                      ? "Verifying..."
+                      : "Verify phone"}
+                  </button>
 
-                <button
-                  type="button"
-                  className="brew-modal-primary"
-                  onClick={
-                    handleVerifyPhoneOTP
-                  }
-                  disabled={
-                    isPhoneProcessing ||
-                    otp.length !== 6
-                  }
-                >
-                  {isPhoneProcessing ? (
-                    <>
-                      <Loader2
-                        size={17}
-                        className="brew-spin"
-                      />
-                      Verifying
-                    </>
-                  ) : (
-                    <>
-                      Verify number
-                      <Check size={17} />
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  className="brew-modal-secondary"
-                  onClick={
-                    handleResendPhoneOTP
-                  }
-                  disabled={
-                    isPhoneProcessing
-                  }
-                >
-                  <RotateCcw size={14} />
-                  Send a new code
-                </button>
-
-                <button
-                  type="button"
-                  className="brew-modal-back-link"
-                  onClick={() =>
-                    setPhoneModalStep(
-                      "phone"
-                    )
-                  }
-                  disabled={
-                    isPhoneProcessing
-                  }
-                >
-                  Change phone number
-                </button>
+                  <button
+                    type="button"
+                    className="modal-secondary-button"
+                    onClick={
+                      handleSendPhoneOTP
+                    }
+                    disabled={
+                      isPhoneProcessing
+                    }
+                  >
+                    {isPhoneProcessing
+                      ? "Sending..."
+                      : "Send code again"}
+                  </button>
+                </div>
               </>
             )}
 
-            <div
-              ref={
-                recaptchaContainerRef
-              }
-              className="brew-recaptcha"
-            />
+            <div className="modal-reassurance">
+              <Lock size={12} />
+              <span>
+                Your verification code is
+                used only to confirm ownership
+                of this phone number.
+              </span>
+            </div>
 
+            <div id="phone-recaptcha" />
           </div>
         </div>
       )}
 
-      {/* ======================================================
+      {/* =======================================================
           EMAIL VERIFICATION MODAL
-      ====================================================== */}
+      ======================================================= */}
 
-      {emailModalOpen && (
+      {showEmailModal && (
         <div
-          className="brew-modal-backdrop"
+          className="verification-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="email-verification-title"
           onMouseDown={(event) => {
             if (
               event.target ===
@@ -2096,1539 +2877,112 @@ export default function ProfilePage({ setPage }) {
             }
           }}
         >
-
-          <div
-            className="brew-modal brew-email-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="email-modal-title"
-          >
+          <div className="verification-modal">
 
             <button
               type="button"
-              className="brew-modal-close"
+              className="modal-close"
               onClick={closeEmailModal}
               disabled={
                 isEmailProcessing
               }
+              aria-label="Close"
             >
-              <X size={18} />
+              <X size={17} />
             </button>
 
-            <div className="brew-modal-icon">
-              {emailVerified ? (
-                <Check size={20} />
-              ) : (
-                <Mail size={20} />
-              )}
+            <div className="modal-icon email">
+              <Mail size={22} />
             </div>
 
-            <span className="brew-modal-eyebrow">
-              EMAIL VERIFICATION
-            </span>
-
-            <h2 id="email-modal-title">
-              {emailVerified
-                ? "You're all set."
-                : "Verify your email"}
+            <h2
+              id="email-verification-title"
+              className="modal-title"
+            >
+              Verify your email
             </h2>
 
-            <p className="brew-modal-copy">
-              {emailVerified
-                ? "Your email address has been successfully verified."
-                : "We'll send a secure verification link to your email address."}
+            <p className="modal-description">
+              We'll send a secure
+              verification link to your
+              email address. Open it and
+              confirm your email, then come
+              back here.
             </p>
 
-            <div className="brew-email-preview">
-
-              <Mail size={17} />
-
-              <div>
-                <span>Email address</span>
-                <strong>
-                  {currentUser?.email ||
-                    email}
-                </strong>
-              </div>
-
+            <div className="modal-target">
+              {email}
             </div>
 
-            {emailModalError && (
-              <div className="brew-modal-error">
-                <X size={15} />
-                {emailModalError}
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="modal-primary-button"
+                onClick={
+                  handleSendEmailVerification
+                }
+                disabled={
+                  isEmailProcessing
+                }
+              >
+                {isEmailProcessing
+                  ? "Sending..."
+                  : "Send verification email"}
+              </button>
+
+              <button
+                type="button"
+                className="modal-secondary-button"
+                onClick={
+                  handleRefreshEmailVerification
+                }
+                disabled={
+                  isEmailProcessing
+                }
+              >
+                {isEmailProcessing
+                  ? "Checking..."
+                  : "I've verified my email"}
+              </button>
+
+              <button
+                type="button"
+                className="modal-secondary-button"
+                onClick={
+                  closeEmailModal
+                }
+                disabled={
+                  isEmailProcessing
+                }
+              >
+                Cancel
+              </button>
+            </div>
+
+            {message && (
+              <div className="modal-status success">
+                {message}
               </div>
             )}
 
-            {emailModalMessage && (
-              <div className="brew-modal-success">
-                <Check size={15} />
-                {emailModalMessage}
+            {errorMessage && (
+              <div className="modal-status error">
+                {errorMessage}
               </div>
             )}
 
-            {!emailVerified && (
-              <>
-                <button
-                  type="button"
-                  className="brew-modal-primary"
-                  onClick={
-                    handleSendEmailVerification
-                  }
-                  disabled={
-                    isEmailProcessing
-                  }
-                >
-                  {isEmailProcessing ? (
-                    <>
-                      <Loader2
-                        size={17}
-                        className="brew-spin"
-                      />
-                      Sending
-                    </>
-                  ) : (
-                    <>
-                      Send verification email
-                      <Mail size={17} />
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  className="brew-modal-secondary"
-                  onClick={
-                    handleCheckEmailVerification
-                  }
-                  disabled={
-                    isEmailProcessing
-                  }
-                >
-                  {isEmailProcessing ? (
-                    <>
-                      <Loader2
-                        size={15}
-                        className="brew-spin"
-                      />
-                      Checking
-                    </>
-                  ) : (
-                    <>
-                      I've verified my email
-                      <Check size={15} />
-                    </>
-                  )}
-                </button>
-              </>
-            )}
-
-            {!emailVerified && (
-              <p className="brew-modal-footnote">
-                Check your spam or promotions
-                folder if you don't see it.
-              </p>
-            )}
-
+            <div className="modal-reassurance">
+              <ShieldCheck size={12} />
+              <span>
+                Firebase securely verifies
+                ownership of your email
+                address. We never ask for your
+                email password.
+              </span>
+            </div>
           </div>
         </div>
       )}
     </>
   );
 }
-
-/* ============================================================
-   PREMIUM BREWED STYLES
-============================================================ */
-
-const PROFILE_STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500;1,600&display=swap');
-
-:root {
-  --brew-ink: #33231C;
-  --brew-brown: #5B3828;
-  --brew-brown-dark: #42271C;
-  --brew-muted: #8F8077;
-  --brew-soft: #F5EFE8;
-  --brew-paper: #FCFAF7;
-  --brew-cream: #F8F3EC;
-  --brew-line: #E8DED4;
-  --brew-accent: #A47757;
-  --brew-green: #55745A;
-  --brew-red: #A6534D;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-}
-
-button,
-input {
-  font: inherit;
-}
-
-.brew-profile-page {
-  min-height: 100vh;
-  background:
-    radial-gradient(
-      circle at 12% 10%,
-      rgba(210,184,158,.16),
-      transparent 27%
-    ),
-    radial-gradient(
-      circle at 92% 70%,
-      rgba(210,184,158,.10),
-      transparent 28%
-    ),
-    #F9F6F1;
-
-  color: var(--brew-ink);
-  font-family: "DM Sans", sans-serif;
-
-  padding:
-    108px
-    clamp(20px, 5vw, 78px)
-    90px;
-}
-
-.brew-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-
-  border: 0;
-  background: transparent;
-
-  color: #6F5D53;
-
-  font-size: 13px;
-  font-weight: 600;
-
-  cursor: pointer;
-
-  padding: 8px 0;
-
-  transition:
-    color .2s ease,
-    transform .2s ease;
-}
-
-.brew-back:hover {
-  color: var(--brew-brown);
-  transform: translateX(-2px);
-}
-
-.brew-profile-shell {
-  width: min(1120px, 100%);
-  margin: 36px auto 0;
-}
-
-.brew-profile-intro {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, .62fr);
-  align-items: end;
-
-  gap: 60px;
-
-  margin-bottom: 36px;
-}
-
-.brew-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  color: var(--brew-accent);
-
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .19em;
-}
-
-.brew-profile-intro h1 {
-  margin: 13px 0 0;
-
-  font-family: "Playfair Display", serif;
-
-  font-size: clamp(52px, 7vw, 88px);
-  line-height: .88;
-  font-weight: 500;
-  letter-spacing: -.055em;
-
-  color: var(--brew-brown-dark);
-}
-
-.brew-profile-intro h1 em {
-  color: var(--brew-accent);
-  font-weight: 500;
-}
-
-.brew-profile-intro p {
-  max-width: 340px;
-
-  margin: 0 0 7px;
-
-  color: #88786E;
-
-  font-size: 14px;
-  line-height: 1.8;
-}
-
-.brew-profile-card {
-  background: rgba(255,255,255,.76);
-
-  border:
-    1px solid rgba(226,216,207,.9);
-
-  border-radius: 28px;
-
-  padding:
-    clamp(26px, 4vw, 48px);
-
-  box-shadow:
-    0 25px 80px rgba(71,49,37,.075),
-    0 3px 12px rgba(71,49,37,.025);
-
-  backdrop-filter: blur(12px);
-}
-
-.brew-profile-photo-row {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-
-  padding-bottom: 34px;
-
-  border-bottom:
-    1px solid var(--brew-line);
-
-  margin-bottom: 36px;
-}
-
-.brew-avatar-wrap {
-  position: relative;
-
-  width: 88px;
-  height: 88px;
-
-  flex: 0 0 88px;
-
-  cursor: pointer;
-}
-
-.brew-avatar {
-  width: 88px;
-  height: 88px;
-
-  object-fit: cover;
-
-  border-radius: 50%;
-
-  border:
-    4px solid #FFF;
-
-  box-shadow:
-    0 8px 25px rgba(62,42,31,.14);
-}
-
-.brew-avatar-edit {
-  position: absolute;
-
-  right: -1px;
-  bottom: 0;
-
-  width: 28px;
-  height: 28px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 50%;
-
-  background: var(--brew-brown);
-  color: #FFF;
-
-  border: 3px solid #FFF;
-
-  box-shadow:
-    0 4px 12px rgba(54,35,25,.18);
-}
-
-.brew-photo-label {
-  margin: 0 0 4px;
-
-  font-size: 14px;
-  font-weight: 700;
-
-  color: var(--brew-ink);
-}
-
-.brew-photo-copy {
-  margin: 0;
-
-  color: #81736B;
-
-  font-size: 13px;
-}
-
-.brew-photo-meta {
-  margin: 7px 0 0;
-
-  color: #A09289;
-
-  font-size: 11px;
-  letter-spacing: .02em;
-}
-
-.brew-section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  margin-bottom: 20px;
-}
-
-.brew-section-head > div {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-}
-
-.brew-section-head span {
-  color: #B39A86;
-
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .14em;
-}
-
-.brew-section-head h2 {
-  margin: 0;
-
-  font-family: "Playfair Display", serif;
-
-  font-size: 24px;
-  font-weight: 500;
-
-  letter-spacing: -.025em;
-
-  color: var(--brew-brown-dark);
-}
-
-.brew-section-spaced {
-  margin-top: 44px;
-}
-
-.brew-fields {
-  display: grid;
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap: 22px 20px;
-}
-
-.brew-field {
-  min-width: 0;
-}
-
-.brew-field-full {
-  grid-column: 1 / -1;
-}
-
-.brew-field label,
-.brew-modal-field label,
-.brew-delivery-content > label {
-  display: block;
-
-  margin-bottom: 8px;
-
-  color: #66564D;
-
-  font-size: 11px;
-  font-weight: 700;
-
-  letter-spacing: .06em;
-  text-transform: uppercase;
-}
-
-.brew-field input,
-.brew-modal-field input {
-  width: 100%;
-
-  height: 56px;
-
-  border:
-    1px solid var(--brew-line);
-
-  border-radius: 15px;
-
-  background: #FCFAF7;
-
-  color: var(--brew-ink);
-
-  padding:
-    0 16px;
-
-  outline: none;
-
-  font-size: 14px;
-
-  transition:
-    border-color .2s ease,
-    box-shadow .2s ease,
-    background .2s ease;
-}
-
-.brew-field input::placeholder,
-.brew-modal-field input::placeholder {
-  color: #ADA198;
-}
-
-.brew-field input:focus,
-.brew-modal-field input:focus {
-  background: #FFF;
-
-  border-color:
-    rgba(145,103,73,.72);
-
-  box-shadow:
-    0 0 0 4px
-    rgba(155,111,79,.075);
-}
-
-.brew-field input.is-locked {
-  color: #87776D;
-  background: #F4EFE9;
-  cursor: default;
-}
-
-.brew-field-note {
-  margin: 8px 0 0;
-
-  color: #9B8D84;
-
-  font-size: 11px;
-  line-height: 1.55;
-}
-
-.brew-input-action {
-  position: relative;
-}
-
-.brew-input-action input {
-  padding-right: 90px;
-}
-
-.brew-field-action {
-  position: absolute;
-
-  top: 50%;
-  right: 7px;
-
-  transform: translateY(-50%);
-
-  height: 42px;
-
-  padding:
-    0 13px;
-
-  border: 0;
-  border-radius: 11px;
-
-  background: #EFE5DA;
-
-  color: var(--brew-brown);
-
-  font-size: 11px;
-  font-weight: 700;
-
-  cursor: pointer;
-
-  transition:
-    background .2s ease,
-    transform .2s ease;
-}
-
-.brew-field-action:hover {
-  background: #E5D6C8;
-  transform:
-    translateY(-50%)
-    translateY(-1px);
-}
-
-.brew-inline-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-
-  margin-top: 7px;
-
-  padding: 0;
-
-  border: 0;
-  background: transparent;
-
-  font-size: 11px;
-  font-weight: 600;
-
-  cursor: default;
-}
-
-.brew-inline-status.is-unverified {
-  color: #A45B52;
-  cursor: pointer;
-}
-
-.brew-inline-status.is-verified {
-  color: var(--brew-green);
-}
-
-.brew-status-dot {
-  width: 6px;
-  height: 6px;
-
-  border-radius: 50%;
-
-  background: currentColor;
-}
-
-.brew-delivery-card {
-  display: flex;
-  align-items: flex-start;
-
-  gap: 15px;
-
-  padding: 18px;
-
-  border-radius: 18px;
-
-  background: #F8F3ED;
-
-  border:
-    1px solid #EDE3D9;
-}
-
-.brew-delivery-icon {
-  width: 38px;
-  height: 38px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  flex: 0 0 38px;
-
-  border-radius: 12px;
-
-  background: #FFF;
-
-  color: var(--brew-accent);
-
-  box-shadow:
-    0 4px 12px rgba(75,50,36,.06);
-}
-
-.brew-delivery-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.brew-address-types {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.brew-address-type {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-
-  height: 38px;
-
-  padding:
-    0 12px;
-
-  border:
-    1px solid #E5D9CE;
-
-  border-radius: 10px;
-
-  background: rgba(255,255,255,.65);
-
-  color: #77685F;
-
-  font-size: 11px;
-  font-weight: 600;
-
-  cursor: pointer;
-
-  transition:
-    all .2s ease;
-}
-
-.brew-address-type input {
-  display: none;
-}
-
-.brew-address-type.is-active {
-  border-color: #C7AA92;
-  background: #FFF;
-  color: var(--brew-brown);
-  box-shadow:
-    0 3px 10px rgba(65,42,29,.06);
-}
-
-.brew-address-field {
-  margin-top: 14px;
-}
-
-.brew-config-warning {
-  padding: 15px;
-
-  border-radius: 14px;
-
-  background: #FBF0EE;
-
-  color: #925149;
-
-  font-size: 12px;
-}
-
-.brew-membership {
-  display: flex;
-  align-items: center;
-
-  min-height: 84px;
-
-  padding:
-    17px 20px;
-
-  border-radius: 18px;
-
-  background:
-    linear-gradient(
-      120deg,
-      #F5EDE4,
-      #FAF7F2
-    );
-
-  border:
-    1px solid #E8DCCF;
-}
-
-.brew-membership-mark {
-  width: 44px;
-  height: 44px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  flex: 0 0 44px;
-
-  border-radius: 14px;
-
-  background: #FFF;
-
-  color: var(--brew-brown);
-
-  box-shadow:
-    0 5px 15px rgba(65,42,29,.07);
-}
-
-.brew-membership-copy {
-  display: flex;
-  flex-direction: column;
-
-  margin-left: 14px;
-}
-
-.brew-membership-copy span {
-  color: #95847A;
-
-  font-size: 10px;
-  font-weight: 600;
-
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
-.brew-membership-copy strong {
-  margin-top: 4px;
-
-  color: var(--brew-brown-dark);
-
-  font-family: "Playfair Display", serif;
-
-  font-size: 18px;
-  font-weight: 500;
-}
-
-.brew-membership-line {
-  flex: 1;
-}
-
-.brew-membership-spark {
-  color: #B98B63;
-}
-
-.brew-message {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-
-  margin-top: 22px;
-
-  padding: 13px 15px;
-
-  border-radius: 13px;
-
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.brew-success {
-  background: #EFF6EF;
-  color: #4F7255;
-}
-
-.brew-error {
-  background: #FBEEEE;
-  color: #98514B;
-}
-
-.brew-actions {
-  display: grid;
-
-  grid-template-columns:
-    minmax(0, .72fr)
-    minmax(0, 1fr);
-
-  gap: 10px;
-
-  margin-top: 30px;
-
-  padding-top: 27px;
-
-  border-top:
-    1px solid var(--brew-line);
-}
-
-.brew-password-btn,
-.brew-save-btn {
-  min-height: 56px;
-
-  border-radius: 15px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  gap: 9px;
-
-  cursor: pointer;
-
-  font-size: 12px;
-  font-weight: 700;
-
-  transition:
-    transform .2s ease,
-    box-shadow .2s ease,
-    background .2s ease,
-    opacity .2s ease;
-}
-
-.brew-password-btn {
-  border:
-    1px solid #E5DAD0;
-
-  background: #FFF;
-
-  color: var(--brew-brown);
-}
-
-.brew-password-btn:hover:not(:disabled) {
-  background: #FAF6F1;
-  transform: translateY(-1px);
-}
-
-.brew-save-btn {
-  border: 0;
-
-  background:
-    linear-gradient(
-      135deg,
-      #543426,
-      #704934
-    );
-
-  color: #FFF;
-
-  box-shadow:
-    0 8px 22px rgba(70,43,29,.17);
-}
-
-.brew-save-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-
-  box-shadow:
-    0 12px 28px rgba(70,43,29,.22);
-}
-
-.brew-password-btn:disabled,
-.brew-save-btn:disabled,
-.brew-modal-primary:disabled,
-.brew-modal-secondary:disabled {
-  opacity: .58;
-  cursor: not-allowed;
-}
-
-.brew-spin {
-  animation:
-    brew-spin .85s linear infinite;
-}
-
-@keyframes brew-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* ============================================================
-   MODALS
-============================================================ */
-
-.brew-modal-backdrop {
-  position: fixed;
-
-  inset: 0;
-
-  z-index: 99999;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 20px;
-
-  background:
-    rgba(38,26,20,.48);
-
-  backdrop-filter:
-    blur(10px);
-
-  animation:
-    brew-fade-in .2s ease;
-}
-
-@keyframes brew-fade-in {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-.brew-modal {
-  position: relative;
-
-  width: min(430px, 100%);
-
-  padding: 35px;
-
-  border:
-    1px solid rgba(225,214,204,.95);
-
-  border-radius: 26px;
-
-  background:
-    linear-gradient(
-      145deg,
-      #FFFDFC,
-      #F9F5EF
-    );
-
-  box-shadow:
-    0 30px 100px rgba(30,19,13,.22);
-
-  animation:
-    brew-modal-in .25s ease;
-}
-
-@keyframes brew-modal-in {
-  from {
-    opacity: 0;
-    transform:
-      translateY(12px)
-      scale(.985);
-  }
-
-  to {
-    opacity: 1;
-    transform:
-      translateY(0)
-      scale(1);
-  }
-}
-
-.brew-modal-close {
-  position: absolute;
-
-  top: 16px;
-  right: 16px;
-
-  width: 34px;
-  height: 34px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border: 0;
-  border-radius: 50%;
-
-  background: #F2ECE5;
-
-  color: #76665C;
-
-  cursor: pointer;
-
-  transition:
-    background .2s ease,
-    transform .2s ease;
-}
-
-.brew-modal-close:hover:not(:disabled) {
-  background: #E9DED3;
-  transform: rotate(4deg);
-}
-
-.brew-modal-icon {
-  width: 48px;
-  height: 48px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  margin-bottom: 22px;
-
-  border-radius: 15px;
-
-  background: #EFE4D8;
-
-  color: var(--brew-brown);
-}
-
-.brew-modal-eyebrow {
-  display: block;
-
-  color: #A17D61;
-
-  font-size: 9px;
-  font-weight: 700;
-
-  letter-spacing: .2em;
-}
-
-.brew-modal h2 {
-  margin:
-    8px 0 9px;
-
-  color: var(--brew-brown-dark);
-
-  font-family:
-    "Playfair Display",
-    serif;
-
-  font-size: 31px;
-  font-weight: 500;
-
-  letter-spacing: -.035em;
-}
-
-.brew-modal-copy {
-  margin: 0 0 25px;
-
-  color: #82736A;
-
-  font-size: 13px;
-  line-height: 1.7;
-}
-
-.brew-modal-copy strong {
-  color: var(--brew-brown);
-  font-weight: 700;
-}
-
-.brew-modal-field {
-  margin-bottom: 17px;
-}
-
-.brew-modal-error,
-.brew-modal-success {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-
-  margin:
-    12px 0;
-
-  padding: 11px 12px;
-
-  border-radius: 11px;
-
-  font-size: 11px;
-  line-height: 1.5;
-}
-
-.brew-modal-error {
-  background: #FBEEEE;
-  color: #97504A;
-}
-
-.brew-modal-success {
-  background: #EEF6EF;
-  color: #4D7254;
-}
-
-.brew-modal-primary {
-  width: 100%;
-
-  min-height: 52px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  gap: 8px;
-
-  border: 0;
-  border-radius: 14px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #513124,
-      #714A35
-    );
-
-  color: #FFF;
-
-  font-size: 12px;
-  font-weight: 700;
-
-  cursor: pointer;
-
-  box-shadow:
-    0 8px 20px rgba(70,43,29,.15);
-
-  transition:
-    transform .2s ease,
-    box-shadow .2s ease;
-}
-
-.brew-modal-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-
-  box-shadow:
-    0 12px 25px rgba(70,43,29,.19);
-}
-
-.brew-modal-secondary {
-  width: 100%;
-
-  min-height: 48px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  gap: 7px;
-
-  margin-top: 9px;
-
-  border:
-    1px solid #E5D9CE;
-
-  border-radius: 13px;
-
-  background: rgba(255,255,255,.7);
-
-  color: var(--brew-brown);
-
-  font-size: 11px;
-  font-weight: 700;
-
-  cursor: pointer;
-}
-
-.brew-modal-secondary:hover:not(:disabled) {
-  background: #FFF;
-}
-
-.brew-modal-back-link {
-  display: block;
-
-  margin: 17px auto 0;
-
-  border: 0;
-  background: transparent;
-
-  color: #9B7C64;
-
-  font-size: 11px;
-  font-weight: 600;
-
-  cursor: pointer;
-}
-
-.brew-modal-back-link:hover {
-  color: var(--brew-brown);
-}
-
-.brew-modal-footnote {
-  margin:
-    15px 0 0;
-
-  color: #A1948C;
-
-  font-size: 10px;
-
-  text-align: center;
-
-  line-height: 1.5;
-}
-
-.brew-otp-input-wrap {
-  margin:
-    3px 0 15px;
-}
-
-.brew-otp-input {
-  width: 100%;
-
-  height: 68px;
-
-  border:
-    1px solid #E3D7CD;
-
-  border-radius: 16px;
-
-  background: #FFF;
-
-  color: var(--brew-brown-dark);
-
-  text-align: center;
-
-  font-family:
-    "DM Sans",
-    sans-serif;
-
-  font-size: 26px;
-  font-weight: 700;
-
-  letter-spacing: .42em;
-
-  padding-left: .42em;
-
-  outline: none;
-
-  transition:
-    border-color .2s ease,
-    box-shadow .2s ease;
-}
-
-.brew-otp-input:focus {
-  border-color: #A98263;
-
-  box-shadow:
-    0 0 0 4px
-    rgba(155,111,79,.08);
-}
-
-.brew-email-preview {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  margin:
-    0 0 17px;
-
-  padding: 14px;
-
-  border:
-    1px solid #E9DED4;
-
-  border-radius: 14px;
-
-  background: rgba(255,255,255,.62);
-
-  color: var(--brew-accent);
-}
-
-.brew-email-preview > div {
-  min-width: 0;
-
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.brew-email-preview span {
-  color: #9A8B82;
-
-  font-size: 9px;
-  font-weight: 700;
-
-  text-transform: uppercase;
-  letter-spacing: .08em;
-}
-
-.brew-email-preview strong {
-  overflow: hidden;
-
-  color: var(--brew-ink);
-
-  font-size: 12px;
-
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.brew-recaptcha {
-  position: absolute;
-
-  width: 1px;
-  height: 1px;
-
-  overflow: hidden;
-
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* ============================================================
-   LOADING
-============================================================ */
-
-.brew-profile-loading {
-  min-height: 100vh;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  gap: 12px;
-
-  background: #F9F6F1;
-
-  color: #8C7B71;
-
-  font-family:
-    "DM Sans",
-    sans-serif;
-
-  font-size: 12px;
-}
-
-.brew-loading-mark {
-  width: 44px;
-  height: 44px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 14px;
-
-  background: #EFE5DA;
-
-  color: var(--brew-brown);
-}
-
-/* ============================================================
-   RESPONSIVE
-============================================================ */
-
-@media (max-width: 820px) {
-  .brew-profile-page {
-    padding:
-      92px
-      20px
-      55px;
-  }
-
-  .brew-profile-intro {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-
-  .brew-profile-intro p {
-    max-width: 500px;
-  }
-
-  .brew-profile-intro h1 {
-    font-size: clamp(52px, 15vw, 78px);
-  }
-}
-
-@media (max-width: 640px) {
-  .brew-profile-page {
-    padding:
-      80px
-      14px
-      35px;
-  }
-
-  .brew-profile-shell {
-    margin-top: 28px;
-  }
-
-  .brew-profile-card {
-    padding:
-      23px
-      17px;
-
-    border-radius: 22px;
-  }
-
-  .brew-profile-intro {
-    margin-bottom: 25px;
-  }
-
-  .brew-profile-intro h1 {
-    font-size: 57px;
-  }
-
-  .brew-profile-intro p {
-    font-size: 13px;
-  }
-
-  .brew-profile-photo-row {
-    gap: 14px;
-    padding-bottom: 26px;
-    margin-bottom: 28px;
-  }
-
-  .brew-avatar-wrap,
-  .brew-avatar {
-    width: 72px;
-    height: 72px;
-  }
-
-  .brew-avatar-wrap {
-    flex-basis: 72px;
-  }
-
-  .brew-avatar-edit {
-    width: 25px;
-    height: 25px;
-  }
-
-  .brew-fields {
-    grid-template-columns: 1fr;
-    gap: 19px;
-  }
-
-  .brew-field-full {
-    grid-column: auto;
-  }
-
-  .brew-section-head h2 {
-    font-size: 21px;
-  }
-
-  .brew-section-spaced {
-    margin-top: 36px;
-  }
-
-  .brew-delivery-card {
-    padding: 15px;
-  }
-
-  .brew-address-types {
-    gap: 6px;
-  }
-
-  .brew-address-type {
-    flex: 1;
-    justify-content: center;
-  }
-
-  .brew-membership {
-    min-height: 76px;
-    padding: 14px;
-  }
-
-  .brew-membership-line {
-    display: none;
-  }
-
-  .brew-membership-spark {
-    margin-left: auto;
-  }
-
-  .brew-actions {
-    grid-template-columns: 1fr;
-  }
-
-  .brew-modal {
-    padding:
-      29px
-      21px
-      24px;
-
-    border-radius: 22px;
-  }
-
-  .brew-modal h2 {
-    font-size: 28px;
-  }
-}
-
-@media (max-width: 420px) {
-  .brew-profile-page {
-    padding-left: 11px;
-    padding-right: 11px;
-  }
-
-  .brew-profile-card {
-    padding:
-      20px
-      14px;
-  }
-
-  .brew-profile-intro h1 {
-    font-size: 50px;
-  }
-
-  .brew-photo-copy {
-    font-size: 12px;
-  }
-
-  .brew-input-action input {
-    padding-right: 78px;
-  }
-
-  .brew-field-action {
-    padding: 0 10px;
-    font-size: 10px;
-  }
-
-  .brew-address-type {
-    padding: 0 8px;
-    font-size: 10px;
-  }
-}
-`;
