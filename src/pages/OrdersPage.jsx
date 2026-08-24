@@ -1,6 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import { useCart } from "../context/CartContext";
 import {
   collection,
   onSnapshot,
@@ -8,7 +6,6 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { db } from "../firebase";
 import {
   ArrowLeft,
   ChevronDown,
@@ -20,8 +17,10 @@ import {
   ShoppingBag,
 } from "lucide-react";
 
+import { db, auth } from "../firebase";
+import { useCart } from "../context/CartContext";
+
 export default function OrdersPage({ setPage }) {
-  const { user } = useAuth();
   const { reorder } = useCart();
 
   const [orders, setOrders] = useState([]);
@@ -30,168 +29,397 @@ export default function OrdersPage({ setPage }) {
   const [expandedOrders, setExpandedOrders] = useState({});
   const [reorderingId, setReorderingId] = useState(null);
 
+  /*
+   * ============================================================
+   * LOAD CUSTOMER ORDERS
+   * ============================================================
+   *
+   * Your CheckoutPage stores:
+   *
+   * userId: auth.currentUser.uid
+   *
+   * so OrdersPage queries using that exact field.
+   *
+   * Primary query:
+   *   userId == current user
+   *   order by createdAt descending
+   *
+   * Fallback:
+   *   userId == current user
+   *
+   * The fallback prevents the page from becoming completely
+   * unusable if the composite Firestore index hasn't been created.
+   */
+
   useEffect(() => {
-    if (!user?.uid) {
-      setOrders([]);
-      setLoading(false);
-      return;
-    }
+    let unsubscribe = null;
+    let fallbackUnsubscribe = null;
+    let isMounted = true;
 
-    setLoading(true);
-    setError("");
+    const subscribeToOrders = () => {
+      const currentUser = auth.currentUser;
 
-    const ordersRef = collection(db, "orders");
-
-    const ordersQuery = query(
-      ordersRef,
-      where("userId", "==", user.uid),
-      orderBy("createdAt", "desc")
-    );
-
-    const unsubscribe = onSnapshot(
-      ordersQuery,
-      (snapshot) => {
-        const fetchedOrders = snapshot.docs.map((orderDoc) => {
-          const data = orderDoc.data();
-
-          return {
-            id: orderDoc.id,
-            ...data,
-            items: Array.isArray(data.items) ? data.items : [],
-          };
-        });
-
-        setOrders(fetchedOrders);
-        setLoading(false);
-      },
-      (snapshotError) => {
-        console.error("Orders subscription error:", snapshotError);
-
-        setError(
-          "We couldn't load your orders right now. Please try again."
-        );
-
-        setOrders([]);
-        setLoading(false);
+      if (!currentUser?.uid) {
+        if (isMounted) {
+          setOrders([]);
+          setLoading(false);
+        }
+        return;
       }
-    );
 
-    return () => unsubscribe();
-  }, [user?.uid]);
+      setLoading(true);
+      setError("");
+
+      const ordersRef = collection(db, "orders");
+
+      /*
+       * Preferred production query.
+       *
+       * This requires a Firestore composite index:
+       *
+       * userId ASC
+       * createdAt DESC
+       */
+      const orderedQuery = query(
+        ordersRef,
+        where("userId", "==", currentUser.uid),
+        orderBy("createdAt", "desc")
+      );
+
+      unsubscribe = onSnapshot(
+        orderedQuery,
+        (snapshot) => {
+          if (!isMounted) return;
+
+          const fetchedOrders = snapshot.docs.map((orderDoc) => ({
+            id: orderDoc.id,
+            ...orderDoc.data(),
+            items: Array.isArray(orderDoc.data()?.items)
+              ? orderDoc.data().items
+              : [],
+          }));
+
+          setOrders(fetchedOrders);
+          setLoading(false);
+          setError("");
+        },
+        (snapshotError) => {
+          console.error(
+            "Orders ordered query failed:",
+            snapshotError
+          );
+
+          /*
+           * If Firestore complains about the composite index,
+           * fall back to a user-only query.
+           *
+           * This means the page still works before the index
+           * is created.
+           */
+          if (
+            snapshotError?.code === "failed-precondition" ||
+            snapshotError?.code === "permission-denied"
+          ) {
+            console.warn(
+              "Falling back to user-only orders query."
+            );
+
+            if (unsubscribe) {
+              unsubscribe();
+              unsubscribe = null;
+            }
+
+            const fallbackQuery = query(
+              ordersRef,
+              where("userId", "==", currentUser.uid)
+            );
+
+            fallbackUnsubscribe = onSnapshot(
+              fallbackQuery,
+              (snapshot) => {
+                if (!isMounted) return;
+
+                const fetchedOrders = snapshot.docs
+                  .map((orderDoc) => ({
+                    id: orderDoc.id,
+                    ...orderDoc.data(),
+                    items: Array.isArray(
+                      orderDoc.data()?.items
+                    )
+                      ? orderDoc.data().items
+                      : [],
+                  }))
+                  .sort((a, b) => {
+                    return (
+                      getTimestampMillis(b.createdAt) -
+                      getTimestampMillis(a.createdAt)
+                    );
+                  });
+
+                setOrders(fetchedOrders);
+                setLoading(false);
+
+                /*
+                 * Don't show an error just because the composite
+                 * index doesn't exist.
+                 */
+                setError("");
+              },
+              (fallbackError) => {
+                console.error(
+                  "Fallback orders query failed:",
+                  fallbackError
+                );
+
+                if (!isMounted) return;
+
+                setOrders([]);
+                setLoading(false);
+
+                if (
+                  fallbackError?.code ===
+                  "permission-denied"
+                ) {
+                  setError(
+                    "You don't have permission to view your orders."
+                  );
+                } else {
+                  setError(
+                    "We couldn't load your orders right now."
+                  );
+                }
+              }
+            );
+
+            return;
+          }
+
+          if (!isMounted) return;
+
+          setOrders([]);
+          setLoading(false);
+
+          if (
+            snapshotError?.code === "permission-denied"
+          ) {
+            setError(
+              "You don't have permission to view your orders."
+            );
+          } else {
+            setError(
+              "We couldn't load your orders right now."
+            );
+          }
+        }
+      );
+    };
+
+    /*
+     * Firebase Auth may still be restoring the session when
+     * OrdersPage first mounts.
+     *
+     * Waiting for the auth state prevents an unnecessary query
+     * with a null user.
+     */
+    const unsubscribeAuth = auth.onAuthStateChanged(() => {
+      if (unsubscribe) {
+        unsubscribe();
+        unsubscribe = null;
+      }
+
+      if (fallbackUnsubscribe) {
+        fallbackUnsubscribe();
+        fallbackUnsubscribe = null;
+      }
+
+      subscribeToOrders();
+    });
+
+    return () => {
+      isMounted = false;
+
+      unsubscribeAuth();
+
+      if (unsubscribe) {
+        unsubscribe();
+      }
+
+      if (fallbackUnsubscribe) {
+        fallbackUnsubscribe();
+      }
+    };
+  }, []);
+
+  /*
+   * ============================================================
+   * HELPERS
+   * ============================================================
+   */
+
+  function getTimestampMillis(timestamp) {
+    try {
+      if (!timestamp) return 0;
+
+      if (typeof timestamp.toMillis === "function") {
+        return timestamp.toMillis();
+      }
+
+      if (typeof timestamp.toDate === "function") {
+        return timestamp.toDate().getTime();
+      }
+
+      if (timestamp instanceof Date) {
+        return timestamp.getTime();
+      }
+
+      if (typeof timestamp === "number") {
+        return timestamp;
+      }
+
+      const parsed = new Date(timestamp).getTime();
+
+      return Number.isNaN(parsed) ? 0 : parsed;
+    } catch {
+      return 0;
+    }
+  }
 
   const formatDate = (timestamp) => {
-    if (!timestamp) return "Date unavailable";
+    const millis = getTimestampMillis(timestamp);
+
+    if (!millis) {
+      return "Date unavailable";
+    }
 
     try {
-      const date =
-        typeof timestamp?.toDate === "function"
-          ? timestamp.toDate()
-          : timestamp instanceof Date
-          ? timestamp
-          : new Date(timestamp);
-
-      if (Number.isNaN(date.getTime())) {
-        return "Date unavailable";
-      }
-
-      return date.toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
+      return new Date(millis).toLocaleDateString(
+        "en-IN",
+        {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        }
+      );
     } catch {
       return "Date unavailable";
     }
   };
 
   const formatTime = (timestamp) => {
-    if (!timestamp) return "";
+    const millis = getTimestampMillis(timestamp);
+
+    if (!millis) return "";
 
     try {
-      const date =
-        typeof timestamp?.toDate === "function"
-          ? timestamp.toDate()
-          : timestamp instanceof Date
-          ? timestamp
-          : new Date(timestamp);
-
-      if (Number.isNaN(date.getTime())) return "";
-
-      return date.toLocaleTimeString("en-IN", {
-        hour: "numeric",
-        minute: "2-digit",
-      });
+      return new Date(millis).toLocaleTimeString(
+        "en-IN",
+        {
+          hour: "numeric",
+          minute: "2-digit",
+        }
+      );
     } catch {
       return "";
     }
   };
 
   const formatPrice = (value) => {
-    const numericValue = Number(value);
+    const amount = Number(value);
 
-    if (!Number.isFinite(numericValue)) {
+    if (!Number.isFinite(amount)) {
       return "₹0";
     }
 
-    return `₹${numericValue.toLocaleString("en-IN", {
+    return `₹${amount.toLocaleString("en-IN", {
       maximumFractionDigits: 2,
     })}`;
   };
 
+  const getQuantity = (item) => {
+    const quantity = Number(
+      item?.qty ?? item?.quantity ?? 1
+    );
+
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return 1;
+    }
+
+    return quantity;
+  };
+
   const getStatusConfig = (status) => {
-    const normalized = String(status || "preparing")
+    const normalized = String(
+      status || "New"
+    )
       .trim()
       .toLowerCase();
 
-    const configs = {
+    const statusMap = {
+      new: {
+        label: "New",
+        className: "status-new",
+      },
+
       pending: {
         label: "Pending",
         className: "status-pending",
       },
+
       confirmed: {
         label: "Confirmed",
         className: "status-confirmed",
       },
+
       accepted: {
         label: "Accepted",
         className: "status-confirmed",
       },
+
       preparing: {
         label: "Preparing",
         className: "status-preparing",
       },
+
       ready: {
         label: "Ready",
         className: "status-ready",
       },
+
       assigned: {
         label: "Rider Assigned",
         className: "status-assigned",
       },
+
       "out for delivery": {
         label: "Out for Delivery",
         className: "status-delivery",
       },
+
       delivered: {
         label: "Delivered",
         className: "status-delivered",
       },
+
       completed: {
         label: "Completed",
         className: "status-delivered",
       },
+
       cancelled: {
         label: "Cancelled",
         className: "status-cancelled",
       },
+
       canceled: {
         label: "Cancelled",
         className: "status-cancelled",
       },
+
       failed: {
         label: "Failed",
         className: "status-cancelled",
       },
+
       refunded: {
         label: "Refunded",
         className: "status-refunded",
@@ -199,25 +427,16 @@ export default function OrdersPage({ setPage }) {
     };
 
     return (
-      configs[normalized] || {
+      statusMap[normalized] || {
         label:
-          normalized.charAt(0).toUpperCase() + normalized.slice(1) ||
-          "Preparing",
+          String(status || "New")
+            .trim()
+            .replace(/\b\w/g, (char) =>
+              char.toUpperCase()
+            ),
         className: "status-default",
       }
     );
-  };
-
-  const getItemQuantity = (item) => {
-    const quantity = Number(item?.qty ?? item?.quantity ?? 1);
-
-    return Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
-  };
-
-  const getItemLabel = (item) => {
-    const quantity = getItemQuantity(item);
-
-    return `${quantity} ${quantity === 1 ? "item" : "items"}`;
   };
 
   const getOrderTotal = (order) => {
@@ -225,7 +444,6 @@ export default function OrdersPage({ setPage }) {
       order?.total ??
         order?.grandTotal ??
         order?.amount ??
-        order?.pricing?.total ??
         0
     );
 
@@ -240,19 +458,30 @@ export default function OrdersPage({ setPage }) {
   };
 
   const handleReorder = async (order) => {
-    if (!order?.items?.length || reorderingId) return;
+    if (
+      !order?.items?.length ||
+      reorderingId
+    ) {
+      return;
+    }
 
     try {
       setReorderingId(order.id);
+      setError("");
 
-      await Promise.resolve(reorder(order.items));
+      await Promise.resolve(
+        reorder(order.items)
+      );
 
       setPage("cart");
-    } catch (reorderError) {
-      console.error("Reorder failed:", reorderError);
+    } catch (err) {
+      console.error(
+        "Reorder failed:",
+        err
+      );
 
       setError(
-        "We couldn't add those items to your cart. Please try again."
+        "We couldn't add these items to your cart. Please try again."
       );
     } finally {
       setReorderingId(null);
@@ -261,15 +490,24 @@ export default function OrdersPage({ setPage }) {
 
   const totalOrders = orders.length;
 
-  const deliveredOrders = useMemo(
-    () =>
-      orders.filter((order) => {
-        const status = String(order.status || "").toLowerCase();
+  const deliveredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      const status = String(
+        order?.status || ""
+      ).toLowerCase();
 
-        return status === "delivered" || status === "completed";
-      }).length,
-    [orders]
-  );
+      return (
+        status === "delivered" ||
+        status === "completed"
+      );
+    }).length;
+  }, [orders]);
+
+  /*
+   * ============================================================
+   * RENDER
+   * ============================================================
+   */
 
   return (
     <>
@@ -278,13 +516,14 @@ export default function OrdersPage({ setPage }) {
           min-height: 100vh;
           background:
             radial-gradient(
-              circle at top right,
-              rgba(177, 137, 94, 0.07),
-              transparent 34%
+              circle at 92% 4%,
+              rgba(196, 149, 106, 0.10),
+              transparent 30%
             ),
-            #fbf8f3;
-          padding: 92px 20px 60px;
-          color: #2d1b0e;
+            #faf6f0;
+          padding: 92px 20px 70px;
+          color: #1a0b05;
+          box-sizing: border-box;
         }
 
         .orders-container {
@@ -294,19 +533,19 @@ export default function OrdersPage({ setPage }) {
         }
 
         .orders-header {
-          margin-bottom: 32px;
+          margin-bottom: 30px;
         }
 
-        .back-button {
+        .orders-back {
           display: inline-flex;
           align-items: center;
           gap: 7px;
-          padding: 0;
-          margin: 0 0 25px;
           border: 0;
           background: transparent;
-          color: #6f5b4e;
-          font-size: 0.9rem;
+          padding: 0;
+          margin: 0 0 24px;
+          color: #70645c;
+          font-size: 0.88rem;
           font-weight: 650;
           cursor: pointer;
           transition:
@@ -314,40 +553,41 @@ export default function OrdersPage({ setPage }) {
             transform 0.2s ease;
         }
 
-        .back-button:hover {
-          color: #2d1b0e;
+        .orders-back:hover {
+          color: #1a0b05;
           transform: translateX(-2px);
         }
 
         .orders-heading-row {
           display: flex;
-          align-items: flex-end;
           justify-content: space-between;
+          align-items: flex-end;
           gap: 20px;
         }
 
-        .eyebrow {
+        .orders-eyebrow {
           margin: 0 0 7px;
-          color: #a8845e;
-          font-size: 0.72rem;
+          color: #b38359;
+          font-size: 0.7rem;
           font-weight: 800;
           letter-spacing: 0.16em;
           text-transform: uppercase;
         }
 
-        .page-title {
+        .orders-title {
           margin: 0;
           font-family: "Playfair Display", Georgia, serif;
-          font-size: clamp(2.2rem, 6vw, 3.15rem);
+          font-size: clamp(2.3rem, 6vw, 3.2rem);
           line-height: 1;
-          letter-spacing: -0.035em;
-          color: #2d1b0e;
+          letter-spacing: -0.04em;
+          font-weight: 600;
+          color: #1a0b05;
         }
 
-        .page-subtitle {
-          margin: 12px 0 0;
-          color: #8c7b70;
-          font-size: 0.94rem;
+        .orders-subtitle {
+          margin: 11px 0 0;
+          color: #8b7b70;
+          font-size: 0.9rem;
           line-height: 1.6;
         }
 
@@ -357,112 +597,111 @@ export default function OrdersPage({ setPage }) {
           gap: 8px;
           flex-shrink: 0;
           padding: 8px 12px;
-          border: 1px solid #ece4db;
+          border: 1px solid #e6dfd5;
           border-radius: 999px;
-          background: rgba(255, 255, 255, 0.72);
-          color: #756359;
-          font-size: 0.78rem;
+          background: rgba(255, 255, 255, 0.7);
+          color: #70645c;
+          font-size: 0.73rem;
           font-weight: 700;
         }
 
-        .stats-dot {
+        .orders-stat-dot {
           width: 5px;
           height: 5px;
           border-radius: 50%;
-          background: #b8895d;
+          background: #c4956a;
         }
 
         .orders-error {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 14px;
-          margin-bottom: 20px;
-          padding: 15px 17px;
-          border: 1px solid #ead7d0;
-          border-radius: 16px;
+          gap: 15px;
+          padding: 14px 16px;
+          margin-bottom: 18px;
+          border: 1px solid #ecd8d1;
+          border-radius: 15px;
           background: #fff8f6;
-          color: #875b4f;
-          font-size: 0.88rem;
+          color: #8d5c50;
+          font-size: 0.84rem;
         }
 
-        .retry-button {
+        .orders-retry {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          flex-shrink: 0;
           border: 0;
           background: transparent;
-          color: #5f4638;
+          color: #5e4033;
           font-weight: 750;
           cursor: pointer;
         }
 
-        .loading-state {
+        .orders-loading {
+          min-height: 270px;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 10px;
-          min-height: 280px;
-          border: 1px solid #eee6dd;
+          border: 1px solid #e8e0d7;
           border-radius: 24px;
-          background: rgba(255, 255, 255, 0.76);
-          color: #8d7c71;
-          font-size: 0.92rem;
+          background: rgba(255, 255, 255, 0.78);
+          color: #8c7d72;
+          font-size: 0.9rem;
         }
 
-        .spin {
-          animation: orders-spin 0.9s linear infinite;
+        .orders-spin {
+          animation: ordersSpin 0.9s linear infinite;
         }
 
-        @keyframes orders-spin {
+        @keyframes ordersSpin {
           to {
             transform: rotate(360deg);
           }
         }
 
-        .empty-state {
-          padding: 54px 28px;
+        .orders-empty {
+          padding: 56px 25px;
           text-align: center;
-          border: 1px solid #eee6dd;
-          border-radius: 26px;
-          background: rgba(255, 255, 255, 0.8);
-          box-shadow: 0 14px 40px rgba(54, 35, 22, 0.035);
+          border: 1px solid #e8e0d7;
+          border-radius: 25px;
+          background: rgba(255, 255, 255, 0.82);
+          box-shadow: 0 12px 34px rgba(26, 11, 5, 0.035);
         }
 
-        .empty-icon {
+        .orders-empty-icon {
           width: 58px;
           height: 58px;
           display: grid;
           place-items: center;
-          margin: 0 auto 18px;
+          margin: 0 auto 17px;
           border-radius: 18px;
-          background: #f3ebe2;
-          color: #896b52;
+          background: #f3e9df;
+          color: #967455;
         }
 
-        .empty-state h2 {
+        .orders-empty-title {
           margin: 0;
           font-family: "Playfair Display", Georgia, serif;
           font-size: 1.6rem;
-          color: #2d1b0e;
+          font-weight: 600;
         }
 
-        .empty-state p {
+        .orders-empty-text {
           max-width: 390px;
           margin: 9px auto 23px;
-          color: #918076;
-          font-size: 0.9rem;
+          color: #8c7d72;
+          font-size: 0.88rem;
           line-height: 1.6;
         }
 
-        .shop-button {
+        .orders-shop {
           border: 0;
+          border-radius: 12px;
           padding: 11px 18px;
-          border-radius: 13px;
-          background: #2d1b0e;
+          background: #1a0b05;
           color: #fffaf5;
-          font-size: 0.86rem;
+          font-size: 0.82rem;
           font-weight: 750;
           cursor: pointer;
           transition:
@@ -470,9 +709,9 @@ export default function OrdersPage({ setPage }) {
             box-shadow 0.2s ease;
         }
 
-        .shop-button:hover {
+        .orders-shop:hover {
           transform: translateY(-1px);
-          box-shadow: 0 8px 18px rgba(45, 27, 14, 0.14);
+          box-shadow: 0 8px 20px rgba(26, 11, 5, 0.15);
         }
 
         .orders-list {
@@ -482,18 +721,18 @@ export default function OrdersPage({ setPage }) {
 
         .order-card {
           overflow: hidden;
-          border: 1px solid #eee7df;
+          border: 1px solid #e8e0d7;
           border-radius: 23px;
-          background: rgba(255, 255, 255, 0.9);
-          box-shadow: 0 10px 30px rgba(54, 35, 22, 0.035);
+          background: rgba(255, 255, 255, 0.92);
+          box-shadow: 0 9px 28px rgba(26, 11, 5, 0.035);
           transition:
-            box-shadow 0.25s ease,
-            transform 0.25s ease;
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
         }
 
         .order-card:hover {
           transform: translateY(-1px);
-          box-shadow: 0 15px 34px rgba(54, 35, 22, 0.06);
+          box-shadow: 0 14px 34px rgba(26, 11, 5, 0.055);
         }
 
         .order-top {
@@ -501,145 +740,151 @@ export default function OrdersPage({ setPage }) {
           align-items: center;
           justify-content: space-between;
           gap: 15px;
-          padding: 18px 20px 14px;
+          padding: 18px 20px 13px;
         }
 
-        .order-reference {
-          min-width: 0;
-        }
-
-        .order-number {
+        .order-id {
           margin: 0;
-          color: #39271b;
-          font-size: 0.8rem;
+          color: #382318;
+          font-size: 0.78rem;
           font-weight: 800;
-          letter-spacing: 0.06em;
+          letter-spacing: 0.07em;
         }
 
         .order-date {
-          margin-top: 4px;
-          color: #a0938a;
-          font-size: 0.77rem;
+          margin-top: 5px;
+          color: #9a8b81;
+          font-size: 0.75rem;
         }
 
-        .status-badge {
+        .order-status {
           display: inline-flex;
           align-items: center;
           flex-shrink: 0;
           padding: 6px 11px;
           border-radius: 999px;
-          font-size: 0.69rem;
+          font-size: 0.67rem;
           font-weight: 800;
-          letter-spacing: 0.02em;
+        }
+
+        .status-new {
+          background: #fff1df;
+          color: #a66c26;
         }
 
         .status-pending {
-          background: #fff5dd;
-          color: #9b700d;
+          background: #fff5dc;
+          color: #98700e;
         }
 
         .status-confirmed,
         .status-assigned {
-          background: #f0eee9;
-          color: #66594f;
+          background: #efede8;
+          color: #655a51;
         }
 
         .status-preparing {
-          background: #fff3e5;
-          color: #a46b20;
+          background: #fff2e2;
+          color: #a26925;
         }
 
         .status-ready {
-          background: #edf5ec;
-          color: #557550;
+          background: #edf5ed;
+          color: #557552;
         }
 
         .status-delivery {
           background: #eeeaf7;
-          color: #65528d;
+          color: #68528f;
         }
 
         .status-delivered {
-          background: #eaf4ed;
-          color: #4f7359;
+          background: #e9f4ed;
+          color: #4e7459;
         }
 
         .status-cancelled {
-          background: #faece9;
-          color: #95584d;
+          background: #faece8;
+          color: #94574b;
         }
 
         .status-refunded {
           background: #f0edf2;
-          color: #74677b;
+          color: #71667a;
         }
 
         .status-default {
-          background: #f2eee9;
-          color: #6f6258;
+          background: #f1ede8;
+          color: #6e6259;
         }
 
-        .items-list {
+        .order-items {
           padding: 0 20px;
         }
 
-        .item-row {
+        .order-item {
           display: flex;
           align-items: center;
           gap: 13px;
           padding: 12px 0;
-          border-top: 1px solid #f5f0eb;
+          border-top: 1px solid #f3eee9;
         }
 
-        .item-row:first-child {
+        .order-item:first-child {
           border-top: 0;
         }
 
-        .item-image {
+        .order-item-image,
+        .order-item-placeholder {
           width: 52px;
           height: 52px;
           flex: 0 0 52px;
           border-radius: 14px;
+        }
+
+        .order-item-image {
+          display: block;
           object-fit: cover;
           background: #f3eee8;
         }
 
-        .item-placeholder {
+        .order-item-placeholder {
           display: grid;
           place-items: center;
-          color: #a88c72;
+          background: #f3eee8;
+          color: #aa8c70;
         }
 
-        .item-details {
+        .order-item-info {
           min-width: 0;
           flex: 1;
         }
 
-        .item-name {
-          overflow: hidden;
+        .order-item-name {
           margin: 0;
-          color: #342217;
-          font-size: 0.92rem;
+          overflow: hidden;
+          color: #332115;
+          font-size: 0.91rem;
           font-weight: 750;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
 
-        .item-meta {
+        .order-item-meta {
           margin-top: 4px;
           color: #998a80;
-          font-size: 0.75rem;
+          font-size: 0.74rem;
         }
 
-        .item-price {
+        .order-item-price {
           flex-shrink: 0;
-          color: #4b382b;
-          font-size: 0.82rem;
+          color: #49352a;
+          font-size: 0.81rem;
           font-weight: 750;
         }
 
-        .more-items {
-          padding: 9px 0 13px;
+        .order-more {
+          padding: 8px 0 13px;
           color: #9b8b81;
           font-size: 0.75rem;
           font-weight: 650;
@@ -649,39 +894,39 @@ export default function OrdersPage({ setPage }) {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 14px;
-          margin-top: 4px;
+          gap: 15px;
           padding: 15px 20px 18px;
-          border-top: 1px solid #f1ebe5;
+          border-top: 1px solid #f0ebe5;
         }
 
         .order-total-label {
-          color: #988980;
-          font-size: 0.74rem;
+          color: #9a8c82;
+          font-size: 0.72rem;
         }
 
         .order-total {
-          margin-top: 2px;
-          color: #2d1b0e;
-          font-size: 1.04rem;
+          margin-top: 3px;
+          color: #1a0b05;
+          font-size: 1.05rem;
           font-weight: 850;
         }
 
-        .footer-actions {
+        .order-actions {
           display: flex;
           align-items: center;
           gap: 8px;
         }
 
-        .view-items-button,
-        .reorder-button {
+        .order-view,
+        .order-reorder {
+          min-height: 39px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 7px;
-          min-height: 39px;
+          gap: 6px;
+          padding: 0 13px;
           border-radius: 12px;
-          font-size: 0.78rem;
+          font-size: 0.76rem;
           font-weight: 750;
           cursor: pointer;
           transition:
@@ -690,41 +935,35 @@ export default function OrdersPage({ setPage }) {
             opacity 0.2s ease;
         }
 
-        .view-items-button {
-          padding: 0 12px;
-          border: 1px solid #e9e1d9;
+        .order-view {
+          border: 1px solid #e7ded5;
           background: #fffdfb;
-          color: #66554a;
+          color: #66564b;
         }
 
-        .view-items-button:hover {
+        .order-view:hover {
           background: #f8f2ec;
         }
 
-        .reorder-button {
-          padding: 0 15px;
+        .order-reorder {
           border: 0;
-          background: #2d1b0e;
+          background: #1a0b05;
           color: #fffaf5;
         }
 
-        .reorder-button:hover:not(:disabled) {
+        .order-reorder:hover:not(:disabled) {
+          background: #32190d;
           transform: translateY(-1px);
-          background: #432a1a;
         }
 
-        .reorder-button:disabled {
+        .order-reorder:disabled {
           opacity: 0.55;
           cursor: not-allowed;
         }
 
-        .reorder-button svg {
-          flex-shrink: 0;
-        }
-
         @media (max-width: 620px) {
           .orders-page {
-            padding: 82px 14px 45px;
+            padding: 82px 14px 50px;
           }
 
           .orders-heading-row {
@@ -733,14 +972,14 @@ export default function OrdersPage({ setPage }) {
           }
 
           .orders-stats {
-            margin-top: 2px;
+            margin-top: 3px;
           }
 
           .order-top {
             padding: 16px 15px 12px;
           }
 
-          .items-list {
+          .order-items {
             padding: 0 15px;
           }
 
@@ -750,12 +989,12 @@ export default function OrdersPage({ setPage }) {
             padding: 14px 15px 16px;
           }
 
-          .footer-actions {
+          .order-actions {
             width: 100%;
           }
 
-          .view-items-button,
-          .reorder-button {
+          .order-view,
+          .order-reorder {
             flex: 1;
           }
 
@@ -766,23 +1005,20 @@ export default function OrdersPage({ setPage }) {
         }
 
         @media (max-width: 390px) {
-          .status-badge {
+          .order-status {
             padding: 5px 8px;
-            font-size: 0.62rem;
+            font-size: 0.61rem;
           }
 
-          .item-image {
+          .order-item-image,
+          .order-item-placeholder {
             width: 46px;
             height: 46px;
             flex-basis: 46px;
           }
 
-          .item-price {
+          .order-item-price {
             display: none;
-          }
-
-          .footer-actions {
-            gap: 7px;
           }
         }
       `}</style>
@@ -792,43 +1028,60 @@ export default function OrdersPage({ setPage }) {
           <header className="orders-header">
             <button
               type="button"
-              className="back-button"
+              className="orders-back"
               onClick={() => setPage("menu")}
-              aria-label="Return to menu"
             >
-              <ArrowLeft size={17} strokeWidth={2.2} />
+              <ArrowLeft size={17} />
               Return to Menu
             </button>
 
             <div className="orders-heading-row">
               <div>
-                <p className="eyebrow">Your coffee story</p>
+                <p className="orders-eyebrow">
+                  Your coffee story
+                </p>
 
-                <h1 className="page-title">Orders</h1>
+                <h1 className="orders-title">
+                  Orders
+                </h1>
 
-                <p className="page-subtitle">
+                <p className="orders-subtitle">
                   Every cup, every craving, all in one place.
                 </p>
               </div>
 
               {!loading && orders.length > 0 && (
                 <div className="orders-stats">
-                  <span>{totalOrders} orders</span>
-                  <span className="stats-dot" />
-                  <span>{deliveredOrders} enjoyed</span>
+                  <span>
+                    {totalOrders}{" "}
+                    {totalOrders === 1
+                      ? "order"
+                      : "orders"}
+                  </span>
+
+                  <span className="orders-stat-dot" />
+
+                  <span>
+                    {deliveredOrders} enjoyed
+                  </span>
                 </div>
               )}
             </div>
           </header>
 
           {error && (
-            <div className="orders-error" role="alert">
+            <div
+              className="orders-error"
+              role="alert"
+            >
               <span>{error}</span>
 
               <button
                 type="button"
-                className="retry-button"
-                onClick={() => window.location.reload()}
+                className="orders-retry"
+                onClick={() =>
+                  window.location.reload()
+                }
               >
                 <RefreshCw size={14} />
                 Retry
@@ -837,176 +1090,258 @@ export default function OrdersPage({ setPage }) {
           )}
 
           {loading ? (
-            <div className="loading-state" aria-live="polite">
-              <Loader2 size={19} className="spin" />
-              <span>Brewing your order history...</span>
+            <div
+              className="orders-loading"
+              aria-live="polite"
+            >
+              <Loader2
+                size={19}
+                className="orders-spin"
+              />
+              Brewing your order history...
             </div>
           ) : orders.length === 0 ? (
-            <section className="empty-state">
-              <div className="empty-icon">
-                <Coffee size={25} strokeWidth={1.8} />
+            <section className="orders-empty">
+              <div className="orders-empty-icon">
+                <Coffee
+                  size={25}
+                  strokeWidth={1.7}
+                />
               </div>
 
-              <h2>No orders yet</h2>
+              <h2 className="orders-empty-title">
+                No orders yet
+              </h2>
 
-              <p>
-                Your next favourite coffee is waiting. Browse the menu and
-                make your first Brewed order.
+              <p className="orders-empty-text">
+                Your next favourite coffee is
+                waiting. Browse the menu and make
+                your first Brewed order.
               </p>
 
               <button
                 type="button"
-                className="shop-button"
+                className="orders-shop"
                 onClick={() => setPage("menu")}
               >
                 Explore Menu
               </button>
             </section>
           ) : (
-            <section className="orders-list" aria-label="Your orders">
+            <section
+              className="orders-list"
+              aria-label="Your orders"
+            >
               {orders.map((order) => {
-                const statusConfig = getStatusConfig(order.status);
-                const items = Array.isArray(order.items)
+                const items = Array.isArray(
+                  order.items
+                )
                   ? order.items
                   : [];
 
-                const isExpanded = Boolean(expandedOrders[order.id]);
-                const visibleItems = isExpanded
-                  ? items
-                  : items.slice(0, 3);
+                const isExpanded =
+                  Boolean(
+                    expandedOrders[order.id]
+                  );
+
+                const visibleItems =
+                  isExpanded
+                    ? items
+                    : items.slice(0, 3);
 
                 const remainingItems = Math.max(
-                  items.length - visibleItems.length,
+                  items.length -
+                    visibleItems.length,
                   0
                 );
 
-                const itemCount = items.reduce(
-                  (total, item) => total + getItemQuantity(item),
-                  0
-                );
+                const itemCount =
+                  items.reduce(
+                    (sum, item) =>
+                      sum + getQuantity(item),
+                    0
+                  );
 
-                const firstTimestamp = order.createdAt;
-                const date = formatDate(firstTimestamp);
-                const time = formatTime(firstTimestamp);
+                const statusConfig =
+                  getStatusConfig(
+                    order.status
+                  );
+
+                const orderDate =
+                  formatDate(
+                    order.createdAt
+                  );
+
+                const orderTime =
+                  formatTime(
+                    order.createdAt
+                  );
 
                 return (
-                  <article className="order-card" key={order.id}>
+                  <article
+                    className="order-card"
+                    key={order.id}
+                  >
                     <div className="order-top">
-                      <div className="order-reference">
-                        <p className="order-number">
-                          #{order.id.slice(-7).toUpperCase()}
+                      <div>
+                        <p className="order-id">
+                          #
+                          {order.id
+                            .slice(-7)
+                            .toUpperCase()}
                         </p>
 
                         <div className="order-date">
-                          {date}
-                          {time ? ` • ${time}` : ""}
-                          {itemCount
+                          {orderDate}
+
+                          {orderTime
+                            ? ` • ${orderTime}`
+                            : ""}
+
+                          {itemCount > 0
                             ? ` • ${itemCount} ${
-                                itemCount === 1 ? "item" : "items"
+                                itemCount === 1
+                                  ? "item"
+                                  : "items"
                               }`
                             : ""}
                         </div>
                       </div>
 
                       <span
-                        className={`status-badge ${statusConfig.className}`}
+                        className={`order-status ${statusConfig.className}`}
                       >
                         {statusConfig.label}
                       </span>
                     </div>
 
-                    <div className="items-list">
-                      {visibleItems.length > 0 ? (
-                        visibleItems.map((item, index) => {
-                          const quantity = getItemQuantity(item);
+                    <div className="order-items">
+                      {visibleItems.length >
+                      0 ? (
+                        visibleItems.map(
+                          (item, index) => {
+                            const quantity =
+                              getQuantity(
+                                item
+                              );
 
-                          const itemPrice = Number(
-                            item?.price ??
-                              item?.total ??
-                              item?.unitPrice ??
-                              0
-                          );
+                            const price =
+                              Number(
+                                item?.price ??
+                                  item?.unitPrice ??
+                                  item?.total ??
+                                  0
+                              );
 
-                          const safeImage =
-                            typeof item?.image === "string"
-                              ? item.image.trim()
-                              : "";
+                            const image =
+                              typeof item?.image ===
+                              "string"
+                                ? item.image.trim()
+                                : "";
 
-                          return (
-                            <div
-                              className="item-row"
-                              key={`${order.id}-${index}`}
-                            >
-                              {safeImage ? (
-                                <img
-                                  className="item-image"
-                                  src={safeImage}
-                                  alt={item?.name || "Ordered item"}
-                                  loading="lazy"
-                                  onError={(event) => {
-                                    event.currentTarget.style.display =
-                                      "none";
-
-                                    event.currentTarget.nextElementSibling?.classList.add(
-                                      "item-placeholder"
-                                    );
-                                  }}
-                                />
-                              ) : null}
-
+                            return (
                               <div
-                                className={`item-image ${
-                                  safeImage ? "item-fallback" : "item-placeholder"
-                                }`}
-                                aria-hidden="true"
+                                className="order-item"
+                                key={`${order.id}-${index}`}
                               >
-                                <Coffee size={20} strokeWidth={1.6} />
-                              </div>
-
-                              <div className="item-details">
-                                <p className="item-name">
-                                  {item?.name || "Brewed item"}
-                                </p>
-
-                                <div className="item-meta">
-                                  {getItemLabel(item)}
-                                  {item?.size ? ` • ${item.size}` : ""}
-                                  {item?.variant
-                                    ? ` • ${item.variant}`
-                                    : ""}
-                                </div>
-                              </div>
-
-                              {Number.isFinite(itemPrice) &&
-                                itemPrice > 0 && (
-                                  <div className="item-price">
-                                    {formatPrice(itemPrice * quantity)}
+                                {image ? (
+                                  <img
+                                    src={image}
+                                    alt={
+                                      item?.name ||
+                                      "Ordered item"
+                                    }
+                                    className="order-item-image"
+                                    loading="lazy"
+                                    onError={(
+                                      event
+                                    ) => {
+                                      event.currentTarget.style.display =
+                                        "none";
+                                    }}
+                                  />
+                                ) : (
+                                  <div
+                                    className="order-item-placeholder"
+                                    aria-hidden="true"
+                                  >
+                                    <Coffee
+                                      size={20}
+                                    />
                                   </div>
                                 )}
-                            </div>
-                          );
-                        })
+
+                                <div className="order-item-info">
+                                  <p className="order-item-name">
+                                    {item?.name ||
+                                      "Brewed item"}
+                                  </p>
+
+                                  <div className="order-item-meta">
+                                    Qty:{" "}
+                                    {quantity}
+
+                                    {item?.size
+                                      ? ` • ${item.size}`
+                                      : ""}
+
+                                    {item?.variant
+                                      ? ` • ${item.variant}`
+                                      : ""}
+
+                                    {item?.isReward
+                                      ? " • Reward"
+                                      : ""}
+                                  </div>
+                                </div>
+
+                                {Number.isFinite(
+                                  price
+                                ) &&
+                                  price > 0 && (
+                                    <div className="order-item-price">
+                                      {formatPrice(
+                                        price *
+                                          quantity
+                                      )}
+                                    </div>
+                                  )}
+                              </div>
+                            );
+                          }
+                        )
                       ) : (
-                        <div className="item-row">
-                          <div className="item-image item-placeholder">
-                            <Package size={20} strokeWidth={1.6} />
+                        <div className="order-item">
+                          <div className="order-item-placeholder">
+                            <Package
+                              size={20}
+                            />
                           </div>
 
-                          <div className="item-details">
-                            <p className="item-name">Order details</p>
-                            <div className="item-meta">
-                              Item information unavailable
+                          <div className="order-item-info">
+                            <p className="order-item-name">
+                              Order details
+                            </p>
+
+                            <div className="order-item-meta">
+                              Item information
+                              unavailable
                             </div>
                           </div>
                         </div>
                       )}
 
-                      {!isExpanded && remainingItems > 0 && (
-                        <div className="more-items">
-                          + {remainingItems} more{" "}
-                          {remainingItems === 1 ? "item" : "items"}
-                        </div>
-                      )}
+                      {!isExpanded &&
+                        remainingItems > 0 && (
+                          <div className="order-more">
+                            + {remainingItems}{" "}
+                            more{" "}
+                            {remainingItems ===
+                            1
+                              ? "item"
+                              : "items"}
+                          </div>
+                        )}
                     </div>
 
                     <div className="order-footer">
@@ -1016,26 +1351,40 @@ export default function OrdersPage({ setPage }) {
                         </div>
 
                         <div className="order-total">
-                          {formatPrice(getOrderTotal(order))}
+                          {formatPrice(
+                            getOrderTotal(
+                              order
+                            )
+                          )}
                         </div>
                       </div>
 
-                      <div className="footer-actions">
+                      <div className="order-actions">
                         {items.length > 3 && (
                           <button
                             type="button"
-                            className="view-items-button"
-                            onClick={() => toggleExpanded(order.id)}
-                            aria-expanded={isExpanded}
+                            className="order-view"
+                            onClick={() =>
+                              toggleExpanded(
+                                order.id
+                              )
+                            }
+                            aria-expanded={
+                              isExpanded
+                            }
                           >
                             {isExpanded ? (
                               <>
-                                <ChevronUp size={15} />
+                                <ChevronUp
+                                  size={15}
+                                />
                                 Show less
                               </>
                             ) : (
                               <>
-                                <ChevronDown size={15} />
+                                <ChevronDown
+                                  size={15}
+                                />
                                 View all
                               </>
                             )}
@@ -1044,23 +1393,32 @@ export default function OrdersPage({ setPage }) {
 
                         <button
                           type="button"
-                          className="reorder-button"
+                          className="order-reorder"
                           disabled={
-                            !items.length || reorderingId === order.id
+                            !items.length ||
+                            reorderingId ===
+                              order.id
                           }
-                          onClick={() => handleReorder(order)}
+                          onClick={() =>
+                            handleReorder(
+                              order
+                            )
+                          }
                         >
-                          {reorderingId === order.id ? (
+                          {reorderingId ===
+                          order.id ? (
                             <>
                               <Loader2
                                 size={15}
-                                className="spin"
+                                className="orders-spin"
                               />
                               Adding...
                             </>
                           ) : (
                             <>
-                              <ShoppingBag size={15} />
+                              <ShoppingBag
+                                size={15}
+                              />
                               Reorder
                             </>
                           )}
