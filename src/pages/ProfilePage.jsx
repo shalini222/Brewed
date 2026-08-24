@@ -116,8 +116,7 @@ export default function ProfilePage({ setPage }) {
   // CONFIG
   // =========================================================
 
-  const googleApiKey =
-    import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+  const googleApiKey = "AIzaSyAZXXMZOvmUviZqgDoljAhSllaQLxelvfY";
 
   // =========================================================
   // HELPERS
@@ -2503,26 +2502,7 @@ export default function ProfilePage({ setPage }) {
 
               {/* LOYALTY TIER */}
 
-              <div
-                className={`tier-badge ${currentTier.className}`}
-                title={`${currentTier.label} loyalty tier`}
-              >
-                <div className="tier-emblem">
-                  {currentTier.icon}
-                </div>
-
-                <div className="tier-copy">
-                  <span className="tier-caption">
-                    Loyalty tier
-                  </span>
-
-                  <span className="tier-name">
-                    {currentTier.label}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </section>
+            
 
           {/* =================================================
               CONTENT
