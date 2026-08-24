@@ -9,7 +9,6 @@ import {
 } from "firebase/firestore";
 
 import {
-  EmailAuthProvider,
   PhoneAuthProvider,
   RecaptchaVerifier,
   sendEmailVerification,
@@ -17,7 +16,6 @@ import {
   updateEmail,
   updatePhoneNumber,
   updateProfile,
-  reauthenticateWithCredential,
   reload,
 } from "firebase/auth";
 
@@ -34,12 +32,11 @@ import {
   Lock,
   Mail,
   MapPin,
-  Pencil,
-  Phone,
   ShieldCheck,
   Sparkles,
   User,
   X,
+  Phone,
 } from "lucide-react";
 
 import { db, storage, auth } from "../firebase";
@@ -64,7 +61,6 @@ export default function ProfilePage({ setPage }) {
   const [memberSince, setMemberSince] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
 
-  // Loyalty tier
   const [tier, setTier] = useState("Bronze");
 
   const [isLoading, setIsLoading] = useState(true);
@@ -94,7 +90,7 @@ export default function ProfilePage({ setPage }) {
   const [isPhoneProcessing, setIsPhoneProcessing] =
     useState(false);
 
-  const [showPhoneVerificationModal, setShowPhoneVerificationModal] =
+  const [showPhoneModal, setShowPhoneModal] =
     useState(false);
 
   // ---------------------------------------------------------
@@ -104,13 +100,18 @@ export default function ProfilePage({ setPage }) {
   const [emailVerified, setEmailVerified] =
     useState(false);
 
-  const [originalEmail, setOriginalEmail] = useState("");
-
   const [isEmailProcessing, setIsEmailProcessing] =
     useState(false);
 
-  const [showEmailVerificationModal, setShowEmailVerificationModal] =
+  const [showEmailModal, setShowEmailModal] =
     useState(false);
+
+  // ---------------------------------------------------------
+  // EMAIL CHANGE
+  // ---------------------------------------------------------
+
+  const [originalEmail, setOriginalEmail] =
+    useState("");
 
   // =========================================================
   // CONFIG
@@ -149,6 +150,24 @@ export default function ProfilePage({ setPage }) {
   }, [email, originalEmail]);
 
   // =========================================================
+  // LOYALTY TIER STYLING
+  // =========================================================
+
+  const normalizedTier =
+    typeof tier === "string"
+      ? tier.trim().toLowerCase()
+      : "bronze";
+
+  const tierRingClass =
+    normalizedTier === "silver"
+      ? "tier-ring-silver"
+      : normalizedTier === "gold"
+      ? "tier-ring-gold"
+      : normalizedTier === "platinum"
+      ? "tier-ring-platinum"
+      : "tier-ring-bronze";
+
+  // =========================================================
   // LOAD PROFILE
   // =========================================================
 
@@ -169,12 +188,10 @@ export default function ProfilePage({ setPage }) {
 
         if (!mounted) return;
 
+        setFullName(currentUser.displayName || "");
+
         const authEmail =
           currentUser.email || "";
-
-        setFullName(
-          currentUser.displayName || ""
-        );
 
         setEmail(authEmail);
         setOriginalEmail(authEmail);
@@ -217,8 +234,22 @@ export default function ProfilePage({ setPage }) {
 
         const data = snapshot.data();
 
-        const storedPhone =
-          data.phone || "";
+        // -----------------------------------------------------
+        // LOYALTY TIER
+        // -----------------------------------------------------
+
+        setTier(
+          typeof data.tier === "string" &&
+            data.tier.trim()
+            ? data.tier.trim()
+            : "Bronze"
+        );
+
+        // -----------------------------------------------------
+        // PHONE
+        // -----------------------------------------------------
+
+        const storedPhone = data.phone || "";
 
         setPhone(storedPhone);
         setOriginalPhone(storedPhone);
@@ -228,26 +259,16 @@ export default function ProfilePage({ setPage }) {
         );
 
         // -----------------------------------------------------
-        // LOYALTY TIER
+        // ADDRESS
         // -----------------------------------------------------
-
-        setTier(
-          data.tier ||
-            "Bronze"
-        );
 
         setAddressType(
           data.addressType || "home"
         );
 
-        // -----------------------------------------------------
-        // ADDRESS
-        // -----------------------------------------------------
-
         if (data.address) {
           if (
-            typeof data.address ===
-            "string"
+            typeof data.address === "string"
           ) {
             setAddress({
               formatted: data.address,
@@ -258,17 +279,13 @@ export default function ProfilePage({ setPage }) {
           } else {
             setAddress({
               formatted:
-                data.address.formatted ||
-                "",
+                data.address.formatted || "",
               placeId:
-                data.address.placeId ||
-                "",
+                data.address.placeId || "",
               lat:
-                data.address.lat ??
-                null,
+                data.address.lat ?? null,
               lng:
-                data.address.lng ??
-                null,
+                data.address.lng ?? null,
             });
           }
         }
@@ -319,8 +336,7 @@ export default function ProfilePage({ setPage }) {
   // =========================================================
 
   const handleImageUpload = async (event) => {
-    const file =
-      event.target.files?.[0];
+    const file = event.target.files?.[0];
 
     if (!file || !currentUser) return;
 
@@ -352,36 +368,22 @@ export default function ProfilePage({ setPage }) {
         `users/${currentUser.uid}/profile.jpg`
       );
 
-      await uploadBytes(
-        storageRef,
-        file,
-        {
-          contentType: file.type,
-        }
-      );
+      await uploadBytes(storageRef, file, {
+        contentType: file.type,
+      });
 
       const downloadURL =
-        await getDownloadURL(
-          storageRef
-        );
+        await getDownloadURL(storageRef);
 
-      await updateProfile(
-        currentUser,
-        {
-          photoURL: downloadURL,
-        }
-      );
+      await updateProfile(currentUser, {
+        photoURL: downloadURL,
+      });
 
       await setDoc(
-        doc(
-          db,
-          "users",
-          currentUser.uid
-        ),
+        doc(db, "users", currentUser.uid),
         {
           photoURL: downloadURL,
-          updatedAt:
-            serverTimestamp(),
+          updatedAt: serverTimestamp(),
         },
         { merge: true }
       );
@@ -411,14 +413,11 @@ export default function ProfilePage({ setPage }) {
   // GOOGLE PLACE COORDINATES
   // =========================================================
 
-  const getPlaceCoordinates = (
-    placeId
-  ) => {
+  const getPlaceCoordinates = (placeId) => {
     return new Promise((resolve) => {
       if (
         !placeId ||
-        !window.google?.maps
-          ?.Geocoder
+        !window.google?.maps?.Geocoder
       ) {
         resolve({
           lat: null,
@@ -433,18 +432,13 @@ export default function ProfilePage({ setPage }) {
 
       geocoder.geocode(
         { placeId },
-        (
-          results,
-          status
-        ) => {
+        (results, status) => {
           if (
             status === "OK" &&
-            results?.[0]?.geometry
-              ?.location
+            results?.[0]?.geometry?.location
           ) {
             const location =
-              results[0].geometry
-                .location;
+              results[0].geometry.location;
 
             resolve({
               lat: location.lat(),
@@ -465,92 +459,80 @@ export default function ProfilePage({ setPage }) {
   // ADDRESS
   // =========================================================
 
-  const handleAddressChange =
-    async (selected) => {
-      if (!selected) {
-        setAddress(null);
-        return;
-      }
+  const handleAddressChange = async (selected) => {
+    if (!selected) {
+      setAddress(null);
+      return;
+    }
 
-      const placeId =
-        selected.value
-          ?.place_id || "";
+    const placeId =
+      selected.value?.place_id || "";
 
-      const formatted =
-        selected.label || "";
+    const formatted =
+      selected.label || "";
 
-      setAddress({
-        formatted,
-        placeId,
-        lat: null,
-        lng: null,
+    setAddress({
+      formatted,
+      placeId,
+      lat: null,
+      lng: null,
+    });
+
+    if (!placeId) return;
+
+    try {
+      const coordinates =
+        await getPlaceCoordinates(placeId);
+
+      setAddress((previous) => {
+        if (!previous) return previous;
+
+        return {
+          ...previous,
+          lat: coordinates.lat,
+          lng: coordinates.lng,
+        };
       });
-
-      if (!placeId) return;
-
-      try {
-        const coordinates =
-          await getPlaceCoordinates(
-            placeId
-          );
-
-        setAddress(
-          (previous) => {
-            if (!previous)
-              return previous;
-
-            return {
-              ...previous,
-              lat: coordinates.lat,
-              lng: coordinates.lng,
-            };
-          }
-        );
-      } catch (error) {
-        console.error(
-          "Address coordinate lookup failed:",
-          error
-        );
-      }
-    };
+    } catch (error) {
+      console.error(
+        "Address coordinate lookup failed:",
+        error
+      );
+    }
+  };
 
   // =========================================================
   // RECAPTCHA
   // =========================================================
 
   const setupRecaptcha = () => {
-    if (
-      window.recaptchaVerifier
-    ) {
+    if (window.recaptchaVerifier) {
       return window.recaptchaVerifier;
     }
 
-    const verifier =
-      new RecaptchaVerifier(
-        auth,
-        "phone-recaptcha",
-        {
-          size: "invisible",
+    const verifier = new RecaptchaVerifier(
+      auth,
+      "phone-recaptcha",
+      {
+        size: "invisible",
 
-          callback: () => {
-            console.log(
-              "Phone reCAPTCHA completed."
-            );
-          },
+        callback: () => {
+          console.log(
+            "Phone reCAPTCHA completed."
+          );
+        },
 
-          "expired-callback": () => {
-            try {
-              window.recaptchaVerifier?.clear();
-            } catch {}
+        "expired-callback": () => {
+          try {
+            window.recaptchaVerifier?.clear();
+          } catch {}
 
-            window.recaptchaVerifier =
-              null;
-          },
-        }
-      );
+          window.recaptchaVerifier = null;
+        },
+      }
+    );
 
-    window.recaptchaVerifier =
-      verifier;
+    window.recaptchaVerifier = verifier;
 
     return verifier;
   };
@@ -560,54 +542,32 @@ export default function ProfilePage({ setPage }) {
       window.recaptchaVerifier?.clear();
     } catch {}
 
-    window.recaptchaVerifier =
-      null;
+    window.recaptchaVerifier = null;
   };
 
   // =========================================================
   // PHONE INPUT
   // =========================================================
 
-  const handlePhoneChange = (
-    event
-  ) => {
-    const newPhone =
-      event.target.value;
+  const handlePhoneChange = (event) => {
+    const newPhone = event.target.value;
 
     setPhone(newPhone);
 
-    const normalizedNewPhone =
-      normalizePhone(newPhone);
-
-    const normalizedOriginalPhone =
-      normalizePhone(originalPhone);
-
     /*
-     * If the customer changes the number,
-     * the new number needs verification.
-     *
-     * If they put the ORIGINAL number back,
-     * restore its existing verified state.
+     * IMPORTANT:
+     * If the user restores the original phone number,
+     * keep its existing verification state.
      */
     if (
-      normalizedNewPhone ===
-      normalizedOriginalPhone
+      normalizePhone(newPhone) ===
+      normalizePhone(originalPhone)
     ) {
-      setPhoneVerified(
-        Boolean(
-          originalPhone &&
-            currentUser &&
-            phoneVerified
-        )
-      );
-
+      setPhoneVerified(true);
       setOtpSent(false);
       setOtp("");
       setVerificationId(null);
       setPendingPhone("");
-      setShowPhoneVerificationModal(
-        false
-      );
 
       return;
     }
@@ -620,342 +580,375 @@ export default function ProfilePage({ setPage }) {
   };
 
   // =========================================================
-  // SEND PHONE OTP
+  // OPEN PHONE VERIFICATION
   // =========================================================
 
-  const handleSendPhoneOTP =
-    async () => {
-      if (!currentUser) return;
+  const handleOpenPhoneVerification = async () => {
+    if (!currentUser) return;
 
-      const cleanedPhone =
-        normalizePhone(phone);
+    const cleanedPhone =
+      normalizePhone(phone);
 
-      if (
-        !/^\+[1-9]\d{7,14}$/.test(
-          cleanedPhone
-        )
-      ) {
-        setErrorMessage(
-          "Enter your phone number with country code, for example +919876543210."
+    if (
+      !/^\+[1-9]\d{7,14}$/.test(
+        cleanedPhone
+      )
+    ) {
+      setErrorMessage(
+        "Enter your phone number with country code, for example +919876543210."
+      );
+
+      return;
+    }
+
+    /*
+     * Original number is already trusted.
+     * No new verification required.
+     */
+    if (
+      normalizePhone(cleanedPhone) ===
+      normalizePhone(originalPhone)
+    ) {
+      setPhoneVerified(true);
+      setMessage(
+        "Your phone number is verified."
+      );
+
+      return;
+    }
+
+    clearMessages();
+    setIsPhoneProcessing(true);
+
+    try {
+      const verifier = setupRecaptcha();
+
+      const provider =
+        new PhoneAuthProvider(auth);
+
+      const id =
+        await provider.verifyPhoneNumber(
+          cleanedPhone,
+          verifier
         );
 
-        return;
-      }
+      setVerificationId(id);
+      setPendingPhone(cleanedPhone);
+      setOtp("");
+      setOtpSent(true);
+      setShowPhoneModal(true);
 
-      /*
-       * Original number:
-       * No new verification required.
-       */
-      if (
-        cleanedPhone ===
-        normalizePhone(originalPhone)
-      ) {
-        setPhoneVerified(true);
+      setMessage(
+        `Verification code sent to ${cleanedPhone}.`
+      );
+    } catch (error) {
+      console.error(
+        "Phone OTP sending failed:",
+        error
+      );
 
-        setMessage(
-          "Your original phone number is already verified."
-        );
+      clearRecaptcha();
 
-        return;
-      }
-
-      setIsPhoneProcessing(true);
-      clearMessages();
-
-      try {
-        const verifier =
-          setupRecaptcha();
-
-        const provider =
-          new PhoneAuthProvider(
-            auth
+      switch (error.code) {
+        case "auth/invalid-phone-number":
+          setErrorMessage(
+            "Please enter a valid phone number."
           );
+          break;
 
-        const id =
-          await provider.verifyPhoneNumber(
-            cleanedPhone,
-            verifier
+        case "auth/too-many-requests":
+          setErrorMessage(
+            "Too many verification attempts. Please try again later."
           );
+          break;
 
-        setVerificationId(id);
-        setPendingPhone(
-          cleanedPhone
-        );
-        setOtpSent(true);
+        case "auth/quota-exceeded":
+          setErrorMessage(
+            "SMS verification limit reached. Please try again later."
+          );
+          break;
 
-        setShowPhoneVerificationModal(
-          true
-        );
+        case "auth/captcha-check-failed":
+          setErrorMessage(
+            "Verification security check failed. Please try again."
+          );
+          break;
 
-        setMessage("");
-
-      } catch (error) {
-        console.error(
-          "Phone OTP sending failed:",
-          error
-        );
-
-        clearRecaptcha();
-
-        switch (error.code) {
-          case "auth/invalid-phone-number":
-            setErrorMessage(
-              "Please enter a valid phone number."
-            );
-            break;
-
-          case "auth/too-many-requests":
-            setErrorMessage(
-              "Too many verification attempts. Please try again later."
-            );
-            break;
-
-          case "auth/quota-exceeded":
-            setErrorMessage(
-              "SMS verification limit reached. Please try again later."
-            );
-            break;
-
-          case "auth/captcha-check-failed":
-            setErrorMessage(
-              "Verification security check failed. Please try again."
-            );
-            break;
-
-          default:
-            setErrorMessage(
-              error.message ||
-                "Unable to send verification code."
-            );
-        }
-      } finally {
-        setIsPhoneProcessing(
-          false
-        );
+        default:
+          setErrorMessage(
+            error.message ||
+              "Unable to send verification code."
+          );
       }
-    };
+    } finally {
+      setIsPhoneProcessing(false);
+    }
+  };
 
   // =========================================================
   // VERIFY PHONE OTP
   // =========================================================
 
-  const handleVerifyPhoneOTP =
-    async () => {
-      if (
-        !currentUser ||
-        !verificationId
-      ) {
-        setErrorMessage(
-          "Please request a new verification code."
-        );
+  const handleVerifyPhoneOTP = async () => {
+    if (!currentUser || !verificationId) {
+      setErrorMessage(
+        "Please request a new verification code."
+      );
 
-        return;
-      }
+      return;
+    }
 
-      const cleanOTP =
-        otp.trim();
+    const cleanOTP = otp.trim();
 
-      if (
-        !/^\d{6}$/.test(
+    if (!/^\d{6}$/.test(cleanOTP)) {
+      setErrorMessage(
+        "Enter the 6-digit verification code."
+      );
+
+      return;
+    }
+
+    setIsPhoneProcessing(true);
+    clearMessages();
+
+    try {
+      const credential =
+        PhoneAuthProvider.credential(
+          verificationId,
           cleanOTP
-        )
+        );
+
+      await updatePhoneNumber(
+        currentUser,
+        credential
+      );
+
+      const verifiedPhone =
+        pendingPhone;
+
+      setPhone(verifiedPhone);
+      setOriginalPhone(verifiedPhone);
+      setPhoneVerified(true);
+
+      await setDoc(
+        doc(db, "users", currentUser.uid),
+        {
+          phone: verifiedPhone,
+          phoneVerified: true,
+          phoneVerifiedAt:
+            serverTimestamp(),
+          updatedAt:
+            serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      setOtp("");
+      setOtpSent(false);
+      setVerificationId(null);
+      setPendingPhone("");
+
+      clearRecaptcha();
+
+      setShowPhoneModal(false);
+
+      setMessage(
+        "Your new phone number has been verified."
+      );
+    } catch (error) {
+      console.error(
+        "Phone verification failed:",
+        error
+      );
+
+      if (
+        error.code ===
+        "auth/invalid-verification-code"
       ) {
         setErrorMessage(
-          "Enter the 6-digit verification code."
+          "That verification code is incorrect."
+        );
+      } else if (
+        error.code ===
+        "auth/code-expired"
+      ) {
+        setErrorMessage(
+          "That code has expired. Please request a new one."
         );
 
-        return;
-      }
-
-      setIsPhoneProcessing(true);
-      clearMessages();
-
-      try {
-        const credential =
-          PhoneAuthProvider.credential(
-            verificationId,
-            cleanOTP
-          );
-
-        await updatePhoneNumber(
-          currentUser,
-          credential
-        );
-
-        const verifiedPhone =
-          pendingPhone;
-
-        setPhone(
-          verifiedPhone
-        );
-
-        setOriginalPhone(
-          verifiedPhone
-        );
-
-        setPhoneVerified(
-          true
-        );
-
-        await setDoc(
-          doc(
-            db,
-            "users",
-            currentUser.uid
-          ),
-          {
-            phone:
-              verifiedPhone,
-
-            phoneVerified:
-              true,
-
-            phoneVerifiedAt:
-              serverTimestamp(),
-
-            updatedAt:
-              serverTimestamp(),
-          },
-          { merge: true }
-        );
-
-        setOtp("");
         setOtpSent(false);
-        setVerificationId(
-          null
+        setVerificationId(null);
+      } else if (
+        error.code ===
+        "auth/phone-number-already-exists"
+      ) {
+        setErrorMessage(
+          "This phone number is already associated with another Brewed account."
         );
-        setPendingPhone("");
+      } else if (
+        error.code ===
+        "auth/requires-recent-login"
+      ) {
+        setPhoneVerified(false);
 
-        clearRecaptcha();
-
-        setShowPhoneVerificationModal(
-          false
+        setErrorMessage(
+          "For your security, please sign in again and then verify your new phone number."
         );
-
-        setMessage(
-          "Your new phone number has been verified."
+      } else if (
+        error.code ===
+        "auth/provider-already-linked"
+      ) {
+        setErrorMessage(
+          "This phone number is already linked to your account."
         );
-
-      } catch (error) {
-        console.error(
-          "Phone verification failed:",
-          error
-        );
-
-        if (
-          error.code ===
-          "auth/invalid-verification-code"
-        ) {
-          setErrorMessage(
-            "That verification code is incorrect."
-          );
-        } else if (
-          error.code ===
-          "auth/code-expired"
-        ) {
-          setErrorMessage(
-            "That code has expired. Please request a new one."
-          );
-
-          setOtpSent(false);
-          setVerificationId(
-            null
-          );
-        } else if (
-          error.code ===
-          "auth/phone-number-already-exists"
-        ) {
-          setErrorMessage(
-            "This phone number is already associated with another Brewed account."
-          );
-        } else if (
-          error.code ===
-          "auth/requires-recent-login"
-        ) {
-          setPhoneVerified(
-            false
-          );
-
-          setErrorMessage(
-            "For your security, please sign in again and then verify your new phone number."
-          );
-        } else if (
-          error.code ===
-          "auth/provider-already-linked"
-        ) {
-          setErrorMessage(
-            "This phone number is already linked to your account."
-          );
-        } else {
-          setErrorMessage(
-            error.message ||
-              "Unable to verify this phone number."
-          );
-        }
-      } finally {
-        setIsPhoneProcessing(
-          false
+      } else {
+        setErrorMessage(
+          error.message ||
+            "Unable to verify this phone number."
         );
       }
-    };
+    } finally {
+      setIsPhoneProcessing(false);
+    }
+  };
+
+  // =========================================================
+  // CLOSE PHONE MODAL
+  // =========================================================
+
+  const handleClosePhoneModal = () => {
+    if (isPhoneProcessing) return;
+
+    setShowPhoneModal(false);
+    setOtp("");
+    setOtpSent(false);
+    setVerificationId(null);
+    setPendingPhone("");
+    clearRecaptcha();
+  };
 
   // =========================================================
   // EMAIL VERIFICATION
   // =========================================================
 
-  const handleSendEmailVerification =
-    async () => {
-      if (!currentUser?.email) {
-        setErrorMessage(
-          "No email address is associated with this account."
+  const handleOpenEmailVerification = async () => {
+    if (!currentUser) return;
+
+    const currentEmail =
+      normalizeEmail(currentUser.email || "");
+
+    const editedEmail =
+      normalizeEmail(email);
+
+    /*
+     * If the user restored the original email,
+     * preserve its current verification state.
+     */
+    if (
+      editedEmail ===
+      normalizeEmail(originalEmail)
+    ) {
+      setEmailVerified(
+        currentUser.emailVerified === true
+      );
+
+      if (currentUser.emailVerified) {
+        setMessage(
+          "Your email is verified."
         );
 
         return;
       }
+    }
 
-      setIsEmailProcessing(true);
-      clearMessages();
+    if (!editedEmail) {
+      setErrorMessage(
+        "Please enter a valid email address."
+      );
 
-      try {
-        await sendEmailVerification(
-          currentUser
+      return;
+    }
+
+    clearMessages();
+    setIsEmailProcessing(true);
+
+    try {
+      /*
+       * If email is being changed, Firebase requires
+       * the new email to be updated first.
+       *
+       * Verification is then sent to the new address.
+       */
+      if (editedEmail !== currentEmail) {
+        await updateEmail(
+          currentUser,
+          editedEmail
         );
 
-        setShowEmailVerificationModal(
-          true
-        );
+        setEmail(editedEmail);
+        setOriginalEmail(editedEmail);
+        setEmailVerified(false);
+      }
 
-      } catch (error) {
-        console.error(
-          "Email verification failed:",
-          error
-        );
+      await sendEmailVerification(
+        currentUser
+      );
 
-        if (
-          error.code ===
-          "auth/too-many-requests"
-        ) {
-          setErrorMessage(
-            "Too many verification emails were requested. Please try again later."
-          );
-        } else {
-          setErrorMessage(
-            error.message ||
-              "Unable to send verification email."
-          );
-        }
-      } finally {
-        setIsEmailProcessing(
-          false
+      setShowEmailModal(true);
+
+      setMessage(
+        `Verification link sent to ${editedEmail}.`
+      );
+    } catch (error) {
+      console.error(
+        "Email verification failed:",
+        error
+      );
+
+      if (
+        error.code ===
+        "auth/requires-recent-login"
+      ) {
+        setErrorMessage(
+          "Please sign in again before changing your email address."
+        );
+      } else if (
+        error.code ===
+        "auth/email-already-in-use"
+      ) {
+        setErrorMessage(
+          "That email address is already associated with another account."
+        );
+      } else if (
+        error.code ===
+        "auth/invalid-email"
+      ) {
+        setErrorMessage(
+          "Please enter a valid email address."
+        );
+      } else if (
+        error.code ===
+        "auth/too-many-requests"
+      ) {
+        setErrorMessage(
+          "Too many verification emails were requested. Please try again later."
+        );
+      } else {
+        setErrorMessage(
+          error.message ||
+            "Unable to send verification email."
         );
       }
-    };
+    } finally {
+      setIsEmailProcessing(false);
+    }
+  };
 
   // =========================================================
-  // REFRESH EMAIL VERIFICATION STATE
+  // REFRESH EMAIL VERIFICATION
   // =========================================================
 
-  const handleRefreshEmailVerification =
+  const handleCheckEmailVerification =
     async () => {
       if (!currentUser) return;
 
@@ -963,22 +956,15 @@ export default function ProfilePage({ setPage }) {
       clearMessages();
 
       try {
-        await reload(
-          currentUser
-        );
+        await reload(currentUser);
 
         const verified =
-          currentUser.emailVerified ===
-          true;
+          currentUser.emailVerified === true;
 
-        setEmailVerified(
-          verified
-        );
+        setEmailVerified(verified);
 
         if (verified) {
-          setShowEmailVerificationModal(
-            false
-          );
+          setShowEmailModal(false);
 
           setMessage(
             "Your email is verified."
@@ -988,7 +974,6 @@ export default function ProfilePage({ setPage }) {
             "Your email is not verified yet. Please check your inbox."
           );
         }
-
       } catch (error) {
         console.error(
           "Email verification refresh failed:",
@@ -999,59 +984,15 @@ export default function ProfilePage({ setPage }) {
           "Unable to refresh verification status."
         );
       } finally {
-        setIsEmailProcessing(
-          false
-        );
+        setIsEmailProcessing(false);
       }
     };
-
-  // =========================================================
-  // EMAIL INPUT
-  // =========================================================
-
-  const handleEmailChange = (
-    event
-  ) => {
-    const newEmail =
-      event.target.value;
-
-    setEmail(newEmail);
-
-    /*
-     * If the user restores the original email,
-     * restore the original Firebase verification
-     * state and do not require verification again.
-     */
-    if (
-      normalizeEmail(newEmail) ===
-      normalizeEmail(originalEmail)
-    ) {
-      setEmailVerified(
-        currentUser?.emailVerified ===
-          true
-      );
-
-      setShowEmailVerificationModal(
-        false
-      );
-
-      return;
-    }
-
-    /*
-     * A genuinely new email must be
-     * verified after it is changed.
-     */
-    setEmailVerified(false);
-  };
 
   // =========================================================
   // SAVE PROFILE
   // =========================================================
 
-  const handleSave = async (
-    event
-  ) => {
+  const handleSave = async (event) => {
     event.preventDefault();
 
     if (!currentUser) return;
@@ -1083,14 +1024,13 @@ export default function ProfilePage({ setPage }) {
     }
 
     /*
-     * Only require phone verification
-     * when the phone is genuinely different
-     * from the original number.
+     * If phone changed, it must be verified.
+     *
+     * If the user restored the original phone,
+     * phoneChanged becomes false and this check
+     * is automatically skipped.
      */
-    if (
-      phoneChanged &&
-      !phoneVerified
-    ) {
+    if (phoneChanged && !phoneVerified) {
       setErrorMessage(
         "Please verify your new phone number before saving."
       );
@@ -1107,16 +1047,12 @@ export default function ProfilePage({ setPage }) {
 
       if (
         fullName.trim() !==
-        (currentUser.displayName ||
-          "")
+        (currentUser.displayName || "")
       ) {
-        await updateProfile(
-          currentUser,
-          {
-            displayName:
-              fullName.trim(),
-          }
-        );
+        await updateProfile(currentUser, {
+          displayName:
+            fullName.trim(),
+        });
       }
 
       // -----------------------------------------------------
@@ -1128,13 +1064,15 @@ export default function ProfilePage({ setPage }) {
 
       const oldEmail =
         normalizeEmail(
-          currentUser.email ||
-            ""
+          currentUser.email || ""
         );
 
       /*
-       * Only perform email update/verification
-       * if the email is actually different.
+       * Only update Firebase email when it actually
+       * changed.
+       *
+       * Restoring the original email does not trigger
+       * another update or verification.
        */
       if (
         newEmail !== oldEmail
@@ -1145,29 +1083,19 @@ export default function ProfilePage({ setPage }) {
             newEmail
           );
 
-          /*
-           * Firebase resets email verification
-           * after changing the email.
-           */
           await sendEmailVerification(
             currentUser
           );
 
-          setEmailVerified(
-            false
-          );
+          setEmailVerified(false);
+          setOriginalEmail(newEmail);
 
-          setOriginalEmail(
-            newEmail
-          );
+          setShowEmailModal(true);
 
-          setShowEmailVerificationModal(
-            true
+          setMessage(
+            "Email updated. We sent a new verification link to your email."
           );
-
-        } catch (
-          emailError
-        ) {
+        } catch (emailError) {
           if (
             emailError.code ===
             "auth/requires-recent-login"
@@ -1181,6 +1109,18 @@ export default function ProfilePage({ setPage }) {
 
           throw emailError;
         }
+      } else {
+        /*
+         * Original email restored.
+         * Preserve the existing Firebase verification state.
+         */
+        await reload(currentUser);
+
+        setEmailVerified(
+          currentUser.emailVerified === true
+        );
+
+        setOriginalEmail(newEmail);
       }
 
       // -----------------------------------------------------
@@ -1191,8 +1131,7 @@ export default function ProfilePage({ setPage }) {
         fullName:
           fullName.trim(),
 
-        email:
-          newEmail,
+        email: newEmail,
 
         phone:
           normalizePhone(phone),
@@ -1231,61 +1170,16 @@ export default function ProfilePage({ setPage }) {
         !isBirthdayLocked &&
         birthday
       ) {
-        setIsBirthdayLocked(
-          true
-        );
-      }
-
-      /*
-       * If email was not changed,
-       * preserve Firebase's existing
-       * verification state.
-       */
-      if (
-        newEmail === oldEmail
-      ) {
-        await reload(
-          currentUser
-        );
-
-        setEmailVerified(
-          currentUser.emailVerified ===
-            true
-        );
-      }
-
-      /*
-       * Important:
-       * When the user restores the original phone,
-       * no additional verification is needed.
-       */
-      if (
-        normalizePhone(phone) ===
-        normalizePhone(
-          originalPhone
-        )
-      ) {
-        setPhoneVerified(
-          true
-        );
+        setIsBirthdayLocked(true);
       }
 
       setOriginalPhone(
         normalizePhone(phone)
       );
 
-      setOriginalEmail(
-        newEmail
+      setMessage(
+        "Your profile has been saved."
       );
-
-      if (
-        !showEmailVerificationModal
-      ) {
-        setMessage(
-          "Your profile has been saved."
-        );
-      }
-
     } catch (error) {
       console.error(
         "Profile save failed:",
@@ -1332,80 +1226,40 @@ export default function ProfilePage({ setPage }) {
   // PASSWORD RESET
   // =========================================================
 
-  const handleChangePassword =
-    async () => {
-      if (!currentUser?.email) {
-        setErrorMessage(
-          "No email address is associated with this account."
-        );
-
-        return;
-      }
-
-      setIsPasswordProcessing(
-        true
+  const handleChangePassword = async () => {
+    if (!currentUser?.email) {
+      setErrorMessage(
+        "No email address is associated with this account."
       );
 
-      clearMessages();
-
-      try {
-        await sendPasswordResetEmail(
-          auth,
-          currentUser.email
-        );
-
-        setMessage(
-          `Password reset instructions have been sent to ${currentUser.email}.`
-        );
-
-      } catch (error) {
-        console.error(
-          "Password reset failed:",
-          error
-        );
-
-        setErrorMessage(
-          error.message ||
-            "Unable to send password reset instructions."
-        );
-      } finally {
-        setIsPasswordProcessing(
-          false
-        );
-      }
-    };
-
-  // =========================================================
-  // CLOSE PHONE MODAL
-  // =========================================================
-
-  const closePhoneModal = () => {
-    if (isPhoneProcessing)
       return;
+    }
 
-    setShowPhoneVerificationModal(
-      false
-    );
+    setIsPasswordProcessing(true);
+    clearMessages();
 
-    setOtp("");
-    setOtpSent(false);
-    setVerificationId(null);
-    setPendingPhone("");
+    try {
+      await sendPasswordResetEmail(
+        auth,
+        currentUser.email
+      );
 
-    clearRecaptcha();
-  };
+      setMessage(
+        `Password reset instructions have been sent to ${currentUser.email}.`
+      );
+    } catch (error) {
+      console.error(
+        "Password reset failed:",
+        error
+      );
 
-  // =========================================================
-  // CLOSE EMAIL MODAL
-  // =========================================================
-
-  const closeEmailModal = () => {
-    if (isEmailProcessing)
-      return;
-
-    setShowEmailVerificationModal(
-      false
-    );
+      setErrorMessage(
+        error.message ||
+          "Unable to send password reset instructions."
+      );
+    } finally {
+      setIsPasswordProcessing(false);
+    }
   };
 
   // =========================================================
@@ -1415,8 +1269,7 @@ export default function ProfilePage({ setPage }) {
   const avatar =
     avatarUrl ||
     `https://ui-avatars.com/api/?background=E8D8C8&color=3A2418&name=${encodeURIComponent(
-      fullName ||
-        "Brewed Member"
+      fullName || "Brewed Member"
     )}`;
 
   // =========================================================
@@ -1639,6 +1492,46 @@ export default function ProfilePage({ setPage }) {
           position:relative;
           flex:none;
           z-index:1;
+          padding:5px;
+          border-radius:43px;
+          transition:
+            box-shadow .25s ease,
+            border-color .25s ease;
+        }
+
+        /*
+         * Loyalty-tier profile ring.
+         *
+         * Bronze is intentionally subtle and premium,
+         * rather than looking like a badge.
+         */
+
+        .hero-avatar-wrap.tier-ring-bronze {
+          border:2px solid rgba(184,137,97,.88);
+          box-shadow:
+            0 0 0 4px rgba(184,137,97,.10),
+            0 18px 45px rgba(0,0,0,.25);
+        }
+
+        .hero-avatar-wrap.tier-ring-silver {
+          border:2px solid rgba(164,169,174,.92);
+          box-shadow:
+            0 0 0 4px rgba(164,169,174,.10),
+            0 18px 45px rgba(0,0,0,.25);
+        }
+
+        .hero-avatar-wrap.tier-ring-gold {
+          border:2px solid rgba(205,164,76,.95);
+          box-shadow:
+            0 0 0 4px rgba(205,164,76,.11),
+            0 18px 45px rgba(0,0,0,.25);
+        }
+
+        .hero-avatar-wrap.tier-ring-platinum {
+          border:2px solid rgba(202,205,210,.98);
+          box-shadow:
+            0 0 0 4px rgba(202,205,210,.13),
+            0 18px 45px rgba(0,0,0,.25);
         }
 
         .hero-avatar {
@@ -1646,7 +1539,7 @@ export default function ProfilePage({ setPage }) {
           height:128px;
           border-radius:38px;
           object-fit:cover;
-          border:4px solid rgba(255,255,255,.18);
+          border:4px solid rgba(45,27,18,.95);
           box-shadow:0 18px 45px rgba(0,0,0,.25);
           display:block;
           background:#EAD8C7;
@@ -1710,109 +1603,17 @@ export default function ProfilePage({ setPage }) {
           max-width:520px;
         }
 
-        /*
-         * =====================================================
-         * PREMIUM LOYALTY TIER ACCENT
-         * =====================================================
-         */
-
-        .loyalty-tier-accent {
-          position:relative;
-          display:inline-flex;
-          align-items:center;
-          gap:10px;
-          margin-top:20px;
-          padding:8px 12px 8px 8px;
-          border-radius:14px;
-          background:
-            linear-gradient(
-              135deg,
-              rgba(255,255,255,.10),
-              rgba(255,255,255,.035)
-            );
-          border:1px solid rgba(255,255,255,.12);
-          box-shadow:
-            inset 0 1px 0 rgba(255,255,255,.08),
-            0 8px 22px rgba(0,0,0,.10);
-          backdrop-filter:blur(8px);
-        }
-
-        .tier-orb {
-          width:30px;
-          height:30px;
-          border-radius:10px;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          position:relative;
-          background:
-            radial-gradient(
-              circle at 35% 30%,
-              #DDB38F 0%,
-              #B9784D 38%,
-              #875033 72%,
-              #633A27 100%
-            );
-          box-shadow:
-            inset 0 1px 1px rgba(255,255,255,.45),
-            inset 0 -2px 5px rgba(52,25,13,.25),
-            0 4px 12px rgba(0,0,0,.18);
-        }
-
-        .tier-orb::after {
-          content:"";
-          position:absolute;
-          width:8px;
-          height:4px;
-          top:6px;
-          left:7px;
-          border-radius:50%;
-          background:rgba(255,255,255,.42);
-          transform:rotate(-25deg);
-        }
-
-        .tier-orb svg {
-          position:relative;
-          z-index:1;
-          color:#FFF1E5;
-          filter:drop-shadow(0 1px 1px rgba(0,0,0,.18));
-        }
-
-        .tier-copy {
-          display:flex;
-          flex-direction:column;
-          gap:1px;
-        }
-
-        .tier-label {
-          color:#E6D4C5;
-          font-size:9px;
-          line-height:1.2;
-          letter-spacing:.14em;
-          text-transform:uppercase;
-          font-weight:800;
-        }
-
-        .tier-name {
-          color:#FFF8F2;
-          font-family:"Playfair Display", serif;
-          font-size:14px;
-          line-height:1.2;
-          font-weight:600;
-          letter-spacing:.01em;
-        }
-
         .member-pill {
           display:inline-flex;
           align-items:center;
           gap:7px;
-          margin-top:12px;
-          padding:8px 12px;
-          border:1px solid rgba(255,255,255,.10);
+          margin-top:20px;
+          padding:9px 13px;
+          border:1px solid rgba(255,255,255,.12);
           border-radius:999px;
-          background:rgba(255,255,255,.045);
-          color:#CDBDB2;
-          font-size:11px;
+          background:rgba(255,255,255,.07);
+          color:#E8DCD4;
+          font-size:12px;
           font-weight:600;
         }
 
@@ -1826,6 +1627,7 @@ export default function ProfilePage({ setPage }) {
         }
 
         .profile-card {
+          width:100%;
           background:rgba(255,255,255,.82);
           border:1px solid rgba(221,211,202,.72);
           border-radius:26px;
@@ -2014,7 +1816,7 @@ export default function ProfilePage({ setPage }) {
         }
 
         /* =====================================================
-           EMAIL VERIFICATION
+           EMAIL
         ===================================================== */
 
         .email-status {
@@ -2246,14 +2048,14 @@ export default function ProfilePage({ setPage }) {
         .verification-overlay {
           position:fixed;
           inset:0;
-          z-index:10000;
+          z-index:99999;
           display:flex;
           align-items:center;
           justify-content:center;
           padding:20px;
-          background:rgba(35,22,16,.46);
-          backdrop-filter:blur(9px);
-          -webkit-backdrop-filter:blur(9px);
+          background:rgba(32,20,14,.48);
+          backdrop-filter:blur(10px);
+          animation:verificationFadeIn .18s ease;
         }
 
         .verification-modal {
@@ -2261,12 +2063,183 @@ export default function ProfilePage({ setPage }) {
           max-width:430px;
           position:relative;
           overflow:hidden;
-          border-radius:28px;
+          border-radius:26px;
           background:#FFFDFC;
-          border:1px solid rgba(255,255,255,.75);
+          border:1px solid rgba(221,211,202,.9);
           box-shadow:
-            0 30px 90px rgba(35,22,16,.25);
-          animation:verificationModalIn .22s ease-out;
+            0 30px 90px rgba(25,15,10,.25);
+          animation:verificationModalIn .22s ease;
+        }
+
+        .verification-modal::before {
+          content:"";
+          position:absolute;
+          width:190px;
+          height:190px;
+          right:-100px;
+          top:-100px;
+          border-radius:50%;
+          background:rgba(184,137,97,.08);
+        }
+
+        .verification-modal-header {
+          position:relative;
+          display:flex;
+          justify-content:space-between;
+          align-items:flex-start;
+          gap:15px;
+          padding:25px 25px 0;
+        }
+
+        .verification-icon {
+          width:46px;
+          height:46px;
+          border-radius:15px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:#F5EEE7;
+          color:#76513B;
+        }
+
+        .verification-close {
+          width:34px;
+          height:34px;
+          border:0;
+          border-radius:11px;
+          background:#F7F1EC;
+          color:#7C6B61;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          cursor:pointer;
+          transition:.2s ease;
+        }
+
+        .verification-close:hover {
+          background:#EEE3D9;
+          color:#2D1B12;
+        }
+
+        .verification-content {
+          padding:20px 25px 25px;
+        }
+
+        .verification-title {
+          margin:0;
+          font-family:"Playfair Display",serif;
+          font-size:25px;
+          color:#2D1B12;
+          letter-spacing:-.02em;
+        }
+
+        .verification-description {
+          margin:7px 0 0;
+          color:#8C7D73;
+          font-size:12px;
+          line-height:1.6;
+        }
+
+        .verification-destination {
+          margin-top:17px;
+          padding:12px 14px;
+          border-radius:13px;
+          background:#F8F3EE;
+          color:#5F4D42;
+          font-size:12px;
+          font-weight:700;
+          word-break:break-word;
+        }
+
+        .verification-input {
+          width:100%;
+          margin-top:15px;
+          min-height:54px;
+          border:1px solid #E6DCD3;
+          border-radius:15px;
+          background:#FFFDFC;
+          outline:none;
+          padding:13px 15px;
+          color:#2D1B12;
+          font-size:18px;
+          text-align:center;
+          letter-spacing:.28em;
+          font-weight:700;
+        }
+
+        .verification-input:focus {
+          border-color:#B88961;
+          box-shadow:0 0 0 4px rgba(184,137,97,.10);
+        }
+
+        .verification-button {
+          width:100%;
+          min-height:50px;
+          margin-top:12px;
+          border:0;
+          border-radius:15px;
+          background:#2D1B12;
+          color:white;
+          font-size:12px;
+          font-weight:700;
+          cursor:pointer;
+          transition:.2s ease;
+        }
+
+        .verification-button:hover:not(:disabled) {
+          background:#493126;
+          transform:translateY(-1px);
+        }
+
+        .verification-button:disabled {
+          opacity:.5;
+          cursor:not-allowed;
+        }
+
+        .verification-secondary {
+          width:100%;
+          margin-top:10px;
+          padding:8px;
+          border:0;
+          background:transparent;
+          color:#96633F;
+          font-size:11px;
+          font-weight:700;
+          cursor:pointer;
+        }
+
+        .verification-secondary:hover {
+          text-decoration:underline;
+        }
+
+        .verification-status {
+          margin-top:12px;
+          padding:11px 12px;
+          border-radius:12px;
+          font-size:11px;
+          line-height:1.5;
+        }
+
+        .verification-status.success {
+          color:#356943;
+          background:#EEF7F0;
+          border:1px solid #D8EBDD;
+        }
+
+        .verification-status.error {
+          color:#923D3D;
+          background:#FBEEEE;
+          border:1px solid #F1D9D9;
+        }
+
+        @keyframes verificationFadeIn {
+          from {
+            opacity:0;
+          }
+
+          to {
+            opacity:1;
+          }
         }
 
         @keyframes verificationModalIn {
@@ -2279,154 +2252,6 @@ export default function ProfilePage({ setPage }) {
             opacity:1;
             transform:translateY(0) scale(1);
           }
-        }
-
-        .verification-modal-top {
-          padding:25px 25px 0;
-          display:flex;
-          justify-content:space-between;
-          align-items:flex-start;
-          gap:15px;
-        }
-
-        .verification-icon {
-          width:48px;
-          height:48px;
-          border-radius:16px;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          background:#F4E8DE;
-          color:#704A34;
-        }
-
-        .verification-close {
-          width:34px;
-          height:34px;
-          border:0;
-          border-radius:11px;
-          background:#F7F1EC;
-          color:#806E63;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          cursor:pointer;
-          transition:.2s ease;
-        }
-
-        .verification-close:hover {
-          background:#EEE4DA;
-          color:#2D1B12;
-        }
-
-        .verification-content {
-          padding:20px 25px 25px;
-        }
-
-        .verification-title {
-          margin:0;
-          font-family:"Playfair Display",serif;
-          font-size:25px;
-          line-height:1.15;
-          color:var(--brew-espresso);
-        }
-
-        .verification-description {
-          margin:9px 0 0;
-          color:#897A71;
-          font-size:13px;
-          line-height:1.65;
-        }
-
-        .verification-target {
-          margin-top:17px;
-          padding:12px 14px;
-          border-radius:14px;
-          background:#F8F2ED;
-          border:1px solid #EDE1D7;
-          color:#493126;
-          font-size:12px;
-          font-weight:700;
-          word-break:break-word;
-        }
-
-        .verification-input {
-          width:100%;
-          min-height:52px;
-          margin-top:15px;
-          padding:13px 15px;
-          border-radius:15px;
-          border:1px solid #E5DAD1;
-          background:#FFFDFC;
-          outline:none;
-          color:#2D1B12;
-          font-size:16px;
-          text-align:center;
-          letter-spacing:.25em;
-          font-weight:700;
-        }
-
-        .verification-input:focus {
-          border-color:#B88961;
-          box-shadow:
-            0 0 0 4px rgba(184,137,97,.10);
-        }
-
-        .verification-actions {
-          display:flex;
-          gap:9px;
-          margin-top:14px;
-        }
-
-        .verification-secondary {
-          flex:1;
-          min-height:48px;
-          border-radius:14px;
-          border:1px solid #E5DAD1;
-          background:#FFFDFC;
-          color:#624F44;
-          font-size:12px;
-          font-weight:700;
-          cursor:pointer;
-        }
-
-        .verification-primary {
-          flex:1.3;
-          min-height:48px;
-          border:0;
-          border-radius:14px;
-          background:#2D1B12;
-          color:white;
-          font-size:12px;
-          font-weight:700;
-          cursor:pointer;
-          box-shadow:0 8px 20px rgba(45,27,18,.13);
-        }
-
-        .verification-primary:hover:not(:disabled) {
-          background:#493126;
-        }
-
-        .verification-primary:disabled,
-        .verification-secondary:disabled {
-          opacity:.5;
-          cursor:not-allowed;
-        }
-
-        .verification-helper {
-          margin-top:12px;
-          text-align:center;
-          color:#A09289;
-          font-size:10px;
-          line-height:1.5;
-        }
-
-        .verification-resend {
-          border:0;
-          background:transparent;
-          color:#9A6640;
-          font-weight:700;
-          cursor:pointer;
         }
 
         /* =====================================================
@@ -2453,6 +2278,10 @@ export default function ProfilePage({ setPage }) {
             flex-direction:column;
             align-items:flex-start;
             gap:22px;
+          }
+
+          .hero-avatar-wrap {
+            padding:4px;
           }
 
           .hero-avatar {
@@ -2505,16 +2334,22 @@ export default function ProfilePage({ setPage }) {
             width:100%;
           }
 
-          .verification-modal {
-            border-radius:24px;
+          .verification-overlay {
+            align-items:flex-end;
+            padding:10px;
           }
 
-          .verification-modal-top {
-            padding:21px 21px 0;
+          .verification-modal {
+            border-radius:25px;
+            max-width:100%;
           }
 
           .verification-content {
-            padding:18px 21px 22px;
+            padding:18px 20px 22px;
+          }
+
+          .verification-modal-header {
+            padding:21px 20px 0;
           }
         }
 
@@ -2540,19 +2375,6 @@ export default function ProfilePage({ setPage }) {
             padding-bottom:25px;
             margin-bottom:25px;
           }
-
-          .loyalty-tier-accent {
-            max-width:100%;
-          }
-
-          .verification-actions {
-            flex-direction:column;
-          }
-
-          .verification-primary,
-          .verification-secondary {
-            width:100%;
-          }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -2561,10 +2383,6 @@ export default function ProfilePage({ setPage }) {
           *::after {
             scroll-behavior:auto !important;
             transition:none !important;
-            animation:none !important;
-          }
-
-          .verification-modal {
             animation:none !important;
           }
         }
@@ -2602,7 +2420,9 @@ export default function ProfilePage({ setPage }) {
             <div className="hero-glow-one" />
             <div className="hero-glow-two" />
 
-            <div className="hero-avatar-wrap">
+            <div
+              className={`hero-avatar-wrap ${tierRingClass}`}
+            >
               <img
                 src={avatar}
                 alt="Profile"
@@ -2621,11 +2441,9 @@ export default function ProfilePage({ setPage }) {
                   onChange={
                     handleImageUpload
                   }
-                  disabled={
-                    isProcessing
-                  }
+                  disabled={isProcessing}
                   style={{
-                    display:"none",
+                    display: "none",
                   }}
                 />
               </label>
@@ -2649,33 +2467,10 @@ export default function ProfilePage({ setPage }) {
                 feels a little more personal.
               </p>
 
-              {/* PREMIUM TIER ACCENT */}
-
-              <div
-                className="loyalty-tier-accent"
-                title={`Brewed ${tier} tier`}
-              >
-                <div className="tier-orb">
-                  <Sparkles size={13} />
-                </div>
-
-                <div className="tier-copy">
-                  <span className="tier-label">
-                    Brewed loyalty
-                  </span>
-
-                  <span className="tier-name">
-                    {tier}
-                    {" "}Member
-                  </span>
-                </div>
-              </div>
-
               <div className="member-pill">
                 <Check size={13} />
                 Member since{" "}
-                {memberSince ||
-                  "Today"}
+                {memberSince || "Today"}
               </div>
             </div>
           </section>
@@ -2754,8 +2549,10 @@ export default function ProfilePage({ setPage }) {
                       className="field-input"
                       type="email"
                       value={email}
-                      onChange={
-                        handleEmailChange
+                      onChange={(e) =>
+                        setEmail(
+                          e.target.value
+                        )
                       }
                       placeholder="you@example.com"
                       autoComplete="email"
@@ -2796,7 +2593,7 @@ export default function ProfilePage({ setPage }) {
                           type="button"
                           className="email-verify-button"
                           onClick={
-                            handleSendEmailVerification
+                            handleOpenEmailVerification
                           }
                           disabled={
                             isEmailProcessing
@@ -2806,6 +2603,18 @@ export default function ProfilePage({ setPage }) {
                             ? "Sending..."
                             : "Verify email"}
                         </button>
+                      )}
+
+                      {emailVerified && (
+                        <span
+                          className="email-verify-button"
+                          style={{
+                            cursor:"default",
+                            textDecoration:"none",
+                          }}
+                        >
+                          Verified
+                        </span>
                       )}
                     </div>
                   </div>
@@ -2844,7 +2653,7 @@ export default function ProfilePage({ setPage }) {
                           type="button"
                           className="verify-button"
                           onClick={
-                            handleSendPhoneOTP
+                            handleOpenPhoneVerification
                           }
                           disabled={
                             isPhoneProcessing ||
@@ -2869,7 +2678,7 @@ export default function ProfilePage({ setPage }) {
                       {phoneVerified &&
                       !phoneChanged
                         ? "Your phone number is verified."
-                        : ""}
+                        : "Verify your phone number to continue."}
                     </div>
                   </div>
 
@@ -2951,41 +2760,34 @@ export default function ProfilePage({ setPage }) {
                         "home",
                         "work",
                         "other",
-                      ].map(
-                        (type) => (
-                          <label
-                            key={type}
-                            className="address-option"
-                          >
-                            <input
-                              type="radio"
-                              name="addressType"
-                              value={type}
-                              checked={
-                                addressType ===
-                                type
-                              }
-                              onChange={(e) =>
-                                setAddressType(
-                                  e.target
-                                    .value
-                                )
-                              }
-                            />
+                      ].map((type) => (
+                        <label
+                          key={type}
+                          className="address-option"
+                        >
+                          <input
+                            type="radio"
+                            name="addressType"
+                            value={type}
+                            checked={
+                              addressType ===
+                              type
+                            }
+                            onChange={(e) =>
+                              setAddressType(
+                                e.target.value
+                              )
+                            }
+                          />
 
-                            <span className="address-label">
-                              {type
-                                .charAt(
-                                  0
-                                )
-                                .toUpperCase() +
-                                type.slice(
-                                  1
-                                )}
-                            </span>
-                          </label>
-                        )
-                      )}
+                          <span className="address-label">
+                            {type
+                              .charAt(0)
+                              .toUpperCase() +
+                              type.slice(1)}
+                          </span>
+                        </label>
+                      ))}
                     </div>
                   </div>
 
@@ -3000,17 +2802,16 @@ export default function ProfilePage({ setPage }) {
                           googleApiKey
                         }
                         selectProps={{
-                          value:
-                            address
-                              ? {
-                                  label:
-                                    address.formatted ||
-                                    "",
-                                  value:
-                                    address.placeId ||
-                                    "",
-                                }
-                              : null,
+                          value: address
+                            ? {
+                                label:
+                                  address.formatted ||
+                                  "",
+                                value:
+                                  address.placeId ||
+                                  "",
+                              }
+                            : null,
 
                           onChange:
                             handleAddressChange,
@@ -3018,96 +2819,89 @@ export default function ProfilePage({ setPage }) {
                           placeholder:
                             "Search your delivery address...",
 
-                          isClearable:
-                            true,
+                          isClearable: true,
 
                           styles: {
-                            control:
-                              (
-                                provided,
-                                state
-                              ) => ({
-                                ...provided,
-                                minHeight:
-                                  "50px",
-                                borderRadius:
-                                  "14px",
-                                borderColor:
-                                  state.isFocused
-                                    ? "#B88961"
-                                    : "#E9E0D8",
-                                boxShadow:
-                                  state.isFocused
-                                    ? "0 0 0 4px rgba(184,137,97,.10)"
-                                    : "none",
-                                background:
-                                  "#FFFDFC",
-                              }),
+                            control: (
+                              provided,
+                              state
+                            ) => ({
+                              ...provided,
+                              minHeight:
+                                "50px",
+                              borderRadius:
+                                "14px",
+                              borderColor:
+                                state.isFocused
+                                  ? "#B88961"
+                                  : "#E9E0D8",
+                              boxShadow:
+                                state.isFocused
+                                  ? "0 0 0 4px rgba(184,137,97,.10)"
+                                  : "none",
+                              background:
+                                "#FFFDFC",
+                            }),
 
-                            input:
-                              (
-                                provided
-                              ) => ({
-                                ...provided,
-                                fontSize:
-                                  "14px",
-                                color:
-                                  "#2D1B12",
-                              }),
+                            input: (
+                              provided
+                            ) => ({
+                              ...provided,
+                              fontSize:
+                                "14px",
+                              color:
+                                "#2D1B12",
+                            }),
 
-                            placeholder:
-                              (
-                                provided
-                              ) => ({
-                                ...provided,
-                                color:
-                                  "#B1A49C",
-                                fontSize:
-                                  "14px",
-                              }),
+                            placeholder: (
+                              provided
+                            ) => ({
+                              ...provided,
+                              color:
+                                "#B1A49C",
+                              fontSize:
+                                "14px",
+                            }),
 
-                            singleValue:
-                              (
-                                provided
-                              ) => ({
-                                ...provided,
-                                color:
-                                  "#2D1B12",
-                                fontSize:
-                                  "14px",
-                              }),
+                            singleValue: (
+                              provided
+                            ) => ({
+                              ...provided,
+                              color:
+                                "#2D1B12",
+                              fontSize:
+                                "14px",
+                            }),
 
-                            menu:
-                              (
-                                provided
-                              ) => ({
-                                ...provided,
-                                zIndex:9999,
-                                borderRadius:
-                                  "14px",
-                                overflow:
-                                  "hidden",
-                                boxShadow:
-                                  "0 18px 40px rgba(45,27,18,.12)",
-                              }),
+                            menu: (
+                              provided
+                            ) => ({
+                              ...provided,
+                              zIndex:9999,
+                              borderRadius:
+                                "14px",
+                              overflow:
+                                "hidden",
+                              boxShadow:
+                                "0 18px 40px rgba(45,27,18,.12)",
+                            }),
 
-                            option:
-                              (
-                                provided,
-                                state
-                              ) => ({
-                                ...provided,
-                                backgroundColor:
-                                  state.isFocused
-                                    ? "#F6EDE4"
-                                    : "white",
-                                color:
-                                  "#2D1B12",
-                                fontSize:
-                                  "13px",
-                                padding:
-                                  "12px 14px",
-                              }),
+                            option: (
+                              provided,
+                              state
+                            ) => ({
+                              ...provided,
+                              backgroundColor:
+                                state.isFocused
+                                  ? "#F6EDE4"
+                                  : "white",
+                              color:
+                                "#2D1B12",
+                              fontSize:
+                                "13px",
+                              padding:
+                                "12px 14px",
+                            }),
                           },
                         }}
                       />
@@ -3140,9 +2934,7 @@ export default function ProfilePage({ setPage }) {
                     }}
                   />
 
-                  <span>
-                    {message}
-                  </span>
+                  <span>{message}</span>
                 </div>
               )}
 
@@ -3206,27 +2998,24 @@ export default function ProfilePage({ setPage }) {
         </div>
       </main>
 
-      {/* =======================================================
+      {/* =====================================================
           PHONE VERIFICATION MODAL
-      ======================================================= */}
+      ===================================================== */}
 
-      {showPhoneVerificationModal && (
+      {showPhoneModal && (
         <div
           className="verification-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="phone-verification-title"
-          onMouseDown={(e) => {
+          onMouseDown={(event) => {
             if (
-              e.target === e.currentTarget
+              event.target ===
+              event.currentTarget
             ) {
-              closePhoneModal();
+              handleClosePhoneModal();
             }
           }}
         >
           <div className="verification-modal">
-
-            <div className="verification-modal-top">
+            <div className="verification-modal-header">
               <div className="verification-icon">
                 <Phone size={21} />
               </div>
@@ -3235,7 +3024,7 @@ export default function ProfilePage({ setPage }) {
                 type="button"
                 className="verification-close"
                 onClick={
-                  closePhoneModal
+                  handleClosePhoneModal
                 }
                 disabled={
                   isPhoneProcessing
@@ -3247,19 +3036,17 @@ export default function ProfilePage({ setPage }) {
             </div>
 
             <div className="verification-content">
-              <h2
-                id="phone-verification-title"
-                className="verification-title"
-              >
+              <h2 className="verification-title">
                 Verify your phone
               </h2>
 
               <p className="verification-description">
-                We sent a 6-digit verification
-                code to your new phone number.
+                We've sent a 6-digit
+                verification code to your
+                new phone number.
               </p>
 
-              <div className="verification-target">
+              <div className="verification-destination">
                 {pendingPhone}
               </div>
 
@@ -3270,9 +3057,9 @@ export default function ProfilePage({ setPage }) {
                 autoComplete="one-time-code"
                 maxLength={6}
                 value={otp}
-                onChange={(e) =>
+                onChange={(event) =>
                   setOtp(
-                    e.target.value.replace(
+                    event.target.value.replace(
                       /\D/g,
                       ""
                     )
@@ -3282,67 +3069,65 @@ export default function ProfilePage({ setPage }) {
                 autoFocus
               />
 
-              <div className="verification-actions">
-                <button
-                  type="button"
-                  className="verification-secondary"
-                  onClick={
-                    closePhoneModal
-                  }
-                  disabled={
-                    isPhoneProcessing
-                  }
-                >
-                  Cancel
-                </button>
+              <button
+                type="button"
+                className="verification-button"
+                onClick={
+                  handleVerifyPhoneOTP
+                }
+                disabled={
+                  isPhoneProcessing ||
+                  otp.length !== 6
+                }
+              >
+                {isPhoneProcessing
+                  ? "Verifying..."
+                  : "Verify phone number"}
+              </button>
 
-                <button
-                  type="button"
-                  className="verification-primary"
-                  onClick={
-                    handleVerifyPhoneOTP
-                  }
-                  disabled={
-                    isPhoneProcessing ||
-                    otp.length !== 6
-                  }
-                >
-                  {isPhoneProcessing
-                    ? "Checking..."
-                    : "Verify phone"}
-                </button>
-              </div>
+              <button
+                type="button"
+                className="verification-secondary"
+                onClick={
+                  handleOpenPhoneVerification
+                }
+                disabled={
+                  isPhoneProcessing
+                }
+              >
+                Didn't receive the code? Send again
+              </button>
 
-              <div className="verification-helper">
-                Didn't receive it? Close this
-                window and request another code.
-              </div>
+              {errorMessage && (
+                <div className="verification-status error">
+                  {errorMessage}
+                </div>
+              )}
             </div>
           </div>
+
+          <div id="phone-recaptcha" />
         </div>
       )}
 
-      {/* =======================================================
+      {/* =====================================================
           EMAIL VERIFICATION MODAL
-      ======================================================= */}
+      ===================================================== */}
 
-      {showEmailVerificationModal && (
+      {showEmailModal && (
         <div
           className="verification-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="email-verification-title"
-          onMouseDown={(e) => {
+          onMouseDown={(event) => {
             if (
-              e.target === e.currentTarget
+              event.target ===
+              event.currentTarget
             ) {
-              closeEmailModal();
+              setShowEmailModal(false);
             }
           }}
         >
           <div className="verification-modal">
-
-            <div className="verification-modal-top">
+            <div className="verification-modal-header">
               <div className="verification-icon">
                 <Mail size={21} />
               </div>
@@ -3350,8 +3135,8 @@ export default function ProfilePage({ setPage }) {
               <button
                 type="button"
                 className="verification-close"
-                onClick={
-                  closeEmailModal
+                onClick={() =>
+                  setShowEmailModal(false)
                 }
                 disabled={
                   isEmailProcessing
@@ -3363,76 +3148,71 @@ export default function ProfilePage({ setPage }) {
             </div>
 
             <div className="verification-content">
-              <h2
-                id="email-verification-title"
-                className="verification-title"
-              >
+              <h2 className="verification-title">
                 Verify your email
               </h2>
 
               <p className="verification-description">
-                We've sent a verification link
-                to your email address. Open it
-                and then come back here to confirm.
+                We've sent a verification
+                link to your email address.
+                Open it to confirm your
+                email.
               </p>
 
-              <div className="verification-target">
-                {currentUser?.email ||
-                  email}
+              <div className="verification-destination">
+                {email}
               </div>
 
-              <div className="verification-actions">
-                <button
-                  type="button"
-                  className="verification-secondary"
-                  onClick={
-                    handleSendEmailVerification
-                  }
-                  disabled={
-                    isEmailProcessing
-                  }
-                >
-                  {isEmailProcessing
-                    ? "Sending..."
-                    : "Resend email"}
-                </button>
+              <button
+                type="button"
+                className="verification-button"
+                onClick={
+                  handleCheckEmailVerification
+                }
+                disabled={
+                  isEmailProcessing
+                }
+              >
+                {isEmailProcessing
+                  ? "Checking..."
+                  : "I've verified my email"}
+              </button>
 
-                <button
-                  type="button"
-                  className="verification-primary"
-                  onClick={
-                    handleRefreshEmailVerification
-                  }
-                  disabled={
-                    isEmailProcessing
-                  }
-                >
-                  {isEmailProcessing
-                    ? "Checking..."
-                    : "I've verified"}
-                </button>
-              </div>
+              <button
+                type="button"
+                className="verification-secondary"
+                onClick={
+                  handleOpenEmailVerification
+                }
+                disabled={
+                  isEmailProcessing
+                }
+              >
+                Didn't receive it? Send again
+              </button>
 
-              <div className="verification-helper">
-                After clicking the verification
-                link, tap{" "}
-                <strong>
-                  I've verified
-                </strong>{" "}
-                to update your Brewed profile.
-              </div>
+              {errorMessage && (
+                <div className="verification-status error">
+                  {errorMessage}
+                </div>
+              )}
+
+              {emailVerified && (
+                <div className="verification-status success">
+                  <Check
+                    size={13}
+                    style={{
+                      verticalAlign:"middle",
+                      marginRight:5,
+                    }}
+                  />
+                  Your email is verified.
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
-
-      {/* =======================================================
-          RECAPTCHA CONTAINER
-      ======================================================= */}
-
-      <div
-        id="phone-recaptcha"
-      />
     </>
   );
 }
