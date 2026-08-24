@@ -2,25 +2,25 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   collection,
   onSnapshot,
-  orderBy,
   query,
   where,
 } from "firebase/firestore";
 import {
-  AlertCircle,
   ArrowLeft,
-  Check,
-  ChevronRight,
-  Clock3,
+  ArrowRight,
   Coffee,
   Package,
   RefreshCw,
-  ShoppingBag,
+  Clock3,
+  CheckCircle2,
   Truck,
-  X,
+  XCircle,
+  CircleDot,
+  Loader2,
+  ShoppingBag,
 } from "lucide-react";
 
-import { auth, db } from "../firebase";
+import { db, auth } from "../firebase";
 import { useCart } from "../context/CartContext";
 
 export default function OrdersPage({ setPage }) {
@@ -31,376 +31,381 @@ export default function OrdersPage({ setPage }) {
   const [error, setError] = useState("");
 
   /*
-   * ============================================================
-   * AUTH + REAL-TIME ORDERS
-   * ============================================================
+   * ------------------------------------------------------------
+   * STATUS CONFIG
+   * ------------------------------------------------------------
+   */
+
+  const getStatusConfig = (status) => {
+    const normalized = String(status || "New")
+      .trim()
+      .toLowerCase();
+
+    if (
+      normalized.includes("deliver") &&
+      !normalized.includes("out")
+    ) {
+      return {
+        label: "Delivered",
+        className: "status-delivered",
+        icon: <CheckCircle2 size={15} strokeWidth={2.2} />,
+      };
+    }
+
+    if (
+      normalized.includes("out for delivery") ||
+      normalized === "outfordelivery"
+    ) {
+      return {
+        label: "Out for Delivery",
+        className: "status-delivery",
+        icon: <Truck size={15} strokeWidth={2.2} />,
+      };
+    }
+
+    if (
+      normalized.includes("prepar") ||
+      normalized.includes("processing") ||
+      normalized.includes("accepted")
+    ) {
+      return {
+        label:
+          normalized.includes("accepted")
+            ? "Accepted"
+            : "Preparing",
+        className: "status-preparing",
+        icon: <Clock3 size={15} strokeWidth={2.2} />,
+      };
+    }
+
+    if (
+      normalized.includes("cancel") ||
+      normalized.includes("failed") ||
+      normalized.includes("reject")
+    ) {
+      return {
+        label: "Cancelled",
+        className: "status-cancelled",
+        icon: <XCircle size={15} strokeWidth={2.2} />,
+      };
+    }
+
+    if (
+      normalized.includes("assign")
+    ) {
+      return {
+        label: "Rider Assigned",
+        className: "status-assigned",
+        icon: <CircleDot size={15} strokeWidth={2.2} />,
+      };
+    }
+
+    return {
+      label: "New",
+      className: "status-new",
+      icon: <Package size={15} strokeWidth={2.2} />,
+    };
+  };
+
+  /*
+   * ------------------------------------------------------------
+   * DATE HELPERS
+   * ------------------------------------------------------------
+   */
+
+  const getTimestampMillis = (timestamp) => {
+    if (!timestamp) return 0;
+
+    if (
+      typeof timestamp.toMillis === "function"
+    ) {
+      return timestamp.toMillis();
+    }
+
+    if (
+      typeof timestamp.toDate === "function"
+    ) {
+      return timestamp.toDate().getTime();
+    }
+
+    if (timestamp instanceof Date) {
+      return timestamp.getTime();
+    }
+
+    if (typeof timestamp === "number") {
+      return timestamp;
+    }
+
+    if (typeof timestamp === "string") {
+      const parsed = new Date(timestamp).getTime();
+      return Number.isNaN(parsed) ? 0 : parsed;
+    }
+
+    return 0;
+  };
+
+  const formatDate = (timestamp) => {
+    const millis = getTimestampMillis(timestamp);
+
+    if (!millis) {
+      return "Date unavailable";
+    }
+
+    try {
+      return new Intl.DateTimeFormat("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }).format(new Date(millis));
+    } catch {
+      return "Date unavailable";
+    }
+  };
+
+  const formatTime = (timestamp) => {
+    const millis = getTimestampMillis(timestamp);
+
+    if (!millis) return "";
+
+    try {
+      return new Intl.DateTimeFormat("en-IN", {
+        hour: "numeric",
+        minute: "2-digit",
+      }).format(new Date(millis));
+    } catch {
+      return "";
+    }
+  };
+
+  /*
+   * ------------------------------------------------------------
+   * IMAGE HANDLING
+   * ------------------------------------------------------------
+   */
+
+  const getItemImage = (item) => {
+    if (!item) return "";
+
+    return (
+      item.image ||
+      item.img ||
+      item.imageUrl ||
+      item.imageURL ||
+      item.photoURL ||
+      item.photo ||
+      item.thumbnail ||
+      ""
+    );
+  };
+
+  const handleImageError = (event) => {
+    const image = event.currentTarget;
+
+    if (image.dataset.fallbackApplied === "true") {
+      return;
+    }
+
+    image.dataset.fallbackApplied = "true";
+
+    /*
+     * Hide broken remote image and show our CSS fallback.
+     */
+    image.style.display = "none";
+
+    const fallback = image.parentElement?.querySelector(
+      ".image-fallback"
+    );
+
+    if (fallback) {
+      fallback.style.display = "flex";
+    }
+  };
+
+  /*
+   * ------------------------------------------------------------
+   * LOAD USER ORDERS
+   * ------------------------------------------------------------
+   *
+   * IMPORTANT:
+   * We intentionally DO NOT use orderBy().
+   *
+   * This prevents the Firestore index requirement.
+   *
+   * Orders are sorted client-side below.
+   * ------------------------------------------------------------
    */
 
   useEffect(() => {
-    let unsubscribeOrders = null;
+    let unsubscribe = null;
 
-    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
-      if (unsubscribeOrders) {
-        unsubscribeOrders();
-        unsubscribeOrders = null;
-      }
-
-      setOrders([]);
-      setError("");
+    const setupOrdersListener = () => {
+      const user = auth.currentUser;
 
       if (!user) {
+        setOrders([]);
         setLoading(false);
         setError("Please log in to view your orders.");
         return;
       }
 
       setLoading(true);
+      setError("");
 
-      try {
-        const ordersRef = collection(db, "orders");
+      /*
+       * Only filter by userId.
+       * No orderBy = no index requirement.
+       */
+      const ordersQuery = query(
+        collection(db, "orders"),
+        where("userId", "==", user.uid)
+      );
 
-        const ordersQuery = query(
-          ordersRef,
-          where("userId", "==", user.uid),
-          orderBy("createdAt", "desc")
-        );
+      unsubscribe = onSnapshot(
+        ordersQuery,
+        (snapshot) => {
+          const fetchedOrders = snapshot.docs.map((orderDoc) => {
+            const data = orderDoc.data();
 
-        unsubscribeOrders = onSnapshot(
-          ordersQuery,
-          (snapshot) => {
-            const fetchedOrders = snapshot.docs.map((orderDoc) => {
-              const data = orderDoc.data();
+            return {
+              id: orderDoc.id,
+              ...data,
+            };
+          });
 
-              return {
-                id: orderDoc.id,
-                ...data,
-              };
-            });
-
-            setOrders(fetchedOrders);
-            setLoading(false);
-            setError("");
-          },
-          (snapshotError) => {
-            console.error(
-              "OrdersPage Firestore error:",
-              snapshotError
+          /*
+           * Client-side sorting.
+           *
+           * Newest order first.
+           */
+          fetchedOrders.sort((a, b) => {
+            return (
+              getTimestampMillis(b.createdAt) -
+              getTimestampMillis(a.createdAt)
             );
+          });
 
-            setLoading(false);
+          setOrders(fetchedOrders);
+          setLoading(false);
+          setError("");
+        },
+        (snapshotError) => {
+          console.error(
+            "🔥 ORDERS LISTENER ERROR:",
+            snapshotError
+          );
 
-            if (
-              snapshotError?.code ===
-              "failed-precondition"
-            ) {
-              setError(
-                "Your order history needs a Firestore index. Please create the index requested by Firebase."
-              );
-            } else if (
-              snapshotError?.code === "permission-denied"
-            ) {
-              setError(
-                "You don't have permission to view these orders."
-              );
-            } else {
-              setError(
-                "We couldn't load your orders right now. Please try again."
-              );
-            }
+          setOrders([]);
+          setLoading(false);
+
+          if (
+            snapshotError?.code ===
+            "permission-denied"
+          ) {
+            setError(
+              "You don't have permission to view these orders."
+            );
+          } else {
+            setError(
+              "Couldn't load your orders. Please try again."
+            );
           }
-        );
-      } catch (err) {
-        console.error("OrdersPage query error:", err);
+        }
+      );
+    };
 
-        setLoading(false);
-        setError(
-          "Something went wrong while loading your orders."
-        );
-      }
-    });
+    /*
+     * Auth may not be immediately available.
+     */
+    const unsubscribeAuth =
+      auth.onAuthStateChanged(() => {
+        if (unsubscribe) {
+          unsubscribe();
+          unsubscribe = null;
+        }
+
+        setupOrdersListener();
+      });
 
     return () => {
       unsubscribeAuth();
 
-      if (unsubscribeOrders) {
-        unsubscribeOrders();
+      if (unsubscribe) {
+        unsubscribe();
       }
     };
   }, []);
 
   /*
-   * ============================================================
-   * HELPERS
-   * ============================================================
+   * ------------------------------------------------------------
+   * ORDER STATS
+   * ------------------------------------------------------------
    */
 
-  const normalizeStatus = (status) => {
-    if (!status) return "new";
+  const orderStats = useMemo(() => {
+    const delivered = orders.filter((order) => {
+      const status = String(
+        order.status || ""
+      ).toLowerCase();
 
-    return String(status)
-      .trim()
-      .toLowerCase()
-      .replace(/[_-]+/g, " ")
-      .replace(/\s+/g, " ");
-  };
+      return (
+        status.includes("deliver") &&
+        !status.includes("out")
+      );
+    }).length;
 
-  const getStatusConfig = (status) => {
-    const normalized = normalizeStatus(status);
+    const active = orders.filter((order) => {
+      const status = String(
+        order.status || ""
+      ).toLowerCase();
 
-    switch (normalized) {
-      case "new":
-      case "placed":
-      case "order placed":
-        return {
-          label: "Order Placed",
-          className: "status-new",
-          icon: ShoppingBag,
-        };
+      return (
+        !status.includes("deliver") &&
+        !status.includes("cancel") &&
+        !status.includes("failed")
+      );
+    }).length;
 
-      case "accepted":
-        return {
-          label: "Accepted",
-          className: "status-accepted",
-          icon: Check,
-        };
+    return {
+      total: orders.length,
+      delivered,
+      active,
+    };
+  }, [orders]);
 
-      case "preparing":
-      case "being prepared":
-        return {
-          label: "Preparing",
-          className: "status-preparing",
-          icon: Coffee,
-        };
+  /*
+   * ------------------------------------------------------------
+   * NAVIGATION
+   * ------------------------------------------------------------
+   */
 
-      case "ready":
-      case "ready for pickup":
-        return {
-          label: "Ready",
-          className: "status-ready",
-          icon: Package,
-        };
-
-      case "assigned":
-        return {
-          label: "Rider Assigned",
-          className: "status-assigned",
-          icon: Truck,
-        };
-
-      case "out for delivery":
-      case "outfordelivery":
-      case "out_for_delivery":
-        return {
-          label: "Out for Delivery",
-          className: "status-delivery",
-          icon: Truck,
-        };
-
-      case "delivered":
-      case "completed":
-        return {
-          label: "Delivered",
-          className: "status-delivered",
-          icon: Check,
-        };
-
-      case "cancelled":
-      case "canceled":
-        return {
-          label: "Cancelled",
-          className: "status-cancelled",
-          icon: X,
-        };
-
-      case "failed":
-      case "delivery failed":
-        return {
-          label: "Delivery Failed",
-          className: "status-failed",
-          icon: AlertCircle,
-        };
-
-      default:
-        return {
-          label: String(status)
-            .replace(/[_-]/g, " ")
-            .replace(/\b\w/g, (char) =>
-              char.toUpperCase()
-            ),
-          className: "status-default",
-          icon: Clock3,
-        };
-    }
-  };
-
-  const formatDate = (createdAt) => {
-    if (!createdAt) return "Date unavailable";
-
-    try {
-      let date = null;
-
-      if (
-        createdAt &&
-        typeof createdAt.toDate === "function"
-      ) {
-        date = createdAt.toDate();
-      } else if (createdAt instanceof Date) {
-        date = createdAt;
-      } else if (
-        typeof createdAt === "string" ||
-        typeof createdAt === "number"
-      ) {
-        date = new Date(createdAt);
-      }
-
-      if (!date || Number.isNaN(date.getTime())) {
-        return "Date unavailable";
-      }
-
-      return date.toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
-    } catch (err) {
-      console.error("Date formatting error:", err);
-      return "Date unavailable";
-    }
-  };
-
-  const formatTime = (createdAt) => {
-    if (!createdAt) return "";
-
-    try {
-      let date = null;
-
-      if (
-        createdAt &&
-        typeof createdAt.toDate === "function"
-      ) {
-        date = createdAt.toDate();
-      } else if (createdAt instanceof Date) {
-        date = createdAt;
-      } else {
-        date = new Date(createdAt);
-      }
-
-      if (!date || Number.isNaN(date.getTime())) {
-        return "";
-      }
-
-      return date.toLocaleTimeString("en-IN", {
-        hour: "numeric",
-        minute: "2-digit",
-      });
-    } catch {
-      return "";
-    }
-  };
-
-  const formatCurrency = (amount) => {
-    const numericAmount = Number(amount);
-
-    if (!Number.isFinite(numericAmount)) {
-      return "₹0";
-    }
-
-    return `₹${numericAmount.toLocaleString("en-IN", {
-      maximumFractionDigits: 2,
-    })}`;
-  };
-
-  const getItemImage = (item) => {
-    if (!item || typeof item !== "object") {
-      return null;
-    }
-
-    const possibleImages = [
-      item.image,
-      item.imageUrl,
-      item.img,
-      item.photo,
-      item.photoUrl,
-      item.thumbnail,
-      item.thumbnailUrl,
-    ];
-
-    const validImage = possibleImages.find(
-      (value) =>
-        typeof value === "string" &&
-        value.trim().length > 0
-    );
-
-    return validImage || null;
-  };
-
-  const getItemQuantity = (item) => {
-    const quantity = Number(
-      item?.qty ??
-        item?.quantity ??
-        item?.count ??
-        1
-    );
-
-    return Number.isFinite(quantity) && quantity > 0
-      ? quantity
-      : 1;
-  };
-
-  const getItemSize = (item) => {
-    if (!item?.size) return "";
-
-    return String(item.size);
-  };
-
-  const getItemName = (item) => {
-    return (
-      item?.name ||
-      item?.title ||
-      item?.productName ||
-      "Brewed Item"
-    );
-  };
-
-  const getOrderItemCount = (order) => {
-    if (!Array.isArray(order?.items)) return 0;
-
-    return order.items.reduce(
-      (total, item) =>
-        total + getItemQuantity(item),
-      0
-    );
+  const goToMenu = () => {
+    setPage("menu");
   };
 
   /*
-   * ============================================================
-   * SAFE REORDER
-   * ============================================================
+   * ------------------------------------------------------------
+   * REORDER
+   * ------------------------------------------------------------
    */
 
-  const handleReorder = async (event, order) => {
-    event.preventDefault();
+  const handleReorder = async (
+    event,
+    items
+  ) => {
     event.stopPropagation();
 
-    if (!Array.isArray(order?.items)) {
-      return;
-    }
-
-    if (order.items.length === 0) {
+    if (!items || !Array.isArray(items)) {
       return;
     }
 
     try {
-      await reorder(order.items);
-
-      /*
-       * Reorder stays on the Orders page.
-       *
-       * If your CartContext already navigates to cart,
-       * that behavior remains controlled by your context.
-       */
+      await reorder(items);
+      setPage("cart");
     } catch (err) {
-      console.error("Reorder failed:", err);
+      console.error(
+        "🔥 REORDER ERROR:",
+        err
+      );
 
       alert(
         "We couldn't add this order to your cart. Please try again."
@@ -409,56 +414,37 @@ export default function OrdersPage({ setPage }) {
   };
 
   /*
-   * ============================================================
-   * ORDER SUMMARY
-   * ============================================================
-   */
-
-  const orderCountLabel = useMemo(() => {
-    if (orders.length === 0) {
-      return "";
-    }
-
-    return `${orders.length} ${
-      orders.length === 1 ? "order" : "orders"
-    }`;
-  }, [orders.length]);
-
-  /*
-   * ============================================================
+   * ------------------------------------------------------------
    * RENDER
-   * ============================================================
+   * ------------------------------------------------------------
    */
 
   return (
     <>
       <style>{`
-        * {
-          box-sizing: border-box;
-        }
-
         .orders-page {
           min-height: 100vh;
           background:
             radial-gradient(
               circle at top left,
-              rgba(196, 149, 106, 0.08),
-              transparent 35%
+              rgba(196,149,106,0.08),
+              transparent 30%
             ),
             #FAF6F0;
-          padding: 88px 20px 60px;
+          padding: 42px 20px 80px;
+          box-sizing: border-box;
           color: #1A0B05;
         }
 
         .orders-container {
           width: 100%;
-          max-width: 780px;
+          max-width: 850px;
           margin: 0 auto;
         }
 
-        .orders-topbar {
-          margin-bottom: 28px;
-        }
+        /* -------------------------------------------------- */
+        /* HEADER */
+        /* -------------------------------------------------- */
 
         .orders-back {
           display: inline-flex;
@@ -467,9 +453,9 @@ export default function OrdersPage({ setPage }) {
           border: none;
           background: transparent;
           color: #70645C;
-          padding: 0;
-          font-size: 14px;
+          font-size: 0.9rem;
           font-weight: 600;
+          padding: 7px 0;
           cursor: pointer;
           transition: color 0.2s ease;
         }
@@ -478,56 +464,81 @@ export default function OrdersPage({ setPage }) {
           color: #1A0B05;
         }
 
-        .orders-heading-row {
+        .orders-header {
           display: flex;
           align-items: flex-end;
           justify-content: space-between;
           gap: 20px;
           margin-top: 18px;
+          margin-bottom: 28px;
         }
 
         .orders-heading {
           margin: 0;
-          font-family: "Playfair Display", serif;
-          font-size: clamp(2.2rem, 6vw, 3.2rem);
+          font-family: 'Playfair Display', serif;
+          font-size: clamp(2.1rem, 5vw, 3rem);
           font-weight: 500;
-          line-height: 1;
-          letter-spacing: -0.03em;
+          line-height: 1.05;
+          letter-spacing: -0.025em;
           color: #1A0B05;
         }
 
         .orders-subtitle {
-          margin: 10px 0 0;
-          color: #70645C;
-          font-size: 14px;
+          margin: 9px 0 0;
+          color: #81756D;
+          font-size: 0.94rem;
           line-height: 1.5;
         }
 
-        .orders-count {
-          flex-shrink: 0;
-          padding: 8px 13px;
-          border-radius: 999px;
-          background: rgba(196, 149, 106, 0.12);
-          color: #805D3F;
-          font-size: 12px;
+        /* -------------------------------------------------- */
+        /* STATS */
+        /* -------------------------------------------------- */
+
+        .orders-stats {
+          display: flex;
+          gap: 9px;
+          flex-wrap: wrap;
+        }
+
+        .orders-stat {
+          min-width: 72px;
+          padding: 10px 13px;
+          background: rgba(255,255,255,0.72);
+          border: 1px solid #E6DFD5;
+          border-radius: 13px;
+          text-align: center;
+          box-sizing: border-box;
+        }
+
+        .orders-stat-number {
+          display: block;
+          font-size: 1rem;
+          font-weight: 800;
+          color: #1A0B05;
+        }
+
+        .orders-stat-label {
+          display: block;
+          margin-top: 2px;
+          font-size: 0.67rem;
+          color: #8B7D74;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
           font-weight: 700;
         }
 
-        .orders-list {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
+        /* -------------------------------------------------- */
+        /* ORDER CARD */
+        /* -------------------------------------------------- */
 
         .order-card {
-          position: relative;
-          overflow: hidden;
-          background: #FFFFFF;
+          background: rgba(255,255,255,0.94);
           border: 1px solid #E6DFD5;
           border-radius: 22px;
+          margin-bottom: 16px;
           padding: 20px;
           box-shadow:
-            0 7px 25px rgba(26, 11, 5, 0.045);
+            0 8px 30px rgba(26,11,5,0.045);
           cursor: pointer;
           transition:
             transform 0.22s ease,
@@ -537,102 +548,92 @@ export default function OrdersPage({ setPage }) {
 
         .order-card:hover {
           transform: translateY(-2px);
-          border-color: #D7C6B5;
+          border-color: #D7C2AE;
           box-shadow:
-            0 12px 30px rgba(26, 11, 5, 0.075);
+            0 14px 36px rgba(26,11,5,0.075);
         }
 
         .order-card:active {
           transform: translateY(0);
         }
 
-        .order-header {
+        .order-top {
           display: flex;
-          justify-content: space-between;
           align-items: center;
+          justify-content: space-between;
           gap: 12px;
-          padding-bottom: 15px;
-          border-bottom: 1px solid #F0EBE4;
-        }
-
-        .order-id-block {
-          min-width: 0;
+          margin-bottom: 17px;
         }
 
         .order-number {
-          margin: 0;
-          color: #1A0B05;
-          font-size: 13px;
-          font-weight: 800;
-          letter-spacing: 0.04em;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #70645C;
+          font-size: 0.78rem;
+          font-weight: 700;
+          letter-spacing: 0.025em;
         }
 
         .order-date {
-          margin: 4px 0 0;
-          color: #8C8179;
-          font-size: 12px;
+          margin-top: 3px;
+          font-size: 0.74rem;
+          color: #A0958D;
         }
 
-        .status-badge {
+        /* -------------------------------------------------- */
+        /* STATUS */
+        /* -------------------------------------------------- */
+
+        .order-status {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          flex-shrink: 0;
-          padding: 7px 11px;
+          padding: 7px 10px;
           border-radius: 999px;
-          font-size: 11px;
+          font-size: 0.72rem;
           font-weight: 800;
-          letter-spacing: 0.01em;
+          white-space: nowrap;
         }
 
         .status-new {
-          background: #F4EFEA;
-          color: #6B5141;
-        }
-
-        .status-accepted {
-          background: #EDF5EE;
-          color: #4A7A5B;
+          background: #F4EEE8;
+          color: #6E5140;
         }
 
         .status-preparing {
-          background: #FFF4DE;
-          color: #9A6A16;
-        }
-
-        .status-ready {
-          background: #F3EAFE;
-          color: #77539B;
+          background: #FFF4DB;
+          color: #9A6910;
         }
 
         .status-assigned {
-          background: #EAF2FA;
-          color: #416A91;
+          background: #F1EAFE;
+          color: #7050A6;
         }
 
         .status-delivery {
-          background: #E9F4F5;
-          color: #34747A;
+          background: #EAF3F7;
+          color: #35677A;
         }
 
         .status-delivered {
-          background: #EAF5EC;
-          color: #397047;
+          background: #E8F3EA;
+          color: #467051;
         }
 
-        .status-cancelled,
-        .status-failed {
-          background: #FCEDEA;
-          color: #A94E3A;
+        .status-cancelled {
+          background: #FCEAE6;
+          color: #A84E39;
         }
 
-        .status-default {
-          background: #F1EEEB;
-          color: #645A53;
-        }
+        /* -------------------------------------------------- */
+        /* ITEMS */
+        /* -------------------------------------------------- */
 
         .order-items {
-          padding: 17px 0 4px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
         }
 
         .order-item {
@@ -642,102 +643,96 @@ export default function OrdersPage({ setPage }) {
           min-width: 0;
         }
 
-        .order-item + .order-item {
-          margin-top: 13px;
-        }
-
-        .item-image-wrap {
+        .order-image-wrapper {
           width: 58px;
           height: 58px;
           flex: 0 0 58px;
+          position: relative;
           overflow: hidden;
           border-radius: 15px;
           background:
             linear-gradient(
               145deg,
-              #F4ECE3,
-              #EDE2D5
+              #F3E9DE,
+              #E9D8C7
             );
-          display: flex;
-          align-items: center;
-          justify-content: center;
         }
 
-        .item-image {
-          display: block;
+        .order-image {
           width: 100%;
           height: 100%;
+          display: block;
           object-fit: cover;
         }
 
-        .item-image-fallback {
-          color: #9D7A5B;
+        .image-fallback {
+          width: 100%;
+          height: 100%;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          color: #806957;
         }
 
-        .item-details {
-          min-width: 0;
+        .order-item-info {
           flex: 1;
+          min-width: 0;
         }
 
-        .item-name {
+        .order-item-name {
           margin: 0;
-          color: #2A1710;
-          font-size: 14px;
+          color: #2A160C;
+          font-size: 0.95rem;
           font-weight: 750;
-          line-height: 1.3;
-          white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
-        .item-meta {
-          margin: 5px 0 0;
-          color: #8B8078;
-          font-size: 12px;
+        .order-item-meta {
+          margin-top: 4px;
+          color: #93877F;
+          font-size: 0.76rem;
           line-height: 1.4;
         }
 
-        .item-price {
-          flex-shrink: 0;
-          color: #2A1710;
-          font-size: 13px;
-          font-weight: 700;
+        .order-item-price {
+          color: #3A2417;
+          font-size: 0.85rem;
+          font-weight: 750;
+          white-space: nowrap;
         }
 
-        .more-items {
-          margin: 14px 0 0 71px;
-          color: #8B8078;
-          font-size: 12px;
-          font-weight: 600;
-        }
+        /* -------------------------------------------------- */
+        /* BOTTOM */
+        /* -------------------------------------------------- */
 
-        .order-footer {
+        .order-bottom {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 14px;
-          margin-top: 15px;
-          padding-top: 15px;
+          gap: 15px;
+          margin-top: 18px;
+          padding-top: 16px;
           border-top: 1px solid #F0EBE4;
         }
 
         .order-total-label {
-          margin: 0 0 3px;
-          color: #8C8179;
-          font-size: 11px;
-          font-weight: 600;
+          color: #958A82;
+          font-size: 0.73rem;
+          margin-bottom: 2px;
         }
 
         .order-total {
-          margin: 0;
           color: #1A0B05;
-          font-size: 18px;
-          font-weight: 800;
+          font-size: 1.15rem;
+          font-weight: 850;
         }
 
-        .order-total-meta {
-          color: #8C8179;
-          font-size: 11px;
+        .order-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
 
         .reorder-button {
@@ -745,58 +740,115 @@ export default function OrdersPage({ setPage }) {
           align-items: center;
           justify-content: center;
           gap: 7px;
-          min-height: 40px;
-          padding: 0 16px;
-          border: 1px solid #1A0B05;
-          border-radius: 12px;
+          border: none;
           background: #1A0B05;
-          color: #FFFFFF;
-          font-size: 12px;
+          color: #FFF;
+          border-radius: 12px;
+          padding: 10px 15px;
+          font-size: 0.78rem;
           font-weight: 750;
           cursor: pointer;
           transition:
-            background 0.2s ease,
-            transform 0.2s ease;
+            transform 0.2s ease,
+            background 0.2s ease;
         }
 
         .reorder-button:hover {
-          background: #321910;
+          background: #321A0E;
+          transform: translateY(-1px);
         }
 
-        .reorder-button:active {
-          transform: scale(0.97);
+        .view-order {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 11px;
+          background: #F8F3ED;
+          color: #6F5D50;
         }
 
-        .order-chevron {
-          position: absolute;
-          right: 16px;
-          bottom: 20px;
-          color: #C7B9AE;
-          pointer-events: none;
+        /* -------------------------------------------------- */
+        /* EMPTY */
+        /* -------------------------------------------------- */
+
+        .orders-empty {
+          background: rgba(255,255,255,0.92);
+          border: 1px solid #E6DFD5;
+          border-radius: 24px;
+          padding: 55px 25px;
+          text-align: center;
+          box-shadow: 0 10px 35px rgba(26,11,5,0.04);
         }
 
-        .loading-list {
+        .empty-icon {
+          width: 62px;
+          height: 62px;
+          margin: 0 auto 17px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 20px;
+          background: #F5EDE4;
+          color: #806957;
+        }
+
+        .orders-empty h2 {
+          margin: 0;
+          font-family: 'Playfair Display', serif;
+          font-size: 1.55rem;
+          font-weight: 500;
+          color: #2A160C;
+        }
+
+        .orders-empty p {
+          max-width: 390px;
+          margin: 9px auto 20px;
+          color: #887C74;
+          font-size: 0.88rem;
+          line-height: 1.5;
+        }
+
+        .empty-button {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          border: none;
+          border-radius: 12px;
+          padding: 11px 17px;
+          background: #1A0B05;
+          color: #FFF;
+          font-weight: 750;
+          cursor: pointer;
+        }
+
+        /* -------------------------------------------------- */
+        /* LOADING */
+        /* -------------------------------------------------- */
+
+        .orders-loading {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 12px;
         }
 
-        .skeleton-card {
-          height: 230px;
+        .order-skeleton {
+          height: 150px;
           border-radius: 22px;
-          border: 1px solid #E6DFD5;
           background:
             linear-gradient(
               90deg,
-              #FFFFFF 25%,
-              #F5F0EA 50%,
-              #FFFFFF 75%
+              #F3EEE8 25%,
+              #FAF7F3 50%,
+              #F3EEE8 75%
             );
           background-size: 200% 100%;
-          animation: orderSkeleton 1.4s infinite;
+          animation: orderShimmer 1.35s infinite;
+          border: 1px solid #E9E1D8;
         }
 
-        @keyframes orderSkeleton {
+        @keyframes orderShimmer {
           0% {
             background-position: 200% 0;
           }
@@ -806,74 +858,70 @@ export default function OrdersPage({ setPage }) {
           }
         }
 
-        .orders-state {
+        /* -------------------------------------------------- */
+        /* ERROR */
+        /* -------------------------------------------------- */
+
+        .orders-error {
+          background: #FFF;
+          border: 1px solid #E8D8D1;
+          border-radius: 20px;
+          padding: 28px;
           text-align: center;
-          padding: 58px 25px;
-          background: #FFFFFF;
-          border: 1px solid #E6DFD5;
-          border-radius: 22px;
         }
 
-        .orders-state-icon {
-          width: 56px;
-          height: 56px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto 16px;
-          border-radius: 18px;
-          background: #F4ECE3;
-          color: #8A674A;
+        .orders-error-icon {
+          color: #B65C44;
+          margin-bottom: 8px;
         }
 
-        .orders-state h2 {
-          margin: 0;
-          font-family: "Playfair Display", serif;
-          font-size: 24px;
+        .orders-error h3 {
+          margin: 0 0 6px;
+          font-family: 'Playfair Display', serif;
+          font-size: 1.35rem;
           font-weight: 500;
-          color: #1A0B05;
         }
 
-        .orders-state p {
-          max-width: 420px;
-          margin: 9px auto 0;
-          color: #70645C;
-          font-size: 14px;
-          line-height: 1.55;
+        .orders-error p {
+          margin: 0 0 17px;
+          color: #83776F;
+          font-size: 0.85rem;
         }
 
-        .state-button {
+        .retry-button {
           display: inline-flex;
           align-items: center;
-          justify-content: center;
           gap: 7px;
-          margin-top: 20px;
-          padding: 11px 18px;
-          border: none;
-          border-radius: 12px;
-          background: #1A0B05;
-          color: #FFFFFF;
-          font-size: 13px;
+          border: 1px solid #D7C5B6;
+          background: #FAF6F0;
+          color: #3A2417;
+          border-radius: 11px;
+          padding: 9px 14px;
           font-weight: 700;
           cursor: pointer;
         }
 
-        .error-state .orders-state-icon {
-          background: #FCEDEA;
-          color: #A94E3A;
-        }
+        /* -------------------------------------------------- */
+        /* MOBILE */
+        /* -------------------------------------------------- */
 
-        @media (max-width: 600px) {
+        @media (max-width: 650px) {
           .orders-page {
-            padding: 76px 14px 40px;
+            padding: 25px 14px 55px;
           }
 
-          .orders-heading-row {
+          .orders-header {
             align-items: flex-start;
+            flex-direction: column;
+            margin-bottom: 22px;
           }
 
-          .orders-count {
-            display: none;
+          .orders-stats {
+            width: 100%;
+          }
+
+          .orders-stat {
+            flex: 1;
           }
 
           .order-card {
@@ -881,47 +929,62 @@ export default function OrdersPage({ setPage }) {
             border-radius: 19px;
           }
 
-          .order-header {
+          .order-top {
             align-items: flex-start;
           }
 
-          .status-badge {
-            padding: 6px 9px;
-            font-size: 10px;
+          .order-status {
+            font-size: 0.67rem;
+            padding: 6px 8px;
           }
 
-          .item-image-wrap {
+          .order-image-wrapper {
             width: 52px;
             height: 52px;
             flex-basis: 52px;
           }
 
-          .more-items {
-            margin-left: 65px;
+          .order-item-name {
+            font-size: 0.88rem;
           }
 
-          .order-footer {
+          .order-bottom {
             align-items: flex-end;
           }
 
-          .reorder-button {
-            padding: 0 13px;
-            min-height: 38px;
+          .order-actions {
+            flex-shrink: 0;
           }
 
-          .order-chevron {
+          .reorder-button {
+            padding: 9px 11px;
+          }
+
+          .reorder-button span {
+            display: none;
+          }
+
+          .view-order {
             display: none;
           }
         }
 
-        @media (max-width: 390px) {
-          .order-footer {
+        @media (max-width: 400px) {
+          .order-top {
             flex-direction: column;
-            align-items: stretch;
+            gap: 9px;
           }
 
-          .reorder-button {
-            width: 100%;
+          .order-status {
+            align-self: flex-start;
+          }
+
+          .order-bottom {
+            gap: 8px;
+          }
+
+          .order-total {
+            font-size: 1rem;
           }
         }
       `}</style>
@@ -929,71 +992,87 @@ export default function OrdersPage({ setPage }) {
       <main className="orders-page">
         <div className="orders-container">
 
-          {/* ==================================================
-              HEADER
-          ================================================== */}
+          {/* BACK */}
+          <button
+            type="button"
+            className="orders-back"
+            onClick={goToMenu}
+          >
+            <ArrowLeft size={16} />
+            Back to Menu
+          </button>
 
-          <header className="orders-topbar">
-            <button
-              type="button"
-              className="orders-back"
-              onClick={() => setPage("menu")}
-            >
-              <ArrowLeft size={16} />
-              Back to Menu
-            </button>
+          {/* HEADER */}
+          <header className="orders-header">
+            <div>
+              <h1 className="orders-heading">
+                Your Orders
+              </h1>
 
-            <div className="orders-heading-row">
-              <div>
-                <h1 className="orders-heading">
-                  Your Orders
-                </h1>
-
-                <p className="orders-subtitle">
-                  A little history of everything you've brewed.
-                </p>
-              </div>
-
-              {orderCountLabel && (
-                <span className="orders-count">
-                  {orderCountLabel}
-                </span>
-              )}
+              <p className="orders-subtitle">
+                A little history of everything you've brewed.
+              </p>
             </div>
+
+            {!loading && !error && orders.length > 0 && (
+              <div className="orders-stats">
+                <div className="orders-stat">
+                  <span className="orders-stat-number">
+                    {orderStats.total}
+                  </span>
+                  <span className="orders-stat-label">
+                    Orders
+                  </span>
+                </div>
+
+                <div className="orders-stat">
+                  <span className="orders-stat-number">
+                    {orderStats.active}
+                  </span>
+                  <span className="orders-stat-label">
+                    Active
+                  </span>
+                </div>
+
+                <div className="orders-stat">
+                  <span className="orders-stat-number">
+                    {orderStats.delivered}
+                  </span>
+                  <span className="orders-stat-label">
+                    Delivered
+                  </span>
+                </div>
+              </div>
+            )}
           </header>
 
-          {/* ==================================================
-              LOADING
-          ================================================== */}
-
+          {/* LOADING */}
           {loading && (
-            <div
-              className="loading-list"
-              aria-label="Loading orders"
-            >
-              <div className="skeleton-card" />
-              <div className="skeleton-card" />
-              <div className="skeleton-card" />
+            <div className="orders-loading">
+              <div className="order-skeleton" />
+              <div className="order-skeleton" />
+              <div className="order-skeleton" />
             </div>
           )}
 
-          {/* ==================================================
-              ERROR
-          ================================================== */}
-
+          {/* ERROR */}
           {!loading && error && (
-            <div className="orders-state error-state">
-              <div className="orders-state-icon">
-                <AlertCircle size={25} />
+            <div className="orders-error">
+              <div className="orders-error-icon">
+                <XCircle size={30} />
               </div>
 
-              <h2>Couldn't load your orders</h2>
+              <h3>
+                Couldn't load your orders
+              </h3>
 
-              <p>{error}</p>
+              <p>
+                {error}
+              </p>
 
               <button
                 type="button"
-                className="state-button"
+                className="retry-button"
                 onClick={() => window.location.reload()}
               >
                 <RefreshCw size={15} />
@@ -1002,105 +1081,94 @@ export default function OrdersPage({ setPage }) {
             </div>
           )}
 
-          {/* ==================================================
-              EMPTY
-          ================================================== */}
-
+          {/* EMPTY */}
           {!loading &&
             !error &&
             orders.length === 0 && (
-              <div className="orders-state">
-                <div className="orders-state-icon">
-                  <Coffee size={25} />
+              <div className="orders-empty">
+                <div className="empty-icon">
+                  <ShoppingBag size={29} />
                 </div>
 
-                <h2>No orders yet</h2>
+                <h2>
+                  Nothing brewed yet
+                </h2>
 
                 <p>
-                  Your first cup is waiting. Explore the menu
-                  and find something worth brewing.
+                  Your future coffee runs will appear here.
+                  Find something lovely on the menu and
+                  make your first order.
                 </p>
 
                 <button
                   type="button"
-                  className="state-button"
-                  onClick={() => setPage("menu")}
+                  className="empty-button"
+                  onClick={goToMenu}
                 >
                   Explore Menu
-                  <ChevronRight size={16} />
+                  <ArrowRight size={16} />
                 </button>
               </div>
             )}
 
-          {/* ==================================================
-              ORDERS
-          ================================================== */}
-
+          {/* ORDERS */}
           {!loading &&
             !error &&
             orders.length > 0 && (
-              <section className="orders-list">
+              <section>
                 {orders.map((order) => {
                   const statusConfig =
-                    getStatusConfig(order.status);
-
-                  const StatusIcon =
-                    statusConfig.icon;
-
-                  const items = Array.isArray(
-                    order.items
-                  )
-                    ? order.items
-                    : [];
-
-                  const visibleItems =
-                    items.slice(0, 3);
-
-                  const remainingItems =
-                    Math.max(
-                      0,
-                      items.length -
-                        visibleItems.length
+                    getStatusConfig(
+                      order.status
                     );
 
-                  const totalItemCount =
-                    getOrderItemCount(order);
+                  const items =
+                    Array.isArray(order.items)
+                      ? order.items
+                      : [];
+
+                  const totalItems = items.reduce(
+                    (sum, item) =>
+                      sum +
+                      Number(
+                        item?.qty ||
+                        item?.quantity ||
+                        1
+                      ),
+                    0
+                  );
 
                   return (
                     <article
                       key={order.id}
                       className="order-card"
+                      onClick={goToMenu}
                       role="button"
                       tabIndex={0}
-                      onClick={() =>
-                        setPage("menu")
-                      }
                       onKeyDown={(event) => {
                         if (
                           event.key === "Enter" ||
                           event.key === " "
                         ) {
                           event.preventDefault();
-                          setPage("menu");
+                          goToMenu();
                         }
                       }}
-                      aria-label={`Order ${order.id
-                        .slice(-6)
-                        .toUpperCase()}`}
                     >
 
-                      {/* ORDER HEADER */}
+                      {/* ORDER TOP */}
+                      <div className="order-top">
 
-                      <div className="order-header">
-                        <div className="order-id-block">
-                          <p className="order-number">
-                            ORDER #
+                        <div>
+                          <div className="order-number">
+                            <Package size={14} />
+                            Order #
                             {order.id
                               .slice(-6)
                               .toUpperCase()}
-                          </p>
+                          </div>
 
-                          <p className="order-date">
+                          <div className="order-date">
                             {formatDate(
                               order.createdAt
                             )}
@@ -1109,194 +1177,219 @@ export default function OrdersPage({ setPage }) {
                               order.createdAt
                             ) && (
                               <>
-                                {" "}
-                                ·{" "}
+                                {" • "}
                                 {formatTime(
                                   order.createdAt
                                 )}
                               </>
                             )}
-                          </p>
+                          </div>
                         </div>
 
-                        <span
-                          className={`status-badge ${statusConfig.className}`}
+                        <div
+                          className={`order-status ${statusConfig.className}`}
                         >
-                          <StatusIcon size={13} />
+                          {statusConfig.icon}
                           {statusConfig.label}
-                        </span>
+                        </div>
+
                       </div>
 
-                      {/* ORDER ITEMS */}
-
+                      {/* ITEMS */}
                       <div className="order-items">
-                        {visibleItems.map(
-                          (item, index) => {
-                            const image =
-                              getItemImage(item);
 
-                            const quantity =
-                              getItemQuantity(
-                                item
-                              );
+                        {items.length > 0 ? (
+                          items.map(
+                            (item, index) => {
+                              const image =
+                                getItemImage(item);
 
-                            const size =
-                              getItemSize(item);
+                              const quantity =
+                                Number(
+                                  item?.qty ||
+                                  item?.quantity ||
+                                  1
+                                );
 
-                            const itemName =
-                              getItemName(item);
+                              const size =
+                                item?.size ||
+                                item?.variant ||
+                                "";
 
-                            return (
-                              <div
-                                className="order-item"
-                                key={
-                                  item?.id ||
-                                  item?.menuItemId ||
-                                  `${itemName}-${index}`
-                                }
-                              >
-                                <div className="item-image-wrap">
-                                  {image ? (
-                                    <img
-                                      src={image}
-                                      alt={itemName}
-                                      className="item-image"
-                                      loading="lazy"
-                                      onError={(
-                                        event
-                                      ) => {
-                                        event.currentTarget.style.display =
-                                          "none";
+                              const price =
+                                Number(
+                                  item?.price ||
+                                  item?.finalPrice ||
+                                  0
+                                );
 
-                                        const parent =
-                                          event
-                                            .currentTarget
-                                            .parentElement;
+                              return (
+                                <div
+                                  className="order-item"
+                                  key={
+                                    item?.id ||
+                                    item?.productId ||
+                                    index
+                                  }
+                                >
 
-                                        if (
-                                          parent &&
-                                          !parent.querySelector(
-                                            ".item-image-fallback"
-                                          )
-                                        ) {
-                                          const fallback =
-                                            document.createElement(
-                                              "div"
-                                            );
+                                  {/* IMAGE */}
+                                  <div className="order-image-wrapper">
 
-                                          fallback.className =
-                                            "item-image-fallback";
-
-                                          fallback.innerHTML =
-                                            "☕";
-
-                                          parent.appendChild(
-                                            fallback
-                                          );
+                                    {image ? (
+                                      <img
+                                        className="order-image"
+                                        src={image}
+                                        alt={
+                                          item?.name ||
+                                          "Ordered item"
                                         }
-                                      }}
-                                    />
-                                  ) : (
-                                    <div className="item-image-fallback">
-                                      <Coffee
-                                        size={22}
+                                        loading="lazy"
+                                        onError={
+                                          handleImageError
+                                        }
                                       />
+                                    ) : null}
+
+                                    <div
+                                      className="image-fallback"
+                                      style={{
+                                        display:
+                                          image
+                                            ? "none"
+                                            : "flex",
+                                      }}
+                                    >
+                                      <Coffee
+                                        size={23}
+                                        strokeWidth={1.8}
+                                      />
+                                    </div>
+
+                                  </div>
+
+                                  {/* INFO */}
+                                  <div className="order-item-info">
+                                    <p className="order-item-name">
+                                      {item?.name ||
+                                        "Coffee"}
+                                    </p>
+
+                                    <div className="order-item-meta">
+                                      Qty {quantity}
+
+                                      {size && (
+                                        <>
+                                          {" • "}
+                                          {size}
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* ITEM PRICE */}
+                                  {price > 0 && (
+                                    <div className="order-item-price">
+                                      ₹
+                                      {Math.round(
+                                        price *
+                                          quantity
+                                      )}
                                     </div>
                                   )}
                                 </div>
-
-                                <div className="item-details">
-                                  <p className="item-name">
-                                    {itemName}
-                                  </p>
-
-                                  <p className="item-meta">
-                                    Qty {quantity}
-
-                                    {size && (
-                                      <>
-                                        {" "}
-                                        · {size}
-                                      </>
-                                    )}
-                                  </p>
-                                </div>
-
-                                {item?.price != null && (
-                                  <span className="item-price">
-                                    {formatCurrency(
-                                      Number(
-                                        item.price
-                                      ) *
-                                        quantity
-                                    )}
-                                  </span>
-                                )}
+                              );
+                            }
+                          )
+                        ) : (
+                          <div className="order-item">
+                            <div className="order-image-wrapper">
+                              <div
+                                className="image-fallback"
+                                style={{
+                                  display: "flex",
+                                }}
+                              >
+                                <Coffee size={23} />
                               </div>
-                            );
-                          }
+                            </div>
+
+                            <div className="order-item-info">
+                              <p className="order-item-name">
+                                Brewed Order
+                              </p>
+
+                              <div className="order-item-meta">
+                                Order details unavailable
+                              </div>
+                            </div>
+                          </div>
                         )}
 
-                        {remainingItems > 0 && (
-                          <p className="more-items">
-                            + {remainingItems} more{" "}
-                            {remainingItems === 1
-                              ? "item"
-                              : "items"}
-                          </p>
-                        )}
                       </div>
 
-                      {/* FOOTER */}
+                      {/* BOTTOM */}
+                      <div className="order-bottom">
 
-                      <div className="order-footer">
                         <div>
-                          <p className="order-total-label">
-                            {totalItemCount}{" "}
-                            {totalItemCount === 1
+                          <div className="order-total-label">
+                            {totalItems}{" "}
+                            {totalItems === 1
                               ? "item"
-                              : "items"}
-                          </p>
+                              : "items"}{" "}
+                            • Total
+                          </div>
 
-                          <p className="order-total">
-                            {formatCurrency(
-                              order.total
+                          <div className="order-total">
+                            ₹
+                            {Number(
+                              order.total || 0
+                            ).toLocaleString(
+                              "en-IN"
                             )}
-                          </p>
-
-                          {order.paymentStatus && (
-                            <span className="order-total-meta">
-                              {String(
-                                order.paymentStatus
-                              ).toUpperCase()}
-                            </span>
-                          )}
+                          </div>
                         </div>
 
-                        <button
-                          type="button"
-                          className="reorder-button"
-                          onClick={(event) =>
-                            handleReorder(
-                              event,
-                              order
-                            )
-                          }
-                        >
-                          <RefreshCw size={14} />
-                          Reorder
-                        </button>
+                        <div className="order-actions">
+
+                          {/* REORDER */}
+                          {items.length > 0 && (
+                            <button
+                              type="button"
+                              className="reorder-button"
+                              onClick={(event) =>
+                                handleReorder(
+                                  event,
+                                  items
+                                )
+                              }
+                            >
+                              <RefreshCw
+                                size={14}
+                              />
+                              <span>
+                                Reorder
+                              </span>
+                            </button>
+                          )}
+
+                          {/* VISUAL NAVIGATION */}
+                          <div className="view-order">
+                            <ArrowRight
+                              size={16}
+                            />
+                          </div>
+
+                        </div>
+
                       </div>
 
-                      <ChevronRight
-                        className="order-chevron"
-                        size={17}
-                      />
                     </article>
                   );
                 })}
               </section>
             )}
+
         </div>
       </main>
     </>
