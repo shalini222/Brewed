@@ -1,20 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
 import {
   doc,
-  setDoc,
   getDoc,
   serverTimestamp,
+  setDoc,
 } from "firebase/firestore";
 
 import {
-  updateEmail,
-  updateProfile,
-  updatePhoneNumber,
-  sendPasswordResetEmail,
-  RecaptchaVerifier,
+  EmailAuthProvider,
   PhoneAuthProvider,
+  RecaptchaVerifier,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  updateEmail,
+  updatePhoneNumber,
+  updateProfile,
+  reauthenticateWithCredential,
+  reload,
 } from "firebase/auth";
 
 import {
@@ -23,6 +27,21 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 
+import {
+  Camera,
+  Check,
+  ChevronLeft,
+  Lock,
+  Mail,
+  MapPin,
+  Pencil,
+  Phone,
+  ShieldCheck,
+  Sparkles,
+  User,
+  X,
+} from "lucide-react";
+
 import { db, storage, auth } from "../firebase";
 
 import GooglePlacesAutocomplete from "react-google-places-autocomplete";
@@ -30,9 +49,9 @@ import GooglePlacesAutocomplete from "react-google-places-autocomplete";
 export default function ProfilePage({ setPage }) {
   const { currentUser } = useAuth();
 
-  // ---------------------------------------------------------
+  // =========================================================
   // STATE
-  // ---------------------------------------------------------
+  // =========================================================
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -56,25 +75,61 @@ export default function ProfilePage({ setPage }) {
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
+  // ---------------------------------------------------------
+  // PHONE VERIFICATION
+  // ---------------------------------------------------------
 
   const [phoneVerified, setPhoneVerified] = useState(false);
-const [pendingPhone, setPendingPhone] = useState("");
-const [otp, setOtp] = useState("");
-const [otpSent, setOtpSent] = useState(false);
-const [isPhoneProcessing, setIsPhoneProcessing] = useState(false);
-const [verificationId, setVerificationId] = useState(null);
-const [originalPhone, setOriginalPhone] = useState("");
+  const [originalPhone, setOriginalPhone] = useState("");
+  const [pendingPhone, setPendingPhone] = useState("");
+
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [verificationId, setVerificationId] =
+    useState(null);
+
+  const [isPhoneProcessing, setIsPhoneProcessing] =
+    useState(false);
 
   // ---------------------------------------------------------
-  // GOOGLE API KEY
+  // EMAIL VERIFICATION
   // ---------------------------------------------------------
+
+  const [emailVerified, setEmailVerified] =
+    useState(false);
+
+  const [isEmailProcessing, setIsEmailProcessing] =
+    useState(false);
+
+  // =========================================================
+  // CONFIG
+  // =========================================================
 
   const googleApiKey = "AIzaSyAZXXMZOvmUviZqgDoljAhSllaQLxelvfY";
-  
+    
 
-  // ---------------------------------------------------------
+  // =========================================================
+  // HELPERS
+  // =========================================================
+
+  const clearMessages = () => {
+    setMessage("");
+    setErrorMessage("");
+  };
+
+  const normalizePhone = (value) =>
+    value.trim().replace(/\s+/g, "");
+
+  const phoneChanged = useMemo(() => {
+    return (
+      normalizePhone(phone) !==
+      normalizePhone(originalPhone)
+    );
+  }, [phone, originalPhone]);
+
+  // =========================================================
   // LOAD PROFILE
-  // ---------------------------------------------------------
+  // =========================================================
 
   useEffect(() => {
     if (!currentUser) {
@@ -82,20 +137,27 @@ const [originalPhone, setOriginalPhone] = useState("");
       return;
     }
 
+    let mounted = true;
+
     const fetchProfile = async () => {
       setIsLoading(true);
-      setErrorMessage("");
+      clearMessages();
 
       try {
-        // Firebase Auth
+        await reload(currentUser);
+
+        if (!mounted) return;
+
         setFullName(currentUser.displayName || "");
         setEmail(currentUser.email || "");
+        setEmailVerified(
+          currentUser.emailVerified === true
+        );
 
         if (currentUser.photoURL) {
           setAvatarUrl(currentUser.photoURL);
         }
 
-        // Membership date
         if (currentUser.metadata?.creationTime) {
           const joined = new Date(
             currentUser.metadata.creationTime
@@ -109,7 +171,6 @@ const [originalPhone, setOriginalPhone] = useState("");
           );
         }
 
-        // Firestore
         const userRef = doc(
           db,
           "users",
@@ -118,6 +179,8 @@ const [originalPhone, setOriginalPhone] = useState("");
 
         const snapshot = await getDoc(userRef);
 
+        if (!mounted) return;
+
         if (!snapshot.exists()) {
           setIsLoading(false);
           return;
@@ -125,19 +188,24 @@ const [originalPhone, setOriginalPhone] = useState("");
 
         const data = snapshot.data();
 
-        setPhone(data.phone || "");
-        setOriginalPhone(data.phone || "");
-        setPhoneVerified(data.phoneVerified === true);
+        const storedPhone = data.phone || "";
+
+        setPhone(storedPhone);
+        setOriginalPhone(storedPhone);
+
+        setPhoneVerified(
+          data.phoneVerified === true
+        );
+
         setAddressType(
           data.addressType || "home"
         );
 
-        // ---------------------------------------------------
+        // -----------------------------------------------------
         // ADDRESS
-        // ---------------------------------------------------
+        // -----------------------------------------------------
 
         if (data.address) {
-          // Old Brewed address format
           if (typeof data.address === "string") {
             setAddress({
               formatted: data.address,
@@ -145,10 +213,7 @@ const [originalPhone, setOriginalPhone] = useState("");
               lat: null,
               lng: null,
             });
-          }
-
-          // New Brewed address format
-          else {
+          } else {
             setAddress({
               formatted:
                 data.address.formatted || "",
@@ -162,57 +227,73 @@ const [originalPhone, setOriginalPhone] = useState("");
           }
         }
 
-        // Birthday
+        // -----------------------------------------------------
+        // BIRTHDAY
+        // -----------------------------------------------------
+
         if (data.birthday) {
           setBirthday(data.birthday);
           setIsBirthdayLocked(true);
         }
 
-        // Photo
+        // -----------------------------------------------------
+        // PHOTO
+        // -----------------------------------------------------
+
         if (data.photoURL) {
           setAvatarUrl(data.photoURL);
         }
       } catch (error) {
         console.error(
-          "Error loading profile:",
+          "Profile loading failed:",
           error
         );
 
-        setErrorMessage(
-          "Unable to load your profile. Please try again."
-        );
+        if (mounted) {
+          setErrorMessage(
+            "We couldn't load your profile. Please try again."
+          );
+        }
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchProfile();
+
+    return () => {
+      mounted = false;
+    };
   }, [currentUser]);
 
-  // ---------------------------------------------------------
+  // =========================================================
   // PROFILE PHOTO
-  // ---------------------------------------------------------
+  // =========================================================
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files?.[0];
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0];
 
     if (!file || !currentUser) return;
 
-    setMessage("");
-    setErrorMessage("");
+    clearMessages();
 
-    // Validate file
     if (!file.type.startsWith("image/")) {
       setErrorMessage(
-        "Please select a valid image."
+        "Please choose a valid image file."
       );
+
+      event.target.value = "";
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
       setErrorMessage(
-        "Profile photo must be smaller than 5MB."
+        "Your profile photo must be smaller than 5MB."
       );
+
+      event.target.value = "";
       return;
     }
 
@@ -231,27 +312,23 @@ const [originalPhone, setOriginalPhone] = useState("");
       const downloadURL =
         await getDownloadURL(storageRef);
 
-      // Firebase Auth
       await updateProfile(currentUser, {
         photoURL: downloadURL,
       });
 
-      // Firestore
       await setDoc(
         doc(db, "users", currentUser.uid),
         {
           photoURL: downloadURL,
           updatedAt: serverTimestamp(),
         },
-        {
-          merge: true,
-        }
+        { merge: true }
       );
 
       setAvatarUrl(downloadURL);
 
       setMessage(
-        "Profile photo updated successfully."
+        "Your profile photo has been updated."
       );
     } catch (error) {
       console.error(
@@ -261,19 +338,17 @@ const [originalPhone, setOriginalPhone] = useState("");
 
       setErrorMessage(
         error.message ||
-          "Failed to upload profile photo."
+          "Unable to update your profile photo."
       );
     } finally {
       setIsProcessing(false);
-
-      // Allows selecting same file again
-      e.target.value = "";
+      event.target.value = "";
     }
   };
 
-  // ---------------------------------------------------------
-  // GET PLACE COORDINATES
-  // ---------------------------------------------------------
+  // =========================================================
+  // GOOGLE PLACE COORDINATES
+  // =========================================================
 
   const getPlaceCoordinates = (placeId) => {
     return new Promise((resolve) => {
@@ -293,9 +368,7 @@ const [originalPhone, setOriginalPhone] = useState("");
         new window.google.maps.Geocoder();
 
       geocoder.geocode(
-        {
-          placeId,
-        },
+        { placeId },
         (results, status) => {
           if (
             status === "OK" &&
@@ -319,13 +392,11 @@ const [originalPhone, setOriginalPhone] = useState("");
     });
   };
 
-  // ---------------------------------------------------------
-  // ADDRESS SELECTION
-  // ---------------------------------------------------------
+  // =========================================================
+  // ADDRESS
+  // =========================================================
 
-  const handleAddressChange = async (
-    selected
-  ) => {
+  const handleAddressChange = async (selected) => {
     if (!selected) {
       setAddress(null);
       return;
@@ -337,7 +408,6 @@ const [originalPhone, setOriginalPhone] = useState("");
     const formatted =
       selected.label || "";
 
-    // Immediately show selected address
     setAddress({
       formatted,
       placeId,
@@ -345,269 +415,472 @@ const [originalPhone, setOriginalPhone] = useState("");
       lng: null,
     });
 
-    // Get coordinates
-    if (placeId) {
-      try {
-        const coordinates =
-          await getPlaceCoordinates(
-            placeId
-          );
+    if (!placeId) return;
 
-        setAddress((previous) => {
-          if (!previous) return previous;
+    try {
+      const coordinates =
+        await getPlaceCoordinates(placeId);
 
-          return {
-            ...previous,
-            lat: coordinates.lat,
-            lng: coordinates.lng,
-          };
-        });
-      } catch (error) {
-        console.error(
-          "Unable to retrieve address coordinates:",
-          error
-        );
-      }
+      setAddress((previous) => {
+        if (!previous) return previous;
+
+        return {
+          ...previous,
+          lat: coordinates.lat,
+          lng: coordinates.lng,
+        };
+      });
+    } catch (error) {
+      console.error(
+        "Address coordinate lookup failed:",
+        error
+      );
     }
   };
 
+  // =========================================================
+  // RECAPTCHA
+  // =========================================================
 
-  // ---------------------------------------------------------
-  // PHONE SELECTION
-  // ---------------------------------------------------------
-
-
-
-// ---------------------------------------------------------
-// PHONE OTP / VERIFICATION
-// ---------------------------------------------------------
-
-const setupRecaptcha = () => {
-  if (window.recaptchaVerifier) {
-    return window.recaptchaVerifier;
-  }
-
-  window.recaptchaVerifier = new RecaptchaVerifier(
-    auth,
-    "phone-recaptcha",
-    {
-      size: "invisible",
-
-      callback: () => {
-        console.log("reCAPTCHA completed");
-      },
-
-      "expired-callback": () => {
-        if (window.recaptchaVerifier) {
-          window.recaptchaVerifier.clear();
-          window.recaptchaVerifier = null;
-        }
-      },
-    }
-  );
-
-  return window.recaptchaVerifier;
-};
-
-
-const handleSendPhoneOTP = async () => {
-  if (!currentUser) return;
-
-  const cleanedPhone = phone.trim();
-
-  // E.164 format
-  if (!/^\+[1-9]\d{7,14}$/.test(cleanedPhone)) {
-    setErrorMessage(
-      "Enter your phone number with country code, e.g. +919876543210."
-    );
-    return;
-  }
-
-  setIsPhoneProcessing(true);
-  setMessage("");
-  setErrorMessage("");
-
-  try {
-    const verifier = setupRecaptcha();
-
-    const provider = new PhoneAuthProvider(auth);
-
-    const id = await provider.verifyPhoneNumber(
-      cleanedPhone,
-      verifier
-    );
-
-    setVerificationId(id);
-    setPendingPhone(cleanedPhone);
-    setOtpSent(true);
-
-    setMessage(
-      `Verification code sent to ${cleanedPhone}.`
-    );
-
-  } catch (error) {
-    console.error("Phone OTP error:", error);
-
+  const setupRecaptcha = () => {
     if (window.recaptchaVerifier) {
-      window.recaptchaVerifier.clear();
-      window.recaptchaVerifier = null;
+      return window.recaptchaVerifier;
     }
 
-    if (error.code === "auth/invalid-phone-number") {
-      setErrorMessage("Please enter a valid phone number.");
-    } else if (error.code === "auth/too-many-requests") {
-      setErrorMessage(
-        "Too many verification attempts. Please try again later."
-      );
-    } else if (error.code === "auth/quota-exceeded") {
-      setErrorMessage(
-        "SMS verification limit reached. Please try again later."
-      );
-    } else {
-      setErrorMessage(
-        error.message ||
-        "Unable to send verification code."
-      );
-    }
-
-  } finally {
-    setIsPhoneProcessing(false);
-  }
-};
-
-
-const handleVerifyPhoneOTP = async () => {
-  if (!currentUser || !verificationId) {
-    setErrorMessage(
-      "Please request a new verification code."
-    );
-    return;
-  }
-
-  const cleanOTP = otp.trim();
-
-  if (!/^\d{6}$/.test(cleanOTP)) {
-    setErrorMessage(
-      "Enter the 6-digit verification code."
-    );
-    return;
-  }
-
-  setIsPhoneProcessing(true);
-  setMessage("");
-  setErrorMessage("");
-
-  try {
-
-    // Create phone credential from OTP
-    const credential =
-      PhoneAuthProvider.credential(
-        verificationId,
-        cleanOTP
-      );
-
-    // Attach the verified phone number
-    // to the currently signed-in Firebase user
-    await updatePhoneNumber(
-      currentUser,
-      credential
-    );
-
-    // Update local state
-    setPhone(pendingPhone);
-    setOriginalPhone(pendingPhone);
-    setPhoneVerified(true);
-
-    // Save verified state to Firestore
-    await setDoc(
-      doc(db, "users", currentUser.uid),
+    const verifier = new RecaptchaVerifier(
+      auth,
+      "phone-recaptcha",
       {
-        phone: pendingPhone,
-        phoneVerified: true,
-        phoneVerifiedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      },
-      {
-        merge: true,
+        size: "invisible",
+
+        callback: () => {
+          console.log(
+            "Phone reCAPTCHA completed."
+          );
+        },
+
+        "expired-callback": () => {
+          try {
+            window.recaptchaVerifier?.clear();
+          } catch {}
+
+          window.recaptchaVerifier = null;
+        },
       }
     );
 
-    // Reset OTP state
-    setOtp("");
-    setOtpSent(false);
-    setVerificationId(null);
-    setPendingPhone("");
+    window.recaptchaVerifier = verifier;
 
-    setMessage(
-      "Phone number verified successfully."
-    );
+    return verifier;
+  };
 
-  } catch (error) {
-    console.error(
-      "Phone OTP verification error:",
-      error
-    );
+  const clearRecaptcha = () => {
+    try {
+      window.recaptchaVerifier?.clear();
+    } catch {}
 
-    if (error.code === "auth/invalid-verification-code") {
-      setErrorMessage(
-        "Incorrect verification code. Please try again."
-      );
-    } else if (
-      error.code === "auth/code-expired"
+    window.recaptchaVerifier = null;
+  };
+
+  // =========================================================
+  // PHONE INPUT
+  // =========================================================
+
+  const handlePhoneChange = (event) => {
+    const newPhone = event.target.value;
+
+    setPhone(newPhone);
+
+    // Changing the phone invalidates the old verification.
+    if (
+      normalizePhone(newPhone) !==
+      normalizePhone(originalPhone)
     ) {
-      setErrorMessage(
-        "This verification code has expired. Please request a new one."
-      );
-
+      setPhoneVerified(false);
       setOtpSent(false);
+      setOtp("");
       setVerificationId(null);
+      setPendingPhone("");
+    }
+  };
 
-    } else if (
-      error.code === "auth/phone-number-already-exists"
+  // =========================================================
+  // SEND PHONE OTP
+  // =========================================================
+
+  const handleSendPhoneOTP = async () => {
+    if (!currentUser) return;
+
+    const cleanedPhone =
+      normalizePhone(phone);
+
+    if (
+      !/^\+[1-9]\d{7,14}$/.test(
+        cleanedPhone
+      )
     ) {
       setErrorMessage(
-        "This phone number is already associated with another account."
+        "Enter your phone number with country code, for example +919876543210."
       );
-    } else if (
-      error.code === "auth/requires-recent-login"
-    ) {
-      setErrorMessage(
-        "Please sign in again before changing your phone number."
-      );
-    } else {
-      setErrorMessage(
-        error.message ||
-        "Unable to verify phone number."
-      );
+
+      return;
     }
 
-  } finally {
-    setIsPhoneProcessing(false);
-  }
-};
-  
+    if (
+      normalizePhone(cleanedPhone) ===
+      normalizePhone(originalPhone)
+    ) {
+      setPhoneVerified(true);
+      setMessage(
+        "This phone number is already verified."
+      );
 
-  // ---------------------------------------------------------
+      return;
+    }
+
+    setIsPhoneProcessing(true);
+    clearMessages();
+
+    try {
+      const verifier = setupRecaptcha();
+
+      const provider =
+        new PhoneAuthProvider(auth);
+
+      const id =
+        await provider.verifyPhoneNumber(
+          cleanedPhone,
+          verifier
+        );
+
+      setVerificationId(id);
+      setPendingPhone(cleanedPhone);
+      setOtpSent(true);
+
+      setMessage(
+        `Verification code sent to ${cleanedPhone}.`
+      );
+    } catch (error) {
+      console.error(
+        "Phone OTP sending failed:",
+        error
+      );
+
+      clearRecaptcha();
+
+      switch (error.code) {
+        case "auth/invalid-phone-number":
+          setErrorMessage(
+            "Please enter a valid phone number."
+          );
+          break;
+
+        case "auth/too-many-requests":
+          setErrorMessage(
+            "Too many verification attempts. Please try again later."
+          );
+          break;
+
+        case "auth/quota-exceeded":
+          setErrorMessage(
+            "SMS verification limit reached. Please try again later."
+          );
+          break;
+
+        case "auth/captcha-check-failed":
+          setErrorMessage(
+            "Verification security check failed. Please try again."
+          );
+          break;
+
+        default:
+          setErrorMessage(
+            error.message ||
+              "Unable to send verification code."
+          );
+      }
+    } finally {
+      setIsPhoneProcessing(false);
+    }
+  };
+
+  // =========================================================
+  // VERIFY PHONE OTP
+  // =========================================================
+
+  const handleVerifyPhoneOTP = async () => {
+    if (!currentUser || !verificationId) {
+      setErrorMessage(
+        "Please request a new verification code."
+      );
+
+      return;
+    }
+
+    const cleanOTP = otp.trim();
+
+    if (!/^\d{6}$/.test(cleanOTP)) {
+      setErrorMessage(
+        "Enter the 6-digit verification code."
+      );
+
+      return;
+    }
+
+    setIsPhoneProcessing(true);
+    clearMessages();
+
+    try {
+      const credential =
+        PhoneAuthProvider.credential(
+          verificationId,
+          cleanOTP
+        );
+
+      /*
+       * Firebase may require recent authentication
+       * when attaching a new phone number.
+       *
+       * OTP verification itself is valid, but Firebase
+       * can still reject the account mutation with
+       * auth/requires-recent-login.
+       */
+      await updatePhoneNumber(
+        currentUser,
+        credential
+      );
+
+      const verifiedPhone =
+        pendingPhone;
+
+      setPhone(verifiedPhone);
+      setOriginalPhone(verifiedPhone);
+      setPhoneVerified(true);
+
+      await setDoc(
+        doc(db, "users", currentUser.uid),
+        {
+          phone: verifiedPhone,
+          phoneVerified: true,
+          phoneVerifiedAt:
+            serverTimestamp(),
+          updatedAt:
+            serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      setOtp("");
+      setOtpSent(false);
+      setVerificationId(null);
+      setPendingPhone("");
+
+      clearRecaptcha();
+
+      setMessage(
+        "Your new phone number has been verified."
+      );
+    } catch (error) {
+      console.error(
+        "Phone verification failed:",
+        error
+      );
+
+      if (
+        error.code ===
+        "auth/invalid-verification-code"
+      ) {
+        setErrorMessage(
+          "That verification code is incorrect."
+        );
+      } else if (
+        error.code ===
+        "auth/code-expired"
+      ) {
+        setErrorMessage(
+          "That code has expired. Please request a new one."
+        );
+
+        setOtpSent(false);
+        setVerificationId(null);
+      } else if (
+        error.code ===
+        "auth/phone-number-already-exists"
+      ) {
+        setErrorMessage(
+          "This phone number is already associated with another Brewed account."
+        );
+      } else if (
+        error.code ===
+        "auth/requires-recent-login"
+      ) {
+        /*
+         * IMPORTANT:
+         * Do NOT mark the phone verified here.
+         * The OTP was correct, but Firebase rejected
+         * the account change because the login is stale.
+         */
+        setPhoneVerified(false);
+
+        setErrorMessage(
+          "For your security, please sign in again and then verify your new phone number."
+        );
+      } else if (
+        error.code ===
+        "auth/provider-already-linked"
+      ) {
+        setErrorMessage(
+          "This phone number is already linked to your account."
+        );
+      } else {
+        setErrorMessage(
+          error.message ||
+            "Unable to verify this phone number."
+        );
+      }
+    } finally {
+      setIsPhoneProcessing(false);
+    }
+  };
+
+  // =========================================================
+  // EMAIL VERIFICATION
+  // =========================================================
+
+  const handleSendEmailVerification = async () => {
+    if (!currentUser?.email) {
+      setErrorMessage(
+        "No email address is associated with this account."
+      );
+
+      return;
+    }
+
+    setIsEmailProcessing(true);
+    clearMessages();
+
+    try {
+      await sendEmailVerification(
+        currentUser
+      );
+
+      setMessage(
+        `Verification email sent to ${currentUser.email}.`
+      );
+    } catch (error) {
+      console.error(
+        "Email verification failed:",
+        error
+      );
+
+      if (
+        error.code ===
+        "auth/too-many-requests"
+      ) {
+        setErrorMessage(
+          "Too many verification emails were requested. Please try again later."
+        );
+      } else {
+        setErrorMessage(
+          error.message ||
+            "Unable to send verification email."
+        );
+      }
+    } finally {
+      setIsEmailProcessing(false);
+    }
+  };
+
+  // =========================================================
+  // REFRESH EMAIL VERIFICATION STATE
+  // =========================================================
+
+  const handleRefreshEmailVerification =
+    async () => {
+      if (!currentUser) return;
+
+      setIsEmailProcessing(true);
+      clearMessages();
+
+      try {
+        await reload(currentUser);
+
+        const verified =
+          currentUser.emailVerified === true;
+
+        setEmailVerified(verified);
+
+        if (verified) {
+          setMessage(
+            "Your email address is verified."
+          );
+        } else {
+          setErrorMessage(
+            "Your email is not verified yet. Please check your inbox."
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Email verification refresh failed:",
+          error
+        );
+
+        setErrorMessage(
+          "Unable to refresh verification status."
+        );
+      } finally {
+        setIsEmailProcessing(false);
+      }
+    };
+
+  // =========================================================
   // SAVE PROFILE
-  // ---------------------------------------------------------
+  // =========================================================
 
-  const handleSave = async (e) => {
-    e.preventDefault();
+  const handleSave = async (event) => {
+    event.preventDefault();
 
     if (!currentUser) return;
-     if (!phone) {
-    setErrorMessage("Phone number is required.");
-    return;
-  }
 
-  if (!phoneVerified) {
-    setErrorMessage("Please verify your phone number before saving.");
-    return;
-  }
+    clearMessages();
+
+    if (!fullName.trim()) {
+      setErrorMessage(
+        "Please enter your full name."
+      );
+
+      return;
+    }
+
+    if (!email.trim()) {
+      setErrorMessage(
+        "Email address is required."
+      );
+
+      return;
+    }
+
+    if (!phone.trim()) {
+      setErrorMessage(
+        "Phone number is required."
+      );
+
+      return;
+    }
+
+    /*
+     * If the phone was changed, it MUST be verified
+     * before profile save.
+     */
+    if (phoneChanged && !phoneVerified) {
+      setErrorMessage(
+        "Please verify your new phone number before saving."
+      );
+
+      return;
+    }
 
     setIsProcessing(true);
-    setMessage("");
-    setErrorMessage("");
 
     try {
       // -----------------------------------------------------
@@ -619,7 +892,8 @@ const handleVerifyPhoneOTP = async () => {
         (currentUser.displayName || "")
       ) {
         await updateProfile(currentUser, {
-          displayName: fullName.trim(),
+          displayName:
+            fullName.trim(),
         });
       }
 
@@ -627,39 +901,87 @@ const handleVerifyPhoneOTP = async () => {
       // EMAIL
       // -----------------------------------------------------
 
-      if (
-        email.trim() !== currentUser.email
-      ) {
-        await updateEmail(
-          currentUser,
-          email.trim()
-        );
+      const newEmail =
+        email.trim().toLowerCase();
+
+      const oldEmail =
+        (currentUser.email || "")
+          .trim()
+          .toLowerCase();
+
+      if (newEmail !== oldEmail) {
+        try {
+          await updateEmail(
+            currentUser,
+            newEmail
+          );
+
+          /*
+           * Firebase's email verification state
+           * resets after changing email.
+           */
+          await sendEmailVerification(
+            currentUser
+          );
+
+          setEmailVerified(false);
+
+          setMessage(
+            "Email updated. We sent a new verification link to your email."
+          );
+        } catch (emailError) {
+          if (
+            emailError.code ===
+            "auth/requires-recent-login"
+          ) {
+            setErrorMessage(
+              "Please sign in again before changing your email address."
+            );
+
+            return;
+          }
+
+          throw emailError;
+        }
       }
 
       // -----------------------------------------------------
       // FIRESTORE
       // -----------------------------------------------------
 
-   const updateData = {
-  fullName,
-  email,
-  phone,
-  phoneVerified,
-  address,
-  addressType,
-  updatedAt: serverTimestamp(),
-};
+      const updateData = {
+        fullName:
+          fullName.trim(),
 
-      // Birthday can only be saved once
+        email: newEmail,
+
+        phone:
+          normalizePhone(phone),
+
+        phoneVerified,
+
+        address,
+
+        addressType,
+
+        updatedAt:
+          serverTimestamp(),
+      };
+
       if (
         !isBirthdayLocked &&
         birthday
       ) {
-        updateData.birthday = birthday;
+        updateData.birthday =
+          birthday;
       }
 
       await setDoc(
-        doc(db, "users", currentUser.uid),
+        doc(
+          db,
+          "users",
+          currentUser.uid
+        ),
         updateData,
         {
           merge: true,
@@ -673,50 +995,70 @@ const handleVerifyPhoneOTP = async () => {
         setIsBirthdayLocked(true);
       }
 
+      /*
+       * If email wasn't changed, preserve the
+       * existing verification state.
+       */
+      if (newEmail === oldEmail) {
+        await reload(currentUser);
+
+        setEmailVerified(
+          currentUser.emailVerified === true
+        );
+      }
+
+      setOriginalPhone(
+        normalizePhone(phone)
+      );
+
       setMessage(
-        "Profile saved successfully."
+        "Your profile has been saved."
       );
     } catch (error) {
       console.error(
-        "Failed to save profile:",
+        "Profile save failed:",
         error
       );
 
-      if (
-        error.code ===
-        "auth/requires-recent-login"
-      ) {
-        setErrorMessage(
-          "Please sign in again before changing your email."
-        );
-      } else if (
-        error.code ===
-        "auth/email-already-in-use"
-      ) {
-        setErrorMessage(
-          "That email address is already in use."
-        );
-      } else if (
-        error.code ===
-        "auth/invalid-email"
-      ) {
-        setErrorMessage(
-          "Please enter a valid email address."
-        );
-      } else {
-        setErrorMessage(
-          error.message ||
-            "Failed to save your profile."
-        );
+      switch (error.code) {
+        case "auth/requires-recent-login":
+          setErrorMessage(
+            "Please sign in again before making this security-sensitive change."
+          );
+          break;
+
+        case "auth/email-already-in-use":
+          setErrorMessage(
+            "That email address is already associated with another account."
+          );
+          break;
+
+        case "auth/invalid-email":
+          setErrorMessage(
+            "Please enter a valid email address."
+          );
+          break;
+
+        case "auth/operation-not-allowed":
+          setErrorMessage(
+            "This account change is currently unavailable."
+          );
+          break;
+
+        default:
+          setErrorMessage(
+            error.message ||
+              "Unable to save your profile."
+          );
       }
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // ---------------------------------------------------------
-  // CHANGE PASSWORD
-  // ---------------------------------------------------------
+  // =========================================================
+  // PASSWORD RESET
+  // =========================================================
 
   const handleChangePassword = async () => {
     if (!currentUser?.email) {
@@ -728,8 +1070,7 @@ const handleVerifyPhoneOTP = async () => {
     }
 
     setIsPasswordProcessing(true);
-    setMessage("");
-    setErrorMessage("");
+    clearMessages();
 
     try {
       await sendPasswordResetEmail(
@@ -748,57 +1089,108 @@ const handleVerifyPhoneOTP = async () => {
 
       setErrorMessage(
         error.message ||
-          "Unable to send password reset email."
+          "Unable to send password reset instructions."
       );
     } finally {
       setIsPasswordProcessing(false);
     }
   };
 
-  // ---------------------------------------------------------
+  // =========================================================
   // AVATAR
-  // ---------------------------------------------------------
+  // =========================================================
 
   const avatar =
     avatarUrl ||
-    `https://ui-avatars.com/api/?background=C4956A&color=fff&name=${encodeURIComponent(
-      fullName || "User"
+    `https://ui-avatars.com/api/?background=E8D8C8&color=3A2418&name=${encodeURIComponent(
+      fullName || "Brewed Member"
     )}`;
 
-  // ---------------------------------------------------------
+  // =========================================================
   // LOADING
-  // ---------------------------------------------------------
+  // =========================================================
 
   if (isLoading) {
     return (
-      <>
+      <div className="profile-loading-screen">
+        <div className="profile-loader">
+          <div className="loader-mark">
+            B
+          </div>
+
+          <span>
+            Preparing your profile
+          </span>
+        </div>
+
         <style>{`
-          .profile-loading {
+          .profile-loading-screen {
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #FDFAF5;
-            color: #3B1A08;
-            font-family: Inter, sans-serif;
+            background:
+              radial-gradient(
+                circle at 20% 10%,
+                rgba(196,149,106,.12),
+                transparent 30%
+              ),
+              #FBF8F4;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-family:Inter, sans-serif;
+            color:#6F625A;
+          }
+
+          .profile-loader {
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            gap:14px;
+            font-size:13px;
+            letter-spacing:.02em;
+          }
+
+          .loader-mark {
+            width:48px;
+            height:48px;
+            border-radius:16px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:#2D1B12;
+            color:#F7EDE2;
+            font-family:Georgia,serif;
+            font-size:20px;
+            box-shadow:0 12px 30px rgba(45,27,18,.14);
           }
         `}</style>
-
-        <div className="profile-loading">
-          Loading your profile...
-        </div>
-      </>
+      </div>
     );
   }
 
-  // ---------------------------------------------------------
+  // =========================================================
   // UI
-  // ---------------------------------------------------------
+  // =========================================================
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+
+        :root {
+          --brew-espresso: #2D1B12;
+          --brew-coffee: #493126;
+          --brew-muted: #76685F;
+          --brew-tan: #B88961;
+          --brew-sand: #EAD8C7;
+          --brew-cream: #FBF8F4;
+          --brew-white: #FFFFFF;
+          --brew-border: #E9E0D8;
+          --brew-soft: #F5EEE7;
+          --brew-green: #39704A;
+          --brew-green-bg: #EEF7F0;
+          --brew-red: #A04444;
+          --brew-red-bg: #FBEEEE;
+        }
 
         * {
           box-sizing: border-box;
@@ -806,801 +1198,1708 @@ const handleVerifyPhoneOTP = async () => {
 
         body {
           margin: 0;
-          background: #FDFAF5;
-          font-family: 'Inter', sans-serif;
+          background: var(--brew-cream);
+          color: var(--brew-espresso);
+          font-family: "DM Sans", sans-serif;
+        }
+
+        button,
+        input {
+          font: inherit;
+        }
+
+        button {
+          -webkit-tap-highlight-color: transparent;
         }
 
         .profile-page {
           min-height: 100vh;
-          background: #FDFAF5;
-          display: flex;
-          justify-content: center;
-          padding: 120px 20px 60px;
+          background:
+            radial-gradient(
+              circle at 7% 4%,
+              rgba(184,137,97,.13),
+              transparent 27%
+            ),
+            radial-gradient(
+              circle at 95% 32%,
+              rgba(234,216,199,.42),
+              transparent 28%
+            ),
+            var(--brew-cream);
+          padding: 104px 24px 70px;
         }
 
-        .profile-card {
+        .profile-shell {
           width: 100%;
-          max-width: 760px;
-          background: white;
-          border-radius: 24px;
-          box-shadow: 0 15px 40px rgba(0,0,0,.08);
-          padding: 50px;
+          max-width: 1040px;
+          margin: 0 auto;
         }
 
-        .profile-header {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          margin-bottom: 45px;
-        }
+        /* =====================================================
+           TOP BAR
+        ===================================================== */
 
-        .avatar-wrapper {
-          position: relative;
-        }
-
-        .profile-avatar {
-          width: 120px;
-          height: 120px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 5px solid #C4956A;
-          cursor: pointer;
-        }
-
-        .avatar-hint {
-          position: absolute;
-          bottom: 5px;
-          right: 0;
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          background: #3B1A08;
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 15px;
-          pointer-events: none;
-        }
-
-        .profile-title {
-          font-family: 'Playfair Display', serif;
-          font-size: 2.3rem;
-          color: #3B1A08;
-          margin-top: 22px;
-        }
-
-        .profile-subtitle {
-          color: #7A675C;
-          margin-top: 8px;
-        }
-
-        .section-title {
-          font-family: 'Playfair Display', serif;
-          font-size: 1.4rem;
-          color: #3B1A08;
-          margin: 40px 0 18px;
-        }
-
-        .form-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-        }
-
-        .form-group {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .form-group.full {
-          grid-column: 1 / 3;
-        }
-
-        label {
-          margin-bottom: 8px;
-          font-weight: 600;
-          color: #5A453A;
-        }
-
-        input {
-          width: 100%;
-          padding: 15px;
-          border-radius: 12px;
-          border: 1px solid #DDD;
-          font-size: 15px;
-          transition: .3s;
-        }
-
-        input:focus {
-          outline: none;
-          border-color: #C4956A;
-          box-shadow: 0 0 0 3px rgba(196,149,106,.15);
-        }
-
-        .radio-group {
-          display: flex;
-          gap: 20px;
-          margin-top: 5px;
-        }
-
-        .radio-option {
-          display: flex;
-          align-items: center;
-          cursor: pointer;
-          font-weight: 500;
-          color: #5A453A;
-        }
-
-        .radio-circle {
-          width: 20px;
-          height: 20px;
-          border: 2px solid #C4956A;
-          border-radius: 50%;
-          margin-right: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .radio-dot {
-          width: 10px;
-          height: 10px;
-          background: #C4956A;
-          border-radius: 50%;
-          display: none;
-        }
-
-        input[type="radio"]:checked + .radio-circle .radio-dot {
-          display: block;
-        }
-
-        .member-box {
-          margin-top: 25px;
-          padding: 18px;
-          background: #F8F4EE;
-          border-radius: 14px;
-        }
-
-        .member-value {
-          font-size: 1.1rem;
-          font-weight: 600;
-          color: #3B1A08;
-        }
-
-        .address-note,
-        .birthday-note {
-          margin-top: 8px;
-          font-size: 12px;
-          color: #8A7770;
-        }
-
-        .status-message {
-          margin-top: 25px;
-          padding: 14px 16px;
-          border-radius: 12px;
-          font-size: 14px;
-          line-height: 1.5;
-        }
-
-        .success-message {
-          background: #EEF8F0;
-          color: #2E6B38;
-        }
-
-        .error-message {
-          background: #FBEDED;
-          color: #9B3333;
-        }
-
-        .actions {
-          margin-top: 45px;
-          display: flex;
-          gap: 15px;
-        }
-
-
-         .phone-status {
-  margin-top: 7px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.phone-status.verified {
-  color: #2E6B38;
-}
-
-.phone-status.unverified {
-  color: #9B3333;
-}
-
-
-
-        .save-btn,
-        .password-btn {
-          flex: 1;
-          padding: 15px;
-          border: none;
-          border-radius: 14px;
-          cursor: pointer;
-          font-weight: 600;
-        }
-
-        .save-btn {
-          background: #3B1A08;
-          color: white;
-        }
-
-        .save-btn:hover {
-          background: #C4956A;
-        }
-
-        .password-btn {
-          background: #F8F4EE;
-          color: #3B1A08;
-        }
-
-        .save-btn:disabled,
-        .password-btn:disabled {
-          opacity: .6;
-          cursor: not-allowed;
+        .profile-topbar {
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:20px;
+          margin-bottom:28px;
         }
 
         .back-button {
-          background: none;
-          border: none;
-          color: #3B1A08;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          margin-bottom: 20px;
-          padding: 0;
+          display:inline-flex;
+          align-items:center;
+          gap:8px;
+          border:0;
+          background:transparent;
+          color:var(--brew-muted);
+          cursor:pointer;
+          padding:8px 0;
+          font-size:14px;
+          font-weight:600;
+          transition:.2s ease;
         }
 
+        .back-button:hover {
+          color:var(--brew-espresso);
+          transform:translateX(-2px);
+        }
 
-        .phone-input-row {
-  display: flex;
-  gap: 10px;
-  align-items: stretch;
-}
+        .topbar-label {
+          font-size:11px;
+          letter-spacing:.16em;
+          text-transform:uppercase;
+          color:#A08F84;
+          font-weight:700;
+        }
 
-.phone-input-row input {
-  flex: 1;
-}
+        /* =====================================================
+           HERO
+        ===================================================== */
 
-.verify-phone-btn {
-  border: none;
-  border-radius: 12px;
-  padding: 0 18px;
-  background: #3B1A08;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
+        .profile-hero {
+          position:relative;
+          overflow:hidden;
+          min-height:270px;
+          border-radius:30px;
+          padding:38px 42px;
+          display:flex;
+          align-items:center;
+          gap:36px;
+          background:
+            linear-gradient(
+              135deg,
+              #382219 0%,
+              #2D1B12 55%,
+              #24150F 100%
+            );
+          box-shadow:
+            0 24px 70px rgba(45,27,18,.16);
+          color:white;
+        }
 
-.verify-phone-btn:hover {
-  background: #C4956A;
-}
+        .hero-glow-one,
+        .hero-glow-two {
+          position:absolute;
+          border-radius:999px;
+          pointer-events:none;
+        }
 
-.verify-phone-btn:disabled {
-  opacity: .6;
-  cursor: not-allowed;
-}
+        .hero-glow-one {
+          width:300px;
+          height:300px;
+          right:-90px;
+          top:-150px;
+          background:rgba(234,216,199,.12);
+        }
 
-.verified-badge {
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
-  border-radius: 12px;
-  background: #EEF8F0;
-  color: #2E6B38;
-  font-weight: 600;
-  white-space: nowrap;
-}
+        .hero-glow-two {
+          width:230px;
+          height:230px;
+          left:-150px;
+          bottom:-150px;
+          background:rgba(184,137,97,.14);
+        }
 
-.otp-box {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
-}
+        .hero-avatar-wrap {
+          position:relative;
+          flex:none;
+          z-index:1;
+        }
 
-.otp-box input {
-  flex: 1;
-}
+        .hero-avatar {
+          width:128px;
+          height:128px;
+          border-radius:38px;
+          object-fit:cover;
+          border:4px solid rgba(255,255,255,.18);
+          box-shadow:0 18px 45px rgba(0,0,0,.25);
+          display:block;
+          background:#EAD8C7;
+        }
 
-.phone-note {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #8A7770;
-}
+        .avatar-upload {
+          position:absolute;
+          right:-8px;
+          bottom:-8px;
+          width:42px;
+          height:42px;
+          border-radius:15px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:#F4E6D8;
+          color:var(--brew-espresso);
+          border:3px solid #2D1B12;
+          cursor:pointer;
+          box-shadow:0 7px 20px rgba(0,0,0,.18);
+          transition:.2s ease;
+        }
 
-@media(max-width: 600px) {
-  .phone-input-row {
-    flex-direction: column;
-  }
+        .avatar-upload:hover {
+          transform:translateY(-2px);
+          background:white;
+        }
 
-  .verify-phone-btn,
-  .verified-badge {
-    min-height: 48px;
-    justify-content: center;
-  }
+        .hero-copy {
+          position:relative;
+          z-index:1;
+          min-width:0;
+        }
 
-  .otp-box {
-    flex-direction: column;
-  }
-}
+        .hero-eyebrow {
+          display:flex;
+          align-items:center;
+          gap:7px;
+          color:#D9C3AF;
+          font-size:11px;
+          font-weight:700;
+          letter-spacing:.14em;
+          text-transform:uppercase;
+          margin-bottom:10px;
+        }
 
-        @media(max-width: 768px) {
+        .hero-title {
+          margin:0;
+          font-family:"Playfair Display", serif;
+          font-size:clamp(2.2rem, 5vw, 3.5rem);
+          line-height:1;
+          letter-spacing:-.035em;
+          font-weight:600;
+        }
+
+        .hero-subtitle {
+          margin:13px 0 0;
+          color:#D7C8BE;
+          font-size:14px;
+          line-height:1.7;
+          max-width:520px;
+        }
+
+        .member-pill {
+          display:inline-flex;
+          align-items:center;
+          gap:7px;
+          margin-top:20px;
+          padding:9px 13px;
+          border:1px solid rgba(255,255,255,.12);
+          border-radius:999px;
+          background:rgba(255,255,255,.07);
+          color:#E8DCD4;
+          font-size:12px;
+          font-weight:600;
+        }
+
+        /* =====================================================
+           CONTENT
+        ===================================================== */
+
+        .profile-content {
+          margin-top:18px;
+          display:grid;
+          grid-template-columns:minmax(0, 1fr) 290px;
+          gap:18px;
+          align-items:start;
+        }
+
+        .profile-card {
+          background:rgba(255,255,255,.82);
+          border:1px solid rgba(221,211,202,.72);
+          border-radius:26px;
+          padding:30px;
+          box-shadow:
+            0 14px 45px rgba(65,44,31,.055);
+          backdrop-filter:blur(12px);
+        }
+
+        .section {
+          padding-bottom:30px;
+          margin-bottom:30px;
+          border-bottom:1px solid var(--brew-border);
+        }
+
+        .section:last-child {
+          padding-bottom:0;
+          margin-bottom:0;
+          border-bottom:0;
+        }
+
+        .section-heading {
+          display:flex;
+          align-items:flex-start;
+          gap:12px;
+          margin-bottom:22px;
+        }
+
+        .section-icon {
+          width:38px;
+          height:38px;
+          border-radius:13px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:var(--brew-soft);
+          color:var(--brew-coffee);
+          flex:none;
+        }
+
+        .section-title {
+          margin:0;
+          font-family:"Playfair Display", serif;
+          font-size:21px;
+          font-weight:600;
+          letter-spacing:-.02em;
+          color:var(--brew-espresso);
+        }
+
+        .section-description {
+          margin:4px 0 0;
+          color:#92847B;
+          font-size:12px;
+          line-height:1.5;
+        }
+
+        .form-grid {
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:18px;
+        }
+
+        .form-group {
+          min-width:0;
+        }
+
+        .form-group.full {
+          grid-column:1 / -1;
+        }
+
+        .field-label {
+          display:flex;
+          align-items:center;
+          gap:5px;
+          margin:0 0 8px;
+          color:#58463C;
+          font-size:12px;
+          font-weight:700;
+        }
+
+        .required {
+          color:var(--brew-tan);
+        }
+
+        .field-input {
+          width:100%;
+          min-height:50px;
+          padding:13px 15px;
+          border:1px solid var(--brew-border);
+          border-radius:14px;
+          background:#FFFDFC;
+          color:var(--brew-espresso);
+          outline:none;
+          font-size:14px;
+          transition:
+            border-color .2s ease,
+            box-shadow .2s ease,
+            background .2s ease;
+        }
+
+        .field-input:hover {
+          border-color:#D6C5B7;
+        }
+
+        .field-input:focus {
+          border-color:#B88961;
+          box-shadow:
+            0 0 0 4px rgba(184,137,97,.10);
+          background:white;
+        }
+
+        .field-input::placeholder {
+          color:#B1A49C;
+        }
+
+        .field-input:read-only {
+          cursor:default;
+        }
+
+        .field-input.locked {
+          background:#F6F0EA;
+          color:#806E63;
+        }
+
+        /* =====================================================
+           PHONE
+        ===================================================== */
+
+        .phone-row {
+          display:flex;
+          gap:9px;
+        }
+
+        .phone-row .field-input {
+          min-width:0;
+        }
+
+        .verify-button {
+          flex:none;
+          min-width:102px;
+          border:0;
+          border-radius:14px;
+          background:var(--brew-espresso);
+          color:white;
+          font-size:12px;
+          font-weight:700;
+          cursor:pointer;
+          padding:0 15px;
+          transition:.2s ease;
+        }
+
+        .verify-button:hover:not(:disabled) {
+          background:#493126;
+          transform:translateY(-1px);
+        }
+
+        .verify-button:disabled {
+          opacity:.5;
+          cursor:not-allowed;
+        }
+
+        .verified-chip {
+          flex:none;
+          min-width:102px;
+          padding:0 13px;
+          border-radius:14px;
+          background:var(--brew-green-bg);
+          color:var(--brew-green);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          gap:6px;
+          font-size:12px;
+          font-weight:700;
+        }
+
+        .otp-panel {
+          margin-top:10px;
+          padding:14px;
+          border:1px solid #E6D9CE;
+          border-radius:16px;
+          background:#FBF7F2;
+        }
+
+        .otp-header {
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:10px;
+          margin-bottom:10px;
+        }
+
+        .otp-title {
+          font-size:12px;
+          font-weight:700;
+          color:var(--brew-coffee);
+        }
+
+        .otp-subtitle {
+          font-size:11px;
+          color:#9A8A80;
+        }
+
+        .otp-row {
+          display:flex;
+          gap:9px;
+        }
+
+        .otp-row .field-input {
+          letter-spacing:.2em;
+          font-weight:700;
+        }
+
+        .otp-button {
+          flex:none;
+          border:0;
+          border-radius:13px;
+          padding:0 15px;
+          background:#B88961;
+          color:white;
+          font-size:12px;
+          font-weight:700;
+          cursor:pointer;
+        }
+
+        .otp-button:disabled {
+          opacity:.5;
+          cursor:not-allowed;
+        }
+
+        .field-note {
+          margin:8px 1px 0;
+          font-size:11px;
+          line-height:1.5;
+          color:#9A8C83;
+        }
+
+        .field-note.success {
+          color:var(--brew-green);
+        }
+
+        /* =====================================================
+           EMAIL VERIFICATION
+        ===================================================== */
+
+        .email-status {
+          margin-top:10px;
+          padding:12px 13px;
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:12px;
+          border-radius:14px;
+          background:#F8F3EE;
+          border:1px solid #EDE2D8;
+        }
+
+        .email-status-left {
+          display:flex;
+          align-items:center;
+          gap:9px;
+          min-width:0;
+        }
+
+        .email-status-icon {
+          width:30px;
+          height:30px;
+          border-radius:10px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:#EEE6DE;
+          color:#806B5D;
+          flex:none;
+        }
+
+        .email-status-text {
+          min-width:0;
+        }
+
+        .email-status-title {
+          font-size:12px;
+          font-weight:700;
+          color:var(--brew-coffee);
+        }
+
+        .email-status-copy {
+          margin-top:2px;
+          font-size:10px;
+          color:#9B8B81;
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis;
+        }
+
+        .email-verify-button {
+          border:0;
+          background:transparent;
+          color:#9A6640;
+          font-size:11px;
+          font-weight:700;
+          cursor:pointer;
+          white-space:nowrap;
+        }
+
+        .email-verify-button:hover {
+          text-decoration:underline;
+        }
+
+        /* =====================================================
+           ADDRESS
+        ===================================================== */
+
+        .address-type {
+          display:flex;
+          gap:9px;
+          flex-wrap:wrap;
+        }
+
+        .address-option {
+          position:relative;
+        }
+
+        .address-option input {
+          position:absolute;
+          opacity:0;
+          pointer-events:none;
+        }
+
+        .address-label {
+          display:inline-flex;
+          align-items:center;
+          gap:7px;
+          padding:10px 14px;
+          border-radius:999px;
+          border:1px solid var(--brew-border);
+          background:#FFFDFC;
+          color:#78685E;
+          font-size:12px;
+          font-weight:600;
+          cursor:pointer;
+          transition:.2s ease;
+        }
+
+        .address-label:hover {
+          border-color:#D2BCA9;
+        }
+
+        .address-option input:checked + .address-label {
+          border-color:#B88961;
+          background:#F6EDE4;
+          color:var(--brew-coffee);
+        }
+
+        .address-option input:focus-visible + .address-label {
+          outline:3px solid rgba(184,137,97,.18);
+        }
+
+        .birthday-lock {
+          display:flex;
+          align-items:center;
+          gap:7px;
+          margin-top:9px;
+          color:#9A8A80;
+          font-size:11px;
+        }
+
+        /* =====================================================
+           SIDE PANEL
+        ===================================================== */
+
+        .side-stack {
+          display:flex;
+          flex-direction:column;
+          gap:18px;
+          position:sticky;
+          top:92px;
+        }
+
+        .membership-card {
+          position:relative;
+          overflow:hidden;
+          padding:25px;
+          border-radius:26px;
+          background:
+            linear-gradient(
+              145deg,
+              #F0E2D4,
+              #E5CDB9
+            );
+          border:1px solid #DFC9B7;
+          box-shadow:0 14px 40px rgba(93,61,42,.07);
+        }
+
+        .membership-card::after {
+          content:"";
+          position:absolute;
+          width:140px;
+          height:140px;
+          right:-65px;
+          top:-65px;
+          border-radius:50%;
+          border:1px solid rgba(255,255,255,.5);
+        }
+
+        .membership-kicker {
+          position:relative;
+          z-index:1;
+          display:flex;
+          align-items:center;
+          gap:7px;
+          color:#86664F;
+          font-size:10px;
+          font-weight:800;
+          letter-spacing:.14em;
+          text-transform:uppercase;
+        }
+
+        .membership-title {
+          position:relative;
+          z-index:1;
+          margin:12px 0 4px;
+          font-family:"Playfair Display",serif;
+          font-size:24px;
+          color:#3A2418;
+        }
+
+        .membership-date {
+          position:relative;
+          z-index:1;
+          color:#755E4E;
+          font-size:12px;
+          line-height:1.6;
+        }
+
+        .security-card {
+          padding:22px;
+          border-radius:26px;
+          background:white;
+          border:1px solid var(--brew-border);
+          box-shadow:0 14px 40px rgba(65,44,31,.045);
+        }
+
+        .security-heading {
+          display:flex;
+          align-items:center;
+          gap:10px;
+          margin-bottom:15px;
+        }
+
+        .security-heading-icon {
+          width:36px;
+          height:36px;
+          border-radius:12px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:#F5EEE7;
+          color:#74533F;
+        }
+
+        .security-title {
+          margin:0;
+          font-size:14px;
+          font-weight:700;
+          color:var(--brew-coffee);
+        }
+
+        .security-list {
+          display:flex;
+          flex-direction:column;
+          gap:10px;
+        }
+
+        .security-item {
+          display:flex;
+          align-items:center;
+          gap:9px;
+          color:#75675F;
+          font-size:11px;
+        }
+
+        .security-dot {
+          width:7px;
+          height:7px;
+          border-radius:50%;
+          background:#83A78B;
+          box-shadow:0 0 0 4px rgba(131,167,139,.10);
+          flex:none;
+        }
+
+        /* =====================================================
+           ALERTS
+        ===================================================== */
+
+        .status-message {
+          display:flex;
+          align-items:flex-start;
+          gap:10px;
+          margin-top:22px;
+          padding:13px 15px;
+          border-radius:15px;
+          font-size:12px;
+          line-height:1.5;
+        }
+
+        .success-message {
+          background:var(--brew-green-bg);
+          color:#356943;
+          border:1px solid #D8EBDD;
+        }
+
+        .error-message {
+          background:var(--brew-red-bg);
+          color:#923D3D;
+          border:1px solid #F1D9D9;
+        }
+
+        /* =====================================================
+           ACTIONS
+        ===================================================== */
+
+        .actions {
+          margin-top:30px;
+          display:flex;
+          justify-content:flex-end;
+          gap:10px;
+        }
+
+        .action-button {
+          min-height:50px;
+          padding:0 20px;
+          border-radius:15px;
+          border:1px solid var(--brew-border);
+          cursor:pointer;
+          font-size:12px;
+          font-weight:700;
+          transition:.2s ease;
+        }
+
+        .password-button {
+          background:#FFFDFC;
+          color:var(--brew-coffee);
+        }
+
+        .password-button:hover:not(:disabled) {
+          background:#F7F0EA;
+          border-color:#D8C6B7;
+        }
+
+        .save-button {
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          gap:8px;
+          min-width:150px;
+          background:var(--brew-espresso);
+          color:white;
+          border-color:var(--brew-espresso);
+          box-shadow:0 9px 22px rgba(45,27,18,.13);
+        }
+
+        .save-button:hover:not(:disabled) {
+          background:#493126;
+          transform:translateY(-1px);
+          box-shadow:0 12px 26px rgba(45,27,18,.17);
+        }
+
+        .action-button:disabled {
+          opacity:.5;
+          cursor:not-allowed;
+          transform:none;
+        }
+
+        /* =====================================================
+           GOOGLE PLACES
+        ===================================================== */
+
+        .places-control {
+          min-height:50px !important;
+          border-radius:14px !important;
+          border-color:var(--brew-border) !important;
+          background:#FFFDFC !important;
+          box-shadow:none !important;
+        }
+
+        .places-control:focus-within {
+          border-color:#B88961 !important;
+          box-shadow:0 0 0 4px rgba(184,137,97,.10) !important;
+        }
+
+        /* =====================================================
+           RESPONSIVE
+        ===================================================== */
+
+        @media (max-width: 860px) {
+          .profile-content {
+            grid-template-columns:1fr;
+          }
+
+          .side-stack {
+            position:static;
+            display:grid;
+            grid-template-columns:1fr 1fr;
+          }
+        }
+
+        @media (max-width: 680px) {
+          .profile-page {
+            padding:84px 14px 45px;
+          }
+
+          .profile-topbar {
+            margin-bottom:18px;
+          }
+
+          .topbar-label {
+            display:none;
+          }
+
+          .profile-hero {
+            min-height:auto;
+            padding:28px 23px;
+            border-radius:25px;
+            flex-direction:column;
+            align-items:flex-start;
+            gap:22px;
+          }
+
+          .hero-avatar {
+            width:104px;
+            height:104px;
+            border-radius:30px;
+          }
+
+          .hero-title {
+            font-size:2.45rem;
+          }
+
           .profile-card {
-            padding: 30px 22px;
+            padding:22px 18px;
+            border-radius:23px;
           }
 
           .form-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns:1fr;
           }
 
           .form-group.full {
-            grid-column: auto;
+            grid-column:auto;
+          }
+
+          .side-stack {
+            grid-template-columns:1fr;
+          }
+
+          .phone-row {
+            flex-direction:column;
+          }
+
+          .verify-button,
+          .verified-chip {
+            min-height:48px;
+            width:100%;
+          }
+
+          .otp-row {
+            flex-direction:column;
+          }
+
+          .otp-button {
+            min-height:46px;
+          }
+
+          .email-status {
+            align-items:flex-start;
+            flex-direction:column;
+          }
+
+          .email-verify-button {
+            padding:4px 0;
           }
 
           .actions {
-            flex-direction: column;
+            flex-direction:column-reverse;
+          }
+
+          .action-button {
+            width:100%;
+          }
+        }
+
+        @media (max-width: 420px) {
+          .profile-page {
+            padding-left:10px;
+            padding-right:10px;
+          }
+
+          .profile-hero {
+            padding:24px 20px;
+          }
+
+          .profile-card {
+            padding:20px 15px;
+          }
+
+          .hero-title {
+            font-size:2.15rem;
+          }
+
+          .section {
+            padding-bottom:25px;
+            margin-bottom:25px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            scroll-behavior:auto !important;
+            transition:none !important;
+            animation:none !important;
           }
         }
       `}</style>
 
-      <div className="profile-page">
-        <div className="profile-card">
+      <main className="profile-page">
+        <div className="profile-shell">
 
-          <button
-            className="back-button"
-            onClick={() => setPage("menu")}
-          >
-            ← Back
-          </button>
+          {/* =================================================
+              TOP BAR
+          ================================================= */}
 
-          {/* HEADER */}
+          <div className="profile-topbar">
+            <button
+              type="button"
+              className="back-button"
+              onClick={() =>
+                setPage("menu")
+              }
+            >
+              <ChevronLeft size={17} />
+              Back to menu
+            </button>
 
-          <div className="profile-header">
+            <div className="topbar-label">
+              Brewed / Account
+            </div>
+          </div>
 
-            <label className="avatar-wrapper">
+          {/* =================================================
+              HERO
+          ================================================= */}
 
+          <section className="profile-hero">
+            <div className="hero-glow-one" />
+            <div className="hero-glow-two" />
+
+            <div className="hero-avatar-wrap">
               <img
                 src={avatar}
                 alt="Profile"
-                className="profile-avatar"
+                className="hero-avatar"
               />
 
-              <span className="avatar-hint">
-                ✎
-              </span>
-
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                style={{ display: "none" }}
-                disabled={isProcessing}
-              />
-
-            </label>
-
-            <div className="profile-title">
-              My Profile
-            </div>
-
-            <div className="profile-subtitle">
-              {isProcessing
-                ? "Saving your changes..."
-                : "Manage your Brewed account."}
-            </div>
-
-          </div>
-
-          <form onSubmit={handleSave}>
-
-            {/* PERSONAL INFORMATION */}
-
-            <div className="section-title">
-              Personal Information
-            </div>
-
-            <div className="form-grid">
-
-              {/* NAME */}
-
-              <div className="form-group full">
-
-                <label>
-                  Full Name
-                </label>
+              <label
+                className="avatar-upload"
+                title="Change profile photo"
+              >
+                <Camera size={17} />
 
                 <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) =>
-                    setFullName(e.target.value)
+                  type="file"
+                  accept="image/*"
+                  onChange={
+                    handleImageUpload
                   }
-                  required
+                  disabled={isProcessing}
+                  style={{
+                    display: "none",
+                  }}
                 />
+              </label>
+            </div>
 
+            <div className="hero-copy">
+              <div className="hero-eyebrow">
+                <Sparkles size={13} />
+                Your Brewed account
               </div>
 
-              {/* EMAIL */}
+              <h1 className="hero-title">
+                Hey,{" "}
+                {fullName?.split(" ")[0] ||
+                  "there"}.
+              </h1>
 
-              <div className="form-group">
+              <p className="hero-subtitle">
+                Keep your details up to date
+                so every Brewed experience
+                feels a little more personal.
+              </p>
 
-                <label>
-                  Email
-                </label>
-
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) =>
-                    setEmail(e.target.value)
-                  }
-                  required
-                />
-
+              <div className="member-pill">
+                <Check size={13} />
+                Member since{" "}
+                {memberSince || "Today"}
               </div>
+            </div>
+          </section>
 
-              {/* PHONE */}
+          {/* =================================================
+              CONTENT
+          ================================================= */}
 
-             <div className="form-group">
-  <label>
-    Phone Number <span style={{ color: "#C4956A" }}>*</span>
-  </label>
+          <div className="profile-content">
 
-  <div className="phone-input-row">
-  <input
-  type="tel"
-  value={phone}
- onChange={(e) => {
-  const newPhone = e.target.value;
+            <form
+              className="profile-card"
+              onSubmit={handleSave}
+            >
 
-  setPhone(newPhone);
+              {/* =================================================
+                  PERSONAL
+              ================================================= */}
 
-  // Changing the number immediately invalidates
-  // the previous verification.
-  if (newPhone.trim() !== originalPhone.trim()) {
-    setPhoneVerified(false);
-    setOtpSent(false);
-    setOtp("");
-    setVerificationId(null);
-    setPendingPhone("");
-  }
-}}
-  required
-/>
+              <section className="section">
+                <div className="section-heading">
+                  <div className="section-icon">
+                    <User size={18} />
+                  </div>
 
-    {phoneVerified ? (
-      <div className="verified-badge">
-        ✓ Verified
-      </div>
-    ) : (
-      <button
-        type="button"
-        className="verify-phone-btn"
-        onClick={handleSendPhoneOTP}
-        disabled={isPhoneProcessing || !phone}
-      >
-        {isPhoneProcessing ? "Sending..." : "Verify"}
-      </button>
-    )}
-  </div>
+                  <div>
+                    <h2 className="section-title">
+                      Personal details
+                    </h2>
 
-  {otpSent && (
-    <div className="otp-box">
-      <input
-        type="text"
-        inputMode="numeric"
-        maxLength="6"
-        value={otp}
-        onChange={(e) =>
-          setOtp(e.target.value.replace(/\D/g, ""))
-        }
-        placeholder="Enter 6-digit OTP"
-      />
-
-      <button
-        type="button"
-        className="verify-phone-btn"
-        onClick={handleVerifyPhoneOTP}
-        disabled={isPhoneProcessing || otp.length !== 6}
-      >
-        {isPhoneProcessing ? "Verifying..." : "Verify OTP"}
-      </button>
-    </div>
-  )}
-
-  <div id="phone-recaptcha"></div>
-
-  <div className="phone-note">
-    {phoneVerified
-      ? "Your phone number is verified."
-      : "A verification code is required to use this phone number."}
-  </div>
-</div>
-
-              {/* ADDRESS TYPE */}
-
-              <div className="form-group full">
-
-                <label>
-                  Address Type
-                </label>
-
-                <div className="radio-group">
-
-                  {[
-                    "home",
-                    "work",
-                    "other",
-                  ].map((type) => (
-
-                    <label
-                      key={type}
-                      className="radio-option"
-                    >
-
-                      <input
-                        type="radio"
-                        name="addressType"
-                        value={type}
-                        checked={
-                          addressType === type
-                        }
-                        onChange={(e) =>
-                          setAddressType(
-                            e.target.value
-                          )
-                        }
-                        style={{
-                          display: "none",
-                        }}
-                      />
-
-                      <div className="radio-circle">
-                        <div className="radio-dot" />
-                      </div>
-
-                      {type
-                        .charAt(0)
-                        .toUpperCase() +
-                        type.slice(1)}
-
-                    </label>
-
-                  ))}
-
+                    <p className="section-description">
+                      The basics we use to
+                      personalize your account.
+                    </p>
+                  </div>
                 </div>
 
-              </div>
+                <div className="form-grid">
 
-              {/* ADDRESS */}
+                  {/* NAME */}
 
-              <div className="form-group full">
+                  <div className="form-group full">
+                    <label className="field-label">
+                      Full name
+                      <span className="required">
+                        *
+                      </span>
+                    </label>
 
-                <label>
-                  Delivery Address
-                </label>
+                    <input
+                      className="field-input"
+                      type="text"
+                      value={fullName}
+                      onChange={(e) =>
+                        setFullName(
+                          e.target.value
+                        )
+                      }
+                      placeholder="Your full name"
+                      autoComplete="name"
+                      required
+                    />
+                  </div>
 
-                {googleApiKey ? (
+                  {/* EMAIL */}
 
-                  <GooglePlacesAutocomplete
-                    apiKey={googleApiKey}
+                  <div className="form-group">
+                    <label className="field-label">
+                      Email address
+                      <span className="required">
+                        *
+                      </span>
+                    </label>
 
-                    selectProps={{
-                      value: address
-                        ? {
-                            label:
-                              address.formatted ||
-                              "",
-                            value:
-                              address.placeId ||
-                              "",
+                    <input
+                      className="field-input"
+                      type="email"
+                      value={email}
+                      onChange={(e) =>
+                        setEmail(
+                          e.target.value
+                        )
+                      }
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                      required
+                    />
+
+                    <div className="email-status">
+                      <div className="email-status-left">
+                        <div className="email-status-icon">
+                          {emailVerified ? (
+                            <ShieldCheck
+                              size={15}
+                            />
+                          ) : (
+                            <Mail
+                              size={15}
+                            />
+                          )}
+                        </div>
+
+                        <div className="email-status-text">
+                          <div className="email-status-title">
+                            {emailVerified
+                              ? "Email verified"
+                              : "Email not verified"}
+                          </div>
+
+                          <div className="email-status-copy">
+                            {emailVerified
+                              ? "Your email is secured."
+                              : "Verification is recommended."}
+                          </div>
+                        </div>
+                      </div>
+
+                      {!emailVerified && (
+                        <button
+                          type="button"
+                          className="email-verify-button"
+                          onClick={
+                            handleSendEmailVerification
                           }
-                        : null,
+                          disabled={
+                            isEmailProcessing
+                          }
+                        >
+                          {isEmailProcessing
+                            ? "Sending..."
+                            : "Verify email"}
+                        </button>
+                      )}
 
-                      onChange:
-                        handleAddressChange,
+                      {emailVerified && (
+                        <button
+                          type="button"
+                          className="email-verify-button"
+                          onClick={
+                            handleRefreshEmailVerification
+                          }
+                          disabled={
+                            isEmailProcessing
+                          }
+                        >
+                          Refresh
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-                      placeholder:
-                        "Search for your delivery address...",
+                  {/* PHONE */}
 
-                      isClearable: true,
+                  <div className="form-group">
+                    <label className="field-label">
+                      Phone number
+                      <span className="required">
+                        *
+                      </span>
+                    </label>
 
-                      styles: {
+                    <div className="phone-row">
+                      <input
+                        className="field-input"
+                        type="tel"
+                        value={phone}
+                        onChange={
+                          handlePhoneChange
+                        }
+                        placeholder="+919876543210"
+                        autoComplete="tel"
+                        required
+                      />
 
-                        control: (
-                          provided,
-                          state
-                        ) => ({
-                          ...provided,
-                          minHeight: "52px",
-                          padding: "3px",
-                          borderRadius: "12px",
-                          borderColor:
-                            state.isFocused
-                              ? "#C4956A"
-                              : "#DDD",
-                          boxShadow:
-                            state.isFocused
-                              ? "0 0 0 3px rgba(196,149,106,.15)"
-                              : "none",
-                        }),
+                      {phoneVerified &&
+                      !phoneChanged ? (
+                        <div className="verified-chip">
+                          <Check size={14} />
+                          Verified
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="verify-button"
+                          onClick={
+                            handleSendPhoneOTP
+                          }
+                          disabled={
+                            isPhoneProcessing ||
+                            !phone.trim()
+                          }
+                        >
+                          {isPhoneProcessing
+                            ? "Sending..."
+                            : "Verify"}
+                        </button>
+                      )}
+                    </div>
 
-                        input: (
-                          provided
-                        ) => ({
-                          ...provided,
-                          fontSize: "15px",
-                        }),
+                    {otpSent && (
+                      <div className="otp-panel">
+                        <div className="otp-header">
+                          <div>
+                            <div className="otp-title">
+                              Enter verification code
+                            </div>
 
-                        placeholder: (
-                          provided
-                        ) => ({
-                          ...provided,
-                          color: "#999",
-                        }),
+                            <div className="otp-subtitle">
+                              Sent to{" "}
+                              {pendingPhone}
+                            </div>
+                          </div>
 
-                        singleValue: (
-                          provided
-                        ) => ({
-                          ...provided,
-                          color: "#3B1A08",
-                        }),
+                          <Lock size={14} />
+                        </div>
 
-                        menu: (
-                          provided
-                        ) => ({
-                          ...provided,
-                          zIndex: 9999,
-                          borderRadius: "12px",
-                          overflow: "hidden",
-                        }),
+                        <div className="otp-row">
+                          <input
+                            className="field-input"
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            maxLength={6}
+                            value={otp}
+                            onChange={(e) =>
+                              setOtp(
+                                e.target.value.replace(
+                                  /\D/g,
+                                  ""
+                                )
+                              )
+                            }
+                            placeholder="6-digit code"
+                          />
 
-                      },
+                          <button
+                            type="button"
+                            className="otp-button"
+                            onClick={
+                              handleVerifyPhoneOTP
+                            }
+                            disabled={
+                              isPhoneProcessing ||
+                              otp.length !== 6
+                            }
+                          >
+                            {isPhoneProcessing
+                              ? "Checking..."
+                              : "Confirm"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div
+                      id="phone-recaptcha"
+                    />
+
+                    <div
+                      className={
+                        phoneVerified &&
+                        !phoneChanged
+                          ? "field-note success"
+                          : "field-note"
+                      }
+                    >
+                      {phoneVerified &&
+                      !phoneChanged
+                        ? "Your phone number is verified."
+                        : "Changing your number requires a new SMS verification."}
+                    </div>
+                  </div>
+
+                  {/* BIRTHDAY */}
+
+                  <div className="form-group full">
+                    <label className="field-label">
+                      Birthday
+                      <span className="required">
+                        *
+                      </span>
+                    </label>
+
+                    <input
+                      className={`field-input ${
+                        isBirthdayLocked
+                          ? "locked"
+                          : ""
+                      }`}
+                      type={
+                        isBirthdayLocked
+                          ? "text"
+                          : "date"
+                      }
+                      value={birthday}
+                      onChange={(e) =>
+                        setBirthday(
+                          e.target.value
+                        )
+                      }
+                      readOnly={
+                        isBirthdayLocked
+                      }
+                      required
+                    />
+
+                    {isBirthdayLocked && (
+                      <div className="birthday-lock">
+                        <Lock size={12} />
+                        Your birthday is locked
+                        after the first save.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* =================================================
+                  ADDRESS
+              ================================================= */}
+
+              <section className="section">
+                <div className="section-heading">
+                  <div className="section-icon">
+                    <MapPin size={18} />
+                  </div>
+
+                  <div>
+                    <h2 className="section-title">
+                      Delivery details
+                    </h2>
+
+                    <p className="section-description">
+                      Save the address you use
+                      most often for orders.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="form-grid">
+
+                  <div className="form-group full">
+                    <label className="field-label">
+                      Address type
+                    </label>
+
+                    <div className="address-type">
+                      {[
+                        "home",
+                        "work",
+                        "other",
+                      ].map((type) => (
+                        <label
+                          key={type}
+                          className="address-option"
+                        >
+                          <input
+                            type="radio"
+                            name="addressType"
+                            value={type}
+                            checked={
+                              addressType ===
+                              type
+                            }
+                            onChange={(e) =>
+                              setAddressType(
+                                e.target.value
+                              )
+                            }
+                          />
+
+                          <span className="address-label">
+                            {type
+                              .charAt(0)
+                              .toUpperCase() +
+                              type.slice(1)}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="form-group full">
+                    <label className="field-label">
+                      Delivery address
+                    </label>
+
+                    {googleApiKey ? (
+                      <GooglePlacesAutocomplete
+                        apiKey={
+                          googleApiKey
+                        }
+                        selectProps={{
+                          value: address
+                            ? {
+                                label:
+                                  address.formatted ||
+                                  "",
+                                value:
+                                  address.placeId ||
+                                  "",
+                              }
+                            : null,
+
+                          onChange:
+                            handleAddressChange,
+
+                          placeholder:
+                            "Search your delivery address...",
+
+                          isClearable: true,
+
+                          styles: {
+                            control: (
+                              provided
+                            ) => ({
+                              ...provided,
+                              minHeight:
+                                "50px",
+                              borderRadius:
+                                "14px",
+                              border:
+                                "1px solid #E9E0D8",
+                              boxShadow:
+                                "none",
+                              background:
+                                "#FFFDFC",
+                              padding:
+                                "1px 3px",
+                            }),
+
+                            control: (
+                              provided,
+                              state
+                            ) => ({
+                              ...provided,
+                              minHeight:
+                                "50px",
+                              borderRadius:
+                                "14px",
+                              borderColor:
+                                state.isFocused
+                                  ? "#B88961"
+                                  : "#E9E0D8",
+                              boxShadow:
+                                state.isFocused
+                                  ? "0 0 0 4px rgba(184,137,97,.10)"
+                                  : "none",
+                              background:
+                                "#FFFDFC",
+                            }),
+
+                            input: (
+                              provided
+                            ) => ({
+                              ...provided,
+                              fontSize:
+                                "14px",
+                              color:
+                                "#2D1B12",
+                            }),
+
+                            placeholder: (
+                              provided
+                            ) => ({
+                              ...provided,
+                              color:
+                                "#B1A49C",
+                              fontSize:
+                                "14px",
+                            }),
+
+                            singleValue: (
+                              provided
+                            ) => ({
+                              ...provided,
+                              color:
+                                "#2D1B12",
+                              fontSize:
+                                "14px",
+                            }),
+
+                            menu: (
+                              provided
+                            ) => ({
+                              ...provided,
+                              zIndex:9999,
+                              borderRadius:
+                                "14px",
+                              overflow:
+                                "hidden",
+                              boxShadow:
+                                "0 18px 40px rgba(45,27,18,.12)",
+                            }),
+
+                            option: (
+                              provided,
+                              state
+                            ) => ({
+                              ...provided,
+                              backgroundColor:
+                                state.isFocused
+                                  ? "#F6EDE4"
+                                  : "white",
+                              color:
+                                "#2D1B12",
+                              fontSize:
+                                "13px",
+                              padding:
+                                "12px 14px",
+                            }),
+                          },
+                        }}
+                      />
+                    ) : (
+                      <div className="error-message">
+                        Google Maps address search
+                        is not configured.
+                      </div>
+                    )}
+
+                    <div className="field-note">
+                      Search and select the exact
+                      address from the suggestions.
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* =================================================
+                  ALERTS
+              ================================================= */}
+
+              {message && (
+                <div className="status-message success-message">
+                  <Check
+                    size={16}
+                    style={{
+                      flex:"none",
+                      marginTop:2,
                     }}
                   />
 
-                ) : (
+                  <span>{message}</span>
+                </div>
+              )}
 
-                  <div className="error-message">
-                    Google Maps API key is not configured.
-                  </div>
+              {errorMessage && (
+                <div className="status-message error-message">
+                  <X
+                    size={16}
+                    style={{
+                      flex:"none",
+                      marginTop:2,
+                    }}
+                  />
 
-                )}
+                  <span>
+                    {errorMessage}
+                  </span>
+                </div>
+              )}
 
-                <div className="address-note">
-                  Search and select your exact delivery
-                  address from the suggestions.
+              {/* =================================================
+                  ACTIONS
+              ================================================= */}
+
+              <div className="actions">
+                <button
+                  type="button"
+                  className="action-button password-button"
+                  onClick={
+                    handleChangePassword
+                  }
+                  disabled={
+                    isPasswordProcessing ||
+                    isProcessing
+                  }
+                >
+                  {isPasswordProcessing
+                    ? "Sending..."
+                    : "Reset password"}
+                </button>
+
+                <button
+                  type="submit"
+                  className="action-button save-button"
+                  disabled={
+                    isProcessing ||
+                    isPhoneProcessing
+                  }
+                >
+                  {isProcessing ? (
+                    "Saving..."
+                  ) : (
+                    <>
+                      Save changes
+                      <Check size={15} />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+
+            {/* =================================================
+                SIDEBAR
+            ================================================= */}
+
+            <aside className="side-stack">
+
+              <div className="membership-card">
+                <div className="membership-kicker">
+                  <Sparkles size={12} />
+                  Brewed membership
                 </div>
 
+                <div className="membership-title">
+                  Your Brewed story
+                </div>
+
+                <div className="membership-date">
+                  You've been part of Brewed
+                  since{" "}
+                  <strong>
+                    {memberSince ||
+                      "today"}
+                  </strong>
+                  .
+                </div>
               </div>
 
-              {/* BIRTHDAY */}
-
-              <div className="form-group full">
-
-                <label>
-                  Birthday{" "}
-                  <span
-                    style={{
-                      color: "#C4956A",
-                    }}
-                  >
-                    *
-                  </span>
-                </label>
-
-                <input
-                  type={
-                    isBirthdayLocked
-                      ? "text"
-                      : "date"
-                  }
-                  value={birthday}
-                  onChange={(e) =>
-                    setBirthday(
-                      e.target.value
-                    )
-                  }
-                  required
-                  readOnly={
-                    isBirthdayLocked
-                  }
-                  style={{
-                    backgroundColor:
-                      isBirthdayLocked
-                        ? "#F8F4EE"
-                        : "white",
-                    cursor:
-                      isBirthdayLocked
-                        ? "default"
-                        : "text",
-                  }}
-                />
-
-                {isBirthdayLocked && (
-                  <div className="birthday-note">
-                    Your birthday cannot be changed
-                    after it has been saved.
+              <div className="security-card">
+                <div className="security-heading">
+                  <div className="security-heading-icon">
+                    <ShieldCheck size={17} />
                   </div>
-                )}
 
+                  <h3 className="security-title">
+                    Account security
+                  </h3>
+                </div>
+
+                <div className="security-list">
+                  <div className="security-item">
+                    <span className="security-dot" />
+                    Email verification
+                  </div>
+
+                  <div className="security-item">
+                    <span className="security-dot" />
+                    Phone verification
+                  </div>
+
+                  <div className="security-item">
+                    <span className="security-dot" />
+                    Firebase authentication
+                  </div>
+
+                  <div className="security-item">
+                    <span className="security-dot" />
+                    Protected profile data
+                  </div>
+                </div>
               </div>
-
-            </div>
-
-            {/* MEMBERSHIP */}
-
-            <div className="section-title">
-              Membership
-            </div>
-
-            <div className="member-box">
-
-              <div className="member-value">
-                ☕ Member since{" "}
-                {memberSince || "Today"}
-              </div>
-
-            </div>
-
-            {/* MESSAGES */}
-
-            {message && (
-              <div className="status-message success-message">
-                {message}
-              </div>
-            )}
-
-            {errorMessage && (
-              <div className="status-message error-message">
-                {errorMessage}
-              </div>
-            )}
-
-            {/* ACTIONS */}
-
-            <div className="actions">
-
-              <button
-                type="button"
-                className="password-btn"
-                onClick={
-                  handleChangePassword
-                }
-                disabled={
-                  isPasswordProcessing ||
-                  isProcessing
-                }
-              >
-                {isPasswordProcessing
-                  ? "Sending..."
-                  : "Change Password"}
-              </button>
-
-              <button
-                type="submit"
-                className="save-btn"
-                disabled={isProcessing}
-              >
-                {isProcessing
-                  ? "Saving..."
-                  : "Save Changes"}
-              </button>
-
-            </div>
-
-          </form>
-
+            </aside>
+          </div>
         </div>
-      </div>
+      </main>
     </>
   );
 }
