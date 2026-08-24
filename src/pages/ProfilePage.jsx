@@ -37,7 +37,6 @@ import {
   Sparkles,
   User,
   X,
-  Crown,
 } from "lucide-react";
 
 import { db, storage, auth } from "../firebase";
@@ -116,7 +115,8 @@ export default function ProfilePage({ setPage }) {
   // CONFIG
   // =========================================================
 
-  const googleApiKey = "AIzaSyAZXXMZOvmUviZqgDoljAhSllaQLxelvfY";
+  const googleApiKey =
+    import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
   // =========================================================
   // HELPERS
@@ -146,43 +146,6 @@ export default function ProfilePage({ setPage }) {
       normalizeEmail(originalEmail)
     );
   }, [email, originalEmail]);
-
-  // =========================================================
-  // LOYALTY TIER
-  // =========================================================
-
-  const normalizedTier =
-    String(loyaltyTier || "Bronze").trim();
-
-  const tierConfig = {
-    Bronze: {
-      label: "Bronze",
-      icon: "✦",
-      className: "tier-bronze",
-    },
-
-    Silver: {
-      label: "Silver",
-      icon: "✧",
-      className: "tier-silver",
-    },
-
-    Gold: {
-      label: "Gold",
-      icon: "✦",
-      className: "tier-gold",
-    },
-
-    Platinum: {
-      label: "Platinum",
-      icon: "◇",
-      className: "tier-platinum",
-    },
-  };
-
-  const currentTier =
-    tierConfig[normalizedTier] ||
-    tierConfig.Bronze;
 
   // =========================================================
   // LOAD PROFILE
@@ -569,13 +532,6 @@ export default function ProfilePage({ setPage }) {
     const normalizedNewPhone =
       normalizePhone(newPhone);
 
-    /*
-     * IMPORTANT:
-     *
-     * If the customer changes their phone and then
-     * puts the original verified number back,
-     * restore the original verified state.
-     */
     if (
       normalizedNewPhone ===
       normalizePhone(originalPhone)
@@ -616,10 +572,6 @@ export default function ProfilePage({ setPage }) {
       return;
     }
 
-    /*
-     * Original verified phone restored.
-     * No verification required.
-     */
     if (
       cleanedPhone ===
       normalizePhone(originalPhone)
@@ -840,13 +792,6 @@ export default function ProfilePage({ setPage }) {
     const normalizedNewEmail =
       normalizeEmail(newEmail);
 
-    /*
-     * IMPORTANT:
-     *
-     * If the customer temporarily changes the email
-     * and puts the original verified email back,
-     * restore its verified state.
-     */
     if (
       normalizedNewEmail ===
       normalizeEmail(originalEmail)
@@ -889,10 +834,6 @@ export default function ProfilePage({ setPage }) {
       return;
     }
 
-    /*
-     * Original verified email restored.
-     * No verification required.
-     */
     if (
       newEmail ===
       normalizeEmail(originalEmail)
@@ -911,10 +852,6 @@ export default function ProfilePage({ setPage }) {
     clearMessages();
 
     try {
-      /*
-       * The email must be updated in Firebase before
-       * Firebase can send verification to the new address.
-       */
       if (
         normalizeEmail(currentUser.email || "") !==
         newEmail
@@ -1066,10 +1003,6 @@ export default function ProfilePage({ setPage }) {
       return;
     }
 
-    /*
-     * Original verified phone restored:
-     * verification is automatically valid.
-     */
     if (
       normalizePhone(phone) ===
       normalizePhone(originalPhone)
@@ -1077,10 +1010,6 @@ export default function ProfilePage({ setPage }) {
       setPhoneVerified(true);
     }
 
-    /*
-     * Original verified email restored:
-     * verification is automatically valid.
-     */
     if (
       normalizeEmail(email) ===
       normalizeEmail(originalEmail)
@@ -1224,10 +1153,6 @@ export default function ProfilePage({ setPage }) {
         setIsBirthdayLocked(true);
       }
 
-      /*
-       * If email wasn't changed, preserve its
-       * current Firebase verification state.
-       */
       if (newEmail === oldEmail) {
         await reload(currentUser);
 
@@ -1647,124 +1572,6 @@ export default function ProfilePage({ setPage }) {
           font-size:14px;
           line-height:1.7;
           max-width:520px;
-        }
-
-        /* =====================================================
-           AESTHETIC LOYALTY BADGE
-        ===================================================== */
-
-        .tier-badge {
-          position:relative;
-          display:inline-flex;
-          align-items:center;
-          gap:9px;
-          margin-top:18px;
-          padding:7px 12px 7px 8px;
-          border-radius:999px;
-          background:rgba(255,255,255,.065);
-          border:1px solid rgba(255,255,255,.13);
-          box-shadow:
-            inset 0 1px 0 rgba(255,255,255,.08),
-            0 8px 25px rgba(0,0,0,.08);
-          backdrop-filter:blur(10px);
-        }
-
-        .tier-badge::before {
-          content:"";
-          position:absolute;
-          inset:1px;
-          border-radius:inherit;
-          pointer-events:none;
-          background:linear-gradient(
-            120deg,
-            rgba(255,255,255,.08),
-            transparent 45%
-          );
-        }
-
-        .tier-emblem {
-          position:relative;
-          z-index:1;
-          width:28px;
-          height:28px;
-          border-radius:50%;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          font-size:13px;
-          font-weight:800;
-          box-shadow:
-            inset 0 1px 1px rgba(255,255,255,.55),
-            0 4px 12px rgba(0,0,0,.16);
-        }
-
-        .tier-copy {
-          position:relative;
-          z-index:1;
-          display:flex;
-          flex-direction:column;
-          gap:1px;
-        }
-
-        .tier-caption {
-          color:rgba(255,255,255,.5);
-          font-size:8px;
-          line-height:1;
-          letter-spacing:.15em;
-          text-transform:uppercase;
-          font-weight:800;
-        }
-
-        .tier-name {
-          color:#F7EEE7;
-          font-size:11px;
-          line-height:1.2;
-          font-weight:700;
-          letter-spacing:.02em;
-        }
-
-        .tier-bronze .tier-emblem {
-          background:
-            radial-gradient(
-              circle at 32% 25%,
-              #F4D5B6,
-              #B8734A 58%,
-              #70402B
-            );
-          color:#FFF2E5;
-        }
-
-        .tier-silver .tier-emblem {
-          background:
-            radial-gradient(
-              circle at 32% 25%,
-              #FFFFFF,
-              #C7C7C7 55%,
-              #777777
-            );
-          color:#493F39;
-        }
-
-        .tier-gold .tier-emblem {
-          background:
-            radial-gradient(
-              circle at 32% 25%,
-              #FFF3B7,
-              #D7A943 58%,
-              #8B5C15
-            );
-          color:#FFF8D6;
-        }
-
-        .tier-platinum .tier-emblem {
-          background:
-            radial-gradient(
-              circle at 32% 25%,
-              #FFFFFF,
-              #D7D6E5 48%,
-              #8C899C
-            );
-          color:#504D61;
         }
 
         /* =====================================================
@@ -2349,10 +2156,6 @@ export default function ProfilePage({ setPage }) {
             border-radius:30px;
           }
 
-          .hero-title {
-            font-size:2.45rem;
-          }
-
           .profile-card {
             padding:22px 18px;
             border-radius:23px;
@@ -2499,10 +2302,8 @@ export default function ProfilePage({ setPage }) {
                 so every Brewed experience
                 feels a little more personal.
               </p>
-
-              {/* LOYALTY TIER */}
-
-            
+            </div>
+          </section>
 
           {/* =================================================
               CONTENT
