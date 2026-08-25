@@ -19,7 +19,7 @@ import {
 import { auth, db } from "../firebase";
 import { useCart } from "../context/CartContext";
 
-export default function OrdersPage({ setPage }) {
+export default function OrdersPage({ setPage, setSeclectedProduct }) {
   const { reorder } = useCart();
 
   const [orders, setOrders] = useState([]);
