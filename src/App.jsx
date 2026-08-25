@@ -190,9 +190,17 @@ export default function App() {
             <LoyaltyPage setPage={navigateTo} />
           )}
 
-          {page === "favorites" && (
-            <FavoritesPage setPage={navigateTo} />
+
+
+ {page === "favourites" && (
+            <FavouritesPage
+              setPage={navigateTo}
+              setSelectedProduct ={setSelectedProduct}
+            />
           )}
+
+
+
           
           {page === "notifications" && (
             <NotificationsPage setPage={navigateTo} />
