@@ -88,8 +88,7 @@ export default function FavoritesPage({
 
   /* =========================================================
      OPEN PRODUCT PAGE
-     
-     Only clicking the actual card opens the product page.
+     Clicking the card opens the respective product page.
   ========================================================= */
 
   const openProduct = (item) => {
@@ -104,8 +103,7 @@ export default function FavoritesPage({
 
   /* =========================================================
      ADD TO CART
-     
-     The button stops the card click from firing.
+     Button click does NOT trigger card click.
   ========================================================= */
 
   const handleAddToCart = (item, event) => {
@@ -161,7 +159,7 @@ export default function FavoritesPage({
         error
       );
 
-      // Restore if deletion fails
+      // Restore if Firebase deletion fails
       setFavorites(previousFavorites);
     }
   };
@@ -319,7 +317,6 @@ export default function FavoritesPage({
 
         body {
           margin: 0;
-
           background: #f7f4ee;
         }
 
@@ -333,10 +330,6 @@ export default function FavoritesPage({
 
         .favorites-page {
           min-height: 100vh;
-
-          /*
-            Deliberately compact top spacing.
-          */
 
           padding:
             48px
@@ -408,7 +401,7 @@ export default function FavoritesPage({
         }
 
         /* =====================================================
-           FAVORITES GRID
+           GRID
         ===================================================== */
 
         .favorites-grid {
@@ -424,7 +417,7 @@ export default function FavoritesPage({
         }
 
         /* =====================================================
-           FAVORITE CARD
+           CARD
         ===================================================== */
 
         .favorite-card {
@@ -698,7 +691,7 @@ export default function FavoritesPage({
         }
 
         /* =====================================================
-           ADD BUTTON
+           ADD CTA
         ===================================================== */
 
         .add-cart-button {
@@ -707,17 +700,23 @@ export default function FavoritesPage({
           align-items: center;
           justify-content: center;
 
-          min-height: 44px;
+          /*
+            Larger CTA:
+            wider + taller + stronger typography.
+          */
+
+          min-width: 92px;
+          min-height: 48px;
 
           padding:
             0
-            21px;
+            25px;
 
           border:
             1px solid
             #49372b;
 
-          border-radius: 9px;
+          border-radius: 10px;
 
           background:
             #49372b;
@@ -725,34 +724,47 @@ export default function FavoritesPage({
           color:
             #fffaf5;
 
-          font-size: 13px;
+          font-size: 14px;
 
           font-weight: 600;
 
-          letter-spacing: .015em;
+          letter-spacing: .01em;
 
           cursor: pointer;
+
+          box-shadow:
+            0 4px 10px
+            rgba(73,55,43,.08);
 
           transition:
             background .25s ease,
             border-color .25s ease,
-            transform .25s ease;
+            transform .25s ease,
+            box-shadow .25s ease;
         }
 
         .add-cart-button:hover {
           background:
-            #644936;
+            #604531;
 
           border-color:
-            #644936;
+            #604531;
 
           transform:
-            translateY(-1px);
+            translateY(-2px);
+
+          box-shadow:
+            0 7px 16px
+            rgba(73,55,43,.14);
         }
 
         .add-cart-button:active {
           transform:
             translateY(0);
+
+          box-shadow:
+            0 3px 8px
+            rgba(73,55,43,.08);
         }
 
         .add-cart-button:focus-visible {
@@ -961,15 +973,18 @@ export default function FavoritesPage({
           }
 
           .add-cart-button {
+            min-width:
+              100px;
+
             min-height:
-              43px;
+              48px;
 
             padding:
               0
-              20px;
+              24px;
 
             font-size:
-              13px;
+              14px;
           }
 
         }
@@ -999,15 +1014,12 @@ export default function FavoritesPage({
 
           .favorite-footer {
             align-items:
-              stretch;
-
-            flex-direction:
-              column;
+              center;
           }
 
           .add-cart-button {
-            width:
-              100%;
+            min-width:
+              96px;
           }
 
         }
@@ -1099,157 +1111,172 @@ export default function FavoritesPage({
 
             <div className="favorites-grid">
 
-              {favorites.map((item) => (
+              {favorites.map((item) => {
 
-                <article
-                  key={item.id}
-                  className="favorite-card"
+                /*
+                  Support BOTH image fields:
 
-                  onClick={() =>
-                    openProduct(item)
-                  }
+                  item.image
+                  item.img
 
-                  role="button"
-                  tabIndex={0}
+                  item.image takes priority if both exist.
+                */
 
-                  onKeyDown={(event) =>
-                    handleCardKeyDown(
-                      event,
-                      item
-                    )
-                  }
+                const itemImage =
+                  item.image ||
+                  item.img ||
+                  "";
 
-                  aria-label={
-                    `View ${item.name}`
-                  }
-                >
+                return (
+                  <article
+                    key={item.id}
+                    className="favorite-card"
 
-                  {/* =================================================
-                      HEART
-                  ================================================= */}
-
-                  <button
-                    type="button"
-                    className="favorite-heart"
-
-                    aria-label={
-                      `Remove ${item.name} ` +
-                      `from favorites`
+                    onClick={() =>
+                      openProduct(item)
                     }
 
-                    onClick={(event) =>
-                      removeFavorite(
-                        item.id,
-                        event
+                    role="button"
+                    tabIndex={0}
+
+                    onKeyDown={(event) =>
+                      handleCardKeyDown(
+                        event,
+                        item
                       )
+                    }
+
+                    aria-label={
+                      `View ${item.name}`
                     }
                   >
 
-                    <Heart
-                      size={18}
-                      strokeWidth={2}
-                      fill="currentColor"
-                    />
+                    {/* =================================================
+                        HEART
+                    ================================================= */}
 
-                  </button>
+                    <button
+                      type="button"
+                      className="favorite-heart"
 
-                  {/* =================================================
-                      IMAGE
-                  ================================================= */}
+                      aria-label={
+                        `Remove ${item.name} ` +
+                        `from favorites`
+                      }
 
-                  <div className="favorite-image-wrapper">
-
-                    {item.image ? (
-
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="favorite-image"
-
-                        onError={(event) => {
-
+                      onClick={(event) =>
+                        removeFavorite(
+                          item.id,
                           event
-                            .currentTarget
-                            .style
-                            .display =
-                            "none";
+                        )
+                      }
+                    >
 
-                          const fallback =
-                            event
-                              .currentTarget
-                              .nextElementSibling;
-
-                          if (fallback) {
-                            fallback.style.display =
-                              "flex";
-                          }
-
-                        }}
+                      <Heart
+                        size={18}
+                        strokeWidth={2}
+                        fill="currentColor"
                       />
 
-                    ) : null}
+                    </button>
 
-                    <div
-                      className="emoji-fallback"
+                    {/* =================================================
+                        IMAGE
+                    ================================================= */}
 
-                      style={{
-                        display:
-                          item.image
-                            ? "none"
-                            : "flex",
-                      }}
-                    >
-                      {item.emoji || "☕"}
-                    </div>
+                    <div className="favorite-image-wrapper">
 
-                    <div className="image-shade" />
+                      {itemImage ? (
 
-                  </div>
+                        <img
+                          src={itemImage}
+                          alt={item.name}
+                          className="favorite-image"
 
-                  {/* =================================================
-                      CONTENT
-                  ================================================= */}
+                          onError={(event) => {
 
-                  <div className="favorite-content">
+                            event
+                              .currentTarget
+                              .style
+                              .display =
+                              "none";
 
-                    <h2 className="favorite-name">
-                      {item.name}
-                    </h2>
+                            const fallback =
+                              event
+                                .currentTarget
+                                .nextElementSibling;
 
-                    <p className="favorite-description">
-                      {item.desc ||
-                        "A delicious Brewed favorite, made for your next coffee moment."}
-                    </p>
+                            if (fallback) {
+                              fallback.style.display =
+                                "flex";
+                            }
 
-                    <div className="favorite-divider" />
+                          }}
+                        />
 
-                    <div className="favorite-footer">
+                      ) : null}
 
-                      <div className="favorite-price">
-                        ₹{item.price}
+                      <div
+                        className="emoji-fallback"
+
+                        style={{
+                          display:
+                            itemImage
+                              ? "none"
+                              : "flex",
+                        }}
+                      >
+                        {item.emoji || "☕"}
                       </div>
 
-                      <button
-                        type="button"
-                        className="add-cart-button"
-
-                        onClick={(event) =>
-                          handleAddToCart(
-                            item,
-                            event
-                          )
-                        }
-                      >
-                        Add
-                      </button>
+                      <div className="image-shade" />
 
                     </div>
 
-                  </div>
+                    {/* =================================================
+                        CONTENT
+                    ================================================= */}
 
-                </article>
+                    <div className="favorite-content">
 
-              ))}
+                      <h2 className="favorite-name">
+                        {item.name}
+                      </h2>
+
+                      <p className="favorite-description">
+                        {item.desc ||
+                          "A delicious Brewed favorite, made for your next coffee moment."}
+                      </p>
+
+                      <div className="favorite-divider" />
+
+                      <div className="favorite-footer">
+
+                        <div className="favorite-price">
+                          ₹{item.price}
+                        </div>
+
+                        <button
+                          type="button"
+                          className="add-cart-button"
+
+                          onClick={(event) =>
+                            handleAddToCart(
+                              item,
+                              event
+                            )
+                          }
+                        >
+                          Add
+                        </button>
+
+                      </div>
+
+                    </div>
+
+                  </article>
+                );
+              })}
 
             </div>
 
