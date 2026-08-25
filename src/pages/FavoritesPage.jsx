@@ -12,8 +12,6 @@ import {
 
 import {
   Heart,
-  ArrowLeft,
-  ArrowUpRight,
   Coffee,
 } from "lucide-react";
 
@@ -55,10 +53,12 @@ export default function FavoritesPage({
           )
         );
 
-        const items = snapshot.docs.map((favoriteDoc) => ({
-          id: favoriteDoc.id,
-          ...favoriteDoc.data(),
-        }));
+        const items = snapshot.docs.map(
+          (favoriteDoc) => ({
+            id: favoriteDoc.id,
+            ...favoriteDoc.data(),
+          })
+        );
 
         if (mounted) {
           setFavorites(items);
@@ -87,7 +87,9 @@ export default function FavoritesPage({
   }, [currentUser]);
 
   /* =========================================================
-     OPEN PRODUCT
+     OPEN PRODUCT PAGE
+     
+     Only clicking the actual card opens the product page.
   ========================================================= */
 
   const openProduct = (item) => {
@@ -102,6 +104,8 @@ export default function FavoritesPage({
 
   /* =========================================================
      ADD TO CART
+     
+     The button stops the card click from firing.
   ========================================================= */
 
   const handleAddToCart = (item, event) => {
@@ -121,16 +125,23 @@ export default function FavoritesPage({
      REMOVE FAVORITE
   ========================================================= */
 
-  const removeFavorite = async (itemId, event) => {
+  const removeFavorite = async (
+    itemId,
+    event
+  ) => {
     event.stopPropagation();
 
     if (!currentUser || !itemId) return;
 
-    const previousFavorites = [...favorites];
+    const previousFavorites = [
+      ...favorites,
+    ];
 
+    // Optimistic UI update
     setFavorites((prev) =>
       prev.filter(
-        (favorite) => favorite.id !== itemId
+        (favorite) =>
+          favorite.id !== itemId
       )
     );
 
@@ -150,6 +161,7 @@ export default function FavoritesPage({
         error
       );
 
+      // Restore if deletion fails
       setFavorites(previousFavorites);
     }
   };
@@ -158,18 +170,22 @@ export default function FavoritesPage({
      KEYBOARD CARD NAVIGATION
   ========================================================= */
 
-  const handleCardKeyDown = (event, item) => {
+  const handleCardKeyDown = (
+    event,
+    item
+  ) => {
     if (
       event.key === "Enter" ||
       event.key === " "
     ) {
       event.preventDefault();
+
       openProduct(item);
     }
   };
 
   /* =========================================================
-     LOADING
+     LOADING STATE
   ========================================================= */
 
   if (loading) {
@@ -319,7 +335,7 @@ export default function FavoritesPage({
           min-height: 100vh;
 
           /*
-            Much less empty space at the top.
+            Deliberately compact top spacing.
           */
 
           padding:
@@ -350,59 +366,6 @@ export default function FavoritesPage({
         .favorites-header {
           margin-bottom: 48px;
         }
-
-        .favorites-nav {
-          margin-bottom: 28px;
-        }
-
-        .back-button {
-          display: inline-flex;
-
-          align-items: center;
-
-          gap: 8px;
-
-          padding: 0;
-
-          border: 0;
-
-          background: transparent;
-
-          color: #7c6e65;
-
-          font-size: 14px;
-
-          font-weight: 500;
-
-          letter-spacing: .01em;
-
-          cursor: pointer;
-
-          transition:
-            color .25s ease,
-            transform .25s ease;
-        }
-
-        .back-button:hover {
-          color: #4f3b2d;
-
-          transform:
-            translateX(-3px);
-        }
-
-        .back-button:focus-visible {
-          outline:
-            2px solid
-            rgba(145, 104, 74, .5);
-
-          outline-offset: 5px;
-
-          border-radius: 4px;
-        }
-
-        /* =====================================================
-           HEADING
-        ===================================================== */
 
         .favorites-title {
           margin: 0;
@@ -445,7 +408,7 @@ export default function FavoritesPage({
         }
 
         /* =====================================================
-           GRID
+           FAVORITES GRID
         ===================================================== */
 
         .favorites-grid {
@@ -461,7 +424,7 @@ export default function FavoritesPage({
         }
 
         /* =====================================================
-           CARD
+           FAVORITE CARD
         ===================================================== */
 
         .favorite-card {
@@ -735,7 +698,7 @@ export default function FavoritesPage({
         }
 
         /* =====================================================
-           ADD
+           ADD BUTTON
         ===================================================== */
 
         .add-cart-button {
@@ -744,13 +707,11 @@ export default function FavoritesPage({
           align-items: center;
           justify-content: center;
 
-          gap: 7px;
-
           min-height: 44px;
 
           padding:
             0
-            18px;
+            21px;
 
           border:
             1px solid
@@ -800,19 +761,6 @@ export default function FavoritesPage({
             rgba(145, 104, 74, .5);
 
           outline-offset: 3px;
-        }
-
-        .add-cart-button svg {
-          transition:
-            transform .25s ease;
-        }
-
-        .add-cart-button:hover svg {
-          transform:
-            translate(
-              2px,
-              -2px
-            );
         }
 
         /* =====================================================
@@ -934,7 +882,7 @@ export default function FavoritesPage({
 
           .favorites-page {
             padding:
-              48px
+              42px
               16px
               55px;
           }
@@ -943,18 +891,12 @@ export default function FavoritesPage({
             margin-bottom: 38px;
           }
 
-          .favorites-nav {
-            margin-bottom: 27px;
-          }
-
-          .back-button {
-            font-size: 13px;
-          }
-
           .favorites-title {
-            font-size: 47px;
+            font-size:
+              47px;
 
-            line-height: .95;
+            line-height:
+              .95;
           }
 
           .favorites-subtitle {
@@ -972,9 +914,11 @@ export default function FavoritesPage({
           }
 
           .favorites-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns:
+              1fr;
 
-            gap: 19px;
+            gap:
+              19px;
           }
 
           .favorite-image-wrapper {
@@ -1022,7 +966,7 @@ export default function FavoritesPage({
 
             padding:
               0
-              18px;
+              20px;
 
             font-size:
               13px;
@@ -1038,7 +982,7 @@ export default function FavoritesPage({
 
           .favorites-page {
             padding:
-              43px
+              38px
               14px
               50px;
           }
@@ -1077,8 +1021,7 @@ export default function FavoritesPage({
           .favorite-card,
           .favorite-image,
           .favorite-heart,
-          .add-cart-button,
-          .back-button {
+          .add-cart-button {
             transition:
               none !important;
           }
@@ -1107,25 +1050,6 @@ export default function FavoritesPage({
           ================================================= */}
 
           <header className="favorites-header">
-
-            <div className="favorites-nav">
-
-              <button
-                type="button"
-                className="back-button"
-                onClick={() =>
-                  setPage("menu")
-                }
-              >
-                <ArrowLeft
-                  size={15}
-                  strokeWidth={1.8}
-                />
-
-                Menu
-              </button>
-
-            </div>
 
             <h1 className="favorites-title">
               Things you love.
@@ -1170,7 +1094,7 @@ export default function FavoritesPage({
           ) : (
 
             /* =================================================
-               FAVORITES
+               FAVORITES GRID
             ================================================= */
 
             <div className="favorites-grid">
@@ -1200,7 +1124,9 @@ export default function FavoritesPage({
                   }
                 >
 
-                  {/* HEART */}
+                  {/* =================================================
+                      HEART
+                  ================================================= */}
 
                   <button
                     type="button"
@@ -1227,7 +1153,9 @@ export default function FavoritesPage({
 
                   </button>
 
-                  {/* IMAGE */}
+                  {/* =================================================
+                      IMAGE
+                  ================================================= */}
 
                   <div className="favorite-image-wrapper">
 
@@ -1278,7 +1206,9 @@ export default function FavoritesPage({
 
                   </div>
 
-                  {/* CONTENT */}
+                  {/* =================================================
+                      CONTENT
+                  ================================================= */}
 
                   <div className="favorite-content">
 
@@ -1311,11 +1241,6 @@ export default function FavoritesPage({
                         }
                       >
                         Add
-
-                        <ArrowUpRight
-                          size={14}
-                          strokeWidth={2}
-                        />
                       </button>
 
                     </div>
