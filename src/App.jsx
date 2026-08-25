@@ -192,12 +192,12 @@ export default function App() {
 
 
 
- {page === "favourites" && (
-            <FavouritesPage
-              setPage={navigateTo}
-              setSelectedProduct ={setSelectedProduct}
-            />
-          )}
+ {page === "favorites" && (
+  <FavoritesPage
+    setPage={navigateTo}
+    setSelectedProduct={setSelectedProduct}
+  />
+)}
 
 
 
