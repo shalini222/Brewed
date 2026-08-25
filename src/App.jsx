@@ -183,7 +183,9 @@ export default function App() {
           )}
 
           {page === "orders" && (
-            <OrdersPage setPage={navigateTo} />
+            <OrdersPage setPage={navigateTo} 
+               setSelectedProduct={setSelectedProduct}
+              />
           )}
 
           {page === "loyalty" && (
