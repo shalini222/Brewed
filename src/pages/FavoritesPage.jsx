@@ -68,8 +68,7 @@ export default function FavoritesPage({
   }, [currentUser]);
 
   /* ==========================================
-     OPEN PRODUCT PAGE
-     ONLY CARD CLICK
+     OPEN PRODUCT
   ========================================== */
 
   const openProduct = (item) => {
@@ -81,7 +80,6 @@ export default function FavoritesPage({
 
   /* ==========================================
      ADD TO CART
-     BUTTON ONLY
   ========================================== */
 
   const handleAddToCart = (item, event) => {
@@ -97,7 +95,6 @@ export default function FavoritesPage({
 
   /* ==========================================
      REMOVE FAVORITE
-     HEART ONLY
   ========================================== */
 
   const removeFavorite = async (
@@ -138,7 +135,7 @@ export default function FavoritesPage({
     return (
       <>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Playfair+Display:wght@400;500;600&display=swap');
 
           * {
             box-sizing: border-box;
@@ -146,80 +143,84 @@ export default function FavoritesPage({
 
           body {
             margin: 0;
-            background: #f8f5ef;
+            background: #f7f4ee;
           }
 
           .favorites-loading {
             min-height: 100vh;
+            background: #f7f4ee;
+
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #f8f5ef;
+
             font-family: "DM Sans", sans-serif;
           }
 
-          .loading-inner {
+          .loading-content {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 13px;
+            gap: 14px;
           }
 
           .loading-icon {
-            width: 44px;
-            height: 44px;
+            width: 46px;
+            height: 46px;
 
             display: flex;
             align-items: center;
             justify-content: center;
 
-            border: 1px solid #ded3c8;
+            border: 1px solid #ded4c9;
             border-radius: 50%;
 
-            color: #8b6b54;
+            color: #8d6b52;
 
             animation:
-              favoritePulse
+              loadingPulse
               1.5s
               ease-in-out
               infinite;
           }
 
-          .loading-text {
-            color: #8d7d71;
+          .loading-label {
+            color: #94867c;
+
             font-size: 10px;
             font-weight: 600;
+
             letter-spacing: .16em;
             text-transform: uppercase;
           }
 
-          @keyframes favoritePulse {
+          @keyframes loadingPulse {
             0%,
             100% {
-              transform: scale(.94);
-              opacity: .65;
+              opacity: .55;
+              transform: scale(.95);
             }
 
             50% {
-              transform: scale(1);
               opacity: 1;
+              transform: scale(1);
             }
           }
         `}</style>
 
         <div className="favorites-loading">
-          <div className="loading-inner">
+          <div className="loading-content">
 
             <div className="loading-icon">
               <Coffee
-                size={19}
-                strokeWidth={1.6}
+                size={18}
+                strokeWidth={1.5}
               />
             </div>
 
-            <div className="loading-text">
-              Loading favorites
-            </div>
+            <span className="loading-label">
+              Loading
+            </span>
 
           </div>
         </div>
@@ -230,7 +231,12 @@ export default function FavoritesPage({
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap');
+
+        /* ==========================================
+           RESET
+        ========================================== */
 
         * {
           box-sizing: border-box;
@@ -238,7 +244,11 @@ export default function FavoritesPage({
 
         body {
           margin: 0;
-          background: #f8f5ef;
+          background: #f7f4ee;
+        }
+
+        button {
+          font-family: inherit;
         }
 
         /* ==========================================
@@ -249,25 +259,33 @@ export default function FavoritesPage({
           min-height: 100vh;
 
           padding:
-            108px
+            105px
             28px
-            80px;
+            90px;
 
           background:
             radial-gradient(
-              circle at 88% 0%,
-              rgba(180, 143, 109, .08),
-              transparent 28%
+              circle at 90% -5%,
+              rgba(182, 143, 108, .10),
+              transparent 30%
             ),
-            #f8f5ef;
+            radial-gradient(
+              circle at -5% 40%,
+              rgba(207, 189, 168, .09),
+              transparent 25%
+            ),
+            #f7f4ee;
 
-          font-family: "DM Sans", sans-serif;
-          color: #302821;
+          color: #302720;
+
+          font-family:
+            "DM Sans",
+            sans-serif;
         }
 
         .favorites-container {
           width: 100%;
-          max-width: 1160px;
+          max-width: 1180px;
           margin: 0 auto;
         }
 
@@ -276,15 +294,15 @@ export default function FavoritesPage({
         ========================================== */
 
         .favorites-header {
-          margin-bottom: 43px;
+          margin-bottom: 56px;
         }
 
-        .header-top {
+        .favorites-nav {
           display: flex;
           align-items: center;
           justify-content: space-between;
 
-          margin-bottom: 28px;
+          margin-bottom: 54px;
         }
 
         .back-button {
@@ -297,11 +315,12 @@ export default function FavoritesPage({
           border: 0;
           background: transparent;
 
-          color: #75665c;
+          color: #796c63;
 
-          font-family: "DM Sans", sans-serif;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 600;
+
+          letter-spacing: .04em;
 
           cursor: pointer;
 
@@ -311,42 +330,74 @@ export default function FavoritesPage({
         }
 
         .back-button:hover {
-          color: #89664d;
+          color: #513b2c;
           transform: translateX(-3px);
         }
 
-        .favorites-count {
+        .saved-count {
           display: flex;
-          align-items: center;
-          gap: 8px;
+          align-items: baseline;
+          gap: 7px;
 
-          color: #96877d;
+          color: #918279;
 
           font-size: 10px;
-          font-weight: 600;
+          font-weight: 500;
 
-          letter-spacing: .11em;
+          letter-spacing: .10em;
           text-transform: uppercase;
         }
 
-        .count-dot {
-          width: 5px;
-          height: 5px;
+        .saved-number {
+          color: #49372b;
 
-          border-radius: 50%;
-
-          background: #a97d5b;
-        }
-
-        .favorites-eyebrow {
-          margin: 0 0 10px;
-
-          color: #a27858;
-
-          font-size: 10px;
+          font-size: 12px;
           font-weight: 700;
 
-          letter-spacing: .20em;
+          letter-spacing: 0;
+        }
+
+        /* ==========================================
+           EDITORIAL TITLE
+        ========================================== */
+
+        .favorites-heading {
+          display: flex;
+          align-items: flex-start;
+          gap: 24px;
+        }
+
+        .heading-accent {
+          flex-shrink: 0;
+
+          width: 2px;
+          height: 82px;
+
+          margin-top: 4px;
+
+          border-radius: 20px;
+
+          background:
+            linear-gradient(
+              to bottom,
+              #987054,
+              rgba(152,112,84,.12)
+            );
+        }
+
+        .heading-content {
+          max-width: 760px;
+        }
+
+        .heading-kicker {
+          margin: 0 0 11px;
+
+          color: #a17a5b;
+
+          font-size: 9px;
+          font-weight: 700;
+
+          letter-spacing: .22em;
           text-transform: uppercase;
         }
 
@@ -361,26 +412,33 @@ export default function FavoritesPage({
 
           font-size:
             clamp(
-              43px,
-              5vw,
-              61px
+              50px,
+              6vw,
+              74px
             );
 
-          font-weight: 600;
-          line-height: .98;
+          font-weight: 400;
 
-          letter-spacing: -.035em;
+          line-height: .94;
+
+          letter-spacing: -.045em;
         }
 
         .favorites-subtitle {
-          max-width: 455px;
+          max-width: 480px;
 
-          margin: 14px 0 0;
+          margin:
+            19px
+            0
+            0;
 
-          color: #87776d;
+          color: #887970;
 
           font-size: 13px;
-          line-height: 1.7;
+
+          line-height: 1.75;
+
+          letter-spacing: .002em;
         }
 
         /* ==========================================
@@ -396,7 +454,7 @@ export default function FavoritesPage({
               minmax(0, 1fr)
             );
 
-          gap: 25px;
+          gap: 27px;
         }
 
         /* ==========================================
@@ -412,40 +470,34 @@ export default function FavoritesPage({
 
           border:
             1px solid
-            rgba(77, 56, 43, .10);
+            rgba(71, 52, 39, .095);
 
-          border-radius: 18px;
+          border-radius: 17px;
 
           box-shadow:
-            0 6px 22px
-            rgba(54, 40, 30, .045),
-            0 2px 5px
-            rgba(54, 40, 30, .025);
+            0 8px 26px
+            rgba(54, 40, 30, .042);
 
           cursor: pointer;
 
           transition:
-            transform .35s
+            transform .45s
               cubic-bezier(.22, 1, .36, 1),
-            box-shadow .35s ease,
+            box-shadow .45s ease,
             border-color .35s ease;
         }
 
         .favorite-card:hover {
-          transform: translateY(-7px);
+          transform: translateY(-8px);
 
           border-color:
-            rgba(130, 94, 66, .19);
+            rgba(125, 89, 61, .19);
 
           box-shadow:
-            0 23px 48px
-            rgba(52, 39, 30, .10),
-            0 5px 13px
+            0 25px 55px
+            rgba(52, 39, 30, .095),
+            0 6px 15px
             rgba(52, 39, 30, .035);
-        }
-
-        .favorite-card:active {
-          transform: translateY(-3px);
         }
 
         /* ==========================================
@@ -455,11 +507,11 @@ export default function FavoritesPage({
         .favorite-image-wrapper {
           position: relative;
 
-          height: 255px;
+          height: 265px;
 
           overflow: hidden;
 
-          background: #eee5da;
+          background: #eee6dc;
         }
 
         .favorite-image {
@@ -471,36 +523,33 @@ export default function FavoritesPage({
           object-fit: cover;
 
           transition:
-            transform .7s
+            transform .8s
             cubic-bezier(.22, 1, .36, 1);
         }
 
         .favorite-card:hover
         .favorite-image {
-          transform: scale(1.045);
+          transform: scale(1.055);
         }
 
-        .image-overlay {
+        .image-shade {
           position: absolute;
 
-          inset:
-            auto
-            0
-            0;
+          inset: auto 0 0;
 
-          height: 82px;
+          height: 100px;
 
           background:
             linear-gradient(
               to top,
-              rgba(31, 24, 19, .20),
+              rgba(31, 24, 19, .18),
               transparent
             );
 
           pointer-events: none;
         }
 
-        .emoji-image {
+        .emoji-fallback {
           width: 100%;
           height: 100%;
 
@@ -509,12 +558,12 @@ export default function FavoritesPage({
 
           background:
             radial-gradient(
-              circle,
-              #f8eee4 0%,
-              #ecdfd1 100%
+              circle at center,
+              #faf0e6 0%,
+              #eadbcb 100%
             );
 
-          font-size: 74px;
+          font-size: 76px;
         }
 
         /* ==========================================
@@ -524,10 +573,10 @@ export default function FavoritesPage({
         .favorite-heart {
           position: absolute;
 
-          top: 15px;
-          right: 15px;
+          top: 16px;
+          right: 16px;
 
-          z-index: 10;
+          z-index: 5;
 
           width: 40px;
           height: 40px;
@@ -540,23 +589,23 @@ export default function FavoritesPage({
 
           border:
             1px solid
-            rgba(255,255,255,.60);
+            rgba(255,255,255,.58);
 
           border-radius: 50%;
 
           background:
-            rgba(255,255,255,.88);
+            rgba(255,255,255,.86);
 
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
 
-          color: #96664b;
-
-          cursor: pointer;
+          color: #98694d;
 
           box-shadow:
-            0 5px 16px
-            rgba(31, 21, 15, .10);
+            0 5px 17px
+            rgba(33, 23, 16, .10);
+
+          cursor: pointer;
 
           transition:
             transform .25s ease,
@@ -567,12 +616,13 @@ export default function FavoritesPage({
         .favorite-heart:hover {
           transform: scale(1.08);
 
-          background: #fff;
-          color: #a96748;
+          background: #ffffff;
+
+          color: #a75f3e;
         }
 
         .favorite-heart:active {
-          transform: scale(.94);
+          transform: scale(.93);
         }
 
         /* ==========================================
@@ -581,41 +631,44 @@ export default function FavoritesPage({
 
         .favorite-content {
           padding:
-            22px
-            22px
-            21px;
+            23px
+            23px
+            22px;
         }
 
         .favorite-name {
           margin: 0;
 
-          color: #362a22;
+          color: #352920;
 
           font-family:
             "Playfair Display",
             serif;
 
           font-size: 23px;
-          font-weight: 600;
+          font-weight: 500;
 
-          line-height: 1.15;
-          letter-spacing: -.015em;
+          line-height: 1.12;
+
+          letter-spacing: -.018em;
         }
 
         .favorite-description {
-          min-height: 46px;
+          min-height: 45px;
 
           margin:
-            10px
+            11px
             0
-            20px;
+            21px;
 
           color: #897970;
 
-          font-size: 13px;
-          line-height: 1.65;
+          font-size: 12.5px;
+
+          line-height: 1.7;
 
           display: -webkit-box;
+
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
 
@@ -628,8 +681,13 @@ export default function FavoritesPage({
 
           margin-bottom: 17px;
 
-          background: #eee6de;
+          background:
+            #eee6dd;
         }
+
+        /* ==========================================
+           FOOTER
+        ========================================== */
 
         .favorite-footer {
           display: flex;
@@ -645,12 +703,12 @@ export default function FavoritesPage({
 
           margin-bottom: 3px;
 
-          color: #a09389;
+          color: #a2958c;
 
-          font-size: 9px;
+          font-size: 8px;
           font-weight: 700;
 
-          letter-spacing: .13em;
+          letter-spacing: .16em;
           text-transform: uppercase;
         }
 
@@ -660,7 +718,7 @@ export default function FavoritesPage({
           font-size: 18px;
           font-weight: 700;
 
-          letter-spacing: -.02em;
+          letter-spacing: -.025em;
         }
 
         /* ==========================================
@@ -669,8 +727,10 @@ export default function FavoritesPage({
 
         .add-cart-button {
           display: inline-flex;
+
           align-items: center;
           justify-content: center;
+
           gap: 7px;
 
           min-height: 41px;
@@ -686,14 +746,13 @@ export default function FavoritesPage({
           border-radius: 9px;
 
           background: #49372b;
+
           color: #fffaf5;
 
-          font-family:
-            "DM Sans",
-            sans-serif;
-
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 600;
+
+          letter-spacing: .02em;
 
           cursor: pointer;
 
@@ -705,9 +764,22 @@ export default function FavoritesPage({
 
         .add-cart-button:hover {
           background: #654937;
+
           border-color: #654937;
 
           transform: translateY(-1px);
+        }
+
+        .add-cart-button:hover svg {
+          transform: translate(
+            2px,
+            -2px
+          );
+        }
+
+        .add-cart-button svg {
+          transition:
+            transform .25s ease;
         }
 
         .add-cart-button:active {
@@ -719,25 +791,31 @@ export default function FavoritesPage({
         ========================================== */
 
         .empty-state {
+          position: relative;
+
           padding:
-            78px
+            92px
             28px;
 
           text-align: center;
 
           background:
-            rgba(255,253,249,.82);
+            rgba(255,253,249,.78);
 
           border:
             1px solid
-            #e8dfd6;
+            #e7ded5;
 
           border-radius: 20px;
+
+          box-shadow:
+            0 8px 28px
+            rgba(52,39,30,.035);
         }
 
         .empty-icon {
-          width: 58px;
-          height: 58px;
+          width: 60px;
+          height: 60px;
 
           display: flex;
           align-items: center;
@@ -746,32 +824,34 @@ export default function FavoritesPage({
           margin:
             0
             auto
-            22px;
+            23px;
 
           border:
             1px solid
-            #ded1c5;
+            #ddd1c5;
 
           border-radius: 50%;
 
-          background: #faf5ef;
-          color: #96745c;
+          background: #faf6f0;
+
+          color: #96745b;
         }
 
         .empty-title {
           margin:
             0
             0
-            9px;
+            10px;
 
-          color: #392c24;
+          color: #382b23;
 
           font-family:
             "Playfair Display",
             serif;
 
-          font-size: 28px;
-          font-weight: 600;
+          font-size: 29px;
+
+          font-weight: 500;
         }
 
         .empty-text {
@@ -781,10 +861,11 @@ export default function FavoritesPage({
             0
             auto;
 
-          color: #8b7b70;
+          color: #8a7a70;
 
           font-size: 13px;
-          line-height: 1.7;
+
+          line-height: 1.75;
         }
 
         /* ==========================================
@@ -815,48 +896,66 @@ export default function FavoritesPage({
 
           .favorites-page {
             padding:
-              92px
+              91px
               16px
               55px;
           }
 
           .favorites-header {
-            margin-bottom: 34px;
+            margin-bottom: 38px;
           }
 
-          .header-top {
-            margin-bottom: 25px;
+          .favorites-nav {
+            margin-bottom: 40px;
           }
 
-          .favorites-count {
-            font-size: 9px;
+          .favorites-heading {
+            gap: 17px;
           }
 
-          .favorites-eyebrow {
+          .heading-accent {
+            width: 2px;
+            height: 62px;
+
+            margin-top: 3px;
+          }
+
+          .heading-kicker {
             margin-bottom: 9px;
-            font-size: 9px;
+
+            font-size: 8px;
+            letter-spacing: .20em;
           }
 
           .favorites-title {
-            font-size: 44px;
+            font-size: 47px;
+
+            line-height: .95;
           }
 
           .favorites-subtitle {
-            margin-top: 13px;
-            font-size: 13px;
+            margin-top: 14px;
+
+            font-size: 12px;
+
+            line-height: 1.72;
           }
 
           .favorites-grid {
             grid-template-columns: 1fr;
+
             gap: 19px;
           }
 
           .favorite-image-wrapper {
-            height: 245px;
+            height: 250px;
           }
 
           .favorite-content {
-            padding: 20px;
+            padding:
+              20px
+              20px
+              21px;
           }
 
           .favorite-name {
@@ -869,10 +968,24 @@ export default function FavoritesPage({
           }
         }
 
+        /* ==========================================
+           SMALL MOBILE
+        ========================================== */
+
         @media (max-width: 380px) {
+
+          .favorites-page {
+            padding-left: 14px;
+            padding-right: 14px;
+          }
+
+          .favorites-title {
+            font-size: 43px;
+          }
 
           .favorite-footer {
             align-items: stretch;
+
             flex-direction: column;
           }
 
@@ -880,6 +993,7 @@ export default function FavoritesPage({
             width: 100%;
           }
         }
+
       `}</style>
 
       <div className="favorites-page">
@@ -892,7 +1006,7 @@ export default function FavoritesPage({
 
           <header className="favorites-header">
 
-            <div className="header-top">
+            <div className="favorites-nav">
 
               <button
                 className="back-button"
@@ -901,40 +1015,54 @@ export default function FavoritesPage({
                 }
               >
                 <ArrowLeft
-                  size={16}
-                  strokeWidth={2}
+                  size={15}
+                  strokeWidth={1.8}
                 />
 
-                Back to menu
+                Menu
               </button>
 
               {favorites.length > 0 && (
-                <div className="favorites-count">
+                <div className="saved-count">
 
-                  <span className="count-dot" />
+                  <span className="saved-number">
+                    {String(
+                      favorites.length
+                    ).padStart(2, "0")}
+                  </span>
 
-                  {favorites.length}{" "}
-                  {favorites.length === 1
-                    ? "favorite"
-                    : "favorites"}
+                  <span>
+                    saved
+                  </span>
 
                 </div>
               )}
 
             </div>
 
-            <p className="favorites-eyebrow">
-              Saved for later
-            </p>
+            <div className="favorites-heading">
 
-            <h1 className="favorites-title">
-              Favorites
-            </h1>
+              <div className="heading-accent" />
 
-            <p className="favorites-subtitle">
-              Your little collection of Brewed
-              favorites, ready whenever you are.
-            </p>
+              <div className="heading-content">
+
+                <p className="heading-kicker">
+                  Your collection
+                </p>
+
+                <h1 className="favorites-title">
+                  Things you love.
+                </h1>
+
+                <p className="favorites-subtitle">
+                  Your personal selection of Brewed
+                  favorites, saved for whenever the
+                  mood strikes.
+                </p>
+
+              </div>
+
+            </div>
 
           </header>
 
@@ -947,10 +1075,12 @@ export default function FavoritesPage({
             <div className="empty-state">
 
               <div className="empty-icon">
+
                 <Heart
                   size={23}
                   strokeWidth={1.5}
                 />
+
               </div>
 
               <h2 className="empty-title">
@@ -979,12 +1109,6 @@ export default function FavoritesPage({
                   key={item.id}
                   className="favorite-card"
 
-                  /*
-                    IMPORTANT:
-                    Clicking the card opens
-                    ONLY this item's ProductPage.
-                  */
-
                   onClick={() =>
                     openProduct(item)
                   }
@@ -998,6 +1122,7 @@ export default function FavoritesPage({
                       event.key === "Enter" ||
                       event.key === " "
                     ) {
+
                       event.preventDefault();
 
                       openProduct(item);
@@ -1005,7 +1130,9 @@ export default function FavoritesPage({
 
                   }}
 
-                  aria-label={`View ${item.name}`}
+                  aria-label={
+                    `View ${item.name}`
+                  }
                 >
 
                   {/* HEART */}
@@ -1026,11 +1153,13 @@ export default function FavoritesPage({
                       )
                     }
                   >
+
                     <Heart
                       size={18}
                       strokeWidth={2}
                       fill="currentColor"
                     />
+
                   </button>
 
                   {/* IMAGE */}
@@ -1067,18 +1196,19 @@ export default function FavoritesPage({
                     ) : null}
 
                     <div
-                      className="emoji-image"
+                      className="emoji-fallback"
 
                       style={{
-                        display: item.image
-                          ? "none"
-                          : "flex",
+                        display:
+                          item.image
+                            ? "none"
+                            : "flex",
                       }}
                     >
                       {item.emoji || "☕"}
                     </div>
 
-                    <div className="image-overlay" />
+                    <div className="image-shade" />
 
                   </div>
 
@@ -1111,8 +1241,6 @@ export default function FavoritesPage({
 
                       </div>
 
-                      {/* ADD TO CART */}
-
                       <button
                         type="button"
                         className="add-cart-button"
@@ -1124,12 +1252,14 @@ export default function FavoritesPage({
                           )
                         }
                       >
+
                         Add to cart
 
                         <ArrowUpRight
                           size={14}
                           strokeWidth={2}
                         />
+
                       </button>
 
                     </div>
