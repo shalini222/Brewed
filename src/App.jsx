@@ -3,6 +3,8 @@ import { useState } from "react";
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { PreferencesProvider } from "./context/PreferencesContext";
+
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -86,6 +88,7 @@ export default function App() {
     <ThemeProvider>
       <CartProvider>
         <AuthProvider>
+           <PreferencesProvider>
           <style>{`
             @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
             :root {
@@ -269,6 +272,7 @@ export default function App() {
 )}         
           
           <Footer />
+           </PreferencesProvider>
         </AuthProvider>
       </CartProvider>
     </ThemeProvider>
