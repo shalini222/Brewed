@@ -5,6 +5,11 @@ import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { PreferencesProvider } from "./context/PreferencesContext";
 
+
+
+import "./App.css";
+
+
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
