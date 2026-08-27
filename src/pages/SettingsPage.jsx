@@ -1,12 +1,14 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
 import {
-  doc,
-  getDoc,
-  setDoc,
-} from "firebase/firestore";
-import { db } from "../firebase";
+  usePreferences,
+} from "../context/PreferencesContext";
 
 import {
   ArrowLeft,
@@ -18,48 +20,47 @@ import {
   KeyRound,
   Info,
   ChevronRight,
-  RotateCcw,
   Check,
   Loader2,
   X,
+  AlertTriangle,
 } from "lucide-react";
-
-const DEFAULT_SETTINGS = {
-  notifications: true,
-  darkMode: false,
-  reduceMotion: false,
-};
 
 export default function SettingsPage({ setPage }) {
   const { currentUser } = useAuth();
-  const { darkMode, setDarkMode } = useTheme();
 
-  /* =========================
-     STATE
-  ========================= */
+  const {
+    notifications,
+    darkMode,
+    reduceMotion,
+    loading: preferencesLoading,
+    saving,
+    updatePreference,
+    savePreferences,
+    resetPreferences,
+  } = usePreferences();
 
-  const [notifications, setNotifications] = useState(
-    DEFAULT_SETTINGS.notifications
-  );
+  /*
+   * =========================================================
+   * SAVED SNAPSHOT
+   * =========================================================
+   *
+   * The PreferencesContext contains the current/draft values.
+   * We keep a local snapshot only to determine whether the
+   * user has unsaved changes.
+   */
 
-  const [reduceMotion, setReduceMotion] = useState(
-    DEFAULT_SETTINGS.reduceMotion
-  );
+  const [savedPreferences, setSavedPreferences] = useState({
+    notifications: true,
+    darkMode: false,
+    reduceMotion: false,
+  });
 
-  const [savedNotifications, setSavedNotifications] = useState(
-    DEFAULT_SETTINGS.notifications
-  );
-
-  const [savedDarkMode, setSavedDarkMode] = useState(
-    DEFAULT_SETTINGS.darkMode
-  );
-
-  const [savedReduceMotion, setSavedReduceMotion] = useState(
-    DEFAULT_SETTINGS.reduceMotion
-  );
-
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  /*
+   * =========================================================
+   * UI STATE
+   * =========================================================
+   */
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -76,193 +77,147 @@ export default function SettingsPage({ setPage }) {
     message: "",
   });
 
-  const toastTimerRef = useRef(null);
+  const [leaving, setLeaving] = useState(false);
 
-  /* =========================
-     TOAST
-  ========================= */
+  /*
+   * =========================================================
+   * INITIALIZE SAVED SNAPSHOT
+   * =========================================================
+   */
+
+  useEffect(() => {
+    if (preferencesLoading) return;
+
+    setSavedPreferences({
+      notifications,
+      darkMode,
+      reduceMotion,
+    });
+  }, [preferencesLoading]);
+
+  /*
+   * =========================================================
+   * UNSAVED CHANGES
+   * =========================================================
+   */
+
+  const hasChanges = useMemo(() => {
+    return (
+      notifications !==
+        savedPreferences.notifications ||
+      darkMode !==
+        savedPreferences.darkMode ||
+      reduceMotion !==
+        savedPreferences.reduceMotion
+    );
+  }, [
+    notifications,
+    darkMode,
+    reduceMotion,
+    savedPreferences,
+  ]);
+
+  /*
+   * =========================================================
+   * TOAST
+   * =========================================================
+   */
 
   const showToast = useCallback((message) => {
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current);
-    }
-
     setToast({
       show: true,
       message,
     });
 
-    toastTimerRef.current = setTimeout(() => {
-      setToast({
-        show: false,
-        message: "",
-      });
-    }, 2500);
+    window.clearTimeout(
+      window.__brewedSettingsToastTimer
+    );
+
+    window.__brewedSettingsToastTimer =
+      window.setTimeout(() => {
+        setToast({
+          show: false,
+          message: "",
+        });
+      }, 2500);
   }, []);
+
+  /*
+   * =========================================================
+   * CLEANUP TOAST TIMER
+   * =========================================================
+   */
 
   useEffect(() => {
     return () => {
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-      }
+      window.clearTimeout(
+        window.__brewedSettingsToastTimer
+      );
     };
   }, []);
 
-  /* =========================
-     LOAD SETTINGS
-  ========================= */
+  /*
+   * =========================================================
+   * SAVE SETTINGS
+   * =========================================================
+   */
 
-  useEffect(() => {
-    let mounted = true;
-
-    const loadSettings = async () => {
-      if (!currentUser) {
-        if (mounted) {
-          setLoading(false);
-        }
-
-        return;
-      }
-
-      try {
-        setLoading(true);
-
-        const userRef = doc(db, "users", currentUser.uid);
-        const userSnapshot = await getDoc(userRef);
-
-        if (!mounted) return;
-
-        const userData = userSnapshot.exists()
-          ? userSnapshot.data()
-          : {};
-
-        const storedSettings =
-          userData?.settings &&
-          typeof userData.settings === "object"
-            ? userData.settings
-            : {};
-
-        const notificationValue =
-          typeof storedSettings.notifications === "boolean"
-            ? storedSettings.notifications
-            : DEFAULT_SETTINGS.notifications;
-
-        const darkModeValue =
-          typeof storedSettings.darkMode === "boolean"
-            ? storedSettings.darkMode
-            : DEFAULT_SETTINGS.darkMode;
-
-        const reduceMotionValue =
-          typeof storedSettings.reduceMotion === "boolean"
-            ? storedSettings.reduceMotion
-            : DEFAULT_SETTINGS.reduceMotion;
-
-        setNotifications(notificationValue);
-        setDarkMode(darkModeValue);
-        setReduceMotion(reduceMotionValue);
-
-        setSavedNotifications(notificationValue);
-        setSavedDarkMode(darkModeValue);
-        setSavedReduceMotion(reduceMotionValue);
-      } catch (error) {
-        console.error(
-          "SettingsPage: failed to load settings",
-          error
-        );
-
-        if (!mounted) return;
-
-        setNotifications(DEFAULT_SETTINGS.notifications);
-        setDarkMode(DEFAULT_SETTINGS.darkMode);
-        setReduceMotion(DEFAULT_SETTINGS.reduceMotion);
-
-        setSavedNotifications(DEFAULT_SETTINGS.notifications);
-        setSavedDarkMode(DEFAULT_SETTINGS.darkMode);
-        setSavedReduceMotion(DEFAULT_SETTINGS.reduceMotion);
-
-        showToast("Couldn't load your settings.");
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    loadSettings();
-
-    return () => {
-      mounted = false;
-    };
-  }, [currentUser, setDarkMode, showToast]);
-
-  /* =========================
-     REDUCED MOTION
-  ========================= */
-
-  useEffect(() => {
-    const root = document.documentElement;
-
-    if (reduceMotion) {
-      root.classList.add("brew-reduce-motion");
-    } else {
-      root.classList.remove("brew-reduce-motion");
+  const handleSave = async () => {
+    if (!currentUser || !hasChanges || saving) {
+      return;
     }
 
-    return () => {
-      root.classList.remove("brew-reduce-motion");
-    };
-  }, [reduceMotion]);
+    try {
+      await savePreferences({
+        notifications,
+        darkMode,
+        reduceMotion,
+      });
 
-  /* =========================
-     MODAL KEYBOARD CONTROL
-  ========================= */
+      setSavedPreferences({
+        notifications,
+        darkMode,
+        reduceMotion,
+      });
 
-  useEffect(() => {
-    if (!confirmOpen) return;
+      showToast("Settings saved successfully.");
+    } catch (error) {
+      console.error(
+        "Failed to save settings:",
+        error
+      );
 
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        setConfirmOpen(false);
-      }
-    };
+      showToast(
+        "Couldn't save settings. Please try again."
+      );
+    }
+  };
 
-    document.addEventListener("keydown", handleKeyDown);
+  /*
+   * =========================================================
+   * RESET SETTINGS
+   * =========================================================
+   */
 
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [confirmOpen]);
+  const handleReset = () => {
+    if (!hasChanges) {
+      showToast("Settings are already at their defaults.");
+      return;
+    }
 
-  /* =========================
-     CHANGE DETECTION
-  ========================= */
-
-  const hasChanges =
-    notifications !== savedNotifications ||
-    darkMode !== savedDarkMode ||
-    reduceMotion !== savedReduceMotion;
-
-  /* =========================
-     RESET SETTINGS
-  ========================= */
-
-  const resetSettings = () => {
     setConfirmData({
       title: "Reset Settings",
       message:
-        "Restore all preferences to Brewed's default settings? Your account, orders, rewards and other data will not be affected.",
+        "Restore all preferences to their default values? Your changes will need to be saved before they become permanent.",
       confirmLabel: "Reset Settings",
       danger: false,
-
       onConfirm: () => {
-        setNotifications(DEFAULT_SETTINGS.notifications);
-        setDarkMode(DEFAULT_SETTINGS.darkMode);
-        setReduceMotion(DEFAULT_SETTINGS.reduceMotion);
+        resetPreferences();
 
         setConfirmOpen(false);
 
         showToast(
-          "Defaults restored. Save Changes to apply them."
+          "Settings reset to their default values."
         );
       },
     });
@@ -270,72 +225,116 @@ export default function SettingsPage({ setPage }) {
     setConfirmOpen(true);
   };
 
-  /* =========================
-     CLEAR CACHE
-  ========================= */
+  /*
+   * =========================================================
+   * CLEAR CACHE
+   * =========================================================
+   *
+   * IMPORTANT:
+   * We deliberately do NOT use localStorage.clear()
+   * because other application data may live there.
+   */
 
-  const clearCache = () => {
+  const handleClearCache = () => {
     setConfirmData({
       title: "Clear Cache",
       message:
-        "Remove temporary Brewed data stored on this device? Your account, orders, rewards and Firestore data will not be deleted.",
+        "This removes temporary cached data stored on this device. Your account, orders, rewards and other permanent data will not be deleted.",
       confirmLabel: "Clear Cache",
-      danger: true,
-
+      danger: false,
       onConfirm: () => {
         try {
           /*
-           * Never use localStorage.clear() here.
+           * Remove only known temporary Brewed cache keys.
            *
-           * Only remove keys owned by Brewed.
-           * Add future Brewed cache keys here as needed.
+           * Add future temporary cache keys here rather than
+           * clearing the entire localStorage.
            */
 
-          const brewedStoragePrefixes = [
+          const temporaryKeys = [
             "brewed_cache",
+            "brewed_temp",
             "brewed_menu_cache",
-            "brewed_products_cache",
-            "brewed_favorites_cache",
-            "brewed_orders_cache",
-            "brewed_image_cache",
+            "brewed_search_cache",
           ];
 
-          Object.keys(localStorage).forEach((key) => {
-            if (
-              brewedStoragePrefixes.some(
-                (prefix) =>
-                  key === prefix ||
-                  key.startsWith(`${prefix}_`)
-              )
-            ) {
+          temporaryKeys.forEach((key) => {
+            try {
               localStorage.removeItem(key);
+            } catch (error) {
+              console.warn(
+                `Unable to remove localStorage key: ${key}`,
+                error
+              );
             }
           });
 
-          Object.keys(sessionStorage).forEach((key) => {
-            if (
-              brewedStoragePrefixes.some(
-                (prefix) =>
-                  key === prefix ||
-                  key.startsWith(`${prefix}_`)
-              )
-            ) {
+          /*
+           * Session storage is temporary by nature, but we
+           * still avoid clearing everything indiscriminately.
+           */
+
+          const temporarySessionKeys = [
+            "brewed_session_cache",
+            "brewed_temp",
+          ];
+
+          temporarySessionKeys.forEach((key) => {
+            try {
               sessionStorage.removeItem(key);
+            } catch (error) {
+              console.warn(
+                `Unable to remove sessionStorage key: ${key}`,
+                error
+              );
             }
           });
+
+          /*
+           * Clear browser Cache Storage where supported.
+           */
+
+          if (
+            typeof window !== "undefined" &&
+            "caches" in window
+          ) {
+            window.caches
+              .keys()
+              .then((cacheNames) =>
+                Promise.all(
+                  cacheNames
+                    .filter((name) =>
+                      name
+                        .toLowerCase()
+                        .includes("brewed")
+                    )
+                    .map((name) =>
+                      window.caches.delete(name)
+                    )
+                )
+              )
+              .catch((error) => {
+                console.warn(
+                  "Unable to clear browser cache:",
+                  error
+                );
+              });
+          }
 
           setConfirmOpen(false);
 
           showToast("Cache cleared successfully.");
         } catch (error) {
           console.error(
-            "SettingsPage: failed to clear cache",
+            "Failed to clear cache:",
             error
           );
 
           setConfirmOpen(false);
 
-          showToast("Couldn't clear the cache.");
+          showToast(
+            "Couldn't clear cache. Please try again."
+          );
         }
       },
     });
@@ -343,150 +342,84 @@ export default function SettingsPage({ setPage }) {
     setConfirmOpen(true);
   };
 
-  /* =========================
-     SAVE SETTINGS
-  ========================= */
+  /*
+   * =========================================================
+   * SAFE NAVIGATION
+   * =========================================================
+   */
 
-  const saveSettings = async () => {
-    if (!currentUser || saving || !hasChanges) {
+  const navigateBack = () => {
+    if (saving || leaving) return;
+
+    if (!hasChanges) {
+      setPage("menu");
       return;
     }
 
-    try {
-      setSaving(true);
+    setConfirmData({
+      title: "Unsaved Changes",
+      message:
+        "You have unsaved changes. If you leave now, those changes will be lost.",
+      confirmLabel: "Leave",
+      danger: true,
+      onConfirm: () => {
+        setLeaving(true);
+        setConfirmOpen(false);
+        setPage("menu");
+      },
+    });
 
-      const userRef = doc(db, "users", currentUser.uid);
-
-      /*
-       * Fetch the latest settings before writing.
-       *
-       * This prevents SettingsPage from accidentally replacing
-       * future settings fields added elsewhere in the app.
-       */
-
-      const latestSnapshot = await getDoc(userRef);
-
-      const latestData = latestSnapshot.exists()
-        ? latestSnapshot.data()
-        : {};
-
-      const latestSettings =
-        latestData?.settings &&
-        typeof latestData.settings === "object"
-          ? latestData.settings
-          : {};
-
-      const updatedSettings = {
-        ...latestSettings,
-
-        notifications,
-        darkMode,
-        reduceMotion,
-      };
-
-      /*
-       * merge:true ensures that:
-       *
-       * 1. A missing users/{uid} document is created.
-       * 2. Existing user fields remain untouched.
-       * 3. Existing settings outside this page remain untouched.
-       */
-
-      await setDoc(
-        userRef,
-        {
-          settings: updatedSettings,
-        },
-        {
-          merge: true,
-        }
-      );
-
-      setSavedNotifications(notifications);
-      setSavedDarkMode(darkMode);
-      setSavedReduceMotion(reduceMotion);
-
-      showToast("Settings saved successfully.");
-    } catch (error) {
-      console.error(
-        "SettingsPage: failed to save settings",
-        error
-      );
-
-      showToast(
-        "Couldn't save your settings. Please try again."
-      );
-    } finally {
-      setSaving(false);
-    }
+    setConfirmOpen(true);
   };
 
-  /* =========================
-     NAVIGATION
-  ========================= */
+  /*
+   * =========================================================
+   * GENERIC PAGE NAVIGATION
+   * =========================================================
+   */
 
-  const handleBack = () => {
-    if (saving) return;
+  const navigateTo = (page) => {
+    if (saving || leaving) return;
 
-    if (hasChanges) {
-      setConfirmData({
-        title: "Unsaved Changes",
-        message:
-          "You have unsaved changes. If you leave this page now, those changes will be lost.",
-        confirmLabel: "Leave",
-        danger: true,
-
-        onConfirm: () => {
-          setConfirmOpen(false);
-          setPage("menu");
-        },
-      });
-
-      setConfirmOpen(true);
-
+    if (!hasChanges) {
+      setPage(page);
       return;
     }
 
-    setPage("menu");
+    setConfirmData({
+      title: "Unsaved Changes",
+      message:
+        "You have unsaved changes. If you leave this page, those changes will be lost.",
+      confirmLabel: "Leave",
+      danger: true,
+      onConfirm: () => {
+        setLeaving(true);
+        setConfirmOpen(false);
+        setPage(page);
+      },
+    });
+
+    setConfirmOpen(true);
   };
 
-  /* =========================
-     TOGGLES
-  ========================= */
+  /*
+   * =========================================================
+   * LOADING STATE
+   * =========================================================
+   */
 
-  const toggleNotifications = () => {
-    if (loading || saving) return;
-
-    setNotifications((current) => !current);
-  };
-
-  const toggleDarkMode = () => {
-    if (loading || saving) return;
-
-    setDarkMode((current) => !current);
-  };
-
-  const toggleReduceMotion = () => {
-    if (loading || saving) return;
-
-    setReduceMotion((current) => !current);
-  };
-
-  /* =========================
-     LOADING
-  ========================= */
-
-  if (loading) {
+  if (preferencesLoading) {
     return (
       <>
         <style>{`
           .settings-loading-page {
             min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
             display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--bg);
-            color: var(--muted);
+            padding: 24px;
             font-family: "Inter", sans-serif;
           }
 
@@ -494,134 +427,118 @@ export default function SettingsPage({ setPage }) {
             display: flex;
             align-items: center;
             gap: 10px;
-            font-size: .9rem;
+            color: var(--muted);
+            font-size: 0.95rem;
           }
 
-          .settings-loading-spinner {
-            animation: settingsLoadingSpin 1s linear infinite;
+          .settings-loading svg {
+            animation: settingsSpin 0.9s linear infinite;
           }
 
-          @keyframes settingsLoadingSpin {
+          @keyframes settingsSpin {
             to {
               transform: rotate(360deg);
             }
           }
 
-          @media (prefers-reduced-motion: reduce) {
-            .settings-loading-spinner {
-              animation: none;
-            }
+          html.reduce-motion .settings-loading svg {
+            animation: none !important;
           }
         `}</style>
 
         <div className="settings-loading-page">
-          <div className="settings-loading">
-            <Loader2
-              size={24}
-              className="settings-loading-spinner"
-            />
-
-            <span>Loading settings...</span>
+          <div
+            className="settings-loading"
+            role="status"
+            aria-live="polite"
+          >
+            <Loader2 size={18} />
+            Loading settings...
           </div>
         </div>
       </>
     );
   }
 
-  /* =========================
-     PAGE
-  ========================= */
-
   return (
     <>
       <style>{`
         /* =====================================================
-           SETTINGS PAGE
+           PAGE
         ===================================================== */
 
         .settings-page {
           min-height: 100vh;
-          padding: 32px 18px 120px;
           background: var(--bg);
           color: var(--text);
+          padding: 32px 18px 120px;
           font-family: "Inter", sans-serif;
           transition:
-            background .3s ease,
-            color .3s ease;
+            background 0.3s ease,
+            color 0.3s ease;
         }
 
         .settings-container {
           width: 100%;
           max-width: 720px;
           margin: 0 auto;
-          animation: settingsFadeUp .45s ease both;
+          animation: settingsFadeUp 0.45s ease;
         }
 
         /* =====================================================
-           BACK BUTTON
+           BACK
         ===================================================== */
 
         .settings-back-btn {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-
+          padding: 8px 0;
           margin: 0 0 22px;
-          padding: 8px 4px;
-
-          border: none;
+          border: 0;
           background: transparent;
-
           color: var(--text);
-
           font-family: "Inter", sans-serif;
-          font-size: .92rem;
+          font-size: 0.92rem;
           font-weight: 600;
-
           cursor: pointer;
-
           transition:
-            color .2s ease,
-            transform .2s ease,
-            opacity .2s ease;
+            color 0.2s ease,
+            opacity 0.2s ease;
         }
 
-        .settings-back-btn:hover:not(:disabled) {
+        .settings-back-btn:hover {
           color: var(--accent);
-          transform: translateX(-2px);
+        }
+
+        .settings-back-btn:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 4px;
+          border-radius: 6px;
         }
 
         .settings-back-btn:disabled {
-          opacity: .5;
           cursor: not-allowed;
+          opacity: 0.5;
         }
 
         /* =====================================================
            HEADER
         ===================================================== */
 
-        .settings-header {
-          margin-bottom: 32px;
-        }
-
         .settings-title {
           margin: 0 0 8px;
-
           color: var(--text);
-
           font-family: "Playfair Display", serif;
-          font-size: 2.3rem;
-          line-height: 1.15;
-          letter-spacing: -.02em;
+          font-size: clamp(2rem, 6vw, 2.45rem);
+          line-height: 1.1;
+          letter-spacing: -0.02em;
         }
 
         .settings-subtitle {
-          max-width: 540px;
-          margin: 0;
-
+          margin: 0 0 32px;
           color: var(--muted);
-
-          font-size: .95rem;
+          font-size: 0.95rem;
           line-height: 1.65;
         }
 
@@ -630,85 +547,68 @@ export default function SettingsPage({ setPage }) {
         ===================================================== */
 
         .settings-card {
-          margin-bottom: 22px;
+          margin-bottom: 20px;
           padding: 22px;
-
           background: var(--surface);
-
           border: 1px solid var(--border);
           border-radius: 22px;
-
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.025);
           transition:
-            transform .25s ease,
-            box-shadow .25s ease,
-            background .3s ease,
-            border-color .3s ease;
+            transform 0.25s ease,
+            box-shadow 0.25s ease,
+            background 0.3s ease,
+            border-color 0.3s ease;
         }
 
         .settings-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
+          transform: translateY(-1px);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
         }
 
         .settings-section-title {
-          margin: 0 0 18px;
-
+          margin: 0 0 16px;
           color: var(--text);
-
           font-family: "Playfair Display", serif;
-          font-size: 1.2rem;
+          font-size: 1.22rem;
           line-height: 1.3;
         }
 
         /* =====================================================
-           SETTING ROW
+           SETTING ROWS
         ===================================================== */
 
         .settings-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
-
-          gap: 16px;
-
-          min-height: 66px;
+          gap: 18px;
+          min-height: 70px;
           padding: 16px 0;
-
           border-bottom: 1px solid var(--border);
         }
 
         .settings-row:last-child {
-          border-bottom: none;
+          border-bottom: 0;
+          padding-bottom: 2px;
         }
 
-        .settings-row-left {
+        .settings-row:first-of-type {
+          padding-top: 6px;
+        }
+
+        .settings-left {
           display: flex;
           align-items: center;
-
-          gap: 14px;
-
-          flex: 1;
+          gap: 15px;
           min-width: 0;
-        }
-
-        .settings-icon-wrapper {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-
-          flex: 0 0 40px;
-
-          width: 40px;
-          height: 40px;
-
-          border-radius: 12px;
-
-          background: rgba(196, 149, 106, .1);
+          flex: 1;
         }
 
         .settings-icon {
-          color: var(--accent);
+          width: 20px;
+          height: 20px;
           flex-shrink: 0;
+          color: var(--accent);
         }
 
         .settings-copy {
@@ -716,264 +616,218 @@ export default function SettingsPage({ setPage }) {
         }
 
         .settings-label {
-          margin-bottom: 4px;
-
+          margin: 0 0 4px;
           color: var(--text);
-
-          font-size: .96rem;
-          font-weight: 600;
+          font-size: 0.96rem;
+          font-weight: 650;
           line-height: 1.35;
         }
 
         .settings-description {
+          margin: 0;
           color: var(--muted);
-
-          font-size: .86rem;
+          font-size: 0.84rem;
           line-height: 1.5;
         }
 
         /* =====================================================
-           SWITCH
+           ACCESSIBLE SWITCH
         ===================================================== */
 
         .settings-switch {
           position: relative;
-
-          flex: 0 0 auto;
-
           width: 50px;
           height: 28px;
-
+          flex: 0 0 50px;
           padding: 0;
-
-          border: none;
+          border: 0;
           border-radius: 999px;
-
           background: #cfc6bc;
-
           cursor: pointer;
-
           transition:
-            background .25s ease,
-            opacity .2s ease;
+            background 0.25s ease,
+            box-shadow 0.25s ease;
         }
 
-        .settings-switch-thumb {
-          position: absolute;
+        .settings-switch:hover {
+          box-shadow: 0 0 0 4px rgba(196, 149, 106, 0.1);
+        }
 
-          top: 3px;
-          left: 3px;
-
-          width: 22px;
-          height: 22px;
-
-          border-radius: 50%;
-
-          background: #fff;
-
-          box-shadow:
-            0 2px 6px rgba(0, 0, 0, .2);
-
-          transition:
-            transform .25s ease;
+        .settings-switch:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 3px;
         }
 
         .settings-switch.active {
           background: #c4956a;
         }
 
-        .settings-switch.active
         .settings-switch-thumb {
-          transform: translateX(22px);
+          position: absolute;
+          top: 3px;
+          left: 3px;
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          background: #fff;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+          transition: left 0.25s ease;
         }
 
-        .settings-switch:disabled {
-          opacity: .5;
-          cursor: not-allowed;
+        .settings-switch.active
+          .settings-switch-thumb {
+          left: 25px;
         }
 
         /* =====================================================
            LINK ROWS
         ===================================================== */
 
-        .settings-link-row {
+        .settings-link {
           display: flex;
           align-items: center;
           justify-content: space-between;
-
+          gap: 14px;
           width: 100%;
           min-height: 58px;
-
-          gap: 12px;
-
-          padding: 10px 0;
-
-          border: none;
+          padding: 14px 0;
+          border: 0;
           border-bottom: 1px solid var(--border);
-
           background: transparent;
-
           color: var(--text);
-
-          font-family: "Inter", sans-serif;
           text-align: left;
-
+          font-family: "Inter", sans-serif;
+          font-size: 0.94rem;
+          font-weight: 600;
           cursor: pointer;
-
           transition:
-            background .2s ease,
-            color .2s ease,
-            padding .2s ease;
+            color 0.2s ease,
+            background 0.2s ease;
         }
 
-        .settings-link-row:last-child {
-          border-bottom: none;
+        .settings-link:last-child {
+          border-bottom: 0;
+          padding-bottom: 2px;
         }
 
-        .settings-link-row:hover:not(:disabled) {
-          padding-left: 8px;
-          padding-right: 8px;
+        .settings-link:hover {
+          color: var(--accent);
+        }
 
-          border-radius: 12px;
-
-          background: rgba(196, 149, 106, .07);
+        .settings-link:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 3px;
+          border-radius: 8px;
         }
 
         .settings-link-left {
           display: flex;
           align-items: center;
-
-          gap: 13px;
-
+          gap: 14px;
           min-width: 0;
         }
 
-        .settings-link-label {
-          color: var(--text);
-
-          font-size: .94rem;
-          font-weight: 600;
-        }
-
-        .settings-link-right {
+        .settings-link-chevron {
           flex-shrink: 0;
-
           color: var(--muted);
-
           transition:
-            color .2s ease,
-            transform .2s ease;
+            color 0.2s ease,
+            transform 0.2s ease;
         }
 
-        .settings-link-row:hover:not(:disabled)
-        .settings-link-right {
+        .settings-link:hover
+          .settings-link-chevron {
           color: var(--accent);
           transform: translateX(3px);
         }
 
-        .settings-link-row:disabled {
-          opacity: .5;
-          cursor: not-allowed;
+        .settings-danger {
+          color: #b42318;
         }
 
         .settings-danger .settings-icon {
           color: #b42318;
         }
 
-        .settings-danger:hover:not(:disabled) {
-          background: rgba(180, 35, 24, .06);
+        .settings-danger:hover {
+          color: #b42318;
         }
 
         /* =====================================================
            ABOUT
         ===================================================== */
 
-        .settings-about-row {
-          min-height: 58px;
+        .settings-version-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+          padding: 8px 0 14px;
+        }
+
+        .settings-version-label {
+          color: var(--text);
+          font-size: 0.94rem;
+          font-weight: 600;
+        }
+
+        .settings-version-value {
+          color: var(--muted);
+          font-size: 0.88rem;
         }
 
         .settings-about-note {
-          display: flex;
-          align-items: center;
-
-          gap: 8px;
-
-          margin-top: 14px;
-
+          margin: 8px 0 0;
+          padding-top: 15px;
+          border-top: 1px solid var(--border);
           color: var(--muted);
-
-          font-size: .88rem;
+          font-size: 0.86rem;
           line-height: 1.5;
         }
 
-        .settings-coffee {
-          font-size: 1rem;
-        }
-
         /* =====================================================
-           BUTTONS
+           ACTION BUTTONS
         ===================================================== */
 
-        .settings-button-row {
+        .settings-actions {
           display: flex;
-
-          gap: 14px;
-
+          gap: 12px;
           margin-top: 24px;
         }
 
-        .settings-save-btn,
-        .settings-reset-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-
-          gap: 8px;
-
+        .settings-action-btn {
+          min-height: 52px;
           flex: 1;
-
-          min-height: 50px;
-
-          min-width: 0;
-
           padding: 14px 18px;
-
           border-radius: 14px;
-
           font-family: "Inter", sans-serif;
-          font-size: .94rem;
-          font-weight: 600;
-
+          font-size: 0.94rem;
+          font-weight: 650;
           cursor: pointer;
-
           transition:
-            opacity .2s ease,
-            transform .2s ease,
-            border-color .2s ease,
-            color .2s ease,
-            background .2s ease;
+            transform 0.2s ease,
+            opacity 0.2s ease,
+            border-color 0.2s ease,
+            background 0.2s ease;
         }
 
-        .settings-save-btn {
-          border: none;
-
-          background: var(--button-bg);
-          color: var(--button-text);
-        }
-
-        .settings-save-btn:hover:not(:disabled) {
-          opacity: .86;
+        .settings-action-btn:hover:not(:disabled) {
           transform: translateY(-1px);
         }
 
-        .settings-save-btn:disabled {
-          opacity: .45;
+        .settings-action-btn:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 3px;
+        }
+
+        .settings-action-btn:disabled {
           cursor: not-allowed;
+          opacity: 0.45;
+          transform: none;
         }
 
         .settings-reset-btn {
           border: 1px solid var(--border);
-
           background: var(--surface);
           color: var(--text);
         }
@@ -981,30 +835,24 @@ export default function SettingsPage({ setPage }) {
         .settings-reset-btn:hover:not(:disabled) {
           border-color: var(--accent);
           color: var(--accent);
-          transform: translateY(-1px);
         }
 
-        .settings-reset-btn:disabled {
-          opacity: .4;
-          cursor: not-allowed;
+        .settings-save-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          border: 0;
+          background: var(--button-bg);
+          color: var(--button-text);
         }
 
-        .settings-unsaved {
-          margin-top: 12px;
-
-          color: var(--muted);
-
-          font-size: .8rem;
-          text-align: center;
+        .settings-save-btn:hover:not(:disabled) {
+          opacity: 0.88;
         }
 
-        .settings-auth-warning {
-          margin-top: 12px;
-
-          color: #b42318;
-
-          font-size: .82rem;
-          text-align: center;
+        .settings-save-spinner {
+          animation: settingsSpin 0.8s linear infinite;
         }
 
         /* =====================================================
@@ -1014,140 +862,124 @@ export default function SettingsPage({ setPage }) {
         .settings-modal-overlay {
           position: fixed;
           inset: 0;
-
-          z-index: 9999;
-
+          z-index: 10000;
           display: flex;
           align-items: center;
           justify-content: center;
-
           padding: 20px;
-
-          background: rgba(0, 0, 0, .42);
-
+          background: rgba(0, 0, 0, 0.45);
           backdrop-filter: blur(5px);
           -webkit-backdrop-filter: blur(5px);
-
-          animation: settingsOverlayIn .2s ease both;
         }
 
         .settings-modal {
-          position: relative;
-
           width: 100%;
-          max-width: 420px;
-
-          padding: 28px;
-
+          max-width: 430px;
+          padding: 26px;
           border: 1px solid var(--border);
           border-radius: 22px;
-
           background: var(--surface);
           color: var(--text);
-
-          box-shadow:
-            0 24px 70px rgba(0, 0, 0, .2);
-
-          animation: settingsModalIn .25s ease both;
+          box-shadow: 0 25px 70px rgba(0, 0, 0, 0.2);
+          animation: settingsFadeUp 0.22s ease;
         }
 
-        .settings-modal-close {
-          position: absolute;
+        .settings-modal-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 15px;
+        }
 
-          top: 15px;
-          right: 15px;
-
+        .settings-modal-icon {
           display: flex;
           align-items: center;
           justify-content: center;
+          width: 42px;
+          height: 42px;
+          margin-bottom: 15px;
+          border-radius: 12px;
+          background: rgba(196, 149, 106, 0.12);
+          color: var(--accent);
+        }
 
+        .settings-modal-icon.danger {
+          background: rgba(180, 35, 24, 0.1);
+          color: #b42318;
+        }
+
+        .settings-modal-close {
+          display: flex;
+          align-items: center;
+          justify-content: center;
           width: 34px;
           height: 34px;
-
           padding: 0;
-
-          border: none;
-          border-radius: 50%;
-
+          border: 0;
+          border-radius: 9px;
           background: transparent;
           color: var(--muted);
-
           cursor: pointer;
-
-          transition:
-            background .2s ease,
-            color .2s ease;
         }
 
         .settings-modal-close:hover {
-          background: rgba(0, 0, 0, .06);
+          background: var(--border);
           color: var(--text);
         }
 
+        .settings-modal-close:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 2px;
+        }
+
         .settings-modal-title {
-          margin: 0 35px 10px 0;
-
+          margin: 0 0 10px;
           color: var(--text);
-
           font-family: "Playfair Display", serif;
-          font-size: 1.5rem;
-          line-height: 1.25;
+          font-size: 1.45rem;
+          line-height: 1.2;
         }
 
         .settings-modal-text {
           margin: 0 0 24px;
-
           color: var(--muted);
-
+          font-size: 0.9rem;
           line-height: 1.7;
         }
 
         .settings-modal-buttons {
           display: flex;
-
-          gap: 12px;
+          gap: 10px;
         }
 
         .settings-modal-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-
           flex: 1;
-
-          min-height: 48px;
-
-          padding: 13px 16px;
-
-          border: none;
-          border-radius: 14px;
-
+          min-height: 46px;
+          padding: 12px 14px;
+          border: 0;
+          border-radius: 13px;
           font-family: "Inter", sans-serif;
-          font-weight: 600;
-
+          font-size: 0.9rem;
+          font-weight: 650;
           cursor: pointer;
-
-          transition:
-            opacity .2s ease,
-            transform .2s ease;
         }
 
-        .settings-modal-btn:hover {
-          opacity: .86;
-          transform: translateY(-1px);
+        .settings-modal-btn:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 3px;
         }
 
-        .settings-cancel-btn {
+        .settings-modal-cancel {
           background: var(--border);
           color: var(--text);
         }
 
-        .settings-confirm-btn {
+        .settings-modal-confirm {
           background: var(--button-bg);
           color: var(--button-text);
         }
 
-        .settings-danger-confirm-btn {
+        .settings-modal-confirm.danger {
           background: #b42318;
           color: #fff;
         }
@@ -1158,51 +990,22 @@ export default function SettingsPage({ setPage }) {
 
         .settings-toast {
           position: fixed;
-
           left: 50%;
           bottom: 28px;
-
-          z-index: 10000;
-
-          display: flex;
-          align-items: center;
-
-          gap: 9px;
-
+          z-index: 11000;
           max-width: calc(100vw - 32px);
-
-          padding: 13px 18px;
-
+          padding: 13px 19px;
+          border: 1px solid var(--border);
           border-radius: 14px;
-
           background: var(--button-bg);
           color: var(--button-text);
-
-          box-shadow:
-            0 12px 30px rgba(0, 0, 0, .18);
-
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
           font-family: "Inter", sans-serif;
-          font-size: .88rem;
+          font-size: 0.9rem;
           line-height: 1.4;
-
+          text-align: center;
           transform: translateX(-50%);
-
-          animation: settingsToastIn .25s ease both;
-        }
-
-        /* =====================================================
-           FOCUS
-        ===================================================== */
-
-        .settings-back-btn:focus-visible,
-        .settings-link-row:focus-visible,
-        .settings-switch:focus-visible,
-        .settings-save-btn:focus-visible,
-        .settings-reset-btn:focus-visible,
-        .settings-modal-btn:focus-visible,
-        .settings-modal-close:focus-visible {
-          outline: 2px solid var(--accent);
-          outline-offset: 3px;
+          animation: settingsToastIn 0.25s ease;
         }
 
         /* =====================================================
@@ -1212,7 +1015,7 @@ export default function SettingsPage({ setPage }) {
         @keyframes settingsFadeUp {
           from {
             opacity: 0;
-            transform: translateY(18px);
+            transform: translateY(14px);
           }
 
           to {
@@ -1221,32 +1024,10 @@ export default function SettingsPage({ setPage }) {
           }
         }
 
-        @keyframes settingsOverlayIn {
-          from {
-            opacity: 0;
-          }
-
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes settingsModalIn {
-          from {
-            opacity: 0;
-            transform: translateY(12px) scale(.98);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
         @keyframes settingsToastIn {
           from {
             opacity: 0;
-            transform: translate(-50%, 18px);
+            transform: translate(-50%, 14px);
           }
 
           to {
@@ -1255,32 +1036,32 @@ export default function SettingsPage({ setPage }) {
           }
         }
 
+        @keyframes settingsSpin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
         /* =====================================================
            REDUCED MOTION
         ===================================================== */
 
-        .brew-reduce-motion *,
-        .brew-reduce-motion *::before,
-        .brew-reduce-motion *::after {
-          animation-duration: .01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: .01ms !important;
-          scroll-behavior: auto !important;
-        }
-
-        /* =====================================================
-           SYSTEM REDUCED MOTION
-        ===================================================== */
-
-        @media (prefers-reduced-motion: reduce) {
+        html.reduce-motion
           .settings-page *,
+        html.reduce-motion
           .settings-page *::before,
-          .settings-page *::after {
-            animation-duration: .01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: .01ms !important;
-            scroll-behavior: auto !important;
-          }
+        html.reduce-motion
+          .settings-page *::after,
+        html.reduce-motion
+          .settings-modal-overlay *,
+        html.reduce-motion
+          .settings-modal-overlay *::before,
+        html.reduce-motion
+          .settings-modal-overlay *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
         }
 
         /* =====================================================
@@ -1292,22 +1073,23 @@ export default function SettingsPage({ setPage }) {
             padding: 24px 14px 100px;
           }
 
+          .settings-container {
+            max-width: 100%;
+          }
+
+          .settings-card {
+            padding: 18px;
+            border-radius: 19px;
+            margin-bottom: 16px;
+          }
+
           .settings-title {
             font-size: 2rem;
           }
 
           .settings-subtitle {
-            font-size: .9rem;
-          }
-
-          .settings-card {
-            padding: 18px;
-            border-radius: 18px;
-          }
-
-          .settings-card:hover {
-            transform: none;
-            box-shadow: none;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
           }
 
           .settings-section-title {
@@ -1315,87 +1097,108 @@ export default function SettingsPage({ setPage }) {
           }
 
           .settings-row {
-            min-height: 64px;
-            padding: 14px 0;
+            gap: 12px;
+            padding: 15px 0;
           }
 
-          .settings-row-left {
-            gap: 11px;
-          }
-
-          .settings-icon-wrapper {
-            flex-basis: 37px;
-            width: 37px;
-            height: 37px;
-            border-radius: 11px;
+          .settings-left {
+            gap: 12px;
           }
 
           .settings-label {
-            font-size: .92rem;
+            font-size: 0.92rem;
           }
 
           .settings-description {
-            font-size: .81rem;
+            font-size: 0.8rem;
           }
 
           .settings-switch {
             width: 48px;
-            height: 27px;
-          }
-
-          .settings-switch-thumb {
-            width: 21px;
-            height: 21px;
+            flex-basis: 48px;
           }
 
           .settings-switch.active
-          .settings-switch-thumb {
-            transform: translateX(21px);
+            .settings-switch-thumb {
+            left: 23px;
           }
 
-          .settings-button-row {
+          .settings-actions {
             flex-direction: column-reverse;
+            gap: 10px;
           }
 
-          .settings-save-btn,
-          .settings-reset-btn {
+          .settings-action-btn {
             width: 100%;
           }
 
           .settings-modal {
-            padding: 24px 20px;
-            border-radius: 20px;
+            padding: 22px;
+            border-radius: 19px;
           }
 
           .settings-modal-buttons {
             flex-direction: column-reverse;
           }
 
+          .settings-modal-btn {
+            width: 100%;
+          }
+
           .settings-toast {
-            bottom: 20px;
-            padding: 12px 16px;
+            bottom: 18px;
+          }
+        }
+
+        @media (max-width: 360px) {
+          .settings-page {
+            padding-left: 12px;
+            padding-right: 12px;
+          }
+
+          .settings-card {
+            padding: 16px;
+          }
+
+          .settings-row {
+            gap: 8px;
+          }
+
+          .settings-description {
+            font-size: 0.77rem;
           }
         }
 
         /* =====================================================
-           TOUCH DEVICES
+           DARK MODE SURFACE SAFETY
         ===================================================== */
 
-        @media (hover: none) {
-          .settings-card:hover {
-            transform: none;
-            box-shadow: none;
-          }
+        html.dark-mode .settings-card,
+        html.dark-mode .settings-modal {
+          box-shadow:
+            0 12px 35px rgba(0, 0, 0, 0.22);
+        }
 
-          .settings-link-row:hover:not(:disabled) {
-            padding-left: 0;
-            padding-right: 0;
-            background: transparent;
-          }
+        html.dark-mode
+          .settings-switch:not(.active) {
+          background: #51483f;
+        }
 
-          .settings-link-row:hover:not(:disabled)
-          .settings-link-right {
-            transform: none;
+        /* =====================================================
+           ACCESSIBILITY
+        ===================================================== */
+
+        @media (prefers-reduced-motion: reduce) {
+          .settings-page *,
+          .settings-page *::before,
+          .settings-page *::after,
+          .settings-modal-overlay *,
+          .settings-modal-overlay *::before,
+          .settings-modal-overlay *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
           }
         }
       `}</style>
@@ -1404,108 +1207,136 @@ export default function SettingsPage({ setPage }) {
         <div className="settings-container">
 
           {/* =================================================
-              HEADER
+              BACK
           ================================================= */}
 
           <button
             type="button"
             className="settings-back-btn"
-            onClick={handleBack}
-            disabled={saving}
+            onClick={navigateBack}
+            disabled={saving || leaving}
             aria-label="Go back to menu"
           >
             <ArrowLeft size={18} />
             <span>Back</span>
           </button>
 
-          <div className="settings-header">
-            <h1 className="settings-title">
-              Settings
-            </h1>
+          {/* =================================================
+              HEADER
+          ================================================= */}
 
-            <p className="settings-subtitle">
-              Personalize your Brewed experience.
-            </p>
-          </div>
+          <h1 className="settings-title">
+            Settings
+          </h1>
+
+          <p className="settings-subtitle">
+            Personalize your Brewed experience.
+          </p>
 
           {/* =================================================
               PREFERENCES
           ================================================= */}
 
-          <section className="settings-card">
-            <h2 className="settings-section-title">
+          <section
+            className="settings-card"
+            aria-labelledby="preferences-title"
+          >
+            <h2
+              id="preferences-title"
+              className="settings-section-title"
+            >
               Preferences
             </h2>
 
             {/* Notifications */}
 
             <div className="settings-row">
-              <div className="settings-row-left">
-                <div className="settings-icon-wrapper">
-                  <Bell
-                    size={20}
-                    className="settings-icon"
-                  />
-                </div>
+              <div className="settings-left">
+                <Bell
+                  className="settings-icon"
+                  aria-hidden="true"
+                />
 
                 <div className="settings-copy">
-                  <div className="settings-label">
+                  <p className="settings-label">
                     Push Notifications
-                  </div>
+                  </p>
 
-                  <div className="settings-description">
-                    Receive updates about orders and rewards.
-                  </div>
+                  <p className="settings-description">
+                    Receive updates about orders and
+                    rewards.
+                  </p>
                 </div>
               </div>
 
               <button
                 type="button"
                 className={`settings-switch ${
-                  notifications ? "active" : ""
+                  notifications
+                    ? "active"
+                    : ""
                 }`}
-                onClick={toggleNotifications}
-                disabled={saving}
                 role="switch"
                 aria-checked={notifications}
-                aria-label="Toggle push notifications"
+                aria-label={`Push notifications ${
+                  notifications
+                    ? "enabled"
+                    : "disabled"
+                }`}
+                onClick={() =>
+                  updatePreference(
+                    "notifications",
+                    !notifications
+                  )
+                }
+                disabled={saving}
               >
                 <span className="settings-switch-thumb" />
               </button>
             </div>
 
-            {/* Dark Theme */}
+            {/* Dark Mode */}
 
             <div className="settings-row">
-              <div className="settings-row-left">
-                <div className="settings-icon-wrapper">
-                  <Moon
-                    size={20}
-                    className="settings-icon"
-                  />
-                </div>
+              <div className="settings-left">
+                <Moon
+                  className="settings-icon"
+                  aria-hidden="true"
+                />
 
                 <div className="settings-copy">
-                  <div className="settings-label">
+                  <p className="settings-label">
                     Dark Theme
-                  </div>
+                  </p>
 
-                  <div className="settings-description">
-                    Reduce eye strain at night.
-                  </div>
+                  <p className="settings-description">
+                    Use a darker appearance throughout
+                    Brewed.
+                  </p>
                 </div>
               </div>
 
               <button
                 type="button"
                 className={`settings-switch ${
-                  darkMode ? "active" : ""
+                  darkMode
+                    ? "active"
+                    : ""
                 }`}
-                onClick={toggleDarkMode}
-                disabled={saving}
                 role="switch"
                 aria-checked={darkMode}
-                aria-label="Toggle dark theme"
+                aria-label={`Dark theme ${
+                  darkMode
+                    ? "enabled"
+                    : "disabled"
+                }`}
+                onClick={() =>
+                  updatePreference(
+                    "darkMode",
+                    !darkMode
+                  )
+                }
+                disabled={saving}
               >
                 <span className="settings-switch-thumb" />
               </button>
@@ -1514,35 +1345,45 @@ export default function SettingsPage({ setPage }) {
             {/* Reduce Motion */}
 
             <div className="settings-row">
-              <div className="settings-row-left">
-                <div className="settings-icon-wrapper">
-                  <Info
-                    size={20}
-                    className="settings-icon"
-                  />
-                </div>
+              <div className="settings-left">
+                <Info
+                  className="settings-icon"
+                  aria-hidden="true"
+                />
 
                 <div className="settings-copy">
-                  <div className="settings-label">
+                  <p className="settings-label">
                     Reduce Motion
-                  </div>
+                  </p>
 
-                  <div className="settings-description">
-                    Minimize interface animations.
-                  </div>
+                  <p className="settings-description">
+                    Minimize animations and transitions
+                    throughout Brewed.
+                  </p>
                 </div>
               </div>
 
               <button
                 type="button"
                 className={`settings-switch ${
-                  reduceMotion ? "active" : ""
+                  reduceMotion
+                    ? "active"
+                    : ""
                 }`}
-                onClick={toggleReduceMotion}
-                disabled={saving}
                 role="switch"
                 aria-checked={reduceMotion}
-                aria-label="Toggle reduced motion"
+                aria-label={`Reduce motion ${
+                  reduceMotion
+                    ? "enabled"
+                    : "disabled"
+                }`}
+                onClick={() =>
+                  updatePreference(
+                    "reduceMotion",
+                    !reduceMotion
+                  )
+                }
+                disabled={saving}
               >
                 <span className="settings-switch-thumb" />
               </button>
@@ -1553,81 +1394,93 @@ export default function SettingsPage({ setPage }) {
               PRIVACY
           ================================================= */}
 
-          <section className="settings-card">
-            <h2 className="settings-section-title">
+          <section
+            className="settings-card"
+            aria-labelledby="privacy-title"
+          >
+            <h2
+              id="privacy-title"
+              className="settings-section-title"
+            >
               Privacy
             </h2>
 
             <button
               type="button"
-              className="settings-link-row"
-              onClick={() => setPage("privacy")}
+              className="settings-link"
+              onClick={() =>
+                navigateTo("privacy")
+              }
+              disabled={saving || leaving}
             >
               <span className="settings-link-left">
-                <span className="settings-icon-wrapper">
-                  <Shield
-                    size={19}
-                    className="settings-icon"
-                  />
-                </span>
+                <Shield
+                  size={19}
+                  className="settings-icon"
+                  aria-hidden="true"
+                />
 
-                <span className="settings-link-label">
+                <span>
                   Privacy Policy
                 </span>
               </span>
 
               <ChevronRight
                 size={18}
-                className="settings-link-right"
+                className="settings-link-chevron"
+                aria-hidden="true"
               />
             </button>
 
             <button
               type="button"
-              className="settings-link-row"
-              onClick={() => setPage("terms")}
+              className="settings-link"
+              onClick={() =>
+                navigateTo("terms")
+              }
+              disabled={saving || leaving}
             >
               <span className="settings-link-left">
-                <span className="settings-icon-wrapper">
-                  <FileText
-                    size={19}
-                    className="settings-icon"
-                  />
-                </span>
+                <FileText
+                  size={19}
+                  className="settings-icon"
+                  aria-hidden="true"
+                />
 
-                <span className="settings-link-label">
-                  Terms & Conditions
+                <span>
+                  Terms &amp; Conditions
                 </span>
               </span>
 
               <ChevronRight
                 size={18}
-                className="settings-link-right"
+                className="settings-link-chevron"
+                aria-hidden="true"
               />
             </button>
 
             <button
               type="button"
-              className="settings-link-row"
-              onClick={clearCache}
-              disabled={saving}
+              className="settings-link"
+              onClick={handleClearCache}
+              disabled={saving || leaving}
             >
               <span className="settings-link-left">
-                <span className="settings-icon-wrapper">
-                  <Trash2
-                    size={19}
-                    className="settings-icon"
-                  />
-                </span>
+                <Trash2
+                  size={19}
+                  className="settings-icon"
+                  aria-hidden="true"
+                />
 
-                <span className="settings-link-label">
+                <span>
                   Clear Cache
                 </span>
               </span>
 
               <ChevronRight
                 size={18}
-                className="settings-link-right"
+                className="settings-link-chevron"
+                aria-hidden="true"
               />
             </button>
           </section>
@@ -1636,60 +1489,68 @@ export default function SettingsPage({ setPage }) {
               ACCOUNT
           ================================================= */}
 
-          <section className="settings-card">
-            <h2 className="settings-section-title">
+          <section
+            className="settings-card"
+            aria-labelledby="account-title"
+          >
+            <h2
+              id="account-title"
+              className="settings-section-title"
+            >
               Account
             </h2>
 
             <button
               type="button"
-              className="settings-link-row"
+              className="settings-link"
               onClick={() =>
-                setPage("change-password")
+                navigateTo("change-password")
               }
+              disabled={saving || leaving}
             >
               <span className="settings-link-left">
-                <span className="settings-icon-wrapper">
-                  <KeyRound
-                    size={19}
-                    className="settings-icon"
-                  />
-                </span>
+                <KeyRound
+                  size={19}
+                  className="settings-icon"
+                  aria-hidden="true"
+                />
 
-                <span className="settings-link-label">
+                <span>
                   Change Password
                 </span>
               </span>
 
               <ChevronRight
                 size={18}
-                className="settings-link-right"
+                className="settings-link-chevron"
+                aria-hidden="true"
               />
             </button>
 
             <button
               type="button"
-              className="settings-link-row settings-danger"
+              className="settings-link settings-danger"
               onClick={() =>
-                setPage("deleteAccount")
+                navigateTo("deleteAccount")
               }
+              disabled={saving || leaving}
             >
               <span className="settings-link-left">
-                <span className="settings-icon-wrapper">
-                  <Trash2
-                    size={19}
-                    className="settings-icon"
-                  />
-                </span>
+                <Trash2
+                  size={19}
+                  className="settings-icon"
+                  aria-hidden="true"
+                />
 
-                <span className="settings-link-label">
+                <span>
                   Delete Account
                 </span>
               </span>
 
               <ChevronRight
                 size={18}
-                className="settings-link-right"
+                className="settings-link-chevron"
+                aria-hidden="true"
               />
             </button>
           </section>
@@ -1698,96 +1559,84 @@ export default function SettingsPage({ setPage }) {
               ABOUT
           ================================================= */}
 
-          <section className="settings-card">
-            <h2 className="settings-section-title">
+          <section
+            className="settings-card"
+            aria-labelledby="about-title"
+          >
+            <h2
+              id="about-title"
+              className="settings-section-title"
+            >
               About
             </h2>
 
-            <div className="settings-row settings-about-row">
-              <div>
-                <div className="settings-label">
-                  Version
-                </div>
-
-                <div className="settings-description">
-                  Brewed v1.0.0
-                </div>
-              </div>
-            </div>
-
-            <div className="settings-about-note">
-              <span className="settings-coffee">
-                ☕
+            <div className="settings-version-row">
+              <span className="settings-version-label">
+                Version
               </span>
 
-              <span>
-                Made with love in Kolkata.
+              <span className="settings-version-value">
+                Brewed v1.0.0
               </span>
             </div>
+
+            <p className="settings-about-note">
+              ☕ Made with love in Kolkata.
+            </p>
           </section>
 
           {/* =================================================
-              ACTIONS
+              SAVE / RESET
           ================================================= */}
 
-          <div className="settings-button-row">
+          <div className="settings-actions">
+
             <button
               type="button"
-              className="settings-reset-btn"
-              onClick={resetSettings}
-              disabled={saving || !hasChanges}
+              className="settings-action-btn settings-reset-btn"
+              onClick={handleReset}
+              disabled={
+                !hasChanges ||
+                saving ||
+                leaving
+              }
             >
-              <RotateCcw size={17} />
-
-              <span>
-                Reset to Defaults
-              </span>
+              Reset to Defaults
             </button>
 
             <button
               type="button"
-              className="settings-save-btn"
-              onClick={saveSettings}
+              className="settings-action-btn settings-save-btn"
+              onClick={handleSave}
               disabled={
-                saving ||
                 !hasChanges ||
-                !currentUser
+                saving ||
+                leaving
               }
             >
               {saving ? (
                 <>
                   <Loader2
                     size={17}
-                    className="settings-loading-spinner"
+                    className="settings-save-spinner"
+                    aria-hidden="true"
                   />
 
-                  <span>
-                    Saving...
-                  </span>
+                  Saving...
                 </>
               ) : (
                 <>
-                  <Check size={17} />
+                  <Check
+                    size={17}
+                    aria-hidden="true"
+                  />
 
-                  <span>
-                    Save Changes
-                  </span>
+                  Save Changes
                 </>
               )}
             </button>
+
           </div>
-
-          {!currentUser && (
-            <div className="settings-auth-warning">
-              Please sign in to save your settings.
-            </div>
-          )}
-
-          {hasChanges && !saving && (
-            <div className="settings-unsaved">
-              You have unsaved changes
-            </div>
-          )}
         </div>
       </div>
 
@@ -1801,7 +1650,8 @@ export default function SettingsPage({ setPage }) {
           role="presentation"
           onMouseDown={(event) => {
             if (
-              event.target === event.currentTarget
+              event.target ===
+              event.currentTarget
             ) {
               setConfirmOpen(false);
             }
@@ -1813,17 +1663,42 @@ export default function SettingsPage({ setPage }) {
             aria-modal="true"
             aria-labelledby="settings-modal-title"
             aria-describedby="settings-modal-description"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
           >
-            <button
-              type="button"
-              className="settings-modal-close"
-              onClick={() =>
-                setConfirmOpen(false)
-              }
-              aria-label="Close dialog"
-            >
-              <X size={18} />
-            </button>
+            <div className="settings-modal-header">
+              <div
+                className={`settings-modal-icon ${
+                  confirmData.danger
+                    ? "danger"
+                    : ""
+                }`}
+              >
+                {confirmData.danger ? (
+                  <AlertTriangle
+                    size={21}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Info
+                    size={21}
+                    aria-hidden="true"
+                  />
+                )}
+              </div>
+
+              <button
+                type="button"
+                className="settings-modal-close"
+                onClick={() =>
+                  setConfirmOpen(false)
+                }
+                aria-label="Close dialog"
+              >
+                <X size={18} />
+              </button>
+            </div>
 
             <h2
               id="settings-modal-title"
@@ -1840,9 +1715,10 @@ export default function SettingsPage({ setPage }) {
             </p>
 
             <div className="settings-modal-buttons">
+
               <button
                 type="button"
-                className="settings-modal-btn settings-cancel-btn"
+                className="settings-modal-btn settings-modal-cancel"
                 onClick={() =>
                   setConfirmOpen(false)
                 }
@@ -1852,17 +1728,23 @@ export default function SettingsPage({ setPage }) {
 
               <button
                 type="button"
-                className={`settings-modal-btn ${
+                className={`settings-modal-btn settings-modal-confirm ${
                   confirmData.danger
-                    ? "settings-danger-confirm-btn"
-                    : "settings-confirm-btn"
+                    ? "danger"
+                    : ""
                 }`}
-                onClick={
-                  confirmData.onConfirm
-                }
+                onClick={() => {
+                  if (
+                    typeof confirmData.onConfirm ===
+                    "function"
+                  ) {
+                    confirmData.onConfirm();
+                  }
+                }}
               >
                 {confirmData.confirmLabel}
               </button>
+
             </div>
           </div>
         </div>
@@ -1878,11 +1760,7 @@ export default function SettingsPage({ setPage }) {
           role="status"
           aria-live="polite"
         >
-          <Check size={17} />
-
-          <span>
-            {toast.message}
-          </span>
+          {toast.message}
         </div>
       )}
     </>
