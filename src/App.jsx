@@ -38,7 +38,6 @@ export default function App() {
   const [page, setPage] = useState("menu");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [activeOrder, setActiveOrder] = useState(null);
-  const [selectedTicket, setSelectedTicket] = useState(null);
 
   /*
    * ============================================================
@@ -94,13 +93,28 @@ export default function App() {
    * ============================================================
    * APPLICATION
    * ============================================================
+   *
+   * IMPORTANT PROVIDER ORDER:
+   *
+   * AuthProvider
+   *      ↓
+   * PreferencesProvider
+   *      ↓
+   * ThemeProvider
+   *      ↓
+   * CartProvider
+   *      ↓
+   * Entire application
+   *
+   * ThemeContext now consumes PreferencesContext, so
+   * PreferencesProvider MUST be above ThemeProvider.
    */
 
   return (
-    <ThemeProvider>
-      <CartProvider>
-        <AuthProvider>
-          <PreferencesProvider>
+    <AuthProvider>
+      <PreferencesProvider>
+        <ThemeProvider>
+          <CartProvider>
 
             {/* ==================================================
                 GLOBAL BREWED THEME
@@ -138,13 +152,12 @@ export default function App() {
               }
 
               /* =================================================
-                 GLOBAL DARK THEME
-
-                 PreferencesContext adds:
-
+                 DARK THEME
+                 
+                 PreferencesContext controls:
+                 
                  html.dark-mode
-
-                 so this MUST use .dark-mode.
+                 
                  ================================================= */
 
               html.dark-mode {
@@ -296,11 +309,11 @@ export default function App() {
               }
 
               /* =================================================
-                 GLOBAL BUTTON BEHAVIOR
+                 BUTTONS
                  ================================================= */
 
-              button:hover {
-                opacity: 0.88;
+              button {
+                -webkit-tap-highlight-color: transparent;
               }
 
               button:disabled {
@@ -591,9 +604,9 @@ export default function App() {
 
             <Footer />
 
-          </PreferencesProvider>
-        </AuthProvider>
-      </CartProvider>
-    </ThemeProvider>
+          </CartProvider>
+        </ThemeProvider>
+      </PreferencesProvider>
+    </AuthProvider>
   );
 }
