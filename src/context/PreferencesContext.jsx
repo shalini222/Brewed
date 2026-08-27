@@ -16,13 +16,31 @@ import {
 import { db } from "../firebase";
 import { useAuth } from "./AuthContext";
 
+/*
+ * ============================================================
+ * DEFAULTS
+ * ============================================================
+ */
+
 const DEFAULT_PREFERENCES = {
   notifications: true,
   darkMode: false,
   reduceMotion: false,
 };
 
+/*
+ * ============================================================
+ * CONTEXT
+ * ============================================================
+ */
+
 const PreferencesContext = createContext(null);
+
+/*
+ * ============================================================
+ * PROVIDER
+ * ============================================================
+ */
 
 export function PreferencesProvider({ children }) {
   const { currentUser } = useAuth();
@@ -35,16 +53,25 @@ export function PreferencesProvider({ children }) {
   const [saving, setSaving] = useState(false);
 
   /*
-   * LOAD USER PREFERENCES
+   * ==========================================================
+   * LOAD PREFERENCES
+   * ==========================================================
    */
 
   useEffect(() => {
     let mounted = true;
 
     const loadPreferences = async () => {
+      /*
+       * No authenticated user.
+       */
+
       if (!currentUser) {
         if (mounted) {
-          setPreferences(DEFAULT_PREFERENCES);
+          setPreferences({
+            ...DEFAULT_PREFERENCES,
+          });
+
           setLoading(false);
         }
 
@@ -64,8 +91,15 @@ export function PreferencesProvider({ children }) {
 
         if (!mounted) return;
 
+        /*
+         * User document doesn't exist.
+         */
+
         if (!snapshot.exists()) {
-          setPreferences(DEFAULT_PREFERENCES);
+          setPreferences({
+            ...DEFAULT_PREFERENCES,
+          });
+
           return;
         }
 
@@ -77,7 +111,12 @@ export function PreferencesProvider({ children }) {
             ? data.settings
             : {};
 
-        setPreferences({
+        /*
+         * Normalize settings so malformed Firestore
+         * values can never break the application.
+         */
+
+        const normalizedPreferences = {
           notifications:
             typeof settings.notifications === "boolean"
               ? settings.notifications
@@ -92,15 +131,25 @@ export function PreferencesProvider({ children }) {
             typeof settings.reduceMotion === "boolean"
               ? settings.reduceMotion
               : DEFAULT_PREFERENCES.reduceMotion,
-        });
+        };
+
+        setPreferences(
+          normalizedPreferences
+        );
       } catch (error) {
         console.error(
-          "Failed to load preferences:",
+          "Failed to load user preferences:",
           error
         );
 
+        /*
+         * Fail safely to defaults.
+         */
+
         if (mounted) {
-          setPreferences(DEFAULT_PREFERENCES);
+          setPreferences({
+            ...DEFAULT_PREFERENCES,
+          });
         }
       } finally {
         if (mounted) {
@@ -117,41 +166,135 @@ export function PreferencesProvider({ children }) {
   }, [currentUser]);
 
   /*
+   * ==========================================================
    * GLOBAL DARK MODE
+   * ==========================================================
+   *
+   * These classes live on <html>, not SettingsPage.
+   *
+   * That means the preference is available to the entire
+   * application.
    */
 
   useEffect(() => {
-    const root = document.documentElement;
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    const root =
+      document.documentElement;
 
     root.classList.toggle(
       "dark-mode",
-      preferences.darkMode
+      Boolean(preferences.darkMode)
     );
+
+    /*
+     * Useful for CSS selectors and accessibility.
+     */
+
+    root.setAttribute(
+      "data-theme",
+      preferences.darkMode
+        ? "dark"
+        : "light"
+    );
+
+    root.style.colorScheme =
+      preferences.darkMode
+        ? "dark"
+        : "light";
   }, [preferences.darkMode]);
 
   /*
+   * ==========================================================
    * GLOBAL REDUCED MOTION
+   * ==========================================================
    */
 
   useEffect(() => {
-    const root = document.documentElement;
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    const root =
+      document.documentElement;
 
     root.classList.toggle(
       "reduce-motion",
-      preferences.reduceMotion
+      Boolean(preferences.reduceMotion)
     );
 
-    return () => {
-      root.classList.remove("reduce-motion");
-    };
+    root.setAttribute(
+      "data-reduce-motion",
+      preferences.reduceMotion
+        ? "true"
+        : "false"
+    );
   }, [preferences.reduceMotion]);
 
   /*
-   * UPDATE A PREFERENCE
+   * ==========================================================
+   * GLOBAL NOTIFICATION PREFERENCE
+   * ==========================================================
+   *
+   * This doesn't automatically create browser push
+   * notifications. It establishes the application's
+   * single source of truth for whether notifications
+   * are enabled.
+   */
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    document.documentElement.setAttribute(
+      "data-notifications",
+      preferences.notifications
+        ? "enabled"
+        : "disabled"
+    );
+  }, [preferences.notifications]);
+
+  /*
+   * ==========================================================
+   * UPDATE PREFERENCE
+   * ==========================================================
    */
 
   const updatePreference = useCallback(
     (key, value) => {
+      /*
+       * Only allow known preference keys.
+       */
+
+      const allowedKeys = [
+        "notifications",
+        "darkMode",
+        "reduceMotion",
+      ];
+
+      if (!allowedKeys.includes(key)) {
+        console.warn(
+          `Unknown preference key: ${key}`
+        );
+
+        return;
+      }
+
+      /*
+       * Only boolean values are allowed.
+       */
+
+      if (typeof value !== "boolean") {
+        console.warn(
+          `Preference "${key}" must be boolean.`
+        );
+
+        return;
+      }
+
       setPreferences((current) => ({
         ...current,
         [key]: value,
@@ -161,16 +304,36 @@ export function PreferencesProvider({ children }) {
   );
 
   /*
-   * SAVE TO FIRESTORE
+   * ==========================================================
+   * SAVE PREFERENCES
+   * ==========================================================
    */
 
   const savePreferences = useCallback(
-    async (nextPreferences = preferences) => {
+    async (nextPreferences) => {
       if (!currentUser) {
         throw new Error(
           "You must be signed in to save preferences."
         );
       }
+
+      /*
+       * If nothing was supplied, use current state.
+       */
+
+      const values =
+        nextPreferences || preferences;
+
+      const normalizedPreferences = {
+        notifications:
+          Boolean(values.notifications),
+
+        darkMode:
+          Boolean(values.darkMode),
+
+        reduceMotion:
+          Boolean(values.reduceMotion),
+      };
 
       try {
         setSaving(true);
@@ -181,43 +344,39 @@ export function PreferencesProvider({ children }) {
           currentUser.uid
         );
 
-        const existingSnapshot =
-          await getDoc(userRef);
-
-        const existingData =
-          existingSnapshot.exists()
-            ? existingSnapshot.data()
-            : {};
-
-        const existingSettings =
-          existingData?.settings &&
-          typeof existingData.settings === "object"
-            ? existingData.settings
-            : {};
+        /*
+         * merge:true prevents settings from overwriting
+         * unrelated fields on the user document.
+         */
 
         await setDoc(
           userRef,
           {
-            settings: {
-              ...existingSettings,
-              ...nextPreferences,
-            },
+            settings:
+              normalizedPreferences,
           },
           {
             merge: true,
           }
         );
 
-        setPreferences({
-          notifications:
-            Boolean(nextPreferences.notifications),
+        /*
+         * Keep local state synchronized with the
+         * successfully persisted values.
+         */
 
-          darkMode:
-            Boolean(nextPreferences.darkMode),
+        setPreferences(
+          normalizedPreferences
+        );
 
-          reduceMotion:
-            Boolean(nextPreferences.reduceMotion),
-        });
+        return normalizedPreferences;
+      } catch (error) {
+        console.error(
+          "Failed to save preferences:",
+          error
+        );
+
+        throw error;
       } finally {
         setSaving(false);
       }
@@ -226,20 +385,40 @@ export function PreferencesProvider({ children }) {
   );
 
   /*
+   * ==========================================================
    * RESET
+   * ==========================================================
+   *
+   * This resets the current application state.
+   *
+   * It does NOT automatically write to Firestore.
+   * The Settings page can then decide whether the user
+   * wants to save the reset.
    */
 
   const resetPreferences = useCallback(() => {
-    setPreferences(DEFAULT_PREFERENCES);
+    setPreferences({
+      ...DEFAULT_PREFERENCES,
+    });
   }, []);
 
   /*
-   * CONTEXT
+   * ==========================================================
+   * CONTEXT VALUE
+   * ==========================================================
    */
 
   const value = useMemo(
     () => ({
+      /*
+       * Full object
+       */
+
       preferences,
+
+      /*
+       * Convenient individual values
+       */
 
       notifications:
         preferences.notifications,
@@ -250,8 +429,16 @@ export function PreferencesProvider({ children }) {
       reduceMotion:
         preferences.reduceMotion,
 
+      /*
+       * Status
+       */
+
       loading,
       saving,
+
+      /*
+       * Actions
+       */
 
       updatePreference,
       savePreferences,
@@ -267,21 +454,30 @@ export function PreferencesProvider({ children }) {
     ]
   );
 
+  /*
+   * ==========================================================
+   * PROVIDER
+   * ==========================================================
+   */
+
   return (
-    <PreferencesContext.Provider value={value}>
+    <PreferencesContext.Provider
+      value={value}
+    >
       {children}
     </PreferencesContext.Provider>
   );
 }
 
 /*
+ * ============================================================
  * HOOK
+ * ============================================================
  */
 
 export function usePreferences() {
-  const context = useContext(
-    PreferencesContext
-  );
+  const context =
+    useContext(PreferencesContext);
 
   if (!context) {
     throw new Error(
