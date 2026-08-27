@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import { doc, updateDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  setDoc,
+} from "firebase/firestore";
 import { db } from "../firebase";
-import { getDoc } from "firebase/firestore";
+
 import {
   ArrowLeft,
   Bell,
@@ -13,934 +17,1874 @@ import {
   Trash2,
   KeyRound,
   Info,
-  ChevronRight
+  ChevronRight,
+  RotateCcw,
+  Check,
+  Loader2,
+  X,
 } from "lucide-react";
+
+const DEFAULT_SETTINGS = {
+  notifications: true,
+  darkMode: false,
+  reduceMotion: false,
+};
 
 export default function SettingsPage({ setPage }) {
   const { currentUser } = useAuth();
-
-  
-
-  
   const { darkMode, setDarkMode } = useTheme();
 
-const [notifications, setNotifications] = useState(true);
-const [reduceMotion, setReduceMotion] = useState(false);
+  /* =========================
+     STATE
+  ========================= */
 
-const [savedNotifications, setSavedNotifications] = useState(true);
-const [savedDarkMode, setSavedDarkMode] = useState(false);
-const [savedReduceMotion, setSavedReduceMotion] = useState(false);
-  
+  const [notifications, setNotifications] = useState(
+    DEFAULT_SETTINGS.notifications
+  );
 
+  const [reduceMotion, setReduceMotion] = useState(
+    DEFAULT_SETTINGS.reduceMotion
+  );
 
-const [confirmOpen, setConfirmOpen] = useState(false);
+  const [savedNotifications, setSavedNotifications] = useState(
+    DEFAULT_SETTINGS.notifications
+  );
 
-const [confirmData, setConfirmData] = useState({
-  title: "",
-  message: "",
-  onConfirm: null,
-});
+  const [savedDarkMode, setSavedDarkMode] = useState(
+    DEFAULT_SETTINGS.darkMode
+  );
 
+  const [savedReduceMotion, setSavedReduceMotion] = useState(
+    DEFAULT_SETTINGS.reduceMotion
+  );
 
-  const [toast, setToast] = useState({
-  show: false,
-  message: "",
-});
- 
-  const showToast = (message) => {
-  setToast({
-    show: true,
-    message,
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const [confirmData, setConfirmData] = useState({
+    title: "",
+    message: "",
+    confirmLabel: "Confirm",
+    danger: false,
+    onConfirm: null,
   });
 
-  clearTimeout(window.toastTimer);
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+  });
 
-  window.toastTimer = setTimeout(() => {
+  const toastTimerRef = useRef(null);
+
+  /* =========================
+     TOAST
+  ========================= */
+
+  const showToast = useCallback((message) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+
     setToast({
-      show: false,
-      message: "",
+      show: true,
+      message,
     });
-  }, 2000);
-};
 
+    toastTimerRef.current = setTimeout(() => {
+      setToast({
+        show: false,
+        message: "",
+      });
+    }, 2500);
+  }, []);
 
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
+  /* =========================
+     LOAD SETTINGS
+  ========================= */
 
-//useEffect(() => {
-//  if (!currentUser) return;
+  useEffect(() => {
+    let mounted = true;
 
-//  const loadSettings = async () => {
- //   try {
- //     const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+    const loadSettings = async () => {
+      if (!currentUser) {
+        if (mounted) {
+          setLoading(false);
+        }
 
-  //    if (userDoc.exists()) {
-    //    const settings = userDoc.data().settings || {};
+        return;
+      }
 
-        // Default values
-    //    const notificationsValue = settings.notifications ?? true;
-    //    const darkModeValue = settings.darkMode ?? false;
- //       const reduceMotionValue = settings.reduceMotion ?? false;
+      try {
+        setLoading(true);
 
-        // Apply settings
-    //    setNotifications(notificationsValue);
- //       setDarkMode(darkModeValue);
-  //      setReduceMotion(reduceMotionValue);
-//
-        // Save current values for comparison
-      //  setSavedNotifications(notificationsValue);
-  //      setSavedDarkMode(darkModeValue);
-   //     setSavedReduceMotion(reduceMotionValue);
-//      } else {
-        // New user defaults
-//        setNotifications(true);
-   //     setDarkMode(false);
- //       setReduceMotion(false);
-//
-    //    setSavedNotifications(true);
-    //    setSavedDarkMode(false);
-  //      setSavedReduceMotion(false);
-  //    }
-//    } catch (error) {
-  //    console.error("Failed to load settings:", error);
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnapshot = await getDoc(userRef);
 
-      // Fallback defaults
-  //    setNotifications(true);
-//      setDarkMode(false);
- //     setReduceMotion(false);
-//    }
-//  };
+        if (!mounted) return;
 
-//  loadSettings();
-//}, [currentUser, setDarkMode]);
+        const userData = userSnapshot.exists()
+          ? userSnapshot.data()
+          : {};
 
+        const storedSettings =
+          userData?.settings &&
+          typeof userData.settings === "object"
+            ? userData.settings
+            : {};
 
-useEffect(() => {
-  if (!currentUser) return;
-
-  const loadSettings = async () => {
-    try {
-      const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-
-      if (userDoc.exists()) {
-        const settings = userDoc.data().settings || {};
-
-        const notificationsValue =
-          typeof settings.notifications === "boolean"
-            ? settings.notifications
-            : true;
+        const notificationValue =
+          typeof storedSettings.notifications === "boolean"
+            ? storedSettings.notifications
+            : DEFAULT_SETTINGS.notifications;
 
         const darkModeValue =
-          typeof settings.darkMode === "boolean"
-            ? settings.darkMode
-            : false;
+          typeof storedSettings.darkMode === "boolean"
+            ? storedSettings.darkMode
+            : DEFAULT_SETTINGS.darkMode;
 
         const reduceMotionValue =
-          typeof settings.reduceMotion === "boolean"
-            ? settings.reduceMotion
-            : false;
+          typeof storedSettings.reduceMotion === "boolean"
+            ? storedSettings.reduceMotion
+            : DEFAULT_SETTINGS.reduceMotion;
 
-        setNotifications(notificationsValue);
+        setNotifications(notificationValue);
         setDarkMode(darkModeValue);
         setReduceMotion(reduceMotionValue);
 
-        setSavedNotifications(notificationsValue);
+        setSavedNotifications(notificationValue);
         setSavedDarkMode(darkModeValue);
         setSavedReduceMotion(reduceMotionValue);
-      } else {
-        setNotifications(true);
-        setDarkMode(false);
-        setReduceMotion(false);
+      } catch (error) {
+        console.error(
+          "SettingsPage: failed to load settings",
+          error
+        );
 
-        setSavedNotifications(true);
-        setSavedDarkMode(false);
-        setSavedReduceMotion(false);
+        if (!mounted) return;
+
+        setNotifications(DEFAULT_SETTINGS.notifications);
+        setDarkMode(DEFAULT_SETTINGS.darkMode);
+        setReduceMotion(DEFAULT_SETTINGS.reduceMotion);
+
+        setSavedNotifications(DEFAULT_SETTINGS.notifications);
+        setSavedDarkMode(DEFAULT_SETTINGS.darkMode);
+        setSavedReduceMotion(DEFAULT_SETTINGS.reduceMotion);
+
+        showToast("Couldn't load your settings.");
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
-    } catch (error) {
-      console.error("Failed to load settings:", error);
+    };
+
+    loadSettings();
+
+    return () => {
+      mounted = false;
+    };
+  }, [currentUser, setDarkMode, showToast]);
+
+  /* =========================
+     REDUCED MOTION
+  ========================= */
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    if (reduceMotion) {
+      root.classList.add("brew-reduce-motion");
+    } else {
+      root.classList.remove("brew-reduce-motion");
     }
-  };
 
-  loadSettings();
-}, [currentUser, setDarkMode]);
-  
-  const resetSettings = () => {
-  const confirmReset = window.confirm(
-    "Reset all settings to their default values?"
-  );
+    return () => {
+      root.classList.remove("brew-reduce-motion");
+    };
+  }, [reduceMotion]);
 
-  if (!confirmReset) return;
+  /* =========================
+     MODAL KEYBOARD CONTROL
+  ========================= */
 
-  setNotifications(true);
-  setDarkMode(false);
-  setReduceMotion(false);
+  useEffect(() => {
+    if (!confirmOpen) return;
 
-  showToast("Settings reset to default.");
-};
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setConfirmOpen(false);
+      }
+    };
 
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [confirmOpen]);
+
+  /* =========================
+     CHANGE DETECTION
+  ========================= */
 
   const hasChanges =
-  notifications !== savedNotifications ||
-  darkMode !== savedDarkMode ||
-  reduceMotion !== savedReduceMotion;
+    notifications !== savedNotifications ||
+    darkMode !== savedDarkMode ||
+    reduceMotion !== savedReduceMotion;
+
+  /* =========================
+     RESET SETTINGS
+  ========================= */
+
+  const resetSettings = () => {
+    setConfirmData({
+      title: "Reset Settings",
+      message:
+        "Restore all preferences to Brewed's default settings? Your account, orders, rewards and other data will not be affected.",
+      confirmLabel: "Reset Settings",
+      danger: false,
+
+      onConfirm: () => {
+        setNotifications(DEFAULT_SETTINGS.notifications);
+        setDarkMode(DEFAULT_SETTINGS.darkMode);
+        setReduceMotion(DEFAULT_SETTINGS.reduceMotion);
+
+        setConfirmOpen(false);
+
+        showToast(
+          "Defaults restored. Save Changes to apply them."
+        );
+      },
+    });
+
+    setConfirmOpen(true);
+  };
+
+  /* =========================
+     CLEAR CACHE
+  ========================= */
 
   const clearCache = () => {
-  setConfirmData({
-    title: "Clear Cache",
-    message:
-      "This will remove temporary cached data stored on this device. Your account, orders and rewards won't be affected.",
-    onConfirm: () => {
-      localStorage.clear();
-      sessionStorage.clear();
+    setConfirmData({
+      title: "Clear Cache",
+      message:
+        "Remove temporary Brewed data stored on this device? Your account, orders, rewards and Firestore data will not be deleted.",
+      confirmLabel: "Clear Cache",
+      danger: true,
 
-      showToast("Cache cleared successfully.");
+      onConfirm: () => {
+        try {
+          /*
+           * Never use localStorage.clear() here.
+           *
+           * Only remove keys owned by Brewed.
+           * Add future Brewed cache keys here as needed.
+           */
 
-      setConfirmOpen(false);
-    },
-  });
+          const brewedStoragePrefixes = [
+            "brewed_cache",
+            "brewed_menu_cache",
+            "brewed_products_cache",
+            "brewed_favorites_cache",
+            "brewed_orders_cache",
+            "brewed_image_cache",
+          ];
 
-  setConfirmOpen(true);
-};
-  
+          Object.keys(localStorage).forEach((key) => {
+            if (
+              brewedStoragePrefixes.some(
+                (prefix) =>
+                  key === prefix ||
+                  key.startsWith(`${prefix}_`)
+              )
+            ) {
+              localStorage.removeItem(key);
+            }
+          });
+
+          Object.keys(sessionStorage).forEach((key) => {
+            if (
+              brewedStoragePrefixes.some(
+                (prefix) =>
+                  key === prefix ||
+                  key.startsWith(`${prefix}_`)
+              )
+            ) {
+              sessionStorage.removeItem(key);
+            }
+          });
+
+          setConfirmOpen(false);
+
+          showToast("Cache cleared successfully.");
+        } catch (error) {
+          console.error(
+            "SettingsPage: failed to clear cache",
+            error
+          );
+
+          setConfirmOpen(false);
+
+          showToast("Couldn't clear the cache.");
+        }
+      },
+    });
+
+    setConfirmOpen(true);
+  };
+
+  /* =========================
+     SAVE SETTINGS
+  ========================= */
+
   const saveSettings = async () => {
+    if (!currentUser || saving || !hasChanges) {
+      return;
+    }
+
     try {
-      await updateDoc(doc(db, "users", currentUser.uid), {
-        settings: {
-          notifications,
-          darkMode,
-          reduceMotion,
+      setSaving(true);
+
+      const userRef = doc(db, "users", currentUser.uid);
+
+      /*
+       * Fetch the latest settings before writing.
+       *
+       * This prevents SettingsPage from accidentally replacing
+       * future settings fields added elsewhere in the app.
+       */
+
+      const latestSnapshot = await getDoc(userRef);
+
+      const latestData = latestSnapshot.exists()
+        ? latestSnapshot.data()
+        : {};
+
+      const latestSettings =
+        latestData?.settings &&
+        typeof latestData.settings === "object"
+          ? latestData.settings
+          : {};
+
+      const updatedSettings = {
+        ...latestSettings,
+
+        notifications,
+        darkMode,
+        reduceMotion,
+      };
+
+      /*
+       * merge:true ensures that:
+       *
+       * 1. A missing users/{uid} document is created.
+       * 2. Existing user fields remain untouched.
+       * 3. Existing settings outside this page remain untouched.
+       */
+
+      await setDoc(
+        userRef,
+        {
+          settings: updatedSettings,
         },
-      });
+        {
+          merge: true,
+        }
+      );
+
       setSavedNotifications(notifications);
       setSavedDarkMode(darkMode);
       setSavedReduceMotion(reduceMotion);
-      
+
       showToast("Settings saved successfully.");
     } catch (error) {
-      console.error(error);
-      showToast("Couldn't save settings.");
+      console.error(
+        "SettingsPage: failed to save settings",
+        error
+      );
+
+      showToast(
+        "Couldn't save your settings. Please try again."
+      );
+    } finally {
+      setSaving(false);
     }
   };
+
+  /* =========================
+     NAVIGATION
+  ========================= */
+
+  const handleBack = () => {
+    if (saving) return;
+
+    if (hasChanges) {
+      setConfirmData({
+        title: "Unsaved Changes",
+        message:
+          "You have unsaved changes. If you leave this page now, those changes will be lost.",
+        confirmLabel: "Leave",
+        danger: true,
+
+        onConfirm: () => {
+          setConfirmOpen(false);
+          setPage("menu");
+        },
+      });
+
+      setConfirmOpen(true);
+
+      return;
+    }
+
+    setPage("menu");
+  };
+
+  /* =========================
+     TOGGLES
+  ========================= */
+
+  const toggleNotifications = () => {
+    if (loading || saving) return;
+
+    setNotifications((current) => !current);
+  };
+
+  const toggleDarkMode = () => {
+    if (loading || saving) return;
+
+    setDarkMode((current) => !current);
+  };
+
+  const toggleReduceMotion = () => {
+    if (loading || saving) return;
+
+    setReduceMotion((current) => !current);
+  };
+
+  /* =========================
+     LOADING
+  ========================= */
+
+  if (loading) {
+    return (
+      <>
+        <style>{`
+          .settings-loading-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            color: var(--muted);
+            font-family: "Inter", sans-serif;
+          }
+
+          .settings-loading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: .9rem;
+          }
+
+          .settings-loading-spinner {
+            animation: settingsLoadingSpin 1s linear infinite;
+          }
+
+          @keyframes settingsLoadingSpin {
+            to {
+              transform: rotate(360deg);
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .settings-loading-spinner {
+              animation: none;
+            }
+          }
+        `}</style>
+
+        <div className="settings-loading-page">
+          <div className="settings-loading">
+            <Loader2
+              size={24}
+              className="settings-loading-spinner"
+            />
+
+            <span>Loading settings...</span>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  /* =========================
+     PAGE
+  ========================= */
 
   return (
     <>
       <style>{`
-        
-.settings-page {
-  background: var(--bg);
-  min-height: 100vh;
-  padding: 32px 18px 120px;
-  font-family: "Inter", sans-serif;
-  color: var(--text);
-  transition: background 0.3s ease, color 0.3s ease;
-}
+        /* =====================================================
+           SETTINGS PAGE
+        ===================================================== */
+
+        .settings-page {
+          min-height: 100vh;
+          padding: 32px 18px 120px;
+          background: var(--bg);
+          color: var(--text);
+          font-family: "Inter", sans-serif;
+          transition:
+            background .3s ease,
+            color .3s ease;
+        }
+
+        .settings-container {
+          width: 100%;
+          max-width: 720px;
+          margin: 0 auto;
+          animation: settingsFadeUp .45s ease both;
+        }
+
+        /* =====================================================
+           BACK BUTTON
+        ===================================================== */
+
+        .settings-back-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+
+          margin: 0 0 22px;
+          padding: 8px 4px;
+
+          border: none;
+          background: transparent;
+
+          color: var(--text);
+
+          font-family: "Inter", sans-serif;
+          font-size: .92rem;
+          font-weight: 600;
+
+          cursor: pointer;
+
+          transition:
+            color .2s ease,
+            transform .2s ease,
+            opacity .2s ease;
+        }
+
+        .settings-back-btn:hover:not(:disabled) {
+          color: var(--accent);
+          transform: translateX(-2px);
+        }
+
+        .settings-back-btn:disabled {
+          opacity: .5;
+          cursor: not-allowed;
+        }
+
+        /* =====================================================
+           HEADER
+        ===================================================== */
 
+        .settings-header {
+          margin-bottom: 32px;
+        }
 
-.settings-container {
-  max-width: 720px;
-  margin: auto;
-  animation: fadeUp .45s ease;
-}
+        .settings-title {
+          margin: 0 0 8px;
 
+          color: var(--text);
 
-/* Back */
+          font-family: "Playfair Display", serif;
+          font-size: 2.3rem;
+          line-height: 1.15;
+          letter-spacing: -.02em;
+        }
 
-.back-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  background: none;
-  color: var(--text);
-  font-weight: 600;
-  cursor: pointer;
-  margin-bottom: 22px;
-}
+        .settings-subtitle {
+          max-width: 540px;
+          margin: 0;
 
+          color: var(--muted);
 
-/* Header */
+          font-size: .95rem;
+          line-height: 1.65;
+        }
 
-.title {
-  font-family: "Playfair Display", serif;
-  color: var(--text);
-  font-size: 2.3rem;
-  margin-bottom: 8px;
-}
+        /* =====================================================
+           CARDS
+        ===================================================== */
 
+        .settings-card {
+          margin-bottom: 22px;
+          padding: 22px;
 
-.subtitle {
-  color: var(--muted);
-  margin-bottom: 32px;
-  line-height: 1.6;
-}
+          background: var(--surface);
 
+          border: 1px solid var(--border);
+          border-radius: 22px;
 
+          transition:
+            transform .25s ease,
+            box-shadow .25s ease,
+            background .3s ease,
+            border-color .3s ease;
+        }
 
-/* Cards */
+        .settings-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
+        }
 
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  padding: 22px;
-  margin-bottom: 22px;
-  transition:
-    transform .25s ease,
-    box-shadow .25s ease,
-    background .3s ease;
-}
+        .settings-section-title {
+          margin: 0 0 18px;
 
+          color: var(--text);
 
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(0,0,0,.08);
-}
+          font-family: "Playfair Display", serif;
+          font-size: 1.2rem;
+          line-height: 1.3;
+        }
 
+        /* =====================================================
+           SETTING ROW
+        ===================================================== */
 
-.section-title {
-  font-family: "Playfair Display", serif;
-  color: var(--text);
-  margin-bottom: 18px;
-  font-size: 1.2rem;
-}
+        .settings-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
 
+          gap: 16px;
 
+          min-height: 66px;
+          padding: 16px 0;
 
-/* Setting Rows */
+          border-bottom: 1px solid var(--border);
+        }
 
-.setting-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--border);
-}
+        .settings-row:last-child {
+          border-bottom: none;
+        }
 
+        .settings-row-left {
+          display: flex;
+          align-items: center;
 
-.setting-row:last-child {
-  border-bottom: none;
-}
+          gap: 14px;
 
+          flex: 1;
+          min-width: 0;
+        }
 
-.setting-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
-}
+        .settings-icon-wrapper {
+          display: flex;
+          align-items: center;
+          justify-content: center;
 
+          flex: 0 0 40px;
 
-.setting-icon {
-  color: var(--accent);
-  flex-shrink: 0;
-}
+          width: 40px;
+          height: 40px;
 
+          border-radius: 12px;
 
-.setting-title {
-  color: var(--text);
-  font-weight: 600;
-  margin-bottom: 4px;
-}
+          background: rgba(196, 149, 106, .1);
+        }
 
+        .settings-icon {
+          color: var(--accent);
+          flex-shrink: 0;
+        }
 
-.setting-sub {
-  color: var(--muted);
-  font-size: .88rem;
-}
+        .settings-copy {
+          min-width: 0;
+        }
 
+        .settings-label {
+          margin-bottom: 4px;
 
+          color: var(--text);
 
-/* Switch */
+          font-size: .96rem;
+          font-weight: 600;
+          line-height: 1.35;
+        }
 
-.switch {
-  width: 50px;
-  height: 28px;
-  border-radius: 999px;
-  background: #cfc6bc; /* darker cream/grey */
-  position: relative;
-  cursor: pointer;
-  transition: .25s;
-  flex-shrink: 0;
-}
+        .settings-description {
+          color: var(--muted);
 
+          font-size: .86rem;
+          line-height: 1.5;
+        }
 
-.switch.active {
-  background:#C4956A !important ;
-}
+        /* =====================================================
+           SWITCH
+        ===================================================== */
 
-.switch::after {
-  content: "";
-  width: 22px;
-  height: 22px;
-  background: #ffffff;
-  border-radius: 50%;
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  transition: .25s;
-  box-shadow: 0 2px 6px rgba(0,0,0,.2);
-}
+        .settings-switch {
+          position: relative;
 
-.switch.active::after {
-  left: 25px;
-}
+          flex: 0 0 auto;
 
+          width: 50px;
+          height: 28px;
 
+          padding: 0;
 
-/* Links */
+          border: none;
+          border-radius: 999px;
 
-.link-left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex: 1;
-  min-width: 0;
-}
+          background: #cfc6bc;
 
+          cursor: pointer;
 
-.link-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 0;
-  cursor: pointer;
-  border-bottom: 1px solid var(--border);
-  color: var(--text);
-  font-weight: 500;
-}
+          transition:
+            background .25s ease,
+            opacity .2s ease;
+        }
 
+        .settings-switch-thumb {
+          position: absolute;
 
-.link-row:last-child {
-  border-bottom: none;
-}
+          top: 3px;
+          left: 3px;
 
+          width: 22px;
+          height: 22px;
 
-.link-right {
-  color: var(--muted);
-  transition: .25s ease;
-}
+          border-radius: 50%;
 
+          background: #fff;
 
-.link-row:hover {
-  background: rgba(196,149,106,.08);
-  border-radius: 12px;
-}
+          box-shadow:
+            0 2px 6px rgba(0, 0, 0, .2);
 
+          transition:
+            transform .25s ease;
+        }
 
-.link-row:hover .link-right {
-  color: var(--accent);
-  transform: translateX(4px);
-}
+        .settings-switch.active {
+          background: #c4956a;
+        }
 
+        .settings-switch.active
+        .settings-switch-thumb {
+          transform: translateX(22px);
+        }
 
-.danger .setting-icon {
-  color: #B42318;
-}
+        .settings-switch:disabled {
+          opacity: .5;
+          cursor: not-allowed;
+        }
 
+        /* =====================================================
+           LINK ROWS
+        ===================================================== */
 
+        .settings-link-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
 
-/* =========================
-   BUTTONS
-========================= */
+          width: 100%;
+          min-height: 58px;
 
+          gap: 12px;
 
-.button-row {
-  display: flex;
-  gap: 14px;
-  margin-top: 24px;
-}
+          padding: 10px 0;
 
+          border: none;
+          border-bottom: 1px solid var(--border);
 
-.save-btn,
-.reset-btn {
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  padding: 15px;
-  border-radius: 14px;
-  font-family: "Inter", sans-serif;
-  font-size: .95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .25s ease;
-}
+          background: transparent;
 
+          color: var(--text);
 
-.save-btn {
-  background: var(--button-bg);
-  color: var(--button-text);
-  border: none;
-}
+          font-family: "Inter", sans-serif;
+          text-align: left;
 
+          cursor: pointer;
 
-.save-btn:hover {
-  opacity: .8;
-}
+          transition:
+            background .2s ease,
+            color .2s ease,
+            padding .2s ease;
+        }
 
+        .settings-link-row:last-child {
+          border-bottom: none;
+        }
 
-.save-btn:disabled {
-  opacity: .5;
-  cursor: not-allowed;
-}
+        .settings-link-row:hover:not(:disabled) {
+          padding-left: 8px;
+          padding-right: 8px;
 
+          border-radius: 12px;
 
-.reset-btn {
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-}
+          background: rgba(196, 149, 106, .07);
+        }
 
+        .settings-link-left {
+          display: flex;
+          align-items: center;
 
-.reset-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
+          gap: 13px;
 
+          min-width: 0;
+        }
 
+        .settings-link-label {
+          color: var(--text);
 
-/* =========================
-   MODAL
-========================= */
+          font-size: .94rem;
+          font-weight: 600;
+        }
 
+        .settings-link-right {
+          flex-shrink: 0;
 
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.35);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  z-index: 9999;
-}
+          color: var(--muted);
 
+          transition:
+            color .2s ease,
+            transform .2s ease;
+        }
 
-.modal {
-  width: 100%;
-  max-width: 420px;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  padding: 26px;
-  animation: fadeUp .25s ease;
-}
+        .settings-link-row:hover:not(:disabled)
+        .settings-link-right {
+          color: var(--accent);
+          transform: translateX(3px);
+        }
 
+        .settings-link-row:disabled {
+          opacity: .5;
+          cursor: not-allowed;
+        }
 
-.modal-title {
-  font-family: "Playfair Display", serif;
-  color: var(--text);
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-}
+        .settings-danger .settings-icon {
+          color: #b42318;
+        }
 
+        .settings-danger:hover:not(:disabled) {
+          background: rgba(180, 35, 24, .06);
+        }
 
-.modal-text {
-  color: var(--muted);
-  line-height: 1.7;
-  margin-bottom: 24px;
-}
+        /* =====================================================
+           ABOUT
+        ===================================================== */
 
+        .settings-about-row {
+          min-height: 58px;
+        }
 
-.modal-buttons {
-  display: flex;
-  gap: 12px;
-}
+        .settings-about-note {
+          display: flex;
+          align-items: center;
 
+          gap: 8px;
 
-.modal-btn {
-  flex: 1;
-  border: none;
-  padding: 14px;
-  border-radius: 14px;
-  cursor: pointer;
-  font-weight: 600;
-  font-family: "Inter", sans-serif;
-}
+          margin-top: 14px;
 
+          color: var(--muted);
 
-.cancel-btn {
-  background: var(--border);
-  color: var(--text);
-}
+          font-size: .88rem;
+          line-height: 1.5;
+        }
 
+        .settings-coffee {
+          font-size: 1rem;
+        }
 
-.confirm-btn {
-  background: var(--button-bg);
-  color: var(--button-text);
-}
+        /* =====================================================
+           BUTTONS
+        ===================================================== */
 
+        .settings-button-row {
+          display: flex;
 
+          gap: 14px;
 
-/* =========================
-   TOAST
-========================= */
+          margin-top: 24px;
+        }
 
+        .settings-save-btn,
+        .settings-reset-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
 
-.toast {
-  position: fixed;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
+          gap: 8px;
 
-  background: var(--button-bg);
-  color: var(--button-text);
+          flex: 1;
 
-  padding: 14px 22px;
-  border-radius: 14px;
+          min-height: 50px;
 
-  font-family: "Inter", sans-serif;
-  font-size: .92rem;
+          min-width: 0;
 
-  box-shadow: 0 12px 30px rgba(0,0,0,.18);
+          padding: 14px 18px;
 
-  animation: toastIn .25s ease;
-  z-index: 9999;
-}
+          border-radius: 14px;
 
+          font-family: "Inter", sans-serif;
+          font-size: .94rem;
+          font-weight: 600;
 
-@keyframes toastIn {
+          cursor: pointer;
 
-  from {
-    opacity: 0;
-    transform: translate(-50%,20px);
-  }
+          transition:
+            opacity .2s ease,
+            transform .2s ease,
+            border-color .2s ease,
+            color .2s ease,
+            background .2s ease;
+        }
 
-  to {
-    opacity: 1;
-    transform: translate(-50%,0);
-  }
+        .settings-save-btn {
+          border: none;
 
-}
+          background: var(--button-bg);
+          color: var(--button-text);
+        }
 
+        .settings-save-btn:hover:not(:disabled) {
+          opacity: .86;
+          transform: translateY(-1px);
+        }
 
+        .settings-save-btn:disabled {
+          opacity: .45;
+          cursor: not-allowed;
+        }
 
-/* =========================
-   ANIMATION
-========================= */
+        .settings-reset-btn {
+          border: 1px solid var(--border);
 
+          background: var(--surface);
+          color: var(--text);
+        }
 
-@keyframes fadeUp {
+        .settings-reset-btn:hover:not(:disabled) {
+          border-color: var(--accent);
+          color: var(--accent);
+          transform: translateY(-1px);
+        }
 
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
+        .settings-reset-btn:disabled {
+          opacity: .4;
+          cursor: not-allowed;
+        }
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+        .settings-unsaved {
+          margin-top: 12px;
 
-}
+          color: var(--muted);
 
+          font-size: .8rem;
+          text-align: center;
+        }
 
+        .settings-auth-warning {
+          margin-top: 12px;
 
-/* =========================
-   MOBILE
-========================= */
+          color: #b42318;
 
+          font-size: .82rem;
+          text-align: center;
+        }
 
-@media(max-width:600px){
+        /* =====================================================
+           MODAL
+        ===================================================== */
 
-  .settings-page {
-    padding: 24px 14px 100px;
-  }
+        .settings-modal-overlay {
+          position: fixed;
+          inset: 0;
 
+          z-index: 9999;
 
-  .card {
-    padding: 18px;
-    border-radius: 18px;
-  }
+          display: flex;
+          align-items: center;
+          justify-content: center;
 
+          padding: 20px;
 
-  .title {
-    font-size: 2rem;
-  }
+          background: rgba(0, 0, 0, .42);
 
+          backdrop-filter: blur(5px);
+          -webkit-backdrop-filter: blur(5px);
 
-  .section-title {
-    font-size: 1.1rem;
-  }
+          animation: settingsOverlayIn .2s ease both;
+        }
 
+        .settings-modal {
+          position: relative;
 
-  .setting-row,
-  .link-row {
-    padding: 14px 0;
-  }
+          width: 100%;
+          max-width: 420px;
 
+          padding: 28px;
 
-  .setting-title {
-    font-size: .95rem;
-  }
+          border: 1px solid var(--border);
+          border-radius: 22px;
 
+          background: var(--surface);
+          color: var(--text);
 
-  .setting-sub {
-    font-size: .82rem;
-  }
+          box-shadow:
+            0 24px 70px rgba(0, 0, 0, .2);
 
+          animation: settingsModalIn .25s ease both;
+        }
 
-  .button-row {
-    flex-direction: column;
-  }
+        .settings-modal-close {
+          position: absolute;
 
+          top: 15px;
+          right: 15px;
 
-  .save-btn,
-  .reset-btn {
-    width: 100%;
-  }
+          display: flex;
+          align-items: center;
+          justify-content: center;
 
+          width: 34px;
+          height: 34px;
 
-  .modal-buttons {
-    flex-direction: column;
-  }
+          padding: 0;
 
-}
+          border: none;
+          border-radius: 50%;
 
+          background: transparent;
+          color: var(--muted);
 
+          cursor: pointer;
 
-/* =========================
-   REDUCED MOTION
-========================= */
+          transition:
+            background .2s ease,
+            color .2s ease;
+        }
 
+        .settings-modal-close:hover {
+          background: rgba(0, 0, 0, .06);
+          color: var(--text);
+        }
 
-.reduce-motion *,
-.reduce-motion *::before,
-.reduce-motion *::after {
+        .settings-modal-title {
+          margin: 0 35px 10px 0;
 
-  animation-duration: 0.01ms !important;
-  transition-duration: 0.01ms !important;
+          color: var(--text);
 
-}
+          font-family: "Playfair Display", serif;
+          font-size: 1.5rem;
+          line-height: 1.25;
+        }
 
+        .settings-modal-text {
+          margin: 0 0 24px;
+
+          color: var(--muted);
+
+          line-height: 1.7;
+        }
+
+        .settings-modal-buttons {
+          display: flex;
+
+          gap: 12px;
+        }
+
+        .settings-modal-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+
+          flex: 1;
+
+          min-height: 48px;
+
+          padding: 13px 16px;
+
+          border: none;
+          border-radius: 14px;
+
+          font-family: "Inter", sans-serif;
+          font-weight: 600;
+
+          cursor: pointer;
+
+          transition:
+            opacity .2s ease,
+            transform .2s ease;
+        }
+
+        .settings-modal-btn:hover {
+          opacity: .86;
+          transform: translateY(-1px);
+        }
+
+        .settings-cancel-btn {
+          background: var(--border);
+          color: var(--text);
+        }
+
+        .settings-confirm-btn {
+          background: var(--button-bg);
+          color: var(--button-text);
+        }
+
+        .settings-danger-confirm-btn {
+          background: #b42318;
+          color: #fff;
+        }
+
+        /* =====================================================
+           TOAST
+        ===================================================== */
+
+        .settings-toast {
+          position: fixed;
+
+          left: 50%;
+          bottom: 28px;
+
+          z-index: 10000;
+
+          display: flex;
+          align-items: center;
+
+          gap: 9px;
+
+          max-width: calc(100vw - 32px);
+
+          padding: 13px 18px;
+
+          border-radius: 14px;
+
+          background: var(--button-bg);
+          color: var(--button-text);
+
+          box-shadow:
+            0 12px 30px rgba(0, 0, 0, .18);
+
+          font-family: "Inter", sans-serif;
+          font-size: .88rem;
+          line-height: 1.4;
+
+          transform: translateX(-50%);
+
+          animation: settingsToastIn .25s ease both;
+        }
+
+        /* =====================================================
+           FOCUS
+        ===================================================== */
+
+        .settings-back-btn:focus-visible,
+        .settings-link-row:focus-visible,
+        .settings-switch:focus-visible,
+        .settings-save-btn:focus-visible,
+        .settings-reset-btn:focus-visible,
+        .settings-modal-btn:focus-visible,
+        .settings-modal-close:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 3px;
+        }
+
+        /* =====================================================
+           ANIMATIONS
+        ===================================================== */
+
+        @keyframes settingsFadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(18px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes settingsOverlayIn {
+          from {
+            opacity: 0;
+          }
+
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes settingsModalIn {
+          from {
+            opacity: 0;
+            transform: translateY(12px) scale(.98);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes settingsToastIn {
+          from {
+            opacity: 0;
+            transform: translate(-50%, 18px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+        }
+
+        /* =====================================================
+           REDUCED MOTION
+        ===================================================== */
+
+        .brew-reduce-motion *,
+        .brew-reduce-motion *::before,
+        .brew-reduce-motion *::after {
+          animation-duration: .01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: .01ms !important;
+          scroll-behavior: auto !important;
+        }
+
+        /* =====================================================
+           SYSTEM REDUCED MOTION
+        ===================================================== */
+
+        @media (prefers-reduced-motion: reduce) {
+          .settings-page *,
+          .settings-page *::before,
+          .settings-page *::after {
+            animation-duration: .01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: .01ms !important;
+            scroll-behavior: auto !important;
+          }
+        }
+
+        /* =====================================================
+           MOBILE
+        ===================================================== */
+
+        @media (max-width: 600px) {
+          .settings-page {
+            padding: 24px 14px 100px;
+          }
+
+          .settings-title {
+            font-size: 2rem;
+          }
+
+          .settings-subtitle {
+            font-size: .9rem;
+          }
+
+          .settings-card {
+            padding: 18px;
+            border-radius: 18px;
+          }
+
+          .settings-card:hover {
+            transform: none;
+            box-shadow: none;
+          }
+
+          .settings-section-title {
+            font-size: 1.1rem;
+          }
+
+          .settings-row {
+            min-height: 64px;
+            padding: 14px 0;
+          }
+
+          .settings-row-left {
+            gap: 11px;
+          }
+
+          .settings-icon-wrapper {
+            flex-basis: 37px;
+            width: 37px;
+            height: 37px;
+            border-radius: 11px;
+          }
+
+          .settings-label {
+            font-size: .92rem;
+          }
+
+          .settings-description {
+            font-size: .81rem;
+          }
+
+          .settings-switch {
+            width: 48px;
+            height: 27px;
+          }
+
+          .settings-switch-thumb {
+            width: 21px;
+            height: 21px;
+          }
+
+          .settings-switch.active
+          .settings-switch-thumb {
+            transform: translateX(21px);
+          }
+
+          .settings-button-row {
+            flex-direction: column-reverse;
+          }
+
+          .settings-save-btn,
+          .settings-reset-btn {
+            width: 100%;
+          }
+
+          .settings-modal {
+            padding: 24px 20px;
+            border-radius: 20px;
+          }
+
+          .settings-modal-buttons {
+            flex-direction: column-reverse;
+          }
+
+          .settings-toast {
+            bottom: 20px;
+            padding: 12px 16px;
+          }
+        }
+
+        /* =====================================================
+           TOUCH DEVICES
+        ===================================================== */
+
+        @media (hover: none) {
+          .settings-card:hover {
+            transform: none;
+            box-shadow: none;
+          }
+
+          .settings-link-row:hover:not(:disabled) {
+            padding-left: 0;
+            padding-right: 0;
+            background: transparent;
+          }
+
+          .settings-link-row:hover:not(:disabled)
+          .settings-link-right {
+            transform: none;
+          }
+        }
       `}</style>
 
       <div className="settings-page">
         <div className="settings-container">
 
+          {/* =================================================
+              HEADER
+          ================================================= */}
+
           <button
-            className="back-btn"
-            onClick={() => setPage("menu")}
+            type="button"
+            className="settings-back-btn"
+            onClick={handleBack}
+            disabled={saving}
+            aria-label="Go back to menu"
           >
-            <ArrowLeft size={18}/>
-            Back
+            <ArrowLeft size={18} />
+            <span>Back</span>
           </button>
 
-          <h1 className="title">Settings</h1>
+          <div className="settings-header">
+            <h1 className="settings-title">
+              Settings
+            </h1>
 
-          <p className="subtitle">
-            Personalize your Brewed experience.
-          </p>
+            <p className="settings-subtitle">
+              Personalize your Brewed experience.
+            </p>
+          </div>
 
-          {/* Preferences */}
+          {/* =================================================
+              PREFERENCES
+          ================================================= */}
 
-          <div className="card">
+          <section className="settings-card">
+            <h2 className="settings-section-title">
+              Preferences
+            </h2>
 
-            <h2 className="section-title">Preferences</h2>
+            {/* Notifications */}
 
-            <div className="setting-row">
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <div className="settings-icon-wrapper">
+                  <Bell
+                    size={20}
+                    className="settings-icon"
+                  />
+                </div>
 
-              <div className="setting-left">
-                <Bell className="setting-icon"/>
-                <div>
-                  <div className="setting-title">Push Notifications</div>
-                  <div className="setting-sub">
+                <div className="settings-copy">
+                  <div className="settings-label">
+                    Push Notifications
+                  </div>
+
+                  <div className="settings-description">
                     Receive updates about orders and rewards.
                   </div>
                 </div>
               </div>
 
-              <div
-                className={`switch ${notifications ? "active" : ""}`}
-                onClick={() => setNotifications(!notifications)}
-              />
+              <button
+                type="button"
+                className={`settings-switch ${
+                  notifications ? "active" : ""
+                }`}
+                onClick={toggleNotifications}
+                disabled={saving}
+                role="switch"
+                aria-checked={notifications}
+                aria-label="Toggle push notifications"
+              >
+                <span className="settings-switch-thumb" />
+              </button>
             </div>
 
-            <div className="setting-row">
+            {/* Dark Theme */}
 
-              <div className="setting-left">
-                <Moon className="setting-icon"/>
-                <div>
-                  <div className="setting-title">Dark Theme</div>
-                  <div className="setting-sub">
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <div className="settings-icon-wrapper">
+                  <Moon
+                    size={20}
+                    className="settings-icon"
+                  />
+                </div>
+
+                <div className="settings-copy">
+                  <div className="settings-label">
+                    Dark Theme
+                  </div>
+
+                  <div className="settings-description">
                     Reduce eye strain at night.
                   </div>
                 </div>
               </div>
 
-              <div
-                className={`switch ${darkMode ? "active" : ""}`}
-                onClick={() => setDarkMode(!darkMode)}
-              />
-
+              <button
+                type="button"
+                className={`settings-switch ${
+                  darkMode ? "active" : ""
+                }`}
+                onClick={toggleDarkMode}
+                disabled={saving}
+                role="switch"
+                aria-checked={darkMode}
+                aria-label="Toggle dark theme"
+              >
+                <span className="settings-switch-thumb" />
+              </button>
             </div>
 
-            <div className="setting-row">
+            {/* Reduce Motion */}
 
-              <div className="setting-left">
-                <Info className="setting-icon"/>
-                <div>
-                  <div className="setting-title">Reduce Motion</div>
-                  <div className="setting-sub">
+            <div className="settings-row">
+              <div className="settings-row-left">
+                <div className="settings-icon-wrapper">
+                  <Info
+                    size={20}
+                    className="settings-icon"
+                  />
+                </div>
+
+                <div className="settings-copy">
+                  <div className="settings-label">
+                    Reduce Motion
+                  </div>
+
+                  <div className="settings-description">
                     Minimize interface animations.
                   </div>
                 </div>
               </div>
 
-              <div
-                className={`switch ${reduceMotion ? "active" : ""}`}
-                onClick={() => setReduceMotion(!reduceMotion)}
-              />
-
+              <button
+                type="button"
+                className={`settings-switch ${
+                  reduceMotion ? "active" : ""
+                }`}
+                onClick={toggleReduceMotion}
+                disabled={saving}
+                role="switch"
+                aria-checked={reduceMotion}
+                aria-label="Toggle reduced motion"
+              >
+                <span className="settings-switch-thumb" />
+              </button>
             </div>
+          </section>
 
-          </div>
+          {/* =================================================
+              PRIVACY
+          ================================================= */}
 
-          {/* Privacy */}
+          <section className="settings-card">
+            <h2 className="settings-section-title">
+              Privacy
+            </h2>
 
-<div className="card">
+            <button
+              type="button"
+              className="settings-link-row"
+              onClick={() => setPage("privacy")}
+            >
+              <span className="settings-link-left">
+                <span className="settings-icon-wrapper">
+                  <Shield
+                    size={19}
+                    className="settings-icon"
+                  />
+                </span>
 
-  <h2 className="section-title">Privacy</h2>
+                <span className="settings-link-label">
+                  Privacy Policy
+                </span>
+              </span>
 
-  <div className="link-row" onClick={() => setPage("privacy")}
->
-    <div className="link-left">
-      <Shield size={18} className="setting-icon" />
-      <span>Privacy Policy</span>
-    </div>
+              <ChevronRight
+                size={18}
+                className="settings-link-right"
+              />
+            </button>
 
-    <ChevronRight size={18} className="link-right" />
-  </div>
+            <button
+              type="button"
+              className="settings-link-row"
+              onClick={() => setPage("terms")}
+            >
+              <span className="settings-link-left">
+                <span className="settings-icon-wrapper">
+                  <FileText
+                    size={19}
+                    className="settings-icon"
+                  />
+                </span>
 
-  <div className="link-row" onClick={() => setPage("terms")}>
-    <div className="link-left">
-      <FileText size={18} className="setting-icon" />
-      <span>Terms & Conditions</span>
-    </div>
+                <span className="settings-link-label">
+                  Terms & Conditions
+                </span>
+              </span>
 
-    <ChevronRight size={18} className="link-right" />
-  </div>
+              <ChevronRight
+                size={18}
+                className="settings-link-right"
+              />
+            </button>
 
-  <div className="link-row" onClick={clearCache}>
-    <div className="link-left">
-      <Trash2 size={18} className="setting-icon" />
-      <span>Clear Cache</span>
-    </div>
+            <button
+              type="button"
+              className="settings-link-row"
+              onClick={clearCache}
+              disabled={saving}
+            >
+              <span className="settings-link-left">
+                <span className="settings-icon-wrapper">
+                  <Trash2
+                    size={19}
+                    className="settings-icon"
+                  />
+                </span>
 
-    <ChevronRight size={18} className="link-right" />
-  </div>
+                <span className="settings-link-label">
+                  Clear Cache
+                </span>
+              </span>
 
-</div>
-          {/* Account */}
+              <ChevronRight
+                size={18}
+                className="settings-link-right"
+              />
+            </button>
+          </section>
 
-          <div className="card">
+          {/* =================================================
+              ACCOUNT
+          ================================================= */}
 
-  <h2 className="section-title">Account</h2>
+          <section className="settings-card">
+            <h2 className="settings-section-title">
+              Account
+            </h2>
 
-  <div className="link-row" onClick={() => setPage("change-password")}>
-    <div className="link-left">
-      <KeyRound size={18} className="setting-icon" />
-      <span>Change Password</span>
-    </div>
+            <button
+              type="button"
+              className="settings-link-row"
+              onClick={() =>
+                setPage("change-password")
+              }
+            >
+              <span className="settings-link-left">
+                <span className="settings-icon-wrapper">
+                  <KeyRound
+                    size={19}
+                    className="settings-icon"
+                  />
+                </span>
 
-    <ChevronRight size={18} className="link-right" />
-  </div>
+                <span className="settings-link-label">
+                  Change Password
+                </span>
+              </span>
 
-  <div className="link-row danger" onClick={() => setPage("deleteAccount")} >
-    <div className="link-left">
-      <Trash2 size={18} className="setting-icon" />
-      <span>Delete Account</span>
-    </div>
+              <ChevronRight
+                size={18}
+                className="settings-link-right"
+              />
+            </button>
 
-    <ChevronRight size={18} className="link-right" />
-  </div>
+            <button
+              type="button"
+              className="settings-link-row settings-danger"
+              onClick={() =>
+                setPage("deleteAccount")
+              }
+            >
+              <span className="settings-link-left">
+                <span className="settings-icon-wrapper">
+                  <Trash2
+                    size={19}
+                    className="settings-icon"
+                  />
+                </span>
 
-</div>
-          {/* About */}
+                <span className="settings-link-label">
+                  Delete Account
+                </span>
+              </span>
 
-          <div className="card">
+              <ChevronRight
+                size={18}
+                className="settings-link-right"
+              />
+            </button>
+          </section>
 
-            <h2 className="section-title">About</h2>
+          {/* =================================================
+              ABOUT
+          ================================================= */}
 
-            <div className="setting-row">
+          <section className="settings-card">
+            <h2 className="settings-section-title">
+              About
+            </h2>
+
+            <div className="settings-row settings-about-row">
               <div>
-                <div className="setting-title">Version</div>
-                <div className="setting-sub">
+                <div className="settings-label">
+                  Version
+                </div>
+
+                <div className="settings-description">
                   Brewed v1.0.0
                 </div>
               </div>
             </div>
 
-            <div style={{
-              marginTop:"12px",
-              color:"#7A6658",
-              fontSize:".9rem"
-            }}>
-              ☕ Made with love in Kolkata.
+            <div className="settings-about-note">
+              <span className="settings-coffee">
+                ☕
+              </span>
+
+              <span>
+                Made with love in Kolkata.
+              </span>
             </div>
+          </section>
 
+          {/* =================================================
+              ACTIONS
+          ================================================= */}
+
+          <div className="settings-button-row">
+            <button
+              type="button"
+              className="settings-reset-btn"
+              onClick={resetSettings}
+              disabled={saving || !hasChanges}
+            >
+              <RotateCcw size={17} />
+
+              <span>
+                Reset to Defaults
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className="settings-save-btn"
+              onClick={saveSettings}
+              disabled={
+                saving ||
+                !hasChanges ||
+                !currentUser
+              }
+            >
+              {saving ? (
+                <>
+                  <Loader2
+                    size={17}
+                    className="settings-loading-spinner"
+                  />
+
+                  <span>
+                    Saving...
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Check size={17} />
+
+                  <span>
+                    Save Changes
+                  </span>
+                </>
+              )}
+            </button>
           </div>
-  <div className="button-row">
 
-  <button
-    className="reset-btn"
-    onClick={resetSettings}
-  >
-    Reset to Defaults
-  </button>
+          {!currentUser && (
+            <div className="settings-auth-warning">
+              Please sign in to save your settings.
+            </div>
+          )}
 
-  <button
-    className="save-btn"
-    disabled={!hasChanges}
-    onClick={saveSettings}
-  >
-    Save Changes
-  </button>
-
-</div>
-          
+          {hasChanges && !saving && (
+            <div className="settings-unsaved">
+              You have unsaved changes
+            </div>
+          )}
         </div>
       </div>
-       {confirmOpen && (
-  <div className="modal-overlay">
 
-    <div className="modal">
+      {/* =====================================================
+          CONFIRMATION MODAL
+      ===================================================== */}
 
-      <h2 className="modal-title">
-        {confirmData.title}
-      </h2>
-
-      <p className="modal-text">
-        {confirmData.message}
-      </p>
-
-      <div className="modal-buttons">
-
-        <button
-          className="modal-btn cancel-btn"
-          onClick={() => setConfirmOpen(false)}
+      {confirmOpen && (
+        <div
+          className="settings-modal-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget
+            ) {
+              setConfirmOpen(false);
+            }
+          }}
         >
-          Cancel
-        </button>
+          <div
+            className="settings-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-modal-title"
+            aria-describedby="settings-modal-description"
+          >
+            <button
+              type="button"
+              className="settings-modal-close"
+              onClick={() =>
+                setConfirmOpen(false)
+              }
+              aria-label="Close dialog"
+            >
+              <X size={18} />
+            </button>
 
-        <button
-          className="modal-btn confirm-btn"
-          onClick={confirmData.onConfirm}
-        >
-          Confirm
-        </button>
+            <h2
+              id="settings-modal-title"
+              className="settings-modal-title"
+            >
+              {confirmData.title}
+            </h2>
 
-      </div>
+            <p
+              id="settings-modal-description"
+              className="settings-modal-text"
+            >
+              {confirmData.message}
+            </p>
 
-    </div>
+            <div className="settings-modal-buttons">
+              <button
+                type="button"
+                className="settings-modal-btn settings-cancel-btn"
+                onClick={() =>
+                  setConfirmOpen(false)
+                }
+              >
+                Cancel
+              </button>
 
-  </div>
-)}
+              <button
+                type="button"
+                className={`settings-modal-btn ${
+                  confirmData.danger
+                    ? "settings-danger-confirm-btn"
+                    : "settings-confirm-btn"
+                }`}
+                onClick={
+                  confirmData.onConfirm
+                }
+              >
+                {confirmData.confirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          TOAST
+      ===================================================== */}
+
       {toast.show && (
-  <div className="toast">
-    {toast.message}
-  </div>
-)}
+        <div
+          className="settings-toast"
+          role="status"
+          aria-live="polite"
+        >
+          <Check size={17} />
+
+          <span>
+            {toast.message}
+          </span>
+        </div>
+      )}
     </>
   );
 }
