@@ -1,0 +1,38 @@
+/* =========================================================
+   BREWED — REWARDS
+   ========================================================= */
+
+.rewards-page {
+  min-height: 100vh;
+
+  padding: 48px 6% 90px;
+
+  background: var(--bg);
+  color: var(--text);
+}
+
+.reward-card,
+.reward-box {
+  padding: 22px;
+
+  background: var(--surface);
+  color: var(--text);
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+
+  box-shadow: var(--shadow-sm);
+}
+
+.reward-card h2,
+.reward-card h3 {
+  color: var(--text);
+}
+
+.reward-card p {
+  color: var(--muted);
+}
+
+.reward-progress {
+  background: var(--border);
+}
