@@ -1,821 +1,184 @@
 /* =========================================================
-   BREWED — SHARED COMPONENT SYSTEM
+   BREWED — NAVBAR
+   Shared customer navigation component
 ========================================================= */
 
-
-/* =========================================================
-   CARDS / SURFACES
-========================================================= */
-
-.card,
-.settings-card,
-.profile-card,
-.reward-card,
-.notification-card,
-.product-card,
-.option-card,
-.review-card,
-.reward-box,
-.order-card,
-.cart-item,
-.cart-item-card,
-.cart-empty-card,
-.cart-summary-card,
-.wallet-transactions,
-.wallet-action-card {
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-}
-
-.card,
-.product-card,
-.option-card,
-.review-card,
-.reward-box,
-.order-card {
-  border-radius: var(--radius-lg);
-}
-
-.card:hover,
-.settings-card:hover,
-.product-card:hover,
-.option-card:hover,
-.review-card:hover,
-.reward-box:hover,
-.order-card:hover,
-.wallet-action-card:hover {
-  box-shadow: var(--shadow-md);
-}
-
-
-/* =========================================================
-   PRIMARY BUTTON
-========================================================= */
-
-.primary-btn,
-.save-btn,
-.confirm-btn,
-.settings-save-btn,
-.cart-checkout-btn,
-.cart-primary-btn,
-.add-to-order-btn,
-.pay-gateway-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  min-height: 46px;
-
-  padding: 12px 20px;
-
-  background: var(--button-bg);
-  color: var(--button-text);
-
-  border: 1px solid var(--button-bg);
-  border-radius: var(--radius-pill);
-
-  font-weight: 600;
-
-  cursor: pointer;
-
-  transition:
-    transform var(--transition-fast),
-    opacity var(--transition-fast),
-    background-color var(--transition-base),
-    color var(--transition-base),
-    border-color var(--transition-base),
-    box-shadow var(--transition-fast);
-}
-
-.primary-btn:hover:not(:disabled),
-.save-btn:hover:not(:disabled),
-.confirm-btn:hover:not(:disabled),
-.settings-save-btn:hover:not(:disabled),
-.cart-checkout-btn:hover:not(:disabled),
-.cart-primary-btn:hover:not(:disabled),
-.add-to-order-btn:hover:not(:disabled),
-.pay-gateway-btn:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-}
-
-
-/* =========================================================
-   SECONDARY BUTTON
-========================================================= */
-
-.secondary-btn,
-.settings-reset-btn,
-.cart-continue-btn,
-.google-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  min-height: 46px;
-
-  padding: 12px 20px;
-
-  background: var(--surface);
-  color: var(--text);
-
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-
-  font-weight: 600;
-
-  cursor: pointer;
-
-  transition:
-    color var(--transition-fast),
-    background-color var(--transition-base),
-    border-color var(--transition-base),
-    transform var(--transition-fast);
-}
-
-.secondary-btn:hover:not(:disabled),
-.settings-reset-btn:hover:not(:disabled),
-.cart-continue-btn:hover:not(:disabled),
-.google-btn:hover:not(:disabled) {
-  color: var(--accent);
-  border-color: var(--accent);
-  opacity: 1;
-}
-
-
-/* =========================================================
-   DANGER BUTTON
-========================================================= */
-
-.danger-btn {
-  background: var(--danger);
-  color: #ffffff;
-  border: 1px solid var(--danger);
-}
-
-.danger-btn:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-
-/* =========================================================
-   MODAL / DIALOG SYSTEM
-========================================================= */
-
-.modal-overlay,
-.settings-modal-overlay,
-.dialog-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 20px;
-
-  background: var(--overlay);
-
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
-
-.modal,
-.settings-modal,
-.dialog {
+.headless-header {
+  position: absolute;
+  inset: 0 0 auto;
   width: 100%;
-  max-width: 430px;
-
-  padding: 26px;
-
-  background: var(--surface);
-  color: var(--text);
-
-  border: 1px solid var(--border);
-  border-radius: var(--radius-2xl);
-
-  box-shadow: var(--shadow-lg);
-
-  animation: brewedModalIn 0.22s ease;
-}
-
-.modal-title,
-.settings-modal-title,
-.dialog-title {
-  margin: 0 0 10px;
-
-  color: var(--text);
-
-  font-family:
-    "Playfair Display",
-    Georgia,
-    serif;
-
-  font-size: 1.45rem;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.modal-text,
-.settings-modal-text,
-.dialog-text {
-  margin: 0 0 24px;
-
-  color: var(--muted);
-
-  font-size: 0.9rem;
-  line-height: 1.7;
-}
-
-.modal-buttons,
-.settings-modal-buttons,
-.dialog-buttons {
+  min-height: 72px;
+  padding: 1.25rem 2rem;
   display: flex;
-  gap: 10px;
-}
-
-.modal-btn,
-.settings-modal-btn,
-.dialog-btn {
-  flex: 1;
-  min-height: 46px;
-
-  padding: 12px 14px;
-
-  border-radius: var(--radius-md);
-
-  font-weight: 650;
-
-  cursor: pointer;
-}
-
-.modal-cancel,
-.settings-modal-cancel,
-.dialog-cancel {
-  background: var(--surface-soft);
-  color: var(--text);
-  border: 1px solid var(--border);
-}
-
-.modal-confirm,
-.settings-modal-confirm,
-.dialog-confirm {
-  background: var(--button-bg);
-  color: var(--button-text);
-}
-
-.modal-confirm.danger,
-.settings-modal-confirm.danger,
-.dialog-confirm.danger {
-  background: var(--danger);
-  color: #ffffff;
-}
-
-
-/* =========================================================
-   MODAL CLOSE
-========================================================= */
-
-.modal-close,
-.settings-modal-close,
-.dialog-close {
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-
-  width: 34px;
-  height: 34px;
-
-  padding: 0;
-
+  justify-content: space-between;
+  box-sizing: border-box;
   background: transparent;
-  color: var(--muted);
-
-  border-radius: var(--radius-sm);
+  z-index: 100;
 }
 
-.modal-close:hover,
-.settings-modal-close:hover,
-.dialog-close:hover {
-  background: var(--surface-soft);
-  color: var(--text);
-  opacity: 1;
+.brand-logo {
+  font-family: "Playfair Display", serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-on-dark, #fdfaf5);
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s ease;
 }
 
+.brand-logo:hover {
+  opacity: 0.8;
+}
 
-/* =========================================================
-   ICON CONTAINERS
-========================================================= */
-
-.modal-icon,
-.settings-modal-icon,
-.dialog-icon {
+.nav-icons-group {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.75rem;
+}
 
+.nav-icon-btn {
+  position: relative;
   width: 42px;
   height: 42px;
-
-  margin-bottom: 15px;
-
-  border-radius: var(--radius-md);
-
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-.modal-icon.danger,
-.settings-modal-icon.danger,
-.dialog-icon.danger {
-  background: var(--danger-soft);
-  color: var(--danger);
-}
-
-
-/* =========================================================
-   TOAST
-========================================================= */
-
-.toast,
-.settings-toast {
-  position: fixed;
-  left: 50%;
-  bottom: 28px;
-
-  z-index: 11000;
-
-  max-width: calc(100vw - 32px);
-
-  padding: 13px 19px;
-
-  background: var(--button-bg);
-  color: var(--button-text);
-
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-
-  box-shadow: var(--shadow-md);
-
-  font-size: 0.9rem;
-  line-height: 1.4;
-  text-align: center;
-
-  transform: translateX(-50%);
-
-  animation: brewedToastIn 0.25s ease;
-}
-
-
-/* =========================================================
-   STATUS BADGES
-========================================================= */
-
-.status-badge,
-.badge {
-  display: inline-flex;
+  padding: 0;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-on-dark, #fdfaf5);
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
 
-  min-height: 26px;
+.nav-icon-btn:hover {
+  color: var(--color-primary, #c4956a);
+  background: rgba(253, 250, 245, 0.08);
+}
 
-  padding: 5px 10px;
+.nav-icon-btn:active {
+  transform: scale(0.95);
+}
 
-  border-radius: var(--radius-pill);
+.nav-icon-btn.active {
+  color: var(--color-primary, #c4956a);
+  background: rgba(253, 250, 245, 0.07);
+}
 
-  font-size: 0.72rem;
-  font-weight: 650;
+.nav-icon-btn:focus-visible {
+  outline: 2px solid var(--color-primary, #c4956a);
+  outline-offset: 2px;
+}
+
+/* Notification indicator */
+
+.notification-dot {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 7px;
+  height: 7px;
+  border: 2px solid var(--color-dark, #3b1a08);
+  border-radius: 50%;
+  background: var(--color-primary, #c4956a);
+}
+
+/* Cart quantity */
+
+.nav-cart-badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1px solid var(--color-dark, #3b1a08);
+  border-radius: 999px;
+  background: var(--color-primary, #c4956a);
+  color: var(--color-dark, #3b1a08);
+  font-family: "Inter", sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
   line-height: 1;
 }
 
-.status-success,
-.badge-success {
-  background: var(--success-soft);
-  color: var(--success);
+/* Account */
+
+.account-menu-container {
+  position: relative;
 }
 
-.status-danger,
-.badge-danger {
-  background: var(--danger-soft);
-  color: var(--danger);
+.account-menu-container .nav-icon-btn img {
+  width: 26px;
+  height: 26px;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
-.status-warning,
-.badge-warning {
-  background: var(--warning-soft);
-  color: var(--warning);
+/* Profile dropdown */
+
+.profile-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: 240px;
+  max-width: calc(100vw - 2rem);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle, rgba(59, 26, 8, 0.08));
+  border-radius: var(--radius-lg, 16px);
+  background: var(--surface-primary, #fdfaf5);
+  box-shadow: var(--shadow-lg, 0 15px 40px rgba(59, 26, 8, 0.15));
+  z-index: 1000;
+  animation: brewed-menu-in 0.18s ease-out;
 }
 
-.status-info,
-.badge-info {
-  background: var(--info-soft);
-  color: var(--info);
-}
-
-
-/* =========================================================
-   EMPTY STATES
-========================================================= */
-
-.empty-state {
-  padding: 60px 24px;
-
-  text-align: center;
-
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-
-  box-shadow: var(--shadow-sm);
-}
-
-.empty-state-icon {
-  margin-bottom: 16px;
-  font-size: 2.3rem;
-}
-
-.empty-state-title {
-  margin: 0 0 8px;
-
-  color: var(--text);
-
-  font-family:
-    "Playfair Display",
-    Georgia,
-    serif;
-
-  font-size: 1.4rem;
-}
-
-.empty-state-text {
-  margin: 0;
-
-  color: var(--muted);
-
-  font-size: 0.9rem;
-  line-height: 1.6;
-}
-
-
-/* =========================================================
-   LOADING
-========================================================= */
-
-.loading-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  gap: 10px;
-
-  min-height: 200px;
-
-  color: var(--muted);
-}
-
-.spinner {
-  animation: brewedSpin 0.8s linear infinite;
-}
-
-
-/* =========================================================
-   FORM GROUPS
-========================================================= */
-
-.form-group {
+.profile-header {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-
-  margin-bottom: 18px;
+  gap: 0.25rem;
+  padding: 1rem 1.125rem;
+  border-bottom: 1px solid var(--border-subtle, rgba(59, 26, 8, 0.08));
 }
 
-.form-label {
-  color: var(--text);
-
-  font-size: 0.86rem;
+.profile-header strong {
+  color: var(--text-primary, #3b342f);
+  font-size: 0.875rem;
   font-weight: 600;
+  line-height: 1.4;
 }
 
-.form-help,
-.form-description {
-  color: var(--muted);
-
-  font-size: 0.78rem;
-  line-height: 1.5;
+.profile-header small {
+  overflow-wrap: anywhere;
+  color: var(--text-secondary, #7a726c);
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
-
-/* =========================================================
-   SHARED PAGE HEADER
-========================================================= */
-
-.page-header {
-  margin-bottom: 32px;
-}
-
-.page-title {
-  margin: 0 0 8px;
-
-  color: var(--text);
-
-  font-family:
-    "Playfair Display",
-    Georgia,
-    serif;
-
-  font-size: clamp(2rem, 6vw, 2.5rem);
-  font-weight: 600;
-  line-height: 1.1;
-}
-
-.page-subtitle {
-  margin: 0;
-
-  color: var(--muted);
-
-  font-size: 0.92rem;
-  line-height: 1.65;
-}
-
-
-/* =========================================================
-   SETTINGS — SHARED COMPONENTS
-========================================================= */
-
-.settings-back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-
-  margin-bottom: 24px;
-  padding: 8px 0;
-
-  background: transparent;
-  color: var(--text);
-
-  font-size: 0.92rem;
-  font-weight: 600;
-}
-
-.settings-back-btn:hover:not(:disabled) {
-  color: var(--accent);
-  opacity: 1;
-}
-
-.settings-section-title {
-  margin: 0 0 16px;
-
-  color: var(--text);
-
-  font-family:
-    "Playfair Display",
-    Georgia,
-    serif;
-
-  font-size: 1.22rem;
-}
-
-.settings-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 18px;
-
-  min-height: 72px;
-  padding: 16px 0;
-
-  border-bottom: 1px solid var(--border);
-}
-
-.settings-row:last-child {
-  border-bottom: 0;
-}
-
-.settings-left {
-  display: flex;
-  align-items: center;
-
-  min-width: 0;
-  flex: 1;
-
-  gap: 14px;
-}
-
-.settings-icon {
-  width: 20px;
-  height: 20px;
-
-  flex: 0 0 20px;
-
-  color: var(--accent);
-}
-
-.settings-copy {
-  min-width: 0;
-}
-
-.settings-label {
-  margin: 0 0 4px;
-
-  color: var(--text);
-
-  font-size: 0.96rem;
-  font-weight: 650;
-}
-
-.settings-description {
-  margin: 0;
-
-  color: var(--muted);
-
-  font-size: 0.84rem;
-  line-height: 1.5;
-}
-
-
-/* =========================================================
-   SWITCH
-========================================================= */
-
-.settings-switch {
-  position: relative;
-
-  width: 50px;
-  height: 28px;
-
-  flex: 0 0 50px;
-
-  padding: 0;
-
-  background: var(--border);
-
-  border-radius: var(--radius-pill);
-
-  transition: background-color var(--transition-fast);
-}
-
-.settings-switch.active {
-  background: var(--accent);
-}
-
-.settings-switch-thumb {
-  position: absolute;
-
-  top: 3px;
-  left: 3px;
-
-  width: 22px;
-  height: 22px;
-
-  border-radius: 50%;
-
-  background: #ffffff;
-
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-
-  transition: left var(--transition-fast);
-}
-
-.settings-switch.active .settings-switch-thumb {
-  left: 25px;
-}
-
-
-/* =========================================================
-   SETTINGS LINKS
-========================================================= */
-
-.settings-link {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
+.profile-menu button {
   width: 100%;
-  min-height: 58px;
-
-  padding: 14px 0;
-
-  background: transparent;
-  color: var(--text);
-
-  border-bottom: 1px solid var(--border);
-
-  text-align: left;
-
-  font-weight: 600;
-}
-
-.settings-link:last-child {
-  border-bottom: 0;
-}
-
-.settings-link:hover:not(:disabled) {
-  color: var(--accent);
-  opacity: 1;
-}
-
-.settings-link-left {
+  min-height: 42px;
+  padding: 0.7rem 1.125rem;
   display: flex;
   align-items: center;
-  gap: 14px;
-}
-
-.settings-link-chevron {
-  color: var(--muted);
-}
-
-
-/* =========================================================
-   ANIMATIONS
-========================================================= */
-
-@keyframes brewedModalIn {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.985);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes brewedToastIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 14px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-}
-
-@keyframes brewedSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-
-/* =========================================================
-   MOBILE COMPONENTS
-========================================================= */
-
-@media (max-width: 600px) {
-  .modal,
-  .settings-modal,
-  .dialog {
-    padding: 22px;
-    border-radius: var(--radius-xl);
-  }
-
-  .modal-buttons,
-  .settings-modal-buttons,
-  .dialog-buttons {
-    flex-direction: column-reverse;
-  }
-
-  .modal-btn,
-  .settings-modal-btn,
-  .dialog-btn {
-    width: 100%;
-  }
-
-  .settings-row {
-    gap: 12px;
-  }
-
-  .settings-left {
-    gap: 12px;
-  }
-
-  .settings-label {
-    font-size: 0.92rem;
-  }
-
-  .settings-description {
-    font-size: 0.8rem;
-  }
-
-  .settings-switch {
-    width: 48px;
-    flex-basis: 48px;
-  }
-
-  .settings-switch.active .settings-switch-thumb {
-    left: 23px;
-  }
-
-  .toast,
-  .settings-toast {
-    bottom: 18px;
-  }
+  gap: 0.625rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary, #3b342f);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
