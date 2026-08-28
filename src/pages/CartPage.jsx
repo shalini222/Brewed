@@ -13,10 +13,17 @@ export default function CartPage({ setPage }) {
   const formatCustomizations = (item) => {
     const modifications = [];
 
-    if (item.size) modifications.push(`Size: ${item.size}`);
-    if (item.milk) modifications.push(`Milk: ${item.milk}`);
-    if (item.temperature)
+    if (item.size) {
+      modifications.push(`Size: ${item.size}`);
+    }
+
+    if (item.milk) {
+      modifications.push(`Milk: ${item.milk}`);
+    }
+
+    if (item.temperature) {
       modifications.push(`Temp: ${item.temperature}`);
+    }
 
     if (
       item.iceLevel &&
@@ -40,7 +47,7 @@ export default function CartPage({ setPage }) {
     if (item.extras?.length) {
       modifications.push(
         `Extras: ${item.extras
-          .map((e) => e.name || e)
+          .map((extra) => extra.name || extra)
           .join(", ")}`
       );
     }
@@ -54,50 +61,72 @@ export default function CartPage({ setPage }) {
     return modifications.join(" | ");
   };
 
+  const handleClearCart = () => {
+    clearCart();
+  };
+
   return (
-    <main className="cart-container">
-      <div className="cart-page-inner">
+    <main className="cart-page">
+      <div className="cart-page-container">
 
         {/* Header */}
-
         <header className="cart-page-header">
           <h1 className="cart-page-title">
             Your Shopping Cart
           </h1>
+
+          <p className="cart-page-subtitle">
+            Review your selections before checkout.
+          </p>
         </header>
 
-        {/* Empty Cart */}
-
         {cart.length === 0 ? (
-          <section className="cart-empty">
-            <div className="cart-empty-content">
-              <p className="cart-empty-text">
-                Your cart feels a bit light! Let's find
-                some delicious coffee.
-              </p>
-
-              <button
-                type="button"
-                className="cart-primary-btn"
-                onClick={() => setPage("menu")}
-              >
-                Browse Menu
-              </button>
+          /* Empty Cart */
+          <section className="cart-empty-card">
+            <div className="cart-empty-icon" aria-hidden="true">
+              ☕
             </div>
+
+            <h2 className="cart-empty-title">
+              Your cart feels a bit light
+            </h2>
+
+            <p className="cart-empty-text">
+              Let's find some delicious coffee.
+            </p>
+
+            <button
+              type="button"
+              className="cart-primary-btn"
+              onClick={() => setPage("menu")}
+            >
+              Browse Menu
+            </button>
           </section>
         ) : (
           <div className="cart-layout">
 
             {/* Items */}
+            <section className="cart-items-section">
 
-            <section className="cart-items-column">
               <div className="cart-list-header">
-                <span>Items</span>
+                <div>
+                  <span className="cart-list-label">
+                    Items
+                  </span>
+
+                  <span className="cart-item-count">
+                    {cart.length}{" "}
+                    {cart.length === 1
+                      ? "item"
+                      : "items"}
+                  </span>
+                </div>
 
                 <button
                   type="button"
                   className="cart-clear-btn"
-                  onClick={clearCart}
+                  onClick={handleClearCart}
                 >
                   Clear All
                 </button>
@@ -107,88 +136,101 @@ export default function CartPage({ setPage }) {
                 {cart.map((item, index) => (
                   <article
                     key={`${item.id}-${index}`}
-                    className="cart-item"
+                    className="cart-item-card"
                   >
                     <img
                       src={
                         item.image ||
                         item.img ||
-                        "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=150"
+                        "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300"
                       }
                       alt={item.name}
                       className="cart-item-image"
                     />
 
-                    <div className="cart-item-details">
-                      <h2 className="cart-item-name">
-                        {item.name}
-                      </h2>
+                    <div className="cart-item-content">
 
-                      {formatCustomizations(item) && (
-                        <p className="cart-item-customizations">
-                          {formatCustomizations(item)}
+                      <div className="cart-item-main">
+                        <h2 className="cart-item-name">
+                          {item.name}
+                        </h2>
+
+                        {formatCustomizations(item) && (
+                          <p className="cart-item-customizations">
+                            {formatCustomizations(item)}
+                          </p>
+                        )}
+
+                        {item.instructions && (
+                          <p className="cart-item-note">
+                            <span aria-hidden="true">
+                              ⚠️
+                            </span>{" "}
+                            Note: "{item.instructions}"
+                          </p>
+                        )}
+
+                        <p className="cart-item-price">
+                          ₹
+                          {Math.round(
+                            item.price * item.qty
+                          )}
                         </p>
-                      )}
-
-                      {item.instructions && (
-                        <p className="cart-item-note">
-                          ⚠️ Note: "{item.instructions}"
-                        </p>
-                      )}
-
-                      <span className="cart-item-price">
-                        ₹{Math.round(item.price * item.qty)}
-                      </span>
-                    </div>
-
-                    <div className="cart-item-actions">
-
-                      <div
-                        className="cart-quantity-control"
-                        aria-label={`Quantity for ${item.name}`}
-                      >
-                        <button
-                          type="button"
-                          className="cart-quantity-btn"
-                          onClick={() =>
-                            updateQty(
-                              item,
-                              item.qty - 1
-                            )
-                          }
-                          aria-label={`Decrease ${item.name} quantity`}
-                        >
-                          −
-                        </button>
-
-                        <span className="cart-quantity-value">
-                          {item.qty}
-                        </span>
-
-                        <button
-                          type="button"
-                          className="cart-quantity-btn"
-                          onClick={() =>
-                            updateQty(
-                              item,
-                              item.qty + 1
-                            )
-                          }
-                          aria-label={`Increase ${item.name} quantity`}
-                        >
-                          +
-                        </button>
                       </div>
 
-                      <button
-                        type="button"
-                        className="cart-remove-btn"
-                        onClick={() =>
-                          removeFromCart(item)
-                        }
-                      >
-                        Remove
-                      </button>
+                      <div className="cart-item-actions">
+
+                        <div
+                          className="cart-quantity-control"
+                          aria-label={`Quantity for ${item.name}`}
+                        >
+                          <button
+                            type="button"
+                            className="cart-quantity-btn"
+                            onClick={() =>
+                              updateQty(
+                                item,
+                                item.qty - 1
+                              )
+                            }
+                            aria-label={`Decrease quantity of ${item.name}`}
+                          >
+                            −
+                          </button>
+
+                          <span
+                            className="cart-quantity-value"
+                            aria-live="polite"
+                          >
+                            {item.qty}
+                          </span>
+
+                          <button
+                            type="button"
+                            className="cart-quantity-btn"
+                            onClick={() =>
+                              updateQty(
+                                item,
+                                item.qty + 1
+                              )
+                            }
+                            aria-label={`Increase quantity of ${item.name}`}
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="cart-remove-btn"
+                          onClick={() =>
+                            removeFromCart(item)
+                          }
+                        >
+                          Remove
+                        </button>
+
+                      </div>
                     </div>
                   </article>
                 ))}
@@ -196,57 +238,75 @@ export default function CartPage({ setPage }) {
             </section>
 
             {/* Order Summary */}
-
             <aside className="cart-summary-column">
               <div className="cart-summary-card">
 
-                <h2 className="cart-summary-title">
-                  Order Summary
-                </h2>
-
-                <div className="cart-summary-row">
-                  <span>Subtotal</span>
-                  <span>
-                    ₹{Math.round(total)}
-                  </span>
+                <div className="cart-summary-header">
+                  <h2 className="cart-summary-title">
+                    Order Summary
+                  </h2>
                 </div>
 
-                <div className="cart-summary-row">
-                  <span>Estimated Tax (8%)</span>
-                  <span>
-                    ₹{Math.round(total * 0.08)}
-                  </span>
+                <div className="cart-summary-body">
+
+                  <div className="cart-summary-row">
+                    <span>Subtotal</span>
+                    <span>
+                      ₹{Math.round(total)}
+                    </span>
+                  </div>
+
+                  <div className="cart-summary-row">
+                    <span>
+                      Estimated Tax (8%)
+                    </span>
+
+                    <span>
+                      ₹
+                      {Math.round(
+                        total * 0.08
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="cart-summary-divider" />
+
+                  <div className="cart-summary-total">
+                    <span>
+                      Estimated Total
+                    </span>
+
+                    <strong>
+                      ₹
+                      {Math.round(
+                        total * 1.08
+                      )}
+                    </strong>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="cart-checkout-btn"
+                    onClick={() =>
+                      setPage("checkout")
+                    }
+                  >
+                    Proceed to Checkout
+                  </button>
+
+                  <button
+                    type="button"
+                    className="cart-continue-btn"
+                    onClick={() =>
+                      setPage("menu")
+                    }
+                  >
+                    Continue Shopping
+                  </button>
+
                 </div>
-
-                <hr className="cart-summary-divider" />
-
-                <div className="cart-summary-row cart-total-row">
-                  <span>Estimated Total</span>
-
-                  <strong>
-                    ₹{Math.round(total * 1.08)}
-                  </strong>
-                </div>
-
-                <button
-                  type="button"
-                  className="cart-checkout-btn"
-                  onClick={() => setPage("checkout")}
-                >
-                  Proceed to Checkout
-                </button>
-
-                <button
-                  type="button"
-                  className="cart-continue-btn"
-                  onClick={() => setPage("menu")}
-                >
-                  Continue Shopping
-                </button>
-
               </div>
             </aside>
-
           </div>
         )}
       </div>
