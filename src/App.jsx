@@ -21,7 +21,7 @@ import "./styles/admin.css";
 
 
 
-import Navbar from "./components/Navbar";
+import { Navbar } from "./components/layout";
 import Footer from "./components/Footer";
 
 import MenuPage from "./pages/MenuPage";
