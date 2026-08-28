@@ -1,0 +1,464 @@
+/* =========================================================
+   BREWED — GLOBAL FOUNDATION
+   =========================================================
+   Design tokens, reset, typography, themes, accessibility
+   and global browser behavior.
+
+   Theme classes:
+   html.dark-mode
+   html.reduce-motion
+========================================================= */
+
+:root {
+  color-scheme: light;
+
+  /* ---------- Brand ---------- */
+  --accent: #c4956a;
+  --accent-hover: #ad7e55;
+  --accent-soft: #f5ece3;
+
+  /* ---------- Backgrounds ---------- */
+  --bg: #fcfbf9;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-soft: #f7f4f0;
+
+  /* ---------- Text ---------- */
+  --text: #1b1a18;
+  --text-secondary: #4f4c48;
+  --muted: #85817b;
+  --light-muted: #aaa59e;
+
+  /* ---------- Borders ---------- */
+  --border: #e8e4df;
+  --soft-border: #efebe6;
+
+  /* ---------- Buttons ---------- */
+  --button-bg: #1b1a18;
+  --button-text: #ffffff;
+
+  /* ---------- Status ---------- */
+  --danger: #b42318;
+  --danger-soft: #fff1ef;
+
+  --success: #287c3d;
+  --success-soft: #edf7ef;
+
+  --warning: #9a6500;
+  --warning-soft: #fff7e5;
+
+  --info: #35658a;
+  --info-soft: #edf5fa;
+
+  /* ---------- Forms ---------- */
+  --input-bg: #ffffff;
+  --focus-ring: rgba(196, 149, 106, 0.28);
+
+  /* ---------- Overlay ---------- */
+  --overlay: rgba(18, 17, 15, 0.48);
+
+  /* ---------- Shadows ---------- */
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.13);
+
+  /* ---------- Radius ---------- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-pill: 999px;
+
+  /* ---------- Spacing ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---------- Layout ---------- */
+  --content-width: 1100px;
+  --narrow-width: 720px;
+
+  /* ---------- Scrollbar ---------- */
+  --scrollbar-thumb: #cfc8c0;
+  --scrollbar-track: #fcfbf9;
+
+  /* ---------- Motion ---------- */
+  --transition-fast: 0.18s ease;
+  --transition-base: 0.28s ease;
+}
+
+
+/* =========================================================
+   DARK THEME
+========================================================= */
+
+html.dark-mode {
+  color-scheme: dark;
+
+  /* Warm charcoal instead of generic black */
+  --bg: #151311;
+  --surface: #1d1a17;
+  --surface-elevated: #24201c;
+  --surface-soft: #211e1a;
+
+  --text: #f5f0e9;
+  --text-secondary: #d5cec5;
+  --muted: #aaa198;
+  --light-muted: #827a72;
+
+  --border: #39332d;
+  --soft-border: #2c2824;
+
+  --button-bg: #f1ebe3;
+  --button-text: #171411;
+
+  --accent: #d6a878;
+  --accent-hover: #e1b98e;
+  --accent-soft: #34291f;
+
+  --danger: #f08076;
+  --danger-soft: #351d1a;
+
+  --success: #78cf88;
+  --success-soft: #1d3022;
+
+  --warning: #e3b86c;
+  --warning-soft: #352b1c;
+
+  --info: #82b5d5;
+  --info-soft: #1d2b34;
+
+  --input-bg: #211e1a;
+  --focus-ring: rgba(214, 168, 120, 0.3);
+
+  --overlay: rgba(0, 0, 0, 0.72);
+
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.38);
+  --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.55);
+
+  --scrollbar-thumb: #51483f;
+  --scrollbar-track: #151311;
+}
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  min-width: 320px;
+  min-height: 100%;
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+
+  background: var(--bg);
+  color: var(--text);
+
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  background: var(--bg);
+  color: var(--text);
+}
+
+
+/* =========================================================
+   TYPOGRAPHY
+========================================================= */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin-top: 0;
+  color: var(--text);
+
+  font-family:
+    "Playfair Display",
+    Georgia,
+    serif;
+}
+
+p {
+  color: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+
+/* =========================================================
+   LINKS
+========================================================= */
+
+a {
+  color: var(--text);
+  text-decoration: none;
+  transition: color var(--transition-fast), opacity var(--transition-fast);
+}
+
+a:hover {
+  opacity: 0.75;
+}
+
+
+/* =========================================================
+   FORMS
+========================================================= */
+
+input,
+textarea,
+select {
+  max-width: 100%;
+
+  background: var(--input-bg);
+  color: var(--text);
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+
+  padding: 12px;
+
+  transition:
+    background-color var(--transition-base),
+    color var(--transition-base),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+select option {
+  background: var(--surface);
+  color: var(--text);
+}
+
+
+/* =========================================================
+   BUTTON BASE
+========================================================= */
+
+button {
+  color: inherit;
+  border: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+button:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+========================================================= */
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+
+/* =========================================================
+   GLOBAL TRANSITIONS
+========================================================= */
+
+body,
+#root,
+button,
+input,
+textarea,
+select,
+.card,
+.settings-card,
+.profile-card,
+.reward-card,
+.notification-card,
+.product-card,
+.option-card,
+.review-card,
+.reward-box,
+.order-card,
+.cart-item,
+.cart-item-card,
+.modal,
+.footer,
+.navbar,
+.wallet-card,
+.wallet-action-card,
+.wallet-transactions {
+  transition:
+    background-color var(--transition-base),
+    color var(--transition-base),
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+
+/* =========================================================
+   SHARED PAGE FOUNDATION
+========================================================= */
+
+.product-page,
+.profile-page,
+.login-page,
+.settings-page,
+.notifications-page,
+.rewards-page,
+.orders-page,
+.favourites-page,
+.cart-container,
+.cart-page,
+.wallet-page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+
+/* =========================================================
+   GLOBAL SECONDARY TEXT
+========================================================= */
+
+.subtitle,
+.description,
+.secondary-text {
+  color: var(--muted);
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not(.reduce-motion) *,
+  html:not(.reduce-motion) *::before,
+  html:not(.reduce-motion) *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* =========================================================
+   PRINT
+========================================================= */
+
+@media print {
+  html,
+  body,
+  #root {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .navbar,
+  .footer {
+    display: none !important;
+  }
+}
