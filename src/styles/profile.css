@@ -1,0 +1,40 @@
+/* =========================================================
+   BREWED — PROFILE
+   ========================================================= */
+
+.profile-page {
+  min-height: 100vh;
+
+  padding: 48px 6% 90px;
+
+  background: var(--bg);
+  color: var(--text);
+}
+
+.profile-container {
+  width: 100%;
+  max-width: var(--narrow-width);
+
+  margin: 0 auto;
+}
+
+.profile-header,
+.profile-section {
+  margin-bottom: 18px;
+}
+
+.profile-header {
+  padding: 26px;
+}
+
+.profile-section {
+  padding: 22px;
+}
+
+.profile-name {
+  color: var(--text);
+}
+
+.profile-info {
+  color: var(--muted);
+}
