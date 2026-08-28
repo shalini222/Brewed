@@ -1,83 +1,80 @@
-
 /* =========================================================
-   BREWED — NAVBAR
-   Shared customer navigation
+   BREWED — HEADLESS NAVBAR
+   Floating / transparent / premium navigation
 ========================================================= */
 
 .navbar {
-  position: relative;
+  position: absolute;
+  inset: 0 0 auto;
   z-index: 1000;
 
   width: 100%;
-  min-height: 72px;
-  padding: 0.9rem clamp(1rem, 3vw, 2.25rem);
+  height: 76px;
+  padding: 0 2rem;
 
   display: flex;
   align-items: center;
   justify-content: space-between;
 
-  background: var(--surface);
-  color: var(--text);
-
-  border-bottom: 1px solid var(--soft-border);
-  box-shadow: var(--shadow-xs);
-
+  background: transparent;
+  border: 0;
   box-sizing: border-box;
-}
 
+  pointer-events: none;
+}
 
 /* =========================================================
    BRAND
 ========================================================= */
 
 .navbar-brand {
-  appearance: none;
+  pointer-events: auto;
 
-  margin: 0;
   padding: 0;
-
+  border: 0;
   background: transparent;
-  color: var(--text);
 
-  font-family:
-    "Playfair Display",
-    Georgia,
-    serif;
-
+  font-family: var(--font-display, "Playfair Display", serif);
   font-size: 1.55rem;
   font-weight: 700;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.035em;
   line-height: 1;
+
+  color: var(--color-on-dark, #fdfaf5);
 
   cursor: pointer;
   user-select: none;
 
   transition:
-    color var(--transition-fast),
-    opacity var(--transition-fast);
+    opacity 180ms ease,
+    transform 180ms ease;
 }
 
 .navbar-brand:hover {
-  opacity: 1;
-  color: var(--accent);
+  opacity: 0.78;
+}
+
+.navbar-brand:active {
+  transform: scale(0.97);
 }
 
 .navbar-brand:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 5px;
+  outline: 2px solid var(--color-primary, #c4956a);
+  outline-offset: 6px;
+  border-radius: 3px;
 }
-
 
 /* =========================================================
    ACTIONS
 ========================================================= */
 
 .navbar-actions {
+  pointer-events: auto;
+
   display: flex;
   align-items: center;
   gap: 0.35rem;
 }
-
 
 /* =========================================================
    ICON BUTTON
@@ -94,95 +91,96 @@
   align-items: center;
   justify-content: center;
 
-  flex: 0 0 42px;
-
-  border: 1px solid transparent;
+  border: 0;
   border-radius: 50%;
 
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--color-on-dark, #fdfaf5);
 
   cursor: pointer;
 
+  -webkit-tap-highlight-color: transparent;
+
   transition:
-    color var(--transition-fast),
-    background-color var(--transition-fast),
-    border-color var(--transition-fast),
-    transform var(--transition-fast),
-    opacity var(--transition-fast);
+    color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
 }
 
-
-/*
-   Important:
-   global.css contains button:hover opacity.
-   Navbar explicitly overrides it so icons don't fade.
-*/
-
 .navbar-icon-btn:hover {
-  opacity: 1;
-
-  color: var(--text);
-
-  background: var(--surface-soft);
-  border-color: var(--soft-border);
+  color: var(--color-primary, #c4956a);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .navbar-icon-btn:active {
-  opacity: 1;
-  transform: scale(0.94);
+  transform: scale(0.93);
 }
 
 .navbar-icon-btn.active {
-  opacity: 1;
-
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-color: rgba(196, 149, 106, 0.16);
+  color: var(--color-primary, #c4956a);
 }
 
 .navbar-icon-btn:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--color-primary, #c4956a);
   outline-offset: 3px;
 }
 
+/* =========================================================
+   ACCOUNT
+========================================================= */
+
+.navbar-account {
+  position: relative;
+}
 
 /* =========================================================
    AVATAR
 ========================================================= */
 
 .navbar-avatar {
-  width: 28px;
-  height: 28px;
-
   display: block;
 
-  border-radius: 50%;
+  width: 27px;
+  height: 27px;
+
   object-fit: cover;
 
-  border: 1px solid var(--border);
+  border-radius: 50%;
+
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.18);
+
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
 }
 
+.navbar-icon-btn:hover .navbar-avatar {
+  transform: scale(1.04);
+  box-shadow:
+    0 0 0 1px rgba(196, 149, 106, 0.7);
+}
 
 /* =========================================================
-   NOTIFICATION DOT
+   NOTIFICATION INDICATOR
 ========================================================= */
 
 .navbar-notification-dot {
   position: absolute;
 
-  top: 8px;
-  right: 8px;
+  top: 9px;
+  right: 9px;
 
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 
   border-radius: 50%;
 
-  background: var(--accent);
-  border: 2px solid var(--surface);
-}
+  background: var(--color-primary, #c4956a);
 
+  box-shadow:
+    0 0 0 2px rgba(59, 26, 8, 0.75);
+}
 
 /* =========================================================
    CART BADGE
@@ -196,6 +194,7 @@
 
   min-width: 17px;
   height: 17px;
+
   padding: 0 4px;
 
   display: flex;
@@ -204,33 +203,19 @@
 
   box-sizing: border-box;
 
-  border-radius: var(--radius-pill);
-  border: 2px solid var(--surface);
+  border: 1px solid rgba(59, 26, 8, 0.8);
+  border-radius: 999px;
 
-  background: var(--accent);
-  color: #ffffff;
+  background: var(--color-primary, #c4956a);
+  color: var(--color-dark, #3b1a08);
 
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-
+  font-family: var(--font-body, "Inter", sans-serif);
   font-size: 0.62rem;
   font-weight: 700;
   line-height: 1;
+
+  pointer-events: none;
 }
-
-
-/* =========================================================
-   ACCOUNT
-========================================================= */
-
-.navbar-account {
-  position: relative;
-}
-
 
 /* =========================================================
    PROFILE MENU
@@ -239,59 +224,65 @@
 .navbar-profile-menu {
   position: absolute;
 
-  top: calc(100% + 0.65rem);
-  right: 0;
+  top: calc(100% + 0.75rem);
+  right: -0.25rem;
 
-  width: 250px;
+  width: 248px;
   max-width: calc(100vw - 2rem);
+
+  padding: 0.4rem;
+
+  box-sizing: border-box;
 
   overflow: hidden;
 
-  background: var(--surface);
-  color: var(--text);
+  border: 1px solid rgba(59, 26, 8, 0.08);
+  border-radius: 18px;
 
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: var(--surface-primary, #fdfaf5);
+  color: var(--text-primary, #3b342f);
 
-  box-shadow: var(--shadow-lg);
+  box-shadow:
+    0 18px 45px rgba(59, 26, 8, 0.14),
+    0 4px 12px rgba(59, 26, 8, 0.06);
 
-  z-index: 1100;
+  animation: brewed-navbar-menu-in 160ms ease-out;
 
-  animation: brewed-navbar-menu-in 0.16s ease-out;
+  transform-origin: top right;
 }
-
 
 /* =========================================================
    PROFILE HEADER
 ========================================================= */
 
 .navbar-profile-header {
-  padding: 1rem 1.1rem;
-
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 
-  border-bottom: 1px solid var(--soft-border);
+  padding: 0.9rem 0.9rem 0.8rem;
+
+  border-bottom: 1px solid rgba(59, 26, 8, 0.07);
 }
 
 .navbar-profile-header strong {
-  color: var(--text);
+  color: var(--text-primary, #3b342f);
 
-  font-size: 0.875rem;
+  font-size: 0.82rem;
   font-weight: 600;
   line-height: 1.4;
 }
 
 .navbar-profile-header small {
+  max-width: 100%;
+
   overflow-wrap: anywhere;
 
-  color: var(--muted);
+  color: var(--text-secondary, #7a726c);
 
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   line-height: 1.4;
 }
-
 
 /* =========================================================
    MENU ITEMS
@@ -299,22 +290,22 @@
 
 .navbar-menu-item {
   width: 100%;
-  min-height: 44px;
+  min-height: 40px;
 
-  padding: 0.7rem 1.1rem;
+  padding: 0.58rem 0.7rem;
 
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.65rem;
 
   border: 0;
-  border-radius: 0;
+  border-radius: 10px;
 
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--text-primary, #3b342f);
 
-  font: inherit;
-  font-size: 0.875rem;
+  font-family: inherit;
+  font-size: 0.82rem;
   font-weight: 450;
 
   text-align: left;
@@ -322,34 +313,40 @@
   cursor: pointer;
 
   transition:
-    background-color var(--transition-fast),
-    color var(--transition-fast),
-    opacity var(--transition-fast);
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
 }
 
 .navbar-menu-item:hover {
-  opacity: 1;
-
-  background: var(--surface-soft);
-  color: var(--text);
+  background: var(--surface-secondary, #f5efe7);
+  color: var(--color-dark, #3b1a08);
 }
 
 .navbar-menu-item:active {
-  opacity: 1;
+  transform: scale(0.985);
 }
 
+.navbar-menu-item:focus-visible {
+  outline: 2px solid var(--color-primary, #c4956a);
+  outline-offset: -2px;
+}
+
+/* =========================================================
+   MENU ICONS
+========================================================= */
+
 .navbar-menu-item > span:first-child {
-  width: 22px;
+  width: 20px;
 
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  flex: 0 0 22px;
+  flex: 0 0 20px;
 
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
-
 
 /* =========================================================
    DIVIDERS
@@ -357,34 +354,38 @@
 
 .navbar-menu-divider {
   height: 1px;
-  margin: 0.35rem 0;
 
-  background: var(--soft-border);
+  margin: 0.35rem 0.45rem;
+
+  background: rgba(59, 26, 8, 0.07);
 }
 
-
 /* =========================================================
-   SPECIAL MENU STATES
+   ADMIN
 ========================================================= */
 
 .navbar-admin-link {
-  color: var(--accent);
+  color: #4f46e5;
   font-weight: 600;
 }
 
 .navbar-admin-link:hover {
-  color: var(--accent-hover);
+  color: #4338ca;
+  background: rgba(79, 70, 229, 0.07);
 }
 
+/* =========================================================
+   LOGOUT
+========================================================= */
+
 .navbar-logout-link {
-  color: var(--danger);
+  color: #b42318;
 }
 
 .navbar-logout-link:hover {
-  color: var(--danger);
-  background: var(--danger-soft);
+  color: #a01812;
+  background: rgba(180, 35, 24, 0.06);
 }
-
 
 /* =========================================================
    ANIMATION
@@ -393,15 +394,14 @@
 @keyframes brewed-navbar-menu-in {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(-5px) scale(0.98);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
-
 
 /* =========================================================
    RESPONSIVE
@@ -409,8 +409,8 @@
 
 @media (max-width: 768px) {
   .navbar {
-    min-height: 64px;
-    padding: 0.75rem 1rem;
+    height: 68px;
+    padding: 0 1rem;
   }
 
   .navbar-brand {
@@ -418,42 +418,56 @@
   }
 
   .navbar-actions {
-    gap: 0.15rem;
+    gap: 0.1rem;
   }
 
   .navbar-icon-btn {
     width: 40px;
     height: 40px;
-    flex-basis: 40px;
   }
 
   .navbar-profile-menu {
-    width: 240px;
-    max-width: calc(100vw - 1.5rem);
+    right: -0.25rem;
+    width: min(248px, calc(100vw - 1.5rem));
   }
 }
 
-
 @media (max-width: 420px) {
   .navbar {
-    padding-inline: 0.75rem;
+    padding: 0 0.7rem;
   }
 
   .navbar-brand {
     font-size: 1.3rem;
   }
 
+  .navbar-icon-btn {
+    width: 38px;
+    height: 38px;
+  }
+
   .navbar-actions {
     gap: 0;
   }
 
-  .navbar-icon-btn {
-    width: 38px;
-    height: 38px;
-    flex-basis: 38px;
+  .navbar-profile-menu {
+    right: -0.3rem;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .navbar-brand,
+  .navbar-icon-btn,
+  .navbar-avatar,
+  .navbar-menu-item {
+    transition: none;
   }
 
   .navbar-profile-menu {
-    right: -0.25rem;
+    animation: none;
   }
 }
