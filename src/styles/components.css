@@ -1,184 +1,164 @@
 /* =========================================================
    BREWED — NAVBAR
-   Shared customer navigation component
 ========================================================= */
 
 .headless-header {
   position: absolute;
-  inset: 0 0 auto;
+  top: 0;
+  left: 0;
   width: 100%;
-  min-height: 72px;
-  padding: 1.25rem 2rem;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  box-sizing: border-box;
+  align-items: center;
+  padding: 1.5rem 2rem;
   background: transparent;
   z-index: 100;
+  box-sizing: border-box;
 }
 
 .brand-logo {
   font-family: "Playfair Display", serif;
   font-size: 1.6rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--color-on-dark, #fdfaf5);
+  color: #FDFAF5;
   cursor: pointer;
   user-select: none;
+  letter-spacing: -0.02em;
   transition: opacity 0.2s ease;
 }
 
 .brand-logo:hover {
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 .nav-icons-group {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1.25rem;
 }
 
 .nav-icon-btn {
-  position: relative;
+  background: transparent;
+  border: none;
+  color: #FDFAF5;
+  cursor: pointer;
   width: 42px;
   height: 42px;
-  padding: 0;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--color-on-dark, #fdfaf5);
-  cursor: pointer;
-  transition:
-    color 0.2s ease,
-    background-color 0.2s ease,
-    transform 0.2s ease;
+  position: relative;
+  transition: all 0.2s ease;
 }
 
 .nav-icon-btn:hover {
-  color: var(--color-primary, #c4956a);
-  background: rgba(253, 250, 245, 0.08);
-}
-
-.nav-icon-btn:active {
-  transform: scale(0.95);
+  color: #C4956A;
+  background-color: rgba(253, 250, 245, 0.08);
 }
 
 .nav-icon-btn.active {
-  color: var(--color-primary, #c4956a);
-  background: rgba(253, 250, 245, 0.07);
+  color: #C4956A;
+  background-color: rgba(253, 250, 245, 0.05);
 }
-
-.nav-icon-btn:focus-visible {
-  outline: 2px solid var(--color-primary, #c4956a);
-  outline-offset: 2px;
-}
-
-/* Notification indicator */
 
 .notification-dot {
   position: absolute;
-  top: 9px;
-  right: 9px;
-  width: 7px;
-  height: 7px;
-  border: 2px solid var(--color-dark, #3b1a08);
+  top: 10px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: var(--color-primary, #c4956a);
+  background: #C4956A;
+  border: 2px solid #3B1A08;
 }
-
-/* Cart quantity */
 
 .nav-cart-badge {
   position: absolute;
-  top: 1px;
-  right: 1px;
-  min-width: 17px;
-  height: 17px;
-  padding: 0 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  border: 1px solid var(--color-dark, #3b1a08);
-  border-radius: 999px;
-  background: var(--color-primary, #c4956a);
-  color: var(--color-dark, #3b1a08);
+  top: 2px;
+  right: 2px;
+  background-color: #C4956A;
+  color: #3B1A08;
   font-family: "Inter", sans-serif;
   font-size: 0.65rem;
   font-weight: 700;
-  line-height: 1;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #3B1A08;
 }
-
-/* Account */
 
 .account-menu-container {
   position: relative;
 }
 
-.account-menu-container .nav-icon-btn img {
-  width: 26px;
-  height: 26px;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-/* Profile dropdown */
-
 .profile-menu {
   position: absolute;
-  top: calc(100% + 0.5rem);
+  top: 50px;
   right: 0;
   width: 240px;
-  max-width: calc(100vw - 2rem);
+  background: #FDFAF5;
+  border-radius: 16px;
+  box-shadow: 0 15px 40px rgba(59, 26, 8, 0.15);
+  border: 1px solid rgba(59, 26, 8, 0.06);
   overflow: hidden;
-  border: 1px solid var(--border-subtle, rgba(59, 26, 8, 0.08));
-  border-radius: var(--radius-lg, 16px);
-  background: var(--surface-primary, #fdfaf5);
-  box-shadow: var(--shadow-lg, 0 15px 40px rgba(59, 26, 8, 0.15));
-  z-index: 1000;
-  animation: brewed-menu-in 0.18s ease-out;
+  z-index: 999;
 }
 
 .profile-header {
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(59, 26, 8, 0.06);
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  padding: 1rem 1.125rem;
-  border-bottom: 1px solid var(--border-subtle, rgba(59, 26, 8, 0.08));
 }
 
 .profile-header strong {
-  color: var(--text-primary, #3b342f);
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.4;
+  color: #3B1A08;
+  font-size: 14px;
 }
 
 .profile-header small {
-  overflow-wrap: anywhere;
-  color: var(--text-secondary, #7a726c);
-  font-size: 0.75rem;
-  line-height: 1.4;
+  margin-top: 4px;
+  color: #7A726C;
+  font-size: 12px;
+  word-break: break-all;
 }
 
 .profile-menu button {
   width: 100%;
-  min-height: 42px;
-  padding: 0.7rem 1.125rem;
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  border: 0;
-  background: transparent;
-  color: var(--text-primary, #3b342f);
-  font: inherit;
-  font-size: 0.875rem;
+  background: none;
+  border: none;
+  padding: 12px 18px;
   text-align: left;
   cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
+  font-size: 14px;
+  color: #3B342F;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.15s ease;
+}
+
+.profile-menu button:hover {
+  background: #F5EFE7;
+  color: #3B1A08;
+}
+
+.profile-menu hr {
+  border: none;
+  border-top: 1px solid rgba(59, 26, 8, 0.06);
+  margin: 4px 0;
+}
+
+@media (max-width: 768px) {
+  .headless-header {
+    padding: 1.25rem 1rem;
+  }
+
+  .nav-icons-group {
+    gap: 0.5rem;
+  }
 }
