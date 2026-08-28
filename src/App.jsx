@@ -7,7 +7,18 @@ import { PreferencesProvider } from "./context/PreferencesContext";
 
 
 
-import "./App.css";
+import "./styles/global.css";
+import "./styles/components.css";
+import "./styles/customer.css";
+import "./styles/admin.css";
+
+
+
+
+
+
+
+
 
 
 import Navbar from "./components/Navbar";
