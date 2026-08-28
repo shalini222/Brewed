@@ -1,0 +1,32 @@
+/* =========================================================
+   BREWED — NOTIFICATIONS
+   ========================================================= */
+
+.notifications-page {
+  min-height: 100vh;
+
+  padding: 48px 6% 90px;
+
+  background: var(--bg);
+  color: var(--text);
+}
+
+.notification-card,
+.notification-item {
+  background: var(--surface);
+  color: var(--text);
+
+  border-color: var(--border);
+}
+
+.notification-item {
+  border-bottom: 1px solid var(--border);
+}
+
+.notification-title {
+  color: var(--text);
+}
+
+.notification-message {
+  color: var(--muted);
+}
