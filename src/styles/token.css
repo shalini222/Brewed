@@ -1,0 +1,164 @@
+/* =========================================================
+   BREWED — DESIGN TOKENS
+   ========================================================= */
+
+:root {
+  color-scheme: light;
+
+  /* =========================
+     COLORS
+  ========================= */
+
+  --bg: #faf9f7;
+
+  --surface: #ffffff;
+  --surface-soft: #f6f3ef;
+  --surface-elevated: #ffffff;
+
+  --text: #1b1917;
+  --text-secondary: #514c47;
+
+  --muted: #817a73;
+  --muted-light: #aaa39c;
+
+  --border: #e8e3de;
+  --border-soft: #f0ece8;
+
+  --accent: #c4956a;
+  --accent-hover: #ad7e55;
+  --accent-soft: #f5ece3;
+
+  --button-bg: #1c1a18;
+  --button-text: #ffffff;
+
+  --danger: #b42318;
+  --danger-soft: #fff1ef;
+
+  --success: #287a3d;
+  --success-soft: #edf7ef;
+
+  --warning: #9a6800;
+  --warning-soft: #fff7e6;
+
+  /* =========================
+     DARK THEME
+  ========================= */
+
+  --overlay: rgba(20, 17, 14, 0.58);
+
+  --shadow-sm:
+    0 2px 10px rgba(25, 20, 15, 0.05);
+
+  --shadow-md:
+    0 10px 30px rgba(25, 20, 15, 0.08);
+
+  --shadow-lg:
+    0 20px 55px rgba(25, 20, 15, 0.13);
+
+  /* =========================
+     RADIUS
+  ========================= */
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+
+  /* =========================
+     SPACING
+  ========================= */
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+  --space-10: 64px;
+
+  /* =========================
+     LAYOUT
+  ========================= */
+
+  --content-width: 1100px;
+  --narrow-width: 720px;
+
+  /* =========================
+     MOTION
+  ========================= */
+
+  --transition-fast: 0.18s ease;
+  --transition: 0.25s ease;
+  --transition-slow: 0.3s ease;
+
+  /* =========================
+     FOCUS
+  ========================= */
+
+  --focus-ring: rgba(196, 149, 106, 0.3);
+
+  /* =========================
+     SCROLLBAR
+  ========================= */
+
+  --scrollbar-thumb: #cfc6bc;
+  --scrollbar-track: #faf9f7;
+}
+
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+html.dark-mode {
+  color-scheme: dark;
+
+  --bg: #151311;
+
+  --surface: #201d1a;
+  --surface-soft: #1b1816;
+  --surface-elevated: #27231f;
+
+  --text: #f5f1ec;
+  --text-secondary: #d4cec7;
+
+  --muted: #aaa29a;
+  --muted-light: #817a73;
+
+  --border: #39342f;
+  --border-soft: #302b27;
+
+  --accent: #d4a675;
+  --accent-hover: #e1b98c;
+  --accent-soft: #30251d;
+
+  --button-bg: #f3eee8;
+  --button-text: #181512;
+
+  --danger: #ef8a82;
+  --danger-soft: #321d1a;
+
+  --success: #78c887;
+  --success-soft: #1d3021;
+
+  --warning: #dfb35e;
+  --warning-soft: #342b19;
+
+  --overlay: rgba(0, 0, 0, 0.68);
+
+  --shadow-sm:
+    0 2px 10px rgba(0, 0, 0, 0.2);
+
+  --shadow-md:
+    0 10px 30px rgba(0, 0, 0, 0.3);
+
+  --shadow-lg:
+    0 20px 55px rgba(0, 0, 0, 0.45);
+
+  --scrollbar-thumb: #4a423b;
+  --scrollbar-track: #151311;
+}
